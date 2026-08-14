@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>About Us - CHT ESP ORG</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
@@ -211,6 +213,16 @@
     color:var(--text-secondary);
   }
 </style>
+<style>
+:root{
+  --bg: var(--g-bg);
+  --card: var(--g-surface);
+  --card-border: var(--g-border);
+  --text-primary: var(--g-text);
+  --text-secondary: var(--g-muted);
+}
+</style>
+
 </head>
 <body>
 
@@ -221,7 +233,7 @@
         <polyline points="15 18 9 12 15 6"></polyline>
       </svg>
     </div>
-    <h1>ABOUT US</h1>
+    <h1 data-i18n="about.title">ABOUT US</h1>
   </div>
 
   <div class="brand">
@@ -241,8 +253,8 @@
         </svg>
       </div>
       <div class="card-text">
-        <div class="title">Official Website</div>
-        <div class="subtitle">Visit our official site</div>
+        <div class="title" data-i18n="about.website">Official Website</div>
+        <div class="subtitle" data-i18n="about.websiteSub">Visit our official site</div>
       </div>
     </div>
     <div class="chevron">
@@ -261,8 +273,8 @@
         </svg>
       </div>
       <div class="card-text">
-        <div class="title">Email Support</div>
-        <div class="subtitle">Get in touch via email</div>
+        <div class="title" data-i18n="about.email">Email Support</div>
+        <div class="subtitle" data-i18n="about.emailSub">Get in touch via email</div>
       </div>
     </div>
     <div class="chevron">
@@ -281,8 +293,8 @@
         </svg>
       </div>
       <div class="card-text">
-        <div class="title">Help &amp; Support</div>
-        <div class="subtitle">Need help? We're here for you.</div>
+        <div class="title" data-i18n="about.help">Help &amp; Support</div>
+        <div class="subtitle" data-i18n="about.helpSub">Need help? We're here for you.</div>
       </div>
     </div>
     <div class="chevron">
@@ -300,8 +312,8 @@
         </svg>
       </div>
       <div class="card-text">
-        <div class="title">Join our Whatsapp</div>
-        <div class="subtitle">Group &amp; Channel</div>
+        <div class="title" data-i18n="about.whatsapp">Join our Whatsapp</div>
+        <div class="subtitle" data-i18n="about.whatsappSub">Group &amp; Channel</div>
       </div>
     </div>
     <div class="chevron">
@@ -312,7 +324,7 @@
   </a>
 
   <div class="connected-section">
-    <h3>Connected with us</h3>
+    <h3 data-i18n="about.connected">Connected with us</h3>
     <div class="social-row">
       <a class="social-item" href="https://www.facebook.com/chtesporg" target="_blank" rel="noopener">
         <div class="social-icon fb">

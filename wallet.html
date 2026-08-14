@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wallet</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
 <style>
   :root{
     --bg:#0b0f19;
@@ -264,6 +266,17 @@
     font-size:14px;
   }
 </style>
+<style>
+:root{
+  --bg: var(--g-bg);
+  --card: var(--g-surface);
+  --card-2: var(--g-surface-2);
+  --border: var(--g-border);
+  --text: var(--g-text);
+  --muted: var(--g-muted);
+}
+</style>
+
 </head>
 <body>
 <div class="phone">
@@ -271,20 +284,20 @@
   <div class="header">
     <div class="header-left">
       <button class="back-btn" onclick="history.back()">&#8592;</button>
-      <h1>Wallet</h1>
+      <h1 data-i18n="wallet.title">Wallet</h1>
     </div>
     <div class="uid-chip">UID: #99</div>
   </div>
 
   <div class="card prize-card">
-    <div class="prize-title">Total Prize Won</div>
+    <div class="prize-title" data-i18n="wallet.totalPrize">Total Prize Won</div>
     <div class="prize-amount"><span class="taka">৳</span>0</div>
-    <div class="prize-sub">Total amount your team earned over its lifetime</div>
+    <div class="prize-sub" data-i18n="wallet.totalPrizeSub">Total amount your team earned over its lifetime</div>
   </div>
 
   <div class="card balance-card">
     <div>
-      <div class="balance-label">CURRENT BALANCE</div>
+      <div class="balance-label" data-i18n="wallet.currentBalance">CURRENT BALANCE</div>
       <div class="balance-amount">৳0</div>
     </div>
     <svg class="wallet-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -296,49 +309,49 @@
 
   <div class="card split-card">
     <div class="split-item withdrawable">
-      <div class="lbl">Withdrawable</div>
+      <div class="lbl" data-i18n="wallet.withdrawable">Withdrawable</div>
       <div class="val">৳0</div>
     </div>
     <div class="divider-v"></div>
     <div class="split-item non-withdrawable">
-      <div class="lbl">Non-Withdrawable</div>
+      <div class="lbl" data-i18n="wallet.nonWithdrawable">Non-Withdrawable</div>
       <div class="val">৳0</div>
     </div>
   </div>
 
   <div class="toggle-row">
-    <button id="tabAdd" class="toggle-btn active-add" onclick="showPanel('add')">&#8600; Add Money</button>
-    <button id="tabWithdraw" class="toggle-btn" onclick="showPanel('withdraw')">&#8599; Withdraw</button>
+    <button id="tabAdd" class="toggle-btn active-add" onclick="showPanel('add')">&#8600; <span data-i18n="wallet.addMoney">Add Money</span></button>
+    <button id="tabWithdraw" class="toggle-btn" onclick="showPanel('withdraw')">&#8599; <span data-i18n="wallet.withdraw">Withdraw</span></button>
   </div>
 
   <!-- ADD MONEY PANEL -->
   <div id="panelAdd" class="panel active">
     <div class="card">
-      <input type="number" placeholder="Enter the Amount">
-      <button class="btn btn-deposit">Deposit</button>
+      <input type="number" placeholder="Enter the Amount" data-i18n-placeholder="wallet.enterAmount">
+      <button class="btn btn-deposit" data-i18n="wallet.deposit">Deposit</button>
     </div>
   </div>
 
   <!-- WITHDRAW PANEL -->
   <div id="panelWithdraw" class="panel">
     <div class="card">
-      <div class="min-withdraw-note">Minimum Withdraw: 50 BDT</div>
+      <div class="min-withdraw-note" data-i18n="wallet.minWithdraw">Minimum Withdraw: 50 BDT</div>
       <select id="paymentMethod" onchange="updateNumberLabel()">
-        <option value="" disabled selected>Select Payment Method</option>
+        <option value="" disabled selected data-i18n="wallet.selectMethod">Select Payment Method</option>
         <option value="Bkash">Bkash</option>
         <option value="Nagad">Nagad</option>
       </select>
 
-      <input type="number" placeholder="Enter your Amount">
+      <input type="number" placeholder="Enter your Amount" data-i18n-placeholder="wallet.enterAmount">
 
-      <input type="text" id="numberInput" placeholder="Enter your number">
+      <input type="text" id="numberInput" placeholder="Enter your number" data-i18n-placeholder="wallet.enterNumber">
 
-      <button class="btn btn-withdraw">Request Withdraw</button>
+      <button class="btn btn-withdraw" data-i18n="wallet.requestWithdraw">Request Withdraw</button>
     </div>
   </div>
 
-  <div class="history-title">&#8635; RECENT TRANSACTIONS</div>
-  <div class="history-card">No transactions yet.</div>
+  <div class="history-title">&#8635; <span data-i18n="wallet.recentTx">RECENT TRANSACTIONS</span></div>
+  <div class="history-card" data-i18n="wallet.noTx">No transactions yet.</div>
 
 </div>
 

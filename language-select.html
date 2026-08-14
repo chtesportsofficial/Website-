@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Select Language</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
@@ -138,6 +140,16 @@
   .confirm-btn:hover{ filter:brightness(1.08); }
   .confirm-btn:active{ transform:scale(0.98); }
 </style>
+<style>
+:root{
+  --bg: var(--g-bg);
+  --card: var(--g-surface);
+  --card-border: var(--g-border);
+  --text-primary: var(--g-text);
+  --text-secondary: var(--g-muted);
+}
+</style>
+
 </head>
 <body>
 
@@ -148,10 +160,10 @@
         <polyline points="15 18 9 12 15 6"></polyline>
       </svg>
     </div>
-    <h1>LANGUAGE</h1>
+    <h1 data-i18n="lang.title">LANGUAGE</h1>
   </div>
 
-  <p class="subtitle">Select Language</p>
+  <p class="subtitle" data-i18n="lang.subtitle">Select Language</p>
 
   <div class="options" id="optionsList">
     <div class="option selected" data-lang="en">
@@ -175,20 +187,27 @@
 
 <script>
   const options = document.querySelectorAll('.option');
-  options.forEach(opt => {
-    opt.addEventListener('click', () => {
-      options.forEach(o => o.classList.remove('selected'));
-      opt.classList.add('selected');
-    });
-  });
 
-  // Save the selected language when clicked
+  function markSelected(lang){
+    options.forEach(o => o.classList.toggle('selected', o.getAttribute('data-lang') === lang));
+  }
+
   options.forEach(opt => {
     opt.addEventListener('click', () => {
       const lang = opt.getAttribute('data-lang');
-      // Send this value to your backend or save it as needed
-      console.log('Language selected:', lang);
+      markSelected(lang);
+      // Persist + apply immediately across the whole site (localStorage-backed)
+      if(window.CHTEO && window.CHTEO.setLangPref){
+        window.CHTEO.setLangPref(lang);
+      }
     });
+  });
+
+  // Reflect whatever language is already active (persists across pages/refresh)
+  document.addEventListener('DOMContentLoaded', function(){
+    if(window.CHTEO && window.CHTEO.getLangPref){
+      markSelected(window.CHTEO.getLangPref());
+    }
   });
 </script>
 

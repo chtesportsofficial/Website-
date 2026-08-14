@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CHTEO — Sign in</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
 <style>
   :root{
     --navy-1:#1b2140;
@@ -28,10 +30,13 @@
       radial-gradient(circle at 90% 12%, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 45%),
       linear-gradient(160deg, var(--navy-1) 0%, var(--navy-2) 55%, var(--navy-3) 100%);
     display:flex;
+    flex-direction:column;
     align-items:center;
     justify-content:center;
-    padding:40px 16px;
+    gap:18px;
+    padding:40px 16px !important;
   }
+  body .app-footer.global-footer{ color:rgba(255,255,255,0.65); padding:0 !important; margin:0; }
 
   .bg-blob{
     position:fixed;

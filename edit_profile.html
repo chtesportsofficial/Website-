@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Edit your Profile</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
 <style>
 :root{--bg:#0b0d10;--card:#15181d;--field:#181c21;--border:#2a3037;--text:#f4f5f7;--muted:#9ba2ad;--green:#22c55e;--red:#ef4444}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Segoe UI,Roboto,Arial,sans-serif;display:flex;justify-content:center;padding:20px 0 50px}.phone{width:100%;max-width:420px;padding:0 18px}
@@ -19,10 +21,21 @@ input,select{width:100%;border:0;outline:0;background:transparent;color:var(--te
 .save-btn{width:100%;min-height:74px;border:1px solid #159447;border-radius:17px;background:linear-gradient(180deg,#2bc75f,#1eae50);color:#fff;font-size:18px;font-weight:850;letter-spacing:.04em;cursor:pointer}.save-btn:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:380px){.back-btn{width:60px;height:60px}.topbar h1{font-size:25px}.photo-card{height:330px}.avatar,.avatar-wrap{width:160px;height:160px}}
 </style>
+<style>
+:root{
+  --bg: var(--g-bg);
+  --card: var(--g-surface);
+  --field: var(--g-surface);
+  --border: var(--g-border);
+  --text: var(--g-text);
+  --muted: var(--g-muted);
+}
+</style>
+
 </head>
 <body>
 <div class="phone">
-<div class="topbar"><button class="back-btn" type="button" onclick="history.back()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button><h1>Edit your Profile</h1></div>
+<div class="topbar"><button class="back-btn" type="button" onclick="history.back()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button><h1 data-i18n="editprofile.title">Edit your Profile</h1></div>
 <form id="profileForm" novalidate>
 
 <div class="photo-card"><div class="avatar-wrap"><div class="avatar">
@@ -33,18 +46,18 @@ input,select{width:100%;border:0;outline:0;background:transparent;color:var(--te
 <input id="avatarInput" type="file" accept="image/*" hidden>
 </div></div>
 
-<div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label">WHATSAPP NUMBER :</span></div><div class="input-wrap"><span class="input-icon">☏</span><input id="whatsapp" type="tel" placeholder="Enter your WhatsApp number"></div></div>
-<div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label">EMAIL :</span></div><div class="input-wrap"><span class="input-icon">✉</span><input id="email" type="email" placeholder="Enter your email"></div></div>
-<div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label">TEAM NAME :</span></div><div class="input-wrap"><span class="input-icon">♧</span><input id="teamName" type="text" placeholder="Enter your team name"></div></div>
+<div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label" data-i18n="editprofile.whatsapp">WHATSAPP NUMBER :</span></div><div class="input-wrap"><span class="input-icon">☏</span><input id="whatsapp" type="tel" placeholder="Enter your WhatsApp number" data-i18n-placeholder="editprofile.whatsappPh"></div></div>
+<div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label" data-i18n="editprofile.email">EMAIL :</span></div><div class="input-wrap"><span class="input-icon">✉</span><input id="email" type="email" placeholder="Enter your email" data-i18n-placeholder="editprofile.emailPh"></div></div>
+<div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label" data-i18n="editprofile.teamName">TEAM NAME :</span></div><div class="input-wrap"><span class="input-icon">♧</span><input id="teamName" type="text" placeholder="Enter your team name" data-i18n-placeholder="editprofile.teamNamePh"></div></div>
 
-<div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label">TEAM SLOGAN :</span><span class="limit">max 50 characters</span></div>
-<div class="slogan-wrap" id="sloganWrap"><div class="input-wrap slogan-input"><span class="input-icon">⚑</span><input id="slogan" type="text" placeholder="Enter your team slogan"><span class="counter" id="counter">0/50</span></div><div class="slogan-error">Slogan is over 50 characters.</div></div></div>
+<div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label" data-i18n="editprofile.slogan">TEAM SLOGAN :</span><span class="limit" data-i18n="editprofile.sloganMax">max 50 characters</span></div>
+<div class="slogan-wrap" id="sloganWrap"><div class="input-wrap slogan-input"><span class="input-icon">⚑</span><input id="slogan" type="text" placeholder="Enter your team slogan" data-i18n-placeholder="editprofile.sloganPh"><span class="counter" id="counter">0/50</span></div><div class="slogan-error" data-i18n="editprofile.sloganError">Slogan is over 50 characters.</div></div></div>
 
-<div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label">COUNTY :</span></div><div class="input-wrap"><span class="input-icon">◎</span><select id="country"><option value="">Select your country</option><option>Bangladesh</option><option>India</option><option>Pakistan</option><option>Nepal</option><option>Sri Lanka</option><option>United Arab Emirates</option><option>Saudi Arabia</option><option>United Kingdom</option><option>United States</option><option>Other</option></select><span class="chevron">⌄</span></div></div>
+<div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label" data-i18n="editprofile.country">COUNTY :</span></div><div class="input-wrap"><span class="input-icon">◎</span><select id="country"><option value="" data-i18n="editprofile.countrySelect">Select your country</option><option>Bangladesh</option><option>India</option><option>Pakistan</option><option>Nepal</option><option>Sri Lanka</option><option>United Arab Emirates</option><option>Saudi Arabia</option><option>United Kingdom</option><option>United States</option><option>Other</option></select><span class="chevron">⌄</span></div></div>
 
-<div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label">LOCATION :</span></div><div class="input-wrap"><span class="input-icon">⌖</span><input id="location" type="text" placeholder="Enter your location"></div></div>
+<div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label" data-i18n="editprofile.location">LOCATION :</span></div><div class="input-wrap"><span class="input-icon">⌖</span><input id="location" type="text" placeholder="Enter your location" data-i18n-placeholder="editprofile.locationPh"></div></div>
 
-<button class="save-btn" id="saveBtn" type="submit">SAVE CHANGES</button>
+<button class="save-btn" id="saveBtn" type="submit" data-i18n="editprofile.save">SAVE CHANGES</button>
 </form>
 </div>
 

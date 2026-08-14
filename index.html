@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CHT ESP ORG</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
 <style>
 :root{
   --bg:#0a0d13;--bg-alt:#0d1119;--surface:#131826;--surface-2:#171d2d;
@@ -13,7 +15,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
-body{background:#070a0f;color:var(--text);font-family:Arial,"Noto Sans Bengali",sans-serif}
+body{background:var(--bg);color:var(--text);font-family:Arial,"Noto Sans Bengali",sans-serif}
 button{font-family:inherit;cursor:pointer}
 .app{
  width:100%;min-height:100vh;margin:auto;background:
@@ -341,6 +343,19 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
   to{transform:translateX(-50%)}
 }
 </style>
+<style>
+:root{
+  --bg: var(--g-bg);
+  --bg-alt: var(--g-surface-2);
+  --surface: var(--g-surface);
+  --surface-2: var(--g-surface-2);
+  --line: var(--g-border);
+  --text: var(--g-text);
+  --text-dim: var(--g-muted);
+  --text-dimmer: var(--g-muted);
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -382,7 +397,7 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
 </a>
 
 <div class="section">
-  <div class="section-head"><div class="section-title"><span class="bar"></span><span>Daily (Scrims) Tournaments</span></div><a class="section-link">View All →</a></div>
+  <div class="section-head"><div class="section-title"><span class="bar"></span><span data-i18n="index.dailyTournaments">Daily (Scrims) Tournaments</span></div><a class="section-link" data-i18n="index.viewAll">View All →</a></div>
   <div class="hscroll">
 
     <div class="dscrim-card blue"><div class="dscrim-body">
@@ -413,7 +428,7 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
 </div>
 
 <div class="section">
-  <div class="section-head"><div class="section-title"><span class="bar"></span><span>Today's Paid (Qualify) Tournaments</span></div><a class="section-link">View All →</a></div>
+  <div class="section-head"><div class="section-title"><span class="bar"></span><span data-i18n="index.paidTournaments">Today's Paid (Qualify) Tournaments</span></div><a class="section-link" data-i18n="index.viewAll">View All →</a></div>
   <div class="hscroll">
     <div class="dscrim-card fire"><div class="dscrim-body">
       <div class="dscrim-card-title">CHT EXTREME CLASH SSN - 3</div>
@@ -425,7 +440,7 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
 </div>
 
 <div class="section">
-  <div class="section-head"><div class="section-title"><span class="bar"></span><span>September Top Teams</span></div></div>
+  <div class="section-head"><div class="section-title"><span class="bar"></span><span data-i18n="index.topTeams">September Top Teams</span></div></div>
   <div class="lb-card">
     <div class="lb-list">
     <div class="lb-row"><div class="lb-rank gold">1</div><div class="lb-avatar"></div><div class="lb-name">HILL DOMINATORS<span class="s">Squad</span></div><div class="lb-amt">230 PTS</div></div>
@@ -439,7 +454,7 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
     <div class="lb-row"><div class="lb-rank">9</div><div class="lb-avatar"></div><div class="lb-name">GHOST RIDERS<span class="s">Squad</span></div><div class="lb-amt">108 PTS</div></div>
     <div class="lb-row"><div class="lb-rank">10</div><div class="lb-avatar"></div><div class="lb-name">STORM BREAKERS<span class="s">Squad</span></div><div class="lb-amt">95 PTS</div></div>
     </div>
-    <div class="lb-see">See other teams ↓</div>
+    <div class="lb-see" data-i18n="index.seeOther">See other teams ↓</div>
   </div>
 </div>
 
@@ -447,13 +462,13 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
   <div class="tile-grid">
     <div class="tile hero">
       <div class="hero-vip-header">
-        <div class="hero-vip-only">ONLY FOR</div>
-        <div class="hero-vip-members">VIP MEMBERS</div>
+        <div class="hero-vip-only" data-i18n="index.vipOnly">ONLY FOR</div>
+        <div class="hero-vip-members" data-i18n="index.vipMembers">VIP MEMBERS</div>
       </div>
       <div class="hero-vip-content">
         <h2 class="hero-vip-title">CHTEO<br>CHAMPIONSHIP<br><span>SSN - 1</span></h2>
       </div>
-      <button class="hero-vip-button" onclick="openVipModal()">BE A VIP MEMBER<span>›</span></button>
+      <button class="hero-vip-button" onclick="openVipModal()"><span data-i18n="index.vipButton">BE A VIP MEMBER</span><span>›</span></button>
     </div>
     <div class="tile"><div class="placeholder-icon">🎧</div><div class="scrim"></div><div class="tile-label"><div><div class="t">GADGET ZONE</div></div></div></div>
     <div class="tile"><div class="placeholder-icon">💎</div><div class="scrim"></div><div class="tile-label"><div><div class="t">DIAMOND TOP UP</div></div></div></div>

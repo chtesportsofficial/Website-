@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Notification</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
 <style>
   :root{
     --bg:#0b0f19;
@@ -183,20 +185,30 @@
     line-height:1.5;
   }
 </style>
+<style>
+:root{
+  --bg: var(--g-bg);
+  --card: var(--g-surface);
+  --border: var(--g-border);
+  --text: var(--g-text);
+  --muted: var(--g-muted);
+}
+</style>
+
 </head>
 <body>
 <div class="phone">
 
   <div class="header">
     <button class="back-btn" onclick="history.back()">&#8592;</button>
-    <h1>Notification</h1>
+    <h1 data-i18n="notif.title">Notification</h1>
   </div>
 
   <div class="card">
     <div class="row">
       <div class="row-text">
-        <div class="row-title">Push Notifications</div>
-        <div class="row-sub">Receive push notifications</div>
+        <div class="row-title" data-i18n="notif.push">Push Notifications</div>
+        <div class="row-sub" data-i18n="notif.pushSub">Receive push notifications</div>
       </div>
       <label class="switch">
         <input type="checkbox" id="pushToggle" checked onchange="togglePush()">
@@ -205,12 +217,12 @@
     </div>
   </div>
 
-  <div class="section-label">Notification Preferences</div>
+  <div class="section-label" data-i18n="notif.prefTitle">Notification Preferences</div>
   <div class="card" id="prefsCard">
     <div class="row">
       <div class="row-text">
-        <div class="row-title">New Tournament Updates</div>
-        <div class="row-sub">Get noticed about new tournaments</div>
+        <div class="row-title" data-i18n="notif.tournament">New Tournament Updates</div>
+        <div class="row-sub" data-i18n="notif.tournamentSub">Get noticed about new tournaments</div>
       </div>
       <label class="switch">
         <input type="checkbox" id="prefTournament" checked>
@@ -220,8 +232,8 @@
 
     <div class="row">
       <div class="row-text">
-        <div class="row-title">Match Reminders</div>
-        <div class="row-sub">Get reminded before matches</div>
+        <div class="row-title" data-i18n="notif.match">Match Reminders</div>
+        <div class="row-sub" data-i18n="notif.matchSub">Get reminded before matches</div>
       </div>
       <label class="switch">
         <input type="checkbox" id="prefMatch" checked>
@@ -231,8 +243,8 @@
 
     <div class="row">
       <div class="row-text">
-        <div class="row-title">Win &amp; Rewards</div>
-        <div class="row-sub">Get notified about wins &amp; rewards</div>
+        <div class="row-title" data-i18n="notif.win">Win &amp; Rewards</div>
+        <div class="row-sub" data-i18n="notif.winSub">Get notified about wins &amp; rewards</div>
       </div>
       <label class="switch">
         <input type="checkbox" id="prefWin" checked>
@@ -242,8 +254,8 @@
 
     <div class="row">
       <div class="row-text">
-        <div class="row-title">Promotions &amp; Offers</div>
-        <div class="row-sub">Receive special offers &amp; promo</div>
+        <div class="row-title" data-i18n="notif.promo">Promotions &amp; Offers</div>
+        <div class="row-sub" data-i18n="notif.promoSub">Receive special offers &amp; promo</div>
       </div>
       <label class="switch">
         <input type="checkbox" id="prefPromo">
@@ -253,12 +265,12 @@
   </div>
 
   <div id="quietSection">
-  <div class="section-label">Quiet Hours</div>
+  <div class="section-label" data-i18n="notif.quietTitle">Quiet Hours</div>
   <div class="card">
     <div class="row">
       <div class="row-text">
-        <div class="row-title">Enable Quiet Hours</div>
-        <div class="row-sub">Mute notifications during set hours</div>
+        <div class="row-title" data-i18n="notif.quietEnable">Enable Quiet Hours</div>
+        <div class="row-sub" data-i18n="notif.quietEnableSub">Mute notifications during set hours</div>
       </div>
       <label class="switch">
         <input type="checkbox" id="quietHoursToggle" checked onchange="toggleQuietHours()">
@@ -267,7 +279,7 @@
     </div>
 
     <div class="time-row" id="startTimeRow">
-      <div class="time-title">Start Time</div>
+      <div class="time-title" data-i18n="notif.startTime">Start Time</div>
       <div class="time-right">
         <span id="startTimeText">10:00 PM</span>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -277,7 +289,7 @@
       <input type="time" id="startTimeInput" class="hidden-time-input" value="22:00" onchange="updateTime('start')">
     </div>
     <div class="time-row" id="endTimeRow">
-      <div class="time-title">End Time</div>
+      <div class="time-title" data-i18n="notif.endTime">End Time</div>
       <div class="time-right">
         <span id="endTimeText">08:00 AM</span>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -288,7 +300,7 @@
     </div>
   </div>
 
-  <div class="footnote" id="quietFootnote">You will not receive notifications during quiet hours.</div>
+  <div class="footnote" id="quietFootnote" data-i18n="notif.footnoteOn">You will not receive notifications during quiet hours.</div>
   </div>
 
 </div>
@@ -316,13 +328,23 @@ function updateTime(which){
   }
 }
 
+function getMsg(key, fallback){
+  try{
+    var lang = (window.CHTEO && window.CHTEO.getLangPref()) || 'en';
+    var dict = (window.CHTEO && window.CHTEO.translations[lang]) || {};
+    return dict[key] || fallback;
+  }catch(e){ return fallback; }
+}
+
 function toggleQuietHours(){
   const enabled = document.getElementById('quietHoursToggle').checked;
   document.getElementById('startTimeRow').classList.toggle('disabled', !enabled);
   document.getElementById('endTimeRow').classList.toggle('disabled', !enabled);
-  document.getElementById('quietFootnote').textContent = enabled
-    ? 'You will not receive notifications during quiet hours.'
-    : 'Quiet hours is off. You will receive notifications at all times.';
+  const footnote = document.getElementById('quietFootnote');
+  footnote.textContent = enabled
+    ? getMsg('notif.footnoteOn', 'You will not receive notifications during quiet hours.')
+    : getMsg('notif.footnoteOff', 'Quiet hours is off. You will receive notifications at all times.');
+  footnote.setAttribute('data-i18n', enabled ? 'notif.footnoteOn' : 'notif.footnoteOff');
 }
 
 // remembers each toggle's state from before push notifications was turned off

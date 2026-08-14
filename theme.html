@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Theme</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
 <style>
   :root{
     --bg:#0b0f19;
@@ -123,17 +125,28 @@
     transform:translate(-50%,-50%);
   }
 </style>
+<style>
+:root{
+  --bg: var(--g-bg);
+  --card: var(--g-surface);
+  --card-2: var(--g-surface-2);
+  --border: var(--g-border);
+  --text: var(--g-text);
+  --muted: var(--g-muted);
+}
+</style>
+
 </head>
 <body>
 <div class="phone">
 
   <div class="header">
     <button class="back-btn" onclick="history.back()">&#8592;</button>
-    <h1>Theme</h1>
+    <h1 data-i18n="theme.title">Theme</h1>
   </div>
 
   <div class="card">
-    <div class="card-title">Choose Theme</div>
+    <div class="card-title" data-i18n="theme.chooseTheme">Choose Theme</div>
 
     <div class="theme-option" data-theme="system" onclick="selectTheme('system')">
       <div class="option-icon">
@@ -143,8 +156,8 @@
         </svg>
       </div>
       <div class="option-text">
-        <div class="option-title">System Default</div>
-        <div class="option-sub">Follow system setting</div>
+        <div class="option-title" data-i18n="theme.system">System Default</div>
+        <div class="option-sub" data-i18n="theme.systemSub">Follow system setting</div>
       </div>
       <div class="radio"></div>
     </div>
@@ -157,8 +170,8 @@
         </svg>
       </div>
       <div class="option-text">
-        <div class="option-title">Light Mode</div>
-        <div class="option-sub">Light theme</div>
+        <div class="option-title" data-i18n="theme.light">Light Mode</div>
+        <div class="option-sub" data-i18n="theme.lightSub">Light theme</div>
       </div>
       <div class="radio"></div>
     </div>
@@ -170,8 +183,8 @@
         </svg>
       </div>
       <div class="option-text">
-        <div class="option-title">Dark Mode</div>
-        <div class="option-sub">Dark theme</div>
+        <div class="option-title" data-i18n="theme.dark">Dark Mode</div>
+        <div class="option-sub" data-i18n="theme.darkSub">Dark theme</div>
       </div>
       <div class="radio"></div>
     </div>
@@ -186,7 +199,18 @@ function selectTheme(theme){
     el.classList.toggle('active', el.dataset.theme === theme);
   });
   window.selectedTheme = theme;
+  // Persist + apply immediately across the whole site (localStorage-backed)
+  if(window.CHTEO && window.CHTEO.setThemePref){
+    window.CHTEO.setThemePref(theme);
+  }
 }
+
+// Reflect whatever theme preference is already active (persists across pages/refresh)
+document.addEventListener('DOMContentLoaded', function(){
+  if(window.CHTEO && window.CHTEO.getThemePref){
+    selectTheme(window.CHTEO.getThemePref());
+  }
+});
 </script>
 
 </body>

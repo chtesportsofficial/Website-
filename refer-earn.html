@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Refer & Earn</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
 <style>
   :root{
     --bg:#0b0f19;
@@ -292,6 +294,17 @@
     margin-top:1px;
   }
 </style>
+<style>
+:root{
+  --bg: var(--g-bg);
+  --card: var(--g-surface);
+  --card-2: var(--g-surface-2);
+  --border: var(--g-border);
+  --text: var(--g-text);
+  --muted: var(--g-muted);
+}
+</style>
+
 </head>
 <body>
 <div class="phone">
@@ -299,7 +312,7 @@
   <div class="header">
     <div class="header-left">
       <button class="back-btn" onclick="history.back()">&#8592;</button>
-      <h1>Refer &amp; Earn</h1>
+      <h1 data-i18n="refer.title">Refer &amp; Earn</h1>
     </div>
   </div>
 
@@ -314,9 +327,9 @@
         </svg>
       </div>
       <div class="stat-text">
-        <div class="stat-label">Total Commissions</div>
+        <div class="stat-label" data-i18n="refer.totalCommissions">Total Commissions</div>
         <div class="stat-value">৳0</div>
-        <div class="stat-sub">Lifetime earnings from your referred friends</div>
+        <div class="stat-sub" data-i18n="refer.totalCommissionsSub">Lifetime earnings from your referred friends</div>
       </div>
     </div>
 
@@ -330,9 +343,9 @@
             <path d="M15.5 13.2c2.4.4 4 2 4 5.8" stroke="#22c55e" stroke-width="1.6" stroke-linecap="round"/>
           </svg>
         </div>
-        <div class="stat-label">Registered Members</div>
+        <div class="stat-label" data-i18n="refer.registeredMembers">Registered Members</div>
         <div class="stat-value">0</div>
-        <div class="stat-sub">Members who registered and deposited</div>
+        <div class="stat-sub" data-i18n="refer.registeredMembersSub">Members who registered and deposited</div>
       </div>
 
       <div class="stat-card">
@@ -343,9 +356,9 @@
             <path d="M5 11v5c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6v-5" stroke="#5aa9f7" stroke-width="1.6"/>
           </svg>
         </div>
-        <div class="stat-label">Total Deposit Amount</div>
+        <div class="stat-label" data-i18n="refer.totalDeposit">Total Deposit Amount</div>
         <div class="stat-value">৳0</div>
-        <div class="stat-sub">Total deposit amount by your referred members</div>
+        <div class="stat-sub" data-i18n="refer.totalDepositSub">Total deposit amount by your referred members</div>
       </div>
     </div>
   </div>
@@ -361,13 +374,13 @@
         </svg>
       </div>
       <div class="action-body">
-        <div class="action-title">Invitation Link</div>
-        <div class="action-sub">Share your unique link and invite friends</div>
+        <div class="action-title" data-i18n="refer.invitationLink">Invitation Link</div>
+        <div class="action-sub" data-i18n="refer.invitationLinkSub">Share your unique link and invite friends</div>
         <div class="input-row">
           <input type="text" id="inviteLink" value="https://yoursite.com/register?ref=YOURCODE" readonly>
           <button class="copy-btn" onclick="copyField('inviteLink', this)">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="9" y="9" width="11" height="11" rx="2" stroke="#fff" stroke-width="1.7"/><rect x="4" y="4" width="11" height="11" rx="2" stroke="#fff" stroke-width="1.7"/></svg>
-            Copy
+            <span data-i18n="refer.copy">Copy</span>
           </button>
         </div>
       </div>
@@ -381,13 +394,13 @@
         </svg>
       </div>
       <div class="action-body">
-        <div class="action-title">Invitation Code</div>
-        <div class="action-sub">Share your code and invite friends</div>
+        <div class="action-title" data-i18n="refer.invitationCode">Invitation Code</div>
+        <div class="action-sub" data-i18n="refer.invitationCodeSub">Share your code and invite friends</div>
         <div class="input-row">
           <input type="text" id="inviteCode" value="YOURCODE" readonly>
           <button class="copy-btn" onclick="copyField('inviteCode', this)">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="9" y="9" width="11" height="11" rx="2" stroke="#fff" stroke-width="1.7"/><rect x="4" y="4" width="11" height="11" rx="2" stroke="#fff" stroke-width="1.7"/></svg>
-            Copy
+            <span data-i18n="refer.copy">Copy</span>
           </button>
         </div>
       </div>
@@ -403,8 +416,8 @@
         </svg>
       </div>
       <div class="action-body">
-        <div class="action-title">Share Invitation</div>
-        <div class="action-sub">Share via social platforms</div>
+        <div class="action-title" data-i18n="refer.share">Share Invitation</div>
+        <div class="action-sub" data-i18n="refer.shareSub">Share via social platforms</div>
         <div class="share-icons">
           <button class="share-btn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="#25D366"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2z"/></svg>
@@ -439,8 +452,8 @@
         </svg>
       </div>
       <div class="action-body">
-        <div class="action-title">Commission Details</div>
-        <div class="action-sub" style="margin-bottom:0;">See the earnings you get from your referred members</div>
+        <div class="action-title" data-i18n="refer.commissionDetails">Commission Details</div>
+        <div class="action-sub" style="margin-bottom:0;" data-i18n="refer.commissionDetailsSub">See the earnings you get from your referred members</div>
       </div>
     </div>
 
@@ -448,23 +461,23 @@
       <table>
         <thead>
           <tr>
-            <th>Joining Date</th>
-            <th>Team Name</th>
-            <th>Phone</th>
-            <th>Deposit Amount</th>
-            <th>Commission</th>
-            <th>Status</th>
+            <th data-i18n="refer.colJoinDate">Joining Date</th>
+            <th data-i18n="refer.colTeamName">Team Name</th>
+            <th data-i18n="refer.colPhone">Phone</th>
+            <th data-i18n="refer.colDeposit">Deposit Amount</th>
+            <th data-i18n="refer.colCommission">Commission</th>
+            <th data-i18n="refer.colStatus">Status</th>
           </tr>
         </thead>
         <tbody>
           <tr class="empty-row">
-            <td colspan="6">No commissions yet.</td>
+            <td colspan="6" data-i18n="refer.noCommissions">No commissions yet.</td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <a href="#" class="view-all">View All</a>
+    <a href="#" class="view-all" data-i18n="refer.viewAll">View All</a>
   </div>
 
   <!-- rules -->
@@ -477,8 +490,8 @@
         </svg>
       </div>
       <div class="action-body">
-        <div class="action-title">Invitation Rules</div>
-        <div class="action-sub" style="margin-bottom:0;">Please follow the rules to earn commission</div>
+        <div class="action-title" data-i18n="refer.rulesTitle">Invitation Rules</div>
+        <div class="action-sub" style="margin-bottom:0;" data-i18n="refer.rulesSub">Please follow the rules to earn commission</div>
       </div>
     </div>
 
@@ -486,21 +499,21 @@
       <div class="rule-check">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
-      <div>Invite your friends using your link or code.</div>
+      <div data-i18n="refer.rule1">Invite your friends using your link or code.</div>
     </div>
 
     <div class="rule-item">
       <div class="rule-check">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
-      <div>Your friend must register with your link or code and make a deposit to be counted.</div>
+      <div data-i18n="refer.rule2">Your friend must register with your link or code and make a deposit to be counted.</div>
     </div>
 
     <div class="rule-item">
       <div class="rule-check">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
-      <div>You will earn 2% from your friend's deposit.</div>
+      <div data-i18n="refer.rule3">You will earn 2% from your friend's deposit.</div>
     </div>
   </div>
 
