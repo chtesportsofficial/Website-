@@ -52,8 +52,8 @@
     border:none;
     border-radius:20px;
     display:flex;align-items:center;justify-content:center;
-    color:#ffffff;
-    background:#1a1f2e;
+    color:var(--text);
+    background:var(--card);
     cursor:pointer;
     font-size:26px;
     flex-shrink:0;
@@ -62,7 +62,7 @@
     font-size:34px;
     font-weight:800;
     margin:0;
-    color:#f5f6f8;
+    color:var(--text);
   }
 
   /* ---------- generic card ---------- */
@@ -279,7 +279,7 @@
     gap:10px;
     margin-bottom:12px;
     font-size:14px;
-    color:#dbe0ea;
+    color:var(--text);
     line-height:1.5;
   }
   .rule-item:last-child{margin-bottom:0;}
@@ -292,6 +292,12 @@
     justify-content:center;
     flex-shrink:0;
     margin-top:1px;
+  }
+
+  @media(min-width:1024px){
+    .stats-row{ flex-direction:row; }
+    .stats-bottom-row{ flex:1; }
+    .stat-card.hero{ flex:1; }
   }
 </style>
 <style>

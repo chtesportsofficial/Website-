@@ -74,9 +74,15 @@ html[data-theme="light"] .bottomnav{
   width:52px;height:52px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
   background:var(--g-bg);
-  border:2px solid var(--g-accent);
-  box-shadow:0 0 16px rgba(34,224,138,.45);
+  border:2px solid var(--g-border);
+  box-shadow:none;
   font-size:22px;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+/* Only glow when the Support page is the CURRENT page (nav item has .active) */
+.bottomnav .navitem.active .support-fab{
+  border-color:var(--g-accent);
+  box-shadow:0 0 16px rgba(34,224,138,.45);
 }
 
 @media(min-width:701px){
@@ -110,10 +116,13 @@ html[data-theme="light"] .bottomnav{
    On tablet/desktop we widen the readable column and add side padding
    instead of stretching a mobile layout across the whole screen. */
 @media(min-width:701px){
-  .phone,.screen{ max-width:600px; }
+  .phone,.screen{ max-width:620px; }
 }
 @media(min-width:1024px){
-  .phone,.screen{ max-width:720px; padding-left:28px; padding-right:28px; }
+  .phone,.screen{ max-width:760px; padding-left:28px; padding-right:28px; }
+}
+@media(min-width:1440px){
+  .phone,.screen{ max-width:860px; }
 }
 
 /* Language switcher small helper (used on language-select.html trigger elsewhere too) */

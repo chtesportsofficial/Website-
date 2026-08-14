@@ -434,7 +434,14 @@
     "refer-earn.html": "refer",
     "feedback.html": "support",
     "wallet.html": "wallet",
-    "profile.html": "profile"
+    "profile.html": "profile",
+    "edit_profile.html": "profile",
+    "settings.html": "profile",
+    "notification.html": "profile",
+    "theme.html": "profile",
+    "language-select.html": "profile",
+    "change-password.html": "profile",
+    "about-us.html": "profile"
   };
   // Pages that intentionally have no bottom nav (full-screen auth flow)
   var NO_NAV_PAGES = { "chteo_auth.html": true };
