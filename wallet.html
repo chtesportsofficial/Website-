@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wallet</title>
+<style>
+  :root{
+    --bg:#0b0f19;
+    --card:#141a29;
+    --card-2:#171f33;
+    --border:#232c42;
+    --text:#ffffff;
+    --muted:#8a93a6;
+    --green:#22c55e;
+    --green-dark:#16a34a;
+    --orange:#ff7a1a;
+    --red:#ef4444;
+    --red-bg:#3a1620;
+    --red-border:#5c2430;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    font-family:'Segoe UI',Roboto,Arial,sans-serif;
+    color:var(--text);
+    display:flex;
+    justify-content:center;
+    padding:20px 0 60px;
+  }
+  .phone{
+    width:100%;
+    max-width:420px;
+    padding:0 16px;
+  }
+  .header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 4px 20px;
+  }
+  .header-left{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  .back-btn{
+    width:64px;height:64px;
+    border:none;
+    border-radius:20px;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--text);
+    background:#1a1f2e;
+    cursor:pointer;
+    font-size:26px;
+  }
+  .header h1{
+    font-size:34px;
+    font-weight:800;
+    margin:0;
+    color:#f5f6f8;
+  }
+  .uid-chip{
+    border:1px solid #1f4d3a;
+    color:#22c55e;
+    background:rgba(34,197,94,0.08);
+    padding:6px 12px;
+    border-radius:8px;
+    font-size:13px;
+    font-weight:600;
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:18px;
+    margin-bottom:14px;
+  }
+  .balance-card{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:#0d1322;
+    border-color:#2a3a52;
+  }
+  .balance-label{
+    color:var(--muted);
+    font-size:13px;
+    letter-spacing:.5px;
+    margin-bottom:8px;
+  }
+  .balance-amount{
+    font-size:30px;
+    font-weight:700;
+  }
+  .wallet-icon{
+    width:56px;height:56px;
+    opacity:.55;
+  }
+  .split-card{
+    display:flex;
+  }
+  .split-item{
+    flex:1;
+    text-align:center;
+  }
+  .split-item .lbl{
+    color:var(--muted);
+    font-size:13px;
+    margin-bottom:8px;
+  }
+  .split-item .val{
+    font-size:20px;
+    font-weight:700;
+  }
+  .split-item.withdrawable .val{color:var(--green);}
+  .split-item.non-withdrawable .val{color:var(--orange);}
+  .divider-v{
+    width:1px;
+    background:var(--border);
+    margin:2px 14px;
+  }
+  .row-card{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .row-card .lbl{color:var(--muted);font-size:14px;}
+  .row-card .val{font-size:16px;font-weight:600;}
+
+  .prize-card{
+    padding:14px 16px;
+  }
+  .prize-title{
+    font-size:14px;
+    font-weight:600;
+    color:var(--muted);
+    margin-bottom:6px;
+  }
+  .prize-amount{
+    display:flex;
+    align-items:center;
+    font-size:22px;
+    font-weight:700;
+    line-height:1;
+    margin-bottom:4px;
+  }
+  .prize-amount .taka{
+    color:var(--text);
+    margin-right:2px;
+  }
+  .prize-sub{
+    color:var(--muted);
+    font-size:12px;
+  }
+
+  .toggle-row{
+    display:flex;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:6px;
+    margin-bottom:16px;
+    gap:6px;
+  }
+  .toggle-btn{
+    flex:1;
+    border:none;
+    border-radius:10px;
+    padding:14px 0;
+    font-size:15px;
+    font-weight:700;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    cursor:pointer;
+    background:transparent;
+    color:var(--text);
+    transition:.15s ease;
+  }
+  .toggle-btn.active-add{
+    background:var(--green);
+    color:#06210f;
+  }
+  .toggle-btn.active-withdraw{
+    background:var(--red);
+    color:#2c0a0a;
+  }
+
+  .panel{
+    display:none;
+  }
+  .panel.active{
+    display:block;
+  }
+
+  .min-withdraw-note{
+    color:var(--red);
+    font-size:13px;
+    font-weight:600;
+    margin-bottom:12px;
+  }
+  .field-label{
+    color:var(--muted);
+    font-size:13px;
+    margin:2px 0 8px;
+  }
+  input, select{
+    width:100%;
+    background:var(--card-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:16px 14px;
+    border-radius:10px;
+    font-size:15px;
+    margin-bottom:14px;
+    outline:none;
+    appearance:none;
+    -webkit-appearance:none;
+  }
+  input::placeholder{color:#6b7386;}
+  select{
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='%238a93a6' viewBox='0 0 16 16'><path d='M8 11L2 5h12z'/></svg>");
+    background-repeat:no-repeat;
+    background-position:right 14px center;
+    cursor:pointer;
+  }
+  .btn{
+    width:100%;
+    border:none;
+    border-radius:10px;
+    padding:16px 0;
+    font-size:16px;
+    font-weight:700;
+    cursor:pointer;
+    color:#fff;
+  }
+  .btn-deposit{
+    background:var(--green);
+    color:#06210f;
+  }
+  .btn-withdraw{
+    background:var(--red);
+  }
+
+  .history-title{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color:var(--muted);
+    font-size:13px;
+    letter-spacing:.5px;
+    margin:20px 4px 10px;
+  }
+  .history-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:30px 16px;
+    text-align:center;
+    color:var(--muted);
+    font-size:14px;
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <div class="header">
+    <div class="header-left">
+      <button class="back-btn">&#8592;</button>
+      <h1>Wallet</h1>
+    </div>
+    <div class="uid-chip">UID: #99</div>
+  </div>
+
+  <div class="card prize-card">
+    <div class="prize-title">Total Prize Won</div>
+    <div class="prize-amount"><span class="taka">৳</span>0</div>
+    <div class="prize-sub">Total amount your team earned over its lifetime</div>
+  </div>
+
+  <div class="card balance-card">
+    <div>
+      <div class="balance-label">CURRENT BALANCE</div>
+      <div class="balance-amount">৳0</div>
+    </div>
+    <svg class="wallet-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3 7a2 2 0 0 1 2-2h13a1 1 0 0 1 1 1v2H5" stroke="#8a93a6" stroke-width="1.5"/>
+      <rect x="3" y="7" width="18" height="12" rx="2" stroke="#8a93a6" stroke-width="1.5"/>
+      <circle cx="16" cy="13" r="1.6" fill="#8a93a6"/>
+    </svg>
+  </div>
+
+  <div class="card split-card">
+    <div class="split-item withdrawable">
+      <div class="lbl">Withdrawable</div>
+      <div class="val">৳0</div>
+    </div>
+    <div class="divider-v"></div>
+    <div class="split-item non-withdrawable">
+      <div class="lbl">Non-Withdrawable</div>
+      <div class="val">৳0</div>
+    </div>
+  </div>
+
+  <div class="toggle-row">
+    <button id="tabAdd" class="toggle-btn active-add" onclick="showPanel('add')">&#8600; Add Money</button>
+    <button id="tabWithdraw" class="toggle-btn" onclick="showPanel('withdraw')">&#8599; Withdraw</button>
+  </div>
+
+  <!-- ADD MONEY PANEL -->
+  <div id="panelAdd" class="panel active">
+    <div class="card">
+      <input type="number" placeholder="Enter the Amount">
+      <button class="btn btn-deposit">Deposit</button>
+    </div>
+  </div>
+
+  <!-- WITHDRAW PANEL -->
+  <div id="panelWithdraw" class="panel">
+    <div class="card">
+      <div class="min-withdraw-note">Minimum Withdraw: 50 BDT</div>
+      <select id="paymentMethod" onchange="updateNumberLabel()">
+        <option value="" disabled selected>Select Payment Method</option>
+        <option value="Bkash">Bkash</option>
+        <option value="Nagad">Nagad</option>
+      </select>
+
+      <input type="number" placeholder="Enter your Amount">
+
+      <input type="text" id="numberInput" placeholder="Enter your number">
+
+      <button class="btn btn-withdraw">Request Withdraw</button>
+    </div>
+  </div>
+
+  <div class="history-title">&#8635; RECENT TRANSACTIONS</div>
+  <div class="history-card">No transactions yet.</div>
+
+</div>
+
+<script>
+function showPanel(which){
+  const panelAdd = document.getElementById('panelAdd');
+  const panelWithdraw = document.getElementById('panelWithdraw');
+  const tabAdd = document.getElementById('tabAdd');
+  const tabWithdraw = document.getElementById('tabWithdraw');
+
+  if(which === 'add'){
+    panelAdd.classList.add('active');
+    panelWithdraw.classList.remove('active');
+    tabAdd.classList.add('active-add');
+    tabWithdraw.classList.remove('active-withdraw');
+  } else {
+    panelWithdraw.classList.add('active');
+    panelAdd.classList.remove('active');
+    tabWithdraw.classList.add('active-withdraw');
+    tabAdd.classList.remove('active-add');
+  }
+}
+
+function updateNumberLabel(){
+  const method = document.getElementById('paymentMethod').value;
+  const input = document.getElementById('numberInput');
+  input.value = '';
+  input.placeholder = method ? ('Enter your ' + method + ' number') : 'Enter your number';
+}
+</script>
+
+</body>
+</html>
