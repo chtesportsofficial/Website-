@@ -22,9 +22,9 @@ input,select{width:100%;border:0;outline:0;background:transparent;color:var(--te
 @media(max-width:380px){.back-btn{width:60px;height:60px}.topbar h1{font-size:25px}.photo-card{height:330px}.avatar,.avatar-wrap{width:160px;height:160px}}
 
 /* Photo picker bottom sheet */
-.sheet-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20;align-items:flex-end;justify-content:center}
+.sheet-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;align-items:flex-end;justify-content:center}
 .sheet-overlay.open{display:flex}
-.sheet{width:100%;max-width:420px;background:var(--card);border:1px solid var(--border);border-bottom:none;border-radius:22px 22px 0 0;padding:10px 20px 26px;animation:sheetUp .18s ease-out}
+.sheet{width:100%;max-width:420px;background:var(--card);border:1px solid var(--border);border-bottom:none;border-radius:22px 22px 0 0;padding:10px 20px calc(26px + env(safe-area-inset-bottom, 0px) + 90px);animation:sheetUp .18s ease-out;max-height:82vh;overflow-y:auto}
 @keyframes sheetUp{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}
 .sheet-handle{width:44px;height:4px;border-radius:3px;background:var(--border);margin:6px auto 16px}
 .sheet-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
