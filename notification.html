@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notification</title>
+<style>
+  :root{
+    --bg:#0b0f19;
+    --card:#141a29;
+    --border:#232c42;
+    --text:#ffffff;
+    --muted:#8a93a6;
+    --purple:#7c3aed;
+    --off:#3a4360;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    font-family:'Segoe UI',Roboto,Arial,sans-serif;
+    color:var(--text);
+    display:flex;
+    justify-content:center;
+    padding:20px 0 60px;
+  }
+  .phone{
+    width:100%;
+    max-width:460px;
+    padding:0 16px;
+  }
+
+  .header{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    padding:10px 4px 22px;
+  }
+  .back-btn{
+    width:44px;height:44px;
+    border:1px solid var(--border);
+    border-radius:13px;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--text);
+    background:transparent;
+    cursor:pointer;
+    font-size:18px;
+    flex-shrink:0;
+  }
+  .header h1{
+    font-size:20px;
+    font-weight:800;
+    letter-spacing:.5px;
+    margin:0;
+    text-transform:uppercase;
+  }
+
+  .section-label{
+    color:var(--muted);
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:.5px;
+    text-transform:uppercase;
+    margin:22px 4px 10px;
+  }
+  .section-label:first-of-type{
+    margin-top:0;
+  }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:6px 16px;
+  }
+
+  .row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:15px 2px;
+    transition:opacity .15s ease;
+  }
+  .row + .row{
+    border-top:1px solid var(--border);
+  }
+  .row.disabled{
+    opacity:.4;
+    pointer-events:none;
+  }
+  .row-text{
+    flex:1;
+    min-width:0;
+  }
+  .row-title{
+    font-size:14.5px;
+    font-weight:700;
+    margin-bottom:2px;
+  }
+  .row-sub{
+    color:var(--muted);
+    font-size:12px;
+  }
+
+  /* toggle switch */
+  .switch{
+    position:relative;
+    width:46px;height:26px;
+    flex-shrink:0;
+    cursor:pointer;
+  }
+  .switch input{
+    opacity:0;
+    width:0;height:0;
+    position:absolute;
+  }
+  .slider{
+    position:absolute;
+    inset:0;
+    background:var(--off);
+    border-radius:999px;
+    transition:.2s ease;
+  }
+  .slider::before{
+    content:"";
+    position:absolute;
+    width:20px;height:20px;
+    left:3px;top:3px;
+    background:#ffffff;
+    border-radius:50%;
+    transition:.2s ease;
+  }
+  .switch input:checked + .slider{
+    background:var(--purple);
+  }
+  .switch input:checked + .slider::before{
+    transform:translateX(20px);
+  }
+
+  /* quiet hours time rows */
+  .time-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:16px 2px;
+    cursor:pointer;
+    position:relative;
+    transition:opacity .15s ease;
+  }
+  .time-row.disabled{
+    opacity:.4;
+    pointer-events:none;
+  }
+  .time-row + .time-row{
+    border-top:1px solid var(--border);
+  }
+  .time-title{
+    font-size:14.5px;
+    font-weight:700;
+  }
+  .time-right{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color:var(--muted);
+    font-size:14px;
+  }
+  .hidden-time-input{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    opacity:0;
+    border:none;
+    cursor:pointer;
+  }
+
+  .footnote{
+    color:var(--muted);
+    font-size:12px;
+    text-align:center;
+    margin:18px 8px 0;
+    line-height:1.5;
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <div class="header">
+    <button class="back-btn">&#8592;</button>
+    <h1>Notification</h1>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <div class="row-text">
+        <div class="row-title">Push Notifications</div>
+        <div class="row-sub">Receive push notifications</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="pushToggle" checked onchange="togglePush()">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <div class="section-label">Notification Preferences</div>
+  <div class="card" id="prefsCard">
+    <div class="row">
+      <div class="row-text">
+        <div class="row-title">New Tournament Updates</div>
+        <div class="row-sub">Get noticed about new tournaments</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="prefTournament" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="row">
+      <div class="row-text">
+        <div class="row-title">Match Reminders</div>
+        <div class="row-sub">Get reminded before matches</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="prefMatch" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="row">
+      <div class="row-text">
+        <div class="row-title">Win &amp; Rewards</div>
+        <div class="row-sub">Get notified about wins &amp; rewards</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="prefWin" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="row">
+      <div class="row-text">
+        <div class="row-title">Promotions &amp; Offers</div>
+        <div class="row-sub">Receive special offers &amp; promo</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="prefPromo">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <div id="quietSection">
+  <div class="section-label">Quiet Hours</div>
+  <div class="card">
+    <div class="row">
+      <div class="row-text">
+        <div class="row-title">Enable Quiet Hours</div>
+        <div class="row-sub">Mute notifications during set hours</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="quietHoursToggle" checked onchange="toggleQuietHours()">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="time-row" id="startTimeRow">
+      <div class="time-title">Start Time</div>
+      <div class="time-right">
+        <span id="startTimeText">10:00 PM</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M9 6l6 6-6 6" stroke="#8a93a6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <input type="time" id="startTimeInput" class="hidden-time-input" value="22:00" onchange="updateTime('start')">
+    </div>
+    <div class="time-row" id="endTimeRow">
+      <div class="time-title">End Time</div>
+      <div class="time-right">
+        <span id="endTimeText">08:00 AM</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M9 6l6 6-6 6" stroke="#8a93a6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <input type="time" id="endTimeInput" class="hidden-time-input" value="08:00" onchange="updateTime('end')">
+    </div>
+  </div>
+
+  <div class="footnote" id="quietFootnote">You will not receive notifications during quiet hours.</div>
+  </div>
+
+</div>
+
+<script>
+function formatTime12h(value){
+  // value is "HH:MM" in 24h format
+  const [hStr, mStr] = value.split(':');
+  let h = parseInt(hStr, 10);
+  const m = mStr;
+  const period = h >= 12 ? 'PM' : 'AM';
+  h = h % 12;
+  if(h === 0) h = 12;
+  const hDisplay = h.toString().padStart(2, '0');
+  return `${hDisplay}:${m} ${period}`;
+}
+
+function updateTime(which){
+  if(which === 'start'){
+    const val = document.getElementById('startTimeInput').value;
+    if(val) document.getElementById('startTimeText').textContent = formatTime12h(val);
+  } else {
+    const val = document.getElementById('endTimeInput').value;
+    if(val) document.getElementById('endTimeText').textContent = formatTime12h(val);
+  }
+}
+
+function toggleQuietHours(){
+  const enabled = document.getElementById('quietHoursToggle').checked;
+  document.getElementById('startTimeRow').classList.toggle('disabled', !enabled);
+  document.getElementById('endTimeRow').classList.toggle('disabled', !enabled);
+  document.getElementById('quietFootnote').textContent = enabled
+    ? 'You will not receive notifications during quiet hours.'
+    : 'Quiet hours is off. You will receive notifications at all times.';
+}
+
+// remembers each toggle's state from before push notifications was turned off
+let savedStates = null;
+
+function togglePush(){
+  const pushOn = document.getElementById('pushToggle').checked;
+  const prefRows = document.querySelectorAll('#prefsCard .row');
+  const prefToggles = ['prefTournament','prefMatch','prefWin','prefPromo'].map(id => document.getElementById(id));
+  const quietToggle = document.getElementById('quietHoursToggle');
+  const quietSection = document.getElementById('quietSection');
+
+  if(!pushOn){
+    // save current on/off states, then visually turn everything off and lock it
+    savedStates = {
+      prefs: prefToggles.map(t => t.checked),
+      quiet: quietToggle.checked
+    };
+    prefToggles.forEach(t => t.checked = false);
+    quietToggle.checked = false;
+    toggleQuietHours();
+
+    prefRows.forEach(r => r.classList.add('disabled'));
+    quietSection.classList.add('disabled');
+    quietSection.style.opacity = '.4';
+    quietSection.style.pointerEvents = 'none';
+  } else {
+    // restore whatever the toggles were set to before push was disabled
+    prefRows.forEach(r => r.classList.remove('disabled'));
+    quietSection.style.opacity = '';
+    quietSection.style.pointerEvents = '';
+
+    if(savedStates){
+      prefToggles.forEach((t, i) => t.checked = savedStates.prefs[i]);
+      quietToggle.checked = savedStates.quiet;
+    }
+    toggleQuietHours();
+  }
+}
+</script></body>
+</html>
