@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHTEO — Sign in</title>
+<style>
+  :root{
+    --navy-1:#1b2140;
+    --navy-2:#2a3266;
+    --navy-3:#333c7a;
+    --white:#ffffff;
+    --ink:#1b2140;
+    --muted:#7a7f9a;
+    --line:#e2e3ee;
+    --accent:#3557ff;
+    --accent-dark:#2846e0;
+    --error:#e5484d;
+    --radius:16px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    background:
+      radial-gradient(circle at 12% 25%, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 40%),
+      radial-gradient(circle at 90% 12%, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 45%),
+      linear-gradient(160deg, var(--navy-1) 0%, var(--navy-2) 55%, var(--navy-3) 100%);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:40px 16px;
+  }
+
+  .bg-blob{
+    position:fixed;
+    border-radius:50%;
+    background:rgba(255,255,255,0.05);
+    filter:blur(2px);
+    z-index:0;
+  }
+  .blob-a{width:420px;height:420px;top:-120px;left:-160px;}
+  .blob-b{width:320px;height:320px;bottom:-100px;right:-100px;}
+
+  .card{
+    position:relative;
+    z-index:1;
+    width:100%;
+    max-width:400px;
+    background:var(--white);
+    border-radius:28px;
+    padding:38px 32px 32px;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.04);
+    animation:rise .5s ease;
+  }
+  @keyframes rise{
+    from{opacity:0; transform:translateY(14px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+
+  .brand{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    margin-bottom:26px;
+  }
+  .brand img{
+    width:38px;
+    height:38px;
+    object-fit:contain;
+    border-radius:8px;
+  }
+  .brand span{
+    font-weight:800;
+    font-size:18px;
+    letter-spacing:0.5px;
+    color:var(--ink);
+  }
+
+  .tabs{
+    display:flex;
+    gap:28px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:26px;
+  }
+  .tab{
+    background:none;
+    border:none;
+    padding:0 0 12px;
+    font-size:15px;
+    font-weight:700;
+    color:var(--muted);
+    cursor:pointer;
+    position:relative;
+    font-family:inherit;
+  }
+  .tab.active{
+    color:var(--accent);
+  }
+  .tab.active::after{
+    content:'';
+    position:absolute;
+    left:0; right:0; bottom:-1px;
+    height:2px;
+    background:var(--accent);
+    border-radius:2px;
+  }
+
+  .field{
+    margin-bottom:16px;
+  }
+  .field label{
+    display:block;
+    font-size:13px;
+    font-weight:700;
+    color:var(--ink);
+    margin-bottom:7px;
+  }
+  .input-wrap{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px 14px;
+    transition:border-color .15s ease, box-shadow .15s ease;
+    background:var(--white);
+  }
+  .input-wrap:focus-within{
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(53,87,255,0.12);
+  }
+  .input-wrap.error{
+    border-color:var(--error);
+  }
+  .input-wrap svg{flex-shrink:0; color:var(--muted);}
+  .input-wrap input{
+    border:none;
+    outline:none;
+    flex:1;
+    font-size:14.5px;
+    color:var(--ink);
+    font-family:inherit;
+    min-width:0;
+    background:transparent;
+  }
+  .input-wrap input::placeholder{color:#b6b9d0;}
+  .eye-btn{
+    background:none;
+    border:none;
+    padding:2px;
+    cursor:pointer;
+    color:var(--muted);
+    display:flex;
+    flex-shrink:0;
+  }
+  .eye-btn:hover{color:var(--ink);}
+
+  .error-text{
+    font-size:12px;
+    color:var(--error);
+    margin-top:6px;
+    display:none;
+  }
+  .error-text.show{display:block;}
+
+  .forgot{
+    text-align:right;
+    margin:-6px 0 20px;
+  }
+  .forgot a{
+    font-size:12.5px;
+    color:var(--accent);
+    font-weight:600;
+    text-decoration:none;
+  }
+  .forgot a:hover{text-decoration:underline;}
+
+  .submit-btn{
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:12px;
+    background:var(--accent);
+    color:#fff;
+    font-size:15px;
+    font-weight:700;
+    cursor:pointer;
+    font-family:inherit;
+    transition:background .15s ease, transform .1s ease, box-shadow .15s ease;
+    box-shadow:0 10px 20px -8px rgba(53,87,255,0.55);
+  }
+  .submit-btn:hover{background:var(--accent-dark);}
+  .submit-btn:active{transform:scale(0.99);}
+  .submit-btn:disabled{
+    background:#d3d6ea;
+    color:#9a9dbb;
+    cursor:not-allowed;
+    box-shadow:none;
+  }
+
+  .switch-line{
+    text-align:center;
+    margin-top:22px;
+    font-size:13.5px;
+    color:var(--muted);
+  }
+  .switch-line a{
+    color:var(--accent);
+    font-weight:700;
+    text-decoration:none;
+    cursor:pointer;
+  }
+  .switch-line a:hover{text-decoration:underline;}
+
+  .view{display:none;}
+  .view.active{display:block; animation:fadeIn .35s ease;}
+  @keyframes fadeIn{
+    from{opacity:0; transform:translateY(6px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+
+  .toast{
+    position:fixed;
+    bottom:28px;
+    left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--ink);
+    color:#fff;
+    padding:12px 20px;
+    border-radius:10px;
+    font-size:13.5px;
+    font-weight:600;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease;
+    z-index:10;
+    box-shadow:0 12px 30px -10px rgba(0,0,0,0.5);
+  }
+  .toast.show{
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
+  }
+  .toast.success{background:#1c7c4d;}
+</style>
+</head>
+<body>
+
+  <div class="bg-blob blob-a"></div>
+  <div class="bg-blob blob-b"></div>
+
+  <div class="card">
+    <div class="brand">
+      <img src="https://raw.githubusercontent.com/chtesportsofficial/Chteo_img/refs/heads/main/CHTEO%20(1).png" alt="CHTEO logo">
+      <span>CHTEO</span>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" id="tab-signin" onclick="switchView('signin')">Sign in</button>
+      <button class="tab" id="tab-create" onclick="switchView('create')">Create account</button>
+    </div>
+
+    <!-- SIGN IN VIEW -->
+    <div class="view active" id="view-signin">
+      <div class="field">
+        <label for="si-email">Email</label>
+        <div class="input-wrap" id="si-email-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z" stroke="none"/><path d="M22 6l-10 7L2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+          <input type="email" id="si-email" placeholder="Enter your email" autocomplete="email">
+        </div>
+        <div class="error-text" id="si-email-err">Please enter your email.</div>
+      </div>
+
+      <div class="field">
+        <label for="si-password">Password</label>
+        <div class="input-wrap" id="si-password-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.5 12.5 20 3M17 6l3 3M14 9l2 2"/></svg>
+          <input type="password" id="si-password" placeholder="Enter your password" autocomplete="current-password">
+          <button type="button" class="eye-btn" onclick="togglePw('si-password', this)">
+            <svg class="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <div class="error-text" id="si-password-err">Please enter your password.</div>
+      </div>
+
+      <div class="forgot">
+        <a href="#" onclick="showToast('Password reset link would be sent here.'); return false;">Forgot your password?</a>
+      </div>
+
+      <button class="submit-btn" onclick="handleSignin()">Sign in</button>
+
+      <div class="switch-line">
+        Don't have an account? <a onclick="switchView('create')">Create account</a>
+      </div>
+    </div>
+
+    <!-- CREATE ACCOUNT VIEW -->
+    <div class="view" id="view-create">
+      <div class="field">
+        <label for="ca-email">Email</label>
+        <div class="input-wrap" id="ca-email-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 6l-10 7L2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+          <input type="email" id="ca-email" placeholder="Enter your email" autocomplete="email" oninput="validateCreate()">
+        </div>
+        <div class="error-text" id="ca-email-err">Email is required.</div>
+      </div>
+
+      <div class="field">
+        <label for="ca-whatsapp">WhatsApp number</label>
+        <div class="input-wrap" id="ca-whatsapp-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 3.5A10.9 10.9 0 0 0 12 0C5.9 0 1 4.9 1 11c0 1.9.5 3.7 1.4 5.3L1 23l6.9-1.3A11 11 0 0 0 12 22c6.1 0 11-4.9 11-11 0-2.9-1.1-5.7-3.1-7.7z" stroke="none" fill="none"/><path d="M17.5 14.4c-.3-.1-1.7-.8-2-1-.3-.1-.5-.1-.7.1-.2.3-.7 1-.9 1.2-.2.2-.3.2-.6.1-.3-.1-1.2-.5-2.3-1.5-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.1.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1 2.8 1.2 3c.1.2 2 3.1 4.9 4.3.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.7-.7 2-1.4.2-.7.2-1.2.1-1.4-.1-.1-.3-.2-.6-.3z"/><path d="M12 22a10 10 0 0 0 8.7-15A10 10 0 1 0 3.4 20.6L2 22l1.4-.4A10 10 0 0 0 12 22z"/></svg>
+          <input type="tel" id="ca-whatsapp" placeholder="e.g. +8801XXXXXXXXX" autocomplete="tel" oninput="validateCreate()">
+        </div>
+        <div class="error-text" id="ca-whatsapp-err">WhatsApp number is required.</div>
+      </div>
+
+      <div class="field">
+        <label for="ca-password">Password</label>
+        <div class="input-wrap" id="ca-password-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.5 12.5 20 3M17 6l3 3M14 9l2 2"/></svg>
+          <input type="password" id="ca-password" placeholder="Create new password" autocomplete="new-password" oninput="validateCreate()">
+          <button type="button" class="eye-btn" onclick="togglePw('ca-password', this)">
+            <svg class="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <div class="error-text" id="ca-password-err">Password must be at least 6 characters.</div>
+      </div>
+
+      <button class="submit-btn" id="create-btn" onclick="handleCreate()" disabled>Create account</button>
+
+      <div class="switch-line">
+        Already have an account? <a onclick="switchView('signin')">Sign in</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+function switchView(view){
+  document.getElementById('tab-signin').classList.toggle('active', view==='signin');
+  document.getElementById('tab-create').classList.toggle('active', view==='create');
+  document.getElementById('view-signin').classList.toggle('active', view==='signin');
+  document.getElementById('view-create').classList.toggle('active', view==='create');
+  document.title = view === 'signin' ? 'CHTEO — Sign in' : 'CHTEO — Create account';
+}
+
+function togglePw(inputId, btn){
+  const input = document.getElementById(inputId);
+  const icon = btn.querySelector('.eye-icon');
+  if(input.type === 'password'){
+    input.type = 'text';
+    icon.innerHTML = '<path d="M17.9 17.9A10.6 10.6 0 0 1 12 19c-7 0-11-7-11-7a19.6 19.6 0 0 1 4.2-5.1M9.5 5.4A9.9 9.9 0 0 1 12 5c7 0 11 7 11 7a19.6 19.6 0 0 1-2.5 3.4M14.1 14.1a3 3 0 1 1-4.2-4.2"/><path d="M1 1l22 22"/>';
+  } else {
+    input.type = 'password';
+    icon.innerHTML = '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>';
+  }
+}
+
+function showToast(msg, success){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('success', !!success);
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=> t.classList.remove('show'), 2600);
+}
+
+function setError(wrapId, errId, show){
+  document.getElementById(wrapId).classList.toggle('error', show);
+  document.getElementById(errId).classList.toggle('show', show);
+}
+
+function handleSignin(){
+  const email = document.getElementById('si-email').value.trim();
+  const pw = document.getElementById('si-password').value;
+  let ok = true;
+  const emailOk = /\S+@\S+\.\S+/.test(email);
+  setError('si-email-wrap','si-email-err', !emailOk);
+  if(!emailOk) ok = false;
+  setError('si-password-wrap','si-password-err', pw.length === 0);
+  if(pw.length === 0) ok = false;
+
+  if(ok){
+    localStorage.setItem('chteo_logged_in', 'true');
+    showToast('Signed in successfully. Redirecting...', true);
+    setTimeout(() => {
+      window.location.href = 'index.html';
+    }, 700);
+  } else {
+    showToast('Please fill in all fields correctly.');
+  }
+}
+
+function validateCreate(){
+  const email = document.getElementById('ca-email').value.trim();
+  const wa = document.getElementById('ca-whatsapp').value.trim();
+  const pw = document.getElementById('ca-password').value;
+  const emailOk = /\S+@\S+\.\S+/.test(email);
+  const waOk = wa.length >= 8;
+  const pwOk = pw.length >= 6;
+  document.getElementById('create-btn').disabled = !(emailOk && waOk && pwOk);
+  return {emailOk, waOk, pwOk};
+}
+
+function handleCreate(){
+  const {emailOk, waOk, pwOk} = validateCreate();
+  setError('ca-email-wrap','ca-email-err', !emailOk);
+  setError('ca-whatsapp-wrap','ca-whatsapp-err', !waOk);
+  setError('ca-password-wrap','ca-password-err', !pwOk);
+
+  if(emailOk && waOk && pwOk){
+    localStorage.setItem('chteo_logged_in', 'true');
+    showToast('Account created successfully. Redirecting...', true);
+    setTimeout(() => {
+      window.location.href = 'index.html';
+    }, 700);
+  } else {
+    showToast('Please fill in all required fields to create an account.');
+  }
+}
+</script>
+</body>
+</html>

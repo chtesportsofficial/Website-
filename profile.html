@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile</title>
+<style>
+  :root{
+    --bg: #0b0d10;
+    --card: #14171b;
+    --card-2: #1a1e23;
+    --border: #262b31;
+    --green: #22c55e;
+    --green-dim: rgba(34,197,94,0.12);
+    --purple: #a78bfa;
+    --purple-dim: rgba(167,139,250,0.12);
+    --text: #f4f5f7;
+    --muted: #9aa1ab;
+    --red: #ef4444;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    display:flex;
+    justify-content:center;
+    padding:20px 0 60px;
+  }
+  .phone{
+    width:100%;
+    max-width:420px;
+    padding:0 18px;
+  }
+  /* Top bar */
+  .topbar{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    margin-bottom:18px;
+  }
+  .back-btn{
+    width:44px;height:44px;
+    border-radius:12px;
+    background:var(--card);
+    border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    color:var(--text);
+  }
+  .topbar h1{
+    font-size:26px;
+    margin:0;
+    font-weight:800;
+  }
+
+  /* Profile Card */
+  .profile-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:22px;
+    position:relative;
+    margin-bottom:18px;
+  }
+  .country-badge{
+    position:absolute;
+    top:22px; right:22px;
+    background:#1c2027;
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:8px 14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:12px;
+    letter-spacing:0.06em;
+    color:#cfd3d9;
+    font-weight:700;
+  }
+  .flag-dot{
+    width:16px;height:16px;
+    border-radius:50%;
+    background:#0b3d1f;
+    position:relative;
+    overflow:hidden;
+    display:inline-block;
+  }
+  .flag-dot::after{
+    content:"";
+    position:absolute;
+    width:8px;height:8px;
+    border-radius:50%;
+    background:#c8102e;
+    top:50%; left:45%;
+    transform:translate(-50%,-50%);
+  }
+  .avatar-row{
+    display:flex;
+    align-items:center;
+    gap:18px;
+    margin-top:34px;
+  }
+  .avatar{
+    width:110px;height:110px;
+    border-radius:50%;
+    background:#22262c;
+    border:1px solid var(--border);
+    position:relative;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:visible;
+  }
+  .avatar svg{ width:60%; height:60%; opacity:0.55; }
+  .avatar #avatarImg{
+    position:absolute;
+    inset:0;
+    width:100% !important;
+    height:100% !important;
+    border-radius:50%;
+    object-fit:cover;
+    z-index:1;
+  }
+  .team-name{
+    font-size:28px;
+    font-weight:900;
+    letter-spacing:0.01em;
+    margin:0;
+  }
+  .slogan-box{
+    background:#0f1216;
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:14px 16px;
+    margin-top:14px;
+  }
+  .slogan-label{
+    color:var(--green);
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:0.05em;
+    margin-bottom:6px;
+    text-transform:uppercase;
+  }
+  .slogan-text{
+    color:var(--muted);
+    font-size:13.5px;
+    line-height:1.5;
+  }
+
+  /* User info section */
+  .section-title{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:14px;
+    font-weight:800;
+    letter-spacing:0.04em;
+    margin:22px 0 12px;
+  }
+  .section-title .bar{
+    width:4px;height:16px;
+    background:var(--green);
+    border-radius:2px;
+  }
+  .info-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:6px;
+  }
+  .info-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:14px 10px;
+    border-bottom:1px solid var(--border);
+  }
+  .info-row:last-child{ border-bottom:none; }
+  .icon-chip{
+    width:38px;height:38px;
+    border-radius:10px;
+    background:var(--green-dim);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--green);
+    flex-shrink:0;
+  }
+  .info-text{ flex:1; min-width:0; }
+  .info-label{
+    font-size:11px;
+    color:var(--muted);
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    margin-bottom:2px;
+  }
+  .info-value{
+    font-size:15px;
+    font-weight:700;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .copy-btn{
+    width:38px;height:38px;
+    border-radius:10px;
+    background:#1c2027;
+    border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    color:#cfd3d9;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+
+  /* Stats row */
+  .stats-row{
+    display:flex;
+    gap:14px;
+    margin:18px 0;
+  }
+  .stat-card{
+    flex:1;
+    border-radius:18px;
+    padding:18px;
+    position:relative;
+    overflow:hidden;
+    border:1px solid var(--border);
+  }
+  .stat-card.slot{
+    background:linear-gradient(160deg, rgba(34,197,94,0.10), rgba(34,197,94,0.02));
+    border-color:rgba(34,197,94,0.35);
+  }
+  .stat-card.rank{
+    background:linear-gradient(160deg, rgba(167,139,250,0.14), rgba(167,139,250,0.03));
+    border-color:rgba(167,139,250,0.35);
+  }
+  .stat-icon{
+    width:42px;height:42px;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:10px;
+  }
+  .slot .stat-icon{ background:var(--green-dim); color:var(--green); }
+  .rank .stat-icon{ background:var(--purple-dim); color:var(--purple); }
+  .stat-label{
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    margin-bottom:6px;
+  }
+  .slot .stat-label{ color:var(--green); }
+  .rank .stat-label{ color:var(--purple); }
+  .stat-value{ font-size:30px; font-weight:900; }
+
+  /* Menu list */
+  .menu-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:4px 6px;
+    margin-bottom:18px;
+  }
+  .menu-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:14px 10px;
+    border-bottom:1px solid var(--border);
+    cursor:pointer;
+    text-decoration:none;
+    color:inherit;
+  }
+  .menu-row:last-child{ border-bottom:none; }
+  .menu-icon{
+    width:40px;height:40px;
+    border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .menu-icon.green{ background:var(--green-dim); color:var(--green); }
+  .menu-icon.orange{ background:rgba(245,158,11,0.14); color:#f5b342; }
+  .menu-icon.blue-grey{ background:#1c2027; color:#8fb4ff; }
+  .menu-icon.blue{ background:rgba(59,130,246,0.14); color:#5b9bff; }
+  .menu-text{ flex:1; }
+  .menu-title{ font-size:15px; font-weight:800; }
+  .menu-sub{ font-size:12.5px; color:var(--muted); margin-top:2px; }
+  .chevron{ color:#6b7280; }
+
+  .logout-btn{
+    width:100%;
+    padding:16px;
+    border-radius:16px;
+    background:rgba(239,68,68,0.08);
+    border:1px solid rgba(239,68,68,0.45);
+    color:var(--red);
+    font-size:15px;
+    font-weight:800;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    cursor:pointer;
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <div class="topbar">
+    <button class="back-btn" onclick="history.back()" aria-label="Go back">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <h1>Profile</h1>
+  </div>
+
+  <div class="profile-card">
+    <div class="country-badge">
+      <span>BANGLADESH</span>
+      <span class="flag-dot"></span>
+    </div>
+
+    <div class="avatar-row">
+      <div class="avatar" id="avatar">
+        <svg id="avatarPlaceholder" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+        <img id="avatarImg" alt="Profile picture" style="display:none;width:100%;height:100%;object-fit:cover;">
+
+      </div>
+      <div style="flex:1;">
+        <div class="team-name" id="teamName">Team Name</div>
+      </div>
+    </div>
+
+    <div class="slogan-box">
+      <div class="slogan-label" id="sloganLabel">Teams Slogan (up to 50 characters)</div>
+      <div class="slogan-text" id="slogan">Write your team slogan here. You can use up to 50 characters to show your team spirit. Make it short, strong, and unforgettable.</div>
+    </div>
+  </div>
+
+  <div class="section-title"><span class="bar"></span>USER INFORMATION</div>
+  <div class="info-card">
+    <div class="info-row">
+      <div class="icon-chip">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+      </div>
+      <div class="info-text">
+        <div class="info-label">UID</div>
+        <div class="info-value" id="uid">#99</div>
+      </div>
+      <button class="copy-btn" id="copyBtn" type="button" onclick="copyValue('uid')" aria-label="Copy UID">
+        <svg id="copyIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+      </button>
+    </div>
+    <div class="info-row">
+      <div class="icon-chip">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+      </div>
+      <div class="info-text">
+        <div class="info-label">Email</div>
+        <div class="info-value">userid99@gmail.com</div>
+      </div>
+    </div>
+    <div class="info-row">
+      <div class="icon-chip">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-4.1-1.1L3 20l1.1-5.4A8.5 8.5 0 1 1 21 11.5z"/></svg>
+      </div>
+      <div class="info-text">
+        <div class="info-label">WhatsApp</div>
+        <div class="info-value">01999999999</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card slot">
+      <div class="stat-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>
+      </div>
+      <div class="stat-label">Slot Bought</div>
+      <div class="stat-value" id="slotBought">0</div>
+    </div>
+    <div class="stat-card rank">
+      <div class="stat-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 5h3a2 2 0 0 1-2 4M7 5H4a2 2 0 0 0 2 4"/></svg>
+      </div>
+      <div class="stat-label">Team Rank</div>
+      <div class="stat-value" id="teamRank">--</div>
+    </div>
+  </div>
+
+  <div class="menu-card">
+    <a class="menu-row" href="edit_profile.html">
+      <div class="menu-icon green">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+      </div>
+      <div class="menu-text">
+        <div class="menu-title">EDIT PROFILE</div>
+        <div class="menu-sub">Update your personal information</div>
+      </div>
+      <svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+    </a>
+    <a class="menu-row" href="settings.html">
+      <div class="menu-icon orange">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      </div>
+      <div class="menu-text">
+        <div class="menu-title">SETTINGS</div>
+        <div class="menu-sub">Adjust your preferences</div>
+      </div>
+      <svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+    </a>
+    <a class="menu-row" href="feedback.html">
+      <div class="menu-icon blue-grey">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><circle cx="4" cy="12" r="2"/><circle cx="12" cy="10" r="2"/><circle cx="20" cy="14" r="2"/></svg>
+      </div>
+      <div class="menu-text">
+        <div class="menu-title">FEEDBACK</div>
+        <div class="menu-sub">Send us your feedback</div>
+      </div>
+      <svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+    </a>
+    <a class="menu-row" href="about-us.html">
+      <div class="menu-icon blue">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      </div>
+      <div class="menu-text">
+        <div class="menu-title">ABOUT US</div>
+        <div class="menu-sub">Learn more about us</div>
+      </div>
+      <svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+    </a>
+  </div>
+
+  <button class="logout-btn" id="logoutBtn" type="button">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+    LOG OUT
+  </button>
+
+</div>
+
+<script>
+function getProfile(){
+  try { return JSON.parse(localStorage.getItem('user_profile') || '{}'); }
+  catch(e){ return {}; }
+}
+
+function copyValue(id){
+  const el=document.getElementById(id);
+  if(!el) return;
+  const text=el.textContent.trim();
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn=document.getElementById('copyBtn');
+    if(btn) btn.style.color='#22c55e';
+    setTimeout(()=>{ if(btn) btn.style.color=''; },1000);
+  }).catch(()=>{});
+}
+
+(function(){
+  const profile=getProfile();
+
+  // Team name
+  const teamNameEl=document.getElementById('teamName');
+  if(teamNameEl) teamNameEl.textContent = profile.teamName ? profile.teamName : 'Team Name';
+
+  // Slogan
+  const sloganEl=document.getElementById('slogan');
+  const sloganLabelEl=document.getElementById('sloganLabel');
+  if(profile.slogan){
+    if(sloganEl) sloganEl.textContent = '#' + profile.slogan;
+    if(sloganLabelEl) sloganLabelEl.style.display='none';
+  } else {
+    if(sloganEl) sloganEl.textContent = 'Write your team slogan here. You can use up to 50 characters to show your team spirit. Make it short, strong, and unforgettable.';
+    if(sloganLabelEl) sloganLabelEl.style.display='';
+  }
+
+  // Email
+  const emailRow=document.querySelectorAll('.info-row .info-value')[1];
+  if(emailRow) emailRow.textContent = profile.email ? profile.email : 'userid99@gmail.com';
+
+  // WhatsApp
+  const whatsappRow=document.querySelectorAll('.info-row .info-value')[2];
+  if(whatsappRow) whatsappRow.textContent = profile.whatsapp ? profile.whatsapp : '01999999999';
+
+  // Country badge
+  if(profile.country){
+    const badgeSpan=document.querySelector('.country-badge span');
+    if(badgeSpan) badgeSpan.textContent = profile.country.toUpperCase();
+  }
+
+  // Profile picture
+  const savedPicture=localStorage.getItem('profile_picture');
+  if(savedPicture){
+    const avatarImg=document.getElementById('avatarImg');
+    const avatarPlaceholder=document.getElementById('avatarPlaceholder');
+    if(avatarImg){
+      avatarImg.src=savedPicture;
+      avatarImg.style.display='block';
+    }
+    if(avatarPlaceholder) avatarPlaceholder.style.display='none';
+  }
+})();
+
+const logoutBtn=document.getElementById('logoutBtn');
+if(logoutBtn){
+  logoutBtn.addEventListener('click',function(){
+    const confirmed=confirm('আপনি কি লগ আউট করতে চান?');
+    if(!confirmed) return;
+    localStorage.removeItem('user_profile');
+    localStorage.removeItem('profile_picture');
+    window.location.href='index.html';
+  });
+}
+</script>
+</body>
+</html>
