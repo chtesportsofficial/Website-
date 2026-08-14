@@ -106,7 +106,12 @@ function updateSloganStatus(){
 fields.slogan.addEventListener('input',updateSloganStatus);
 updateSloganStatus();
 
-/* Profile picture upload */
+/* Profile picture upload.
+   Selecting a photo only updates the PREVIEW on this page — it is not
+   written to localStorage (and so won't show up on the Profile page)
+   until the user actually taps SAVE CHANGES. */
+let pendingPicture=null; // data URL of a newly-picked-but-not-yet-saved photo
+
 cameraBtn.addEventListener('click',()=>avatarInput.click());
 
 avatarInput.addEventListener('change',()=>{
@@ -120,10 +125,10 @@ avatarInput.addEventListener('change',()=>{
 
   const reader=new FileReader();
   reader.onload=e=>{
-    avatarImg.src=e.target.result;
+    pendingPicture=e.target.result;
+    avatarImg.src=pendingPicture;
     avatarImg.style.display='block';
     avatarPlaceholder.style.display='none';
-    localStorage.setItem('profile_picture',e.target.result);
   };
   reader.readAsDataURL(file);
 });
@@ -152,6 +157,11 @@ document.getElementById('profileForm').addEventListener('submit',e=>{
   const data={};
   Object.keys(fields).forEach(key=>data[key]=fields[key].value.trim());
   setProfile(data);
+
+  // Only now do we actually persist a newly-picked photo.
+  if(pendingPicture){
+    localStorage.setItem('profile_picture',pendingPicture);
+  }
 
   window.location.href='profile.html';
 });
