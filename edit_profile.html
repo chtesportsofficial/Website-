@@ -20,6 +20,25 @@ input,select{width:100%;border:0;outline:0;background:transparent;color:var(--te
 .slogan-wrap{position:relative}.slogan-input{padding-right:70px}.counter{position:absolute;right:18px;top:50%;transform:translateY(-50%);color:#8f949c;font-size:14px;pointer-events:none}.slogan-error{display:none;margin:8px 4px 0;color:var(--red);font-size:13px;font-weight:700}.slogan-wrap.over-limit .input-wrap{border-color:var(--red)}.slogan-wrap.over-limit .counter,.slogan-wrap.over-limit .slogan-error{color:var(--red)}.slogan-wrap.over-limit .slogan-error{display:block}
 .save-btn{width:100%;min-height:74px;border:1px solid #159447;border-radius:17px;background:linear-gradient(180deg,#2bc75f,#1eae50);color:#fff;font-size:18px;font-weight:850;letter-spacing:.04em;cursor:pointer}.save-btn:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:380px){.back-btn{width:60px;height:60px}.topbar h1{font-size:25px}.photo-card{height:330px}.avatar,.avatar-wrap{width:160px;height:160px}}
+
+/* Photo picker bottom sheet */
+.sheet-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20;align-items:flex-end;justify-content:center}
+.sheet-overlay.open{display:flex}
+.sheet{width:100%;max-width:420px;background:var(--card);border:1px solid var(--border);border-bottom:none;border-radius:22px 22px 0 0;padding:10px 20px 26px;animation:sheetUp .18s ease-out}
+@keyframes sheetUp{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}
+.sheet-handle{width:44px;height:4px;border-radius:3px;background:var(--border);margin:6px auto 16px}
+.sheet-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.sheet-header h2{margin:0;font-size:19px;font-weight:800}
+.sheet-icon-btn{width:40px;height:40px;border-radius:50%;border:none;background:transparent;color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.sheet-icon-btn.danger{color:var(--red)}
+.sheet-icon-btn.danger:disabled{opacity:.35;cursor:not-allowed}
+.sheet-icon-btn svg{width:23px;height:23px}
+.sheet-option{display:flex;align-items:center;gap:18px;padding:15px 4px;cursor:pointer;border-radius:12px}
+.sheet-option:active{background:var(--field)}
+.sheet-option .opt-icon{width:34px;height:34px;color:var(--text);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sheet-option .opt-icon svg{width:27px;height:27px}
+.sheet-option span{font-size:16.5px;font-weight:600}
+.sheet-note{font-size:12.5px;color:var(--muted);padding:0 4px 4px;line-height:1.5}
 </style>
 <style>
 :root{
@@ -43,7 +62,8 @@ input,select{width:100%;border:0;outline:0;background:transparent;color:var(--te
 <img id="avatarImg" alt="Profile picture">
 </div>
 <button class="camera-btn" type="button" id="cameraBtn" aria-label="Change profile picture"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
-<input id="avatarInput" type="file" accept="image/*" hidden>
+<input id="galleryInput" type="file" accept="image/*" hidden>
+<input id="cameraInput" type="file" accept="image/*" capture="environment" hidden>
 </div></div>
 
 <div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label" data-i18n="editprofile.whatsapp">WHATSAPP NUMBER :</span></div><div class="input-wrap"><span class="input-icon">☏</span><input id="whatsapp" type="tel" placeholder="Enter your WhatsApp number" data-i18n-placeholder="editprofile.whatsappPh"></div></div>
@@ -61,11 +81,40 @@ input,select{width:100%;border:0;outline:0;background:transparent;color:var(--te
 </form>
 </div>
 
+<div class="sheet-overlay" id="pickerOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <button class="sheet-icon-btn" type="button" id="sheetClose" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      <h2 data-i18n="editprofile.pictureTitle">Profile picture</h2>
+      <button class="sheet-icon-btn danger" type="button" id="sheetDelete" aria-label="Remove photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg></button>
+    </div>
+
+    <div class="sheet-option" id="optCamera">
+      <span class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
+      <span data-i18n="editprofile.camera">Camera</span>
+    </div>
+    <div class="sheet-option" id="optGallery">
+      <span class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></span>
+      <span data-i18n="editprofile.gallery">Gallery</span>
+    </div>
+    <div class="sheet-note" id="cameraNote" data-i18n="editprofile.cameraNote" style="display:none">Camera access needs your permission — your browser will ask before it opens.</div>
+  </div>
+</div>
+
 <script>
 const cameraBtn=document.getElementById('cameraBtn');
-const avatarInput=document.getElementById('avatarInput');
+const galleryInput=document.getElementById('galleryInput');
+const cameraInput=document.getElementById('cameraInput');
 const avatarImg=document.getElementById('avatarImg');
 const avatarPlaceholder=document.getElementById('avatarPlaceholder');
+
+const pickerOverlay=document.getElementById('pickerOverlay');
+const sheetClose=document.getElementById('sheetClose');
+const sheetDelete=document.getElementById('sheetDelete');
+const optCamera=document.getElementById('optCamera');
+const optGallery=document.getElementById('optGallery');
+const cameraNote=document.getElementById('cameraNote');
 
 const fields={
   whatsapp:document.getElementById('whatsapp'),
@@ -84,7 +133,6 @@ function getProfile(){
   try { return JSON.parse(localStorage.getItem('user_profile') || '{}'); }
   catch(e){ return {}; }
 }
-
 function setProfile(data){
   localStorage.setItem('user_profile', JSON.stringify(data));
 }
@@ -106,39 +154,80 @@ function updateSloganStatus(){
 fields.slogan.addEventListener('input',updateSloganStatus);
 updateSloganStatus();
 
-/* Profile picture upload.
-   Selecting a photo only updates the PREVIEW on this page — it is not
-   written to localStorage (and so won't show up on the Profile page)
-   until the user actually taps SAVE CHANGES. */
-let pendingPicture=null; // data URL of a newly-picked-but-not-yet-saved photo
+/* Profile picture: changes only touch the on-page preview + a pending
+   flag. Nothing is written to localStorage until SAVE CHANGES is tapped. */
+let pendingPicture=null;   // data URL of a newly-picked-but-not-yet-saved photo
+let pendingRemoved=false;  // true if the user chose to remove the photo
 
-cameraBtn.addEventListener('click',()=>avatarInput.click());
+function showPicture(src){
+  avatarImg.src=src;
+  avatarImg.style.display='block';
+  avatarPlaceholder.style.display='none';
+}
+function showPlaceholder(){
+  avatarImg.removeAttribute('src');
+  avatarImg.style.display='none';
+  avatarPlaceholder.style.display='';
+}
 
-avatarInput.addEventListener('change',()=>{
-  const file=avatarInput.files && avatarInput.files[0];
+const savedPicture=localStorage.getItem('profile_picture');
+if(savedPicture) showPicture(savedPicture);
+
+function updateDeleteAvailability(){
+  const hasPicture = !!avatarImg.getAttribute('src');
+  sheetDelete.disabled = !hasPicture;
+}
+
+/* Open / close the picker sheet */
+cameraBtn.addEventListener('click',()=>{
+  updateDeleteAvailability();
+  pickerOverlay.classList.add('open');
+});
+function closeSheet(){ pickerOverlay.classList.remove('open'); }
+sheetClose.addEventListener('click',closeSheet);
+pickerOverlay.addEventListener('click',e=>{ if(e.target===pickerOverlay) closeSheet(); });
+
+/* Gallery pick */
+optGallery.addEventListener('click',()=>{ galleryInput.click(); });
+galleryInput.addEventListener('change',()=>{
+  const file=galleryInput.files && galleryInput.files[0];
   if(!file) return;
-
-  if(!file.type.startsWith('image/')){
-    avatarInput.value='';
-    return;
-  }
-
+  if(!file.type.startsWith('image/')){ galleryInput.value=''; return; }
   const reader=new FileReader();
   reader.onload=e=>{
     pendingPicture=e.target.result;
-    avatarImg.src=pendingPicture;
-    avatarImg.style.display='block';
-    avatarPlaceholder.style.display='none';
+    pendingRemoved=false;
+    showPicture(pendingPicture);
+    closeSheet();
   };
   reader.readAsDataURL(file);
 });
 
-const savedPicture=localStorage.getItem('profile_picture');
-if(savedPicture){
-  avatarImg.src=savedPicture;
-  avatarImg.style.display='block';
-  avatarPlaceholder.style.display='none';
-}
+/* Camera capture — the browser/OS shows its own permission prompt
+   the first time cameraInput is opened; nothing extra to code here. */
+optCamera.addEventListener('click',()=>{ cameraInput.click(); });
+cameraInput.addEventListener('change',()=>{
+  const file=cameraInput.files && cameraInput.files[0];
+  if(!file) return;
+  if(!file.type.startsWith('image/')){ cameraInput.value=''; return; }
+  const reader=new FileReader();
+  reader.onload=e=>{
+    pendingPicture=e.target.result;
+    pendingRemoved=false;
+    showPicture(pendingPicture);
+    closeSheet();
+  };
+  reader.readAsDataURL(file);
+});
+
+/* Remove photo (trash icon in the sheet header) */
+sheetDelete.addEventListener('click',()=>{
+  if(sheetDelete.disabled) return;
+  pendingPicture=null;
+  pendingRemoved=true;
+  showPlaceholder();
+  closeSheet();
+});
 
 fields.country.addEventListener('change',function(){
   this.classList.toggle('has-value',!!this.value);
@@ -158,9 +247,10 @@ document.getElementById('profileForm').addEventListener('submit',e=>{
   Object.keys(fields).forEach(key=>data[key]=fields[key].value.trim());
   setProfile(data);
 
-  // Only now do we actually persist a newly-picked photo.
   if(pendingPicture){
     localStorage.setItem('profile_picture',pendingPicture);
+  } else if(pendingRemoved){
+    localStorage.removeItem('profile_picture');
   }
 
   window.location.href='profile.html';
