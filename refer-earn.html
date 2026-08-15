@@ -34,12 +34,6 @@
     max-width:460px;
     padding:0 16px;
   }
-  @media(min-width:640px){
-    .phone{ max-width:600px; padding:0 20px; }
-  }
-  @media(min-width:1024px){
-    .phone{ max-width:1000px; padding:0 24px; }
-  }
 
   /* ---------- header ---------- */
   .header{
@@ -69,10 +63,6 @@
     font-weight:800;
     margin:0;
     color:var(--text);
-  }
-  @media(min-width:1024px){
-    .back-btn{ width:52px; height:52px; font-size:22px; border-radius:16px; }
-    .header h1{ font-size:30px; }
   }
 
   /* ---------- generic card ---------- */
@@ -304,29 +294,10 @@
     margin-top:1px;
   }
 
-  @media(min-width:640px){
+  @media(min-width:1024px){
     .stats-row{ flex-direction:row; }
     .stats-bottom-row{ flex:1; }
     .stat-card.hero{ flex:1; }
-  }
-
-  /* ---------- responsive layout for the lower cards ---------- */
-  .content-grid{
-    display:grid;
-    grid-template-columns:1fr;
-    gap:16px;
-  }
-  .content-grid .card{
-    margin-bottom:0;
-  }
-  @media(min-width:1024px){
-    .content-grid{
-      grid-template-columns:1fr 1fr;
-      align-items:start;
-    }
-    .content-grid .commission-card{
-      grid-column:1 / -1;
-    }
   }
 </style>
 <style>
@@ -397,8 +368,6 @@
       </div>
     </div>
   </div>
-
-  <div class="content-grid">
 
   <!-- invitation link / code / share -->
   <div class="card">
@@ -478,7 +447,7 @@
   </div>
 
   <!-- commission details -->
-  <div class="card commission-card">
+  <div class="card">
     <div class="action-block" style="border-top:none; padding-top:2px;">
       <div class="action-icon">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -552,8 +521,6 @@
       </div>
       <div data-i18n="refer.rule3">You will earn 2% from your friend's deposit.</div>
     </div>
-  </div>
-
   </div>
 
 </div>
