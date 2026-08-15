@@ -209,6 +209,14 @@
       markSelected(window.CHTEO.getLangPref());
     }
   });
+
+  // Fix: force a fresh load if this page itself is restored from bfcache
+  // on Back navigation, so the selected-language radio stays accurate.
+  window.addEventListener('pageshow', function(event){
+    if (event.persisted) {
+      location.reload();
+    }
+  });
 </script>
 
 </body>

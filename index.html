@@ -703,6 +703,19 @@ document.getElementById("vipModal").addEventListener("click", function(e){
     });
   });
 })();
+
+/* ============ Fix: reflect Language/Theme changes on Back ============
+   When you go Back from language-select.html / theme.html, the browser
+   often restores this page from its "bfcache" (a frozen snapshot) instead
+   of reloading it — so a language/theme change made on the other page
+   never gets applied here until you refresh manually. Forcing a reload
+   only when the page is restored from bfcache fixes this with no
+   noticeable delay, and doesn't affect normal first-time page loads. */
+window.addEventListener('pageshow', function(event){
+  if (event.persisted) {
+    location.reload();
+  }
+});
 </script>
 
 </body>
