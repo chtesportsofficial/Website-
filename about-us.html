@@ -20,7 +20,7 @@
     --green-glow: rgba(46,204,113,0.4);
   }
 
-  *{ box-sizing:border-box; margin:0; padding:0; }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
 
   body{
     background: var(--bg);
@@ -57,7 +57,9 @@
     transition: background .2s ease, transform .15s ease;
     flex-shrink:0;
   }
-  .back-btn:hover{ background:#1a1c28; }
+  @media (hover:hover) and (pointer:fine){
+    .back-btn:hover{ background:#1a1c28; }
+  }
   .back-btn:active{ transform:scale(0.94); }
 
   .topbar h1{
@@ -99,7 +101,9 @@
     cursor:pointer;
     transition: border-color .2s ease, background .2s ease, transform .12s ease;
   }
-  .card:hover{ background:#171923; border-color:#2e3245; }
+  @media (hover:hover) and (pointer:fine){
+    .card:hover{ background:#171923; border-color:#2e3245; }
+  }
   .card:active{ transform:scale(0.985); }
 
   .card-left{
@@ -190,7 +194,9 @@
     display:flex; align-items:center; justify-content:center;
     transition: transform .15s ease, filter .2s ease;
   }
-  .social-item:hover .social-icon{ transform:translateY(-3px); filter:brightness(1.1); }
+  @media (hover:hover) and (pointer:fine){
+    .social-item:hover .social-icon{ transform:translateY(-3px); filter:brightness(1.1); }
+  }
   .social-item:active .social-icon{ transform:scale(0.94); }
 
   .social-icon.fb{ background:#1877f2; }
@@ -284,7 +290,7 @@
     </div>
   </a>
 
-  <a class="card" href="feedback.html">
+  <a class="card" href="support.html">
     <div class="card-left">
       <div class="icon-circle">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

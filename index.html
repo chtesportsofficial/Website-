@@ -502,11 +502,18 @@ function goToProfile(){
   var isLoggedIn = localStorage.getItem('chteo_logged_in') === 'true';
   window.location.href = isLoggedIn ? 'profile.html' : 'chteo_auth.html';
 }
+function vipModalHideUI(){
+  document.getElementById("vipModal").classList.remove("show");
+}
 function openVipModal(){
   document.getElementById("vipModal").classList.add("show");
+  // Hooks the modal into the device/browser Back button (global.js):
+  // one Back press closes the modal instead of leaving the page.
+  if(window.CHTEO && CHTEO.openModal) CHTEO.openModal(vipModalHideUI);
 }
 function closeVipModal(){
-  document.getElementById("vipModal").classList.remove("show");
+  vipModalHideUI();
+  if(window.CHTEO && CHTEO.closeModal) CHTEO.closeModal();
 }
 document.getElementById("vipModal").addEventListener("click", function(e){
   if(e.target === this){

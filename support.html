@@ -13,7 +13,7 @@
   --cyan:#21e6c1;--text:#eef1f7;--text-dim:#8b93a9;--text-dimmer:#5b6379;
   --danger:#ff3d5a;
 }
-*{box-sizing:border-box;margin:0;padding:0}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{-webkit-text-size-adjust:100%}
 body{background:var(--bg);color:var(--text);font-family:Arial,"Noto Sans Bengali",sans-serif}
 button{font-family:inherit;cursor:pointer}
@@ -41,7 +41,9 @@ button{font-family:inherit;cursor:pointer}
   transition:border-color .15s ease, transform .1s ease;
 }
 .support-card:active{transform:scale(.99)}
-.support-card:hover{border-color:#334063}
+@media (hover:hover) and (pointer:fine){
+  .support-card:hover{border-color:#334063}
+}
 
 .s-icon{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .s-icon.wa{background:#22e08a;box-shadow:0 0 16px rgba(34,224,138,.35)}

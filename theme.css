@@ -33,6 +33,22 @@ html[data-theme="light"]{
 html{transition:background-color .2s ease;}
 body, .card, .bottomnav, .app-footer{transition:background-color .2s ease, color .2s ease, border-color .2s ease;}
 
+/* ---------- 1b. Kill the native mobile "tap highlight" ----------
+   On touch devices, tapping a link/card/button paints a translucent
+   grey/black highlight over it. If the tap navigates to another page
+   before the highlight has faded, and the user then presses Back, some
+   mobile browsers restore the previous page from cache with that
+   highlight (or a lingering :hover/:active paint) still stuck on the
+   element — it looks like the box "went black" and won't come back to
+   normal. Removing the native highlight (each page still shows its own
+   :active press-down feedback) fixes this without changing any layout,
+   color, or theme. */
+html, body{ -webkit-tap-highlight-color:transparent; }
+a, button, [role="button"], .navitem, .card, .support-card, .menu-row,
+.info-row, .back-btn, .icon-btn, .support-fab, input, select, textarea{
+  -webkit-tap-highlight-color:transparent;
+}
+
 /* ---------- 2. Base page spacing so fixed nav never covers content ---------- */
 body{
   padding-bottom:calc(112px + var(--safe-bottom)) !important;

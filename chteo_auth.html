@@ -401,7 +401,11 @@ function handleSignin(){
     localStorage.setItem('chteo_logged_in', 'true');
     showToast('Signed in successfully. Redirecting...', true);
     setTimeout(() => {
-      window.location.href = 'index.html';
+      // replace(), not href: this sign-in screen shouldn't linger as a
+      // dead entry in history — otherwise one Back press from the home
+      // page would land the user right back on the login form instead
+      // of wherever they actually came from.
+      window.location.replace('index.html');
     }, 700);
   } else {
     showToast('Please fill in all fields correctly.');
@@ -433,7 +437,8 @@ function handleCreate(){
     localStorage.setItem('chteo_referral', document.getElementById('ca-referral').value.trim());
     showToast('Account created successfully. Redirecting...', true);
     setTimeout(() => {
-      window.location.href = 'index.html';
+      // replace(), not href — see the note in handleSignin() above.
+      window.location.replace('index.html');
     }, 700);
   } else {
     showToast('Please fill in all required fields to create an account.');

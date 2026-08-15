@@ -515,7 +515,62 @@
   }
 
   /* =========================================================
-     5. INIT
+     5. STUCK-STATE SAFETY NET (bfcache restore)
+     Mobile browsers can restore a page from the back-forward
+     cache (bfcache) — e.g. after tapping a card/button that
+     navigated away, then pressing Back — with that element's
+     native tap-highlight / :hover / :active paint still applied,
+     because no new touch event ever fired to clear it. Clearing
+     focus and forcing one reflow on restore fixes the stuck
+     visual without altering layout, theme, or navigation.
+     ========================================================= */
+  window.addEventListener("pageshow", function (evt) {
+    if (evt.persisted) {
+      if (document.activeElement && typeof document.activeElement.blur === "function") {
+        document.activeElement.blur();
+      }
+      document.body.classList.add("chteo-reflow");
+      void document.body.offsetHeight; // force a synchronous reflow/repaint
+      document.body.classList.remove("chteo-reflow");
+    }
+  });
+
+  /* =========================================================
+     6. MODAL / BOTTOM-SHEET BACK-BUTTON INTEGRATION
+     A page opens an in-page modal/sheet by calling
+     CHTEO.openModal(closeFn) right after showing it, and closes
+     it by calling CHTEO.closeModal() from every UI control that
+     dismisses it (X button, backdrop tap, choosing an option,
+     etc.) instead of hiding it directly. This makes one press of
+     the device/browser Back button close the modal first rather
+     than leaving the page, and it removes the extra history entry
+     again as soon as the modal is closed normally, so a later
+     Back press still only takes one click to leave the page.
+     ========================================================= */
+  var modalStack = [];
+  function openModal(closeFn) {
+    modalStack.push(closeFn);
+    history.pushState({ chteoModal: true, depth: modalStack.length }, "", window.location.href);
+  }
+  function closeModal() {
+    if (!modalStack.length) return;
+    modalStack.pop();
+    if (history.state && history.state.chteoModal) {
+      history.back();
+    }
+  }
+  window.addEventListener("popstate", function () {
+    // Reached when the user presses Back while a modal we opened is
+    // showing: the browser has already moved off our pushed state,
+    // so just close the modal in place — don't navigate further.
+    if (modalStack.length && !(history.state && history.state.chteoModal)) {
+      var fn = modalStack.pop();
+      if (typeof fn === "function") fn();
+    }
+  });
+
+  /* =========================================================
+     7. INIT
      ========================================================= */
   function init() {
     injectGlobalUI();
@@ -528,7 +583,8 @@
     init();
   }
 
-  // Public API used by theme.html and language-select.html
+  // Public API used by theme.html, language-select.html, and any page
+  // with its own modal/bottom-sheet (edit_profile.html, index.html, ...)
   window.CHTEO = {
     getThemePref: getThemePref,
     setThemePref: setThemePref,
@@ -536,6 +592,8 @@
     getLangPref: getLangPref,
     setLangPref: setLangPref,
     applyLanguage: applyLanguage,
-    translations: translations
+    translations: translations,
+    openModal: openModal,
+    closeModal: closeModal
   };
 })();

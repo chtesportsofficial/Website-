@@ -18,12 +18,12 @@
 .input-wrap{min-height:73px;border:1px solid var(--border);border-radius:17px;background:var(--field);display:flex;align-items:center;gap:18px;padding:0 18px}.input-wrap:focus-within{border-color:rgba(34,197,94,.65)}.input-icon{width:34px;height:34px;color:#b8bdc5;flex-shrink:0;display:flex;align-items:center;justify-content:center}.input-icon svg{width:32px;height:32px}
 input,select{width:100%;border:0;outline:0;background:transparent;color:var(--text);font:inherit;font-size:16px}input::placeholder{color:#8f949c}select{appearance:none;color:#8f949c}select.has-value{color:var(--text)}.chevron{color:#b8bdc5;flex-shrink:0}
 .slogan-wrap{position:relative}.slogan-input{padding-right:70px}.counter{position:absolute;right:18px;top:50%;transform:translateY(-50%);color:#8f949c;font-size:14px;pointer-events:none}.slogan-error{display:none;margin:8px 4px 0;color:var(--red);font-size:13px;font-weight:700}.slogan-wrap.over-limit .input-wrap{border-color:var(--red)}.slogan-wrap.over-limit .counter,.slogan-wrap.over-limit .slogan-error{color:var(--red)}.slogan-wrap.over-limit .slogan-error{display:block}
-.save-btn{width:100%;min-height:74px;border:1px solid #159447;border-radius:17px;background:linear-gradient(180deg,#2bc75f,#1eae50);color:#fff;font-size:18px;font-weight:850;letter-spacing:.04em;cursor:pointer}.save-btn:disabled{opacity:.55;cursor:not-allowed}
+.save-btn{width:100%;min-height:74px;border:1px solid #159447;border-radius:17px;background:linear-gradient(180deg,#2bc75f,#1eae50);color:#fff;font-size:18px;font-weight:850;letter-spacing:.04em;cursor:pointer;position:relative;z-index:1;pointer-events:auto}.save-btn:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:380px){.back-btn{width:60px;height:60px}.topbar h1{font-size:25px}.photo-card{height:330px}.avatar,.avatar-wrap{width:160px;height:160px}}
 
 /* Photo picker bottom sheet */
-.sheet-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;align-items:flex-end;justify-content:center}
-.sheet-overlay.open{display:flex}
+.sheet-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;align-items:flex-end;justify-content:center;pointer-events:none}
+.sheet-overlay.open{display:flex;pointer-events:auto}
 .sheet{width:100%;max-width:420px;background:var(--card);border:1px solid var(--border);border-bottom:none;border-radius:22px 22px 0 0;padding:10px 20px calc(26px + env(safe-area-inset-bottom, 0px) + 90px);animation:sheetUp .18s ease-out;max-height:82vh;overflow-y:auto}
 @keyframes sheetUp{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}
 .sheet-handle{width:44px;height:4px;border-radius:3px;background:var(--border);margin:6px auto 16px}
@@ -178,29 +178,86 @@ function updateDeleteAvailability(){
   sheetDelete.disabled = !hasPicture;
 }
 
-/* Open / close the picker sheet */
+/* Open / close the picker sheet.
+   The sheet is hooked into CHTEO.openModal/closeModal (global.js) so
+   the device/browser Back button closes it first instead of leaving
+   the page, and doesn't leave a stray history entry behind once it's
+   closed normally. */
+function closeSheetUI(){ pickerOverlay.classList.remove('open'); }
+function closeSheet(){
+  if(!pickerOverlay.classList.contains('open')) return;
+  closeSheetUI();
+  if(window.CHTEO && CHTEO.closeModal) CHTEO.closeModal();
+}
 cameraBtn.addEventListener('click',()=>{
   updateDeleteAvailability();
   pickerOverlay.classList.add('open');
+  if(window.CHTEO && CHTEO.openModal) CHTEO.openModal(closeSheetUI);
 });
-function closeSheet(){ pickerOverlay.classList.remove('open'); }
 sheetClose.addEventListener('click',closeSheet);
 pickerOverlay.addEventListener('click',e=>{ if(e.target===pickerOverlay) closeSheet(); });
+
+/* Downscale a picked/captured photo before it ever touches storage.
+   Camera photos are routinely several MB; encoded as base64 that can
+   exceed localStorage's ~5MB quota and throw partway through the Save
+   handler, which is what actually made "Save Changes" look broken —
+   the tap registered but the save silently failed before the redirect
+   line ever ran. Resizing to a sensible avatar size keeps every photo
+   comfortably within quota while still using localStorage (the site's
+   existing storage), not a new storage system. */
+function resizeImage(file, maxDim, quality){
+  return new Promise((resolve, reject)=>{
+    const reader=new FileReader();
+    reader.onerror=()=>reject(reader.error || new Error('read-failed'));
+    reader.onload=e=>{
+      const img=new Image();
+      img.onerror=()=>reject(new Error('decode-failed'));
+      img.onload=()=>{
+        let w=img.naturalWidth, h=img.naturalHeight;
+        if(w>maxDim || h>maxDim){
+          if(w>=h){ h=Math.round(h*(maxDim/w)); w=maxDim; }
+          else { w=Math.round(w*(maxDim/h)); h=maxDim; }
+        }
+        const canvas=document.createElement('canvas');
+        canvas.width=w; canvas.height=h;
+        const ctx=canvas.getContext('2d');
+        ctx.drawImage(img,0,0,w,h);
+        try{ resolve(canvas.toDataURL('image/jpeg', quality)); }
+        catch(err){ reject(err); }
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function handlePickedFile(file){
+  if(!file || !file.type.startsWith('image/')) return;
+  resizeImage(file, 640, 0.82).then(dataUrl=>{
+    pendingPicture=dataUrl;
+    pendingRemoved=false;
+    showPicture(pendingPicture);
+    closeSheet();
+  }).catch(()=>{
+    // Resizing failed for some reason — fall back to reading the
+    // original file directly rather than blocking the picker flow.
+    const reader=new FileReader();
+    reader.onload=e=>{
+      pendingPicture=e.target.result;
+      pendingRemoved=false;
+      showPicture(pendingPicture);
+      closeSheet();
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
 /* Gallery pick */
 optGallery.addEventListener('click',()=>{ galleryInput.click(); });
 galleryInput.addEventListener('change',()=>{
   const file=galleryInput.files && galleryInput.files[0];
-  if(!file) return;
-  if(!file.type.startsWith('image/')){ galleryInput.value=''; return; }
-  const reader=new FileReader();
-  reader.onload=e=>{
-    pendingPicture=e.target.result;
-    pendingRemoved=false;
-    showPicture(pendingPicture);
-    closeSheet();
-  };
-  reader.readAsDataURL(file);
+  handlePickedFile(file);
+  galleryInput.value='';
 });
 
 /* Camera capture — the browser/OS shows its own permission prompt
@@ -208,16 +265,8 @@ galleryInput.addEventListener('change',()=>{
 optCamera.addEventListener('click',()=>{ cameraInput.click(); });
 cameraInput.addEventListener('change',()=>{
   const file=cameraInput.files && cameraInput.files[0];
-  if(!file) return;
-  if(!file.type.startsWith('image/')){ cameraInput.value=''; return; }
-  const reader=new FileReader();
-  reader.onload=e=>{
-    pendingPicture=e.target.result;
-    pendingRemoved=false;
-    showPicture(pendingPicture);
-    closeSheet();
-  };
-  reader.readAsDataURL(file);
+  handlePickedFile(file);
+  cameraInput.value='';
 });
 
 /* Remove photo (trash icon in the sheet header) */
@@ -247,10 +296,17 @@ document.getElementById('profileForm').addEventListener('submit',e=>{
   Object.keys(fields).forEach(key=>data[key]=fields[key].value.trim());
   setProfile(data);
 
-  if(pendingPicture){
-    localStorage.setItem('profile_picture',pendingPicture);
-  } else if(pendingRemoved){
-    localStorage.removeItem('profile_picture');
+  try{
+    if(pendingPicture){
+      localStorage.setItem('profile_picture',pendingPicture);
+    } else if(pendingRemoved){
+      localStorage.removeItem('profile_picture');
+    }
+  }catch(err){
+    // Storage full is now rare since photos are resized before this
+    // point, but if it ever happens, don't let it silently swallow the
+    // rest of the save — tell the user and still continue.
+    alert('Your other profile changes were saved, but the photo was too large to store on this device. Please try a smaller photo.');
   }
 
   window.location.href='profile.html';
