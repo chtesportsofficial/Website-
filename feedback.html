@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Feedback</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
 <style>
   :root{
     --bg:#0b0f19;
@@ -181,7 +183,7 @@
   .info-row p{
     margin:0;
     font-size:14.5px;
-    color:#e5e7eb;
+    color:var(--text);
   }
 
   .submit-btn{
@@ -227,12 +229,22 @@
     transform:translateX(-50%) translateY(0);
   }
 </style>
+<style>
+:root{
+  --bg: var(--g-bg);
+  --card: var(--g-surface);
+  --card-2: var(--g-surface-2);
+  --border: var(--g-border);
+  --text: var(--g-text);
+  --muted: var(--g-muted);
+}
+</style>
 </head>
 <body>
 <div class="phone">
 
   <div class="header">
-    <button class="back-btn">&#8249;</button>
+    <button class="back-btn" type="button" onclick="history.back()">&#8249;</button>
     <h1>Feedback</h1>
   </div>
 
