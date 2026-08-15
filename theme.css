@@ -102,11 +102,14 @@ html[data-theme="light"] .bottomnav{
 }
 
 @media(min-width:701px){
-  .bottomnav{left:24px;right:24px;}
+  .bottomnav{
+    left:50%;right:auto;transform:translateX(-50%);
+    width:min(620px,calc(100% - 48px));
+    bottom:calc(20px + var(--safe-bottom));
+  }
 }
 @media(min-width:1024px){
   .bottomnav{
-    left:50%;right:auto;transform:translateX(-50%);
     width:min(480px,calc(100% - 48px));
     bottom:calc(24px + var(--safe-bottom));
   }
@@ -128,17 +131,32 @@ html[data-theme="light"] .bottomnav{
 }
 
 /* ---------- 5. Generic responsive shell ---------- */
-/* Most pages use one of these wrapper classes at max-width ~380-460px.
-   On tablet/desktop we widen the readable column and add side padding
-   instead of stretching a mobile layout across the whole screen. */
+/* Most pages set their own fixed max-width (e.g. 380-460px) inline in a
+   <style> block that is placed AFTER this stylesheet in <head>, so on an
+   unconditional (non-media-query) selector of equal specificity that inline
+   rule always wins the cascade — even inside these @media blocks once they
+   match. The !important flags below are required so the site actually
+   widens on tablet/desktop instead of staying pinned to a narrow mobile
+   column with large empty gutters either side. */
 @media(min-width:701px){
-  .phone,.screen{ max-width:620px; }
+  .phone,.screen{ max-width:620px !important; }
 }
 @media(min-width:1024px){
-  .phone,.screen{ max-width:760px; padding-left:28px; padding-right:28px; }
+  .phone,.screen{ max-width:760px !important; padding-left:28px !important; padding-right:28px !important; }
 }
 @media(min-width:1440px){
-  .phone,.screen{ max-width:860px; }
+  .phone,.screen{ max-width:860px !important; }
+}
+
+/* On wide viewports the centered column would otherwise float on a flat,
+   empty background. Give desktop/tablet visitors a subtle backdrop so the
+   page still feels intentional rather than "broken mobile layout". */
+@media(min-width:701px){
+  body{
+    background:
+      radial-gradient(60% 40% at 50% 0%, color-mix(in srgb, var(--g-accent) 6%, transparent), transparent 70%),
+      var(--g-bg);
+  }
 }
 
 /* Language switcher small helper (used on language-select.html trigger elsewhere too) */
