@@ -389,19 +389,28 @@ function openCropper(dataUrl){
   const probe=new Image();
   probe.onload=()=>{
     const nw=probe.naturalWidth, nh=probe.naturalHeight;
-    const {dispW, dispH, fitScale}=fitImageBox(nw, nh);
-    cropImg.src=dataUrl;
-    cropImgBox.style.width=dispW+'px';
-    cropImgBox.style.height=dispH+'px';
 
-    const size=Math.min(dispW, dispH)*0.85;
-    cropState={
-      naturalW:nw, naturalH:nh, dispW, dispH, fitScale,
-      rect:{ left:(dispW-size)/2, top:(dispH-size)/2, size }
-    };
-    renderCropRect();
+    // Open (and register with CHTEO) FIRST — cropCanvasWrap has
+    // display:none until the 'open' class is applied, so measuring it
+    // beforehand always returns 0x0 and produces a fully black crop
+    // screen. Wait a frame after opening so layout has actually run
+    // before we read clientWidth/clientHeight off it.
     cropOverlay.classList.add('open');
     if(window.CHTEO && CHTEO.openModal) CHTEO.openModal(closeCropUI);
+
+    requestAnimationFrame(()=>{
+      const {dispW, dispH, fitScale}=fitImageBox(nw, nh);
+      cropImg.src=dataUrl;
+      cropImgBox.style.width=dispW+'px';
+      cropImgBox.style.height=dispH+'px';
+
+      const size=Math.min(dispW, dispH)*0.85;
+      cropState={
+        naturalW:nw, naturalH:nh, dispW, dispH, fitScale,
+        rect:{ left:(dispW-size)/2, top:(dispH-size)/2, size }
+      };
+      renderCropRect();
+    });
   };
   probe.src=dataUrl;
 }
