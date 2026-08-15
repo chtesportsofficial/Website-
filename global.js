@@ -214,7 +214,16 @@
       "index.seeOther": "See other teams ↓",
       "index.vipOnly": "ONLY FOR",
       "index.vipMembers": "VIP MEMBERS",
-      "index.vipButton": "BE A VIP MEMBER"
+      "index.vipButton": "BE A VIP MEMBER",
+      "index.ytTitle": "How to play tournament from our website?",
+      "index.ytSub": "Watch the video to know everything in detail.",
+      "index.watchVideo": "Watch Video",
+
+      "support.needHelp": "Need Help?",
+      "support.subtext": "If you have any questions or need assistance, our support team is here to help.",
+      "support.whatsapp": "WhatsApp Support",
+      "support.whatsappDesc": "Chat with us on WhatsApp",
+      "support.email": "Email Support"
     },
 
     bn: {
@@ -384,7 +393,16 @@
       "index.seeOther": "অন্যান্য দল দেখুন ↓",
       "index.vipOnly": "শুধুমাত্র",
       "index.vipMembers": "ভিআইপি সদস্যদের জন্য",
-      "index.vipButton": "ভিআইপি সদস্য হোন"
+      "index.vipButton": "ভিআইপি সদস্য হোন",
+      "index.ytTitle": "কীভাবে আমাদের ওয়েবসাইট থেকে টুর্নামেন্ট খেলবেন?",
+      "index.ytSub": "বিস্তারিত জানতে ভিডিওটি দেখুন।",
+      "index.watchVideo": "ভিডিও দেখুন",
+
+      "support.needHelp": "সাহায্য প্রয়োজন?",
+      "support.subtext": "আপনার কোনো প্রশ্ন থাকলে বা সাহায্যের প্রয়োজন হলে, আমাদের সাপোর্ট টিম আপনার পাশে আছে।",
+      "support.whatsapp": "হোয়াটসঅ্যাপ সাপোর্ট",
+      "support.whatsappDesc": "হোয়াটসঅ্যাপে আমাদের সাথে চ্যাট করুন",
+      "support.email": "ইমেইল সাপোর্ট"
     }
   };
 
@@ -432,16 +450,9 @@
     "index.html": "home",
     "": "home",
     "refer-earn.html": "refer",
-    "feedback.html": "support",
+    "support.html": "support",
     "wallet.html": "wallet",
-    "profile.html": "profile",
-    "edit_profile.html": "profile",
-    "settings.html": "profile",
-    "notification.html": "profile",
-    "theme.html": "profile",
-    "language-select.html": "profile",
-    "change-password.html": "profile",
-    "about-us.html": "profile"
+    "profile.html": "profile"
   };
   // Pages that intentionally have no bottom nav (full-screen auth flow)
   var NO_NAV_PAGES = { "chteo_auth.html": true };
@@ -462,7 +473,7 @@
       '<a class="' + cls("refer") + '" href="refer-earn.html">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9.5" cy="8" r="3.4"/><path d="M3 20c0-3.9 2.9-6.6 6.5-6.6S16 16.1 16 20"/><path d="M18.5 8v5M16 10.5h5"/></svg>' +
         '<div class="lbl" data-i18n="nav.refer">Refer &amp; Earn</div></a>' +
-      '<a class="' + cls("support") + ' support-item" href="feedback.html">' +
+      '<a class="' + cls("support") + ' support-item" href="support.html">' +
         '<div class="support-fab">\uD83C\uDFA7</div><div class="lbl" data-i18n="nav.support">Support</div></a>' +
       '<a class="' + cls("wallet") + '" href="wallet.html">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8a2 2 0 0 1 2-2h11a1 1 0 0 1 1 1v2"/><path d="M4 8v9a2 2 0 0 0 2 2h13a1 1 0 0 0 1-1v-7a2 2 0 0 0-2-2H6a2 2 0 0 1-2-2Z"/></svg>' +
