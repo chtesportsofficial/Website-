@@ -340,6 +340,70 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
   from{transform:translateX(0)}
   to{transform:translateX(-50%)}
 }
+
+/* ============ Side drawer (opened from the ☰ button) ============ */
+.drawer-overlay{
+  display:none;position:fixed;inset:0;z-index:99998;
+  background:rgba(0,0,0,.6);
+}
+.drawer-overlay.open{display:block;animation:drawerFade .18s ease-out}
+@keyframes drawerFade{from{opacity:0}to{opacity:1}}
+
+.drawer{
+  position:fixed;top:0;left:0;bottom:0;z-index:99999;
+  width:78%;max-width:340px;
+  background:var(--bg);border-right:1px solid var(--line);
+  transform:translateX(-100%);
+  transition:transform .22s cubic-bezier(.32,.72,0,1);
+  display:flex;flex-direction:column;overflow-y:auto;
+}
+.drawer.open{transform:translateX(0)}
+
+.drawer-profile{
+  padding:calc(28px + env(safe-area-inset-top,0px)) 24px 22px;
+  display:flex;flex-direction:column;align-items:center;text-align:center;
+}
+.drawer-logo-wrap{
+  width:88px;height:88px;border-radius:50%;overflow:hidden;
+  background:var(--surface);border:1px solid var(--line);margin-bottom:14px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.drawer-logo-wrap img{width:100%;height:100%;object-fit:cover;display:none}
+.drawer-logo-wrap svg{width:44px;height:44px;color:var(--text-dim)}
+.drawer-org-name{font-size:19px;font-weight:800;margin:0 0 12px;color:var(--text)}
+.drawer-uid{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:999px;padding:8px 16px;font-size:13.5px;font-weight:700;
+  color:var(--text);cursor:pointer;
+}
+.drawer-uid svg{width:15px;height:15px;color:var(--text-dim)}
+.drawer-uid.copied svg{color:var(--green)}
+
+.drawer-divider{height:1px;background:var(--line);margin:4px 20px 14px}
+
+.drawer-menu{padding:0 14px 24px;display:flex;flex-direction:column;gap:10px}
+.drawer-item{
+  display:flex;align-items:center;gap:16px;
+  padding:14px;border-radius:16px;border:1px solid var(--line);
+  background:var(--surface);cursor:pointer;text-decoration:none;color:var(--text);
+}
+.drawer-item:active{background:var(--surface-2)}
+.drawer-item .item-icon{
+  width:38px;height:38px;border-radius:12px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.drawer-item .item-icon svg{width:19px;height:19px}
+.drawer-item .item-label{flex:1;font-size:15px;font-weight:700}
+.drawer-item .item-chevron{width:18px;height:18px;color:var(--text-dim);flex-shrink:0}
+
+.icon-tournaments{background:rgba(34,224,138,.14);color:var(--green)}
+.icon-announcements{background:rgba(255,138,61,.14);color:var(--fire-2)}
+.icon-language{background:rgba(34,224,138,.14);color:var(--green)}
+.icon-theme{background:rgba(33,230,193,.14);color:var(--cyan)}
+.icon-chat{background:rgba(33,230,193,.14);color:var(--cyan)}
+
+@media(min-width:480px){.drawer{width:340px}}
 </style>
 <style>
 :root{
@@ -358,7 +422,7 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
 <body>
 <div class="app">
 <div class="topbar">
-  <div class="icon-btn">☰</div>
+  <div class="icon-btn" id="menuBtn" style="cursor:pointer">☰</div>
   <div class="brand">
     <div class="brand-mark">
       <img src="https://raw.githubusercontent.com/chtesportsofficial/Chteo_img/refs/heads/main/CHTEO%20(1).png" alt="CHT ESP ORG LOGO">
@@ -497,6 +561,56 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
   </div>
 </div>
 
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<div class="drawer" id="drawer">
+
+  <div class="drawer-profile">
+    <div class="drawer-logo-wrap">
+      <img id="drawerLogo" alt="Team logo">
+      <svg id="drawerLogoPlaceholder" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+    </div>
+    <h2 class="drawer-org-name" id="drawerOrgName">Your Team Name</h2>
+    <div class="drawer-uid" id="drawerUid">
+      <span id="drawerUidText">UID : —</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>
+    </div>
+  </div>
+
+  <div class="drawer-divider"></div>
+
+  <nav class="drawer-menu">
+    <a class="drawer-item" href="tournaments.html">
+      <span class="item-icon icon-tournaments"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12v2h2a3 3 0 0 1-3 3h-.2A6 6 0 0 1 13 12.9V16h3v2H8v-2h3v-3.1A6 6 0 0 1 7.2 8H7a3 3 0 0 1-3-3h2V3zm-1 4a1 1 0 0 0 1 1c-.13-.64-.2-1.32-.2-2H5v1zm14 0V6h-.8c0 .68-.07 1.36-.2 2a1 1 0 0 0 1-1z"/></svg></span>
+      <span class="item-label">My Tournaments</span>
+      <svg class="item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </a>
+
+    <a class="drawer-item" href="announcements.html">
+      <span class="item-icon icon-announcements"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a2 2 0 0 0 2 2h1l2 5h2l-1.5-5H10l8 4V6l-8 4H6a2 2 0 0 0-2 2z"/><path d="M16 8v8"/></svg></span>
+      <span class="item-label">Announcements</span>
+      <svg class="item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </a>
+
+    <a class="drawer-item" href="language.html">
+      <span class="item-icon icon-language"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></span>
+      <span class="item-label">Language</span>
+      <svg class="item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </a>
+
+    <a class="drawer-item" href="theme.html">
+      <span class="item-icon icon-theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg></span>
+      <span class="item-label">Theme</span>
+      <svg class="item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </a>
+
+    <a class="drawer-item" id="chatAdminLink" href="#" target="_blank" rel="noopener">
+      <span class="item-icon icon-chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>
+      <span class="item-label">Chat with admin</span>
+      <svg class="item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </a>
+  </nav>
+</div>
+
 <script>
 function goToProfile(){
   var isLoggedIn = localStorage.getItem('chteo_logged_in') === 'true';
@@ -520,6 +634,75 @@ document.getElementById("vipModal").addEventListener("click", function(e){
     closeVipModal();
   }
 });
+
+/* ============ Side drawer (☰ button, top-left) ============ */
+(function(){
+  const menuBtn        = document.getElementById('menuBtn');
+  const drawer          = document.getElementById('drawer');
+  const drawerOverlay   = document.getElementById('drawerOverlay');
+  const uidBtn          = document.getElementById('drawerUid');
+  const uidText         = document.getElementById('drawerUidText');
+  const chatAdminLink   = document.getElementById('chatAdminLink');
+  const logoImg         = document.getElementById('drawerLogo');
+  const logoPlaceholder = document.getElementById('drawerLogoPlaceholder');
+  const orgNameEl       = document.getElementById('drawerOrgName');
+
+  // ---- EDIT THESE TWO LINES for your WhatsApp support chat ----
+  const WHATSAPP_NUMBER = '8801XXXXXXXXX';   // country code + number, no + or spaces
+  const WHATSAPP_MSG    = 'Hi, I need help with my CHT Esports account.';
+  // ---------------------------------------------------------------
+
+  // Pull team logo / team name / UID from the same localStorage keys
+  // edit_profile.html already saves to.
+  function getProfile(){
+    try { return JSON.parse(localStorage.getItem('user_profile') || '{}'); }
+    catch(e){ return {}; }
+  }
+  const savedProfile = getProfile();
+  const savedPicture = localStorage.getItem('profile_picture');
+
+  if (savedProfile.teamName) orgNameEl.textContent = savedProfile.teamName;
+
+  if (savedPicture){
+    logoImg.src = savedPicture;
+    logoImg.style.display = 'block';
+    logoPlaceholder.style.display = 'none';
+  }
+
+  // UID — change 'user_uid' below if your account system stores it under
+  // a different key (e.g. inside a bigger account/user object).
+  const savedUid = localStorage.getItem('user_uid') || savedProfile.uid;
+  if (savedUid) uidText.textContent = 'UID : #' + savedUid;
+
+  chatAdminLink.href = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(WHATSAPP_MSG);
+
+  function openDrawer(){
+    drawer.classList.add('open');
+    drawerOverlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    if (window.CHTEO && CHTEO.openModal) CHTEO.openModal(closeDrawer);
+  }
+  function closeDrawer(){
+    drawer.classList.remove('open');
+    drawerOverlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  menuBtn.addEventListener('click', openDrawer);
+  drawerOverlay.addEventListener('click', function(){
+    closeDrawer();
+    if (window.CHTEO && CHTEO.closeModal) CHTEO.closeModal();
+  });
+
+  uidBtn.addEventListener('click', function(){
+    const rawUid = uidText.textContent.replace('UID : ', '');
+    if (rawUid === '—') return;
+    navigator.clipboard?.writeText(rawUid).then(function(){
+      uidBtn.classList.add('copied');
+      setTimeout(function(){ uidBtn.classList.remove('copied'); }, 1200);
+    });
+  });
+})();
 </script>
 
 </body>
