@@ -85,6 +85,19 @@ html[data-theme="light"] .bottomnav{
 .bottomnav .navitem.active{ color:var(--g-accent); }
 .bottomnav .navitem svg{width:21px;height:21px;}
 .bottomnav .navitem .lbl{font-size:8.5px;font-weight:700;white-space:nowrap;}
+
+/* Small round thumbnail of the user's saved profile picture, shown in the
+   Profile nav item instead of the generic person icon once they've set one. */
+.bottomnav .navitem .nav-avatar{
+  width:21px;height:21px;
+  border-radius:50%;
+  object-fit:cover;
+  border:1.5px solid var(--g-muted);
+  display:block;
+}
+.bottomnav .navitem.has-avatar.active .nav-avatar{
+  border-color:var(--g-accent);
+}
 .bottomnav .support-item{margin-top:-24px;}
 .bottomnav .support-fab{
   width:52px;height:52px;border-radius:50%;

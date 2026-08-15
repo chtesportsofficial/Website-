@@ -462,10 +462,24 @@
     return (path || "").toLowerCase();
   }
 
+  function getSavedProfilePicture() {
+    try { return localStorage.getItem("profile_picture") || ""; }
+    catch (e) { return ""; }
+  }
+
   function buildNavHTML(active) {
     function cls(name) {
       return "navitem" + (active === name ? " active" : "");
     }
+
+    // If the user has set a profile photo (Edit Profile page), show a small
+    // circular thumbnail of it in the bottom nav instead of the generic
+    // person icon, so it's visible on every page.
+    var savedPicture = getSavedProfilePicture();
+    var profileIcon = savedPicture
+      ? '<img class="nav-avatar" src="' + savedPicture + '" alt="">'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9.2"/><circle cx="12" cy="9.6" r="3"/><path d="M6 18.2c1.1-2.5 3.2-3.8 6-3.8s4.9 1.3 6 3.8"/></svg>';
+
     return (
       '<a class="' + cls("home") + '" href="index.html">' +
         '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 3 10.5V21h6.2v-6.4h5.6V21H21V10.5L12 3.2Z"/></svg>' +
@@ -478,8 +492,8 @@
       '<a class="' + cls("wallet") + '" href="wallet.html">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8a2 2 0 0 1 2-2h11a1 1 0 0 1 1 1v2"/><path d="M4 8v9a2 2 0 0 0 2 2h13a1 1 0 0 0 1-1v-7a2 2 0 0 0-2-2H6a2 2 0 0 1-2-2Z"/></svg>' +
         '<div class="lbl" data-i18n="nav.wallet">Wallet</div></a>' +
-      '<a class="' + cls("profile") + '" href="javascript:void(0)" onclick="goToProfile()">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9.2"/><circle cx="12" cy="9.6" r="3"/><path d="M6 18.2c1.1-2.5 3.2-3.8 6-3.8s4.9 1.3 6 3.8"/></svg>' +
+      '<a class="' + cls("profile") + (savedPicture ? " has-avatar" : "") + '" href="javascript:void(0)" onclick="goToProfile()">' +
+        profileIcon +
         '<div class="lbl" data-i18n="nav.profile">Profile</div></a>'
     );
   }
