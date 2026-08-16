@@ -358,7 +358,21 @@
 // এই দুইটা মান আপনার Supabase project → Settings → API থেকে বসান
 const SUPABASE_URL = 'https://myfficbwcbgbxbdqjexv.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ---- DEBUG: mobile e error dekhar jonno (kaj shesh hole ei part soriye felben) ----
+window.onerror = function(msg, url, line, col, error){
+  alert('JS ERROR: ' + msg + ' (line ' + line + ')');
+};
+let supabase;
+try {
+  if(!window.supabase){
+    alert('Supabase library load hoyni! Internet slow othoba adblocker check korun.');
+  }
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} catch(e){
+  alert('Supabase init error: ' + e.message);
+}
+// ---- DEBUG END ----
 
 function switchView(view){
   document.getElementById('tab-signin').classList.toggle('active', view==='signin');
