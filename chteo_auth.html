@@ -254,11 +254,6 @@
 </head>
 <body>
 
-  <div id="dbgBar" style="position:fixed;top:0;left:0;right:0;z-index:99999;background:#111;color:#0f0;font:11px monospace;padding:6px 10px;word-break:break-all;">DEBUG: waiting for tap…</div>
-  <script>
-    document.getElementById('dbgBar').textContent = 'DEBUG: early script ran ✅ at ' + new Date().toLocaleTimeString();
-  </script>
-
   <div class="bg-blob blob-a"></div>
   <div class="bg-blob blob-b"></div>
 
@@ -349,7 +344,6 @@
       </div>
 
       <button class="submit-btn" id="create-btn" onclick="handleCreate()" disabled>Create account</button>
-      <div id="debug-validate" style="font-size:11px; color:#e5484d; margin-top:8px; text-align:center;"></div>
 
       <div class="switch-line">
         Already have an account? <a onclick="switchView('signin')">Sign in</a>
@@ -372,29 +366,19 @@ try {
   showToast('Supabase init error: ' + e.message);
 }
 
-function dbg(msg){
-  var el = document.getElementById('dbgBar');
-  if(el) el.textContent = 'DEBUG: ' + msg;
-}
-
 function switchView(view){
   document.getElementById('tab-signin').classList.toggle('active', view==='signin');
   document.getElementById('tab-create').classList.toggle('active', view==='create');
   document.getElementById('view-signin').classList.toggle('active', view==='signin');
   document.getElementById('view-create').classList.toggle('active', view==='create');
   document.title = view === 'signin' ? 'CHTEO — Sign in' : 'CHTEO — Create account';
-  dbg('switchView(' + view + ') ran. view-create active=' +
-    document.getElementById('view-create').classList.contains('active') +
-    ' | view-signin active=' +
-    document.getElementById('view-signin').classList.contains('active'));
 }
 
 var tabSigninEl = document.getElementById('tab-signin');
 var tabCreateEl = document.getElementById('tab-create');
-dbg('script loaded. tab-signin found=' + !!tabSigninEl + ' tab-create found=' + !!tabCreateEl);
 
-tabSigninEl.addEventListener('click', function(){ dbg('tab-signin CLICKED'); switchView('signin'); });
-tabCreateEl.addEventListener('click', function(){ dbg('tab-create CLICKED'); switchView('create'); });
+tabSigninEl.addEventListener('click', function(){ switchView('signin'); });
+tabCreateEl.addEventListener('click', function(){ switchView('create'); });
 
 function togglePw(inputId, btn){
   const input = document.getElementById(inputId);
@@ -449,7 +433,20 @@ async function handleSignin(){
     return;
   }
 
+  // Wipe any cached team name / slogan / profile picture from whoever
+  // was last signed in on this device/browser before this one.
+  localStorage.removeItem('user_profile');
+  localStorage.removeItem('profile_picture');
+  localStorage.removeItem('user_uid');
   localStorage.setItem('chteo_logged_in', 'true');
+
+  // Pull this user's real row (email, whatsapp, uid...) from Supabase
+  // BEFORE redirecting, so profile.html / index.html don't briefly (or
+  // permanently, on a fresh browser) show placeholder default values.
+  if (window.CHTEO && window.CHTEO.syncProfile) {
+    await window.CHTEO.syncProfile();
+  }
+
   showToast('Signed in successfully. Redirecting...', true);
   setTimeout(() => {
     // replace(), not href: this sign-in screen shouldn't linger as a
@@ -470,13 +467,6 @@ function validateCreate(){
   const pwOk = pw.length >= 6;
   const refOk = /^#\d+$/.test(ref);
   document.getElementById('create-btn').disabled = !(emailOk && waOk && pwOk && refOk);
-  // ---- DEBUG: mobile e live dekhar jonno ----
-  document.getElementById('debug-validate').textContent =
-    'email(' + email + ')=' + emailOk +
-    ' | wa(' + wa + ')=' + waOk +
-    ' | pw len ' + pw.length + '=' + pwOk +
-    ' | ref(' + ref + ')=' + refOk;
-  // ---- DEBUG END ----
   return {emailOk, waOk, pwOk, refOk};
 }
 
@@ -500,6 +490,14 @@ async function handleCreate(){
   const createBtn = document.getElementById('create-btn');
   createBtn.disabled = true;
 
+  // Wipe any team name / slogan / profile picture left over in this
+  // browser's localStorage from a PREVIOUS account (localStorage is
+  // per-device, not per-account, so without this a brand new signup
+  // would inherit whatever the last person on this device had set).
+  localStorage.removeItem('user_profile');
+  localStorage.removeItem('profile_picture');
+  localStorage.removeItem('user_uid');
+
   // whatsapp o referral eta user_metadata hisebe save hocche —
   // pore Supabase dashboard e Authentication > Users e giye dekha jabe
   const { data, error } = await supabaseClient.auth.signUp({
@@ -519,6 +517,13 @@ async function handleCreate(){
   localStorage.setItem('chteo_referral', referral);
 
   if(data.session){
+    // Give the Supabase trigger (which inserts the profiles row on new
+    // auth.users signup) a brief moment, then pull the real row down so
+    // profile.html shows the actual email/UID instead of placeholders.
+    if (window.CHTEO && window.CHTEO.syncProfile) {
+      await new Promise(r => setTimeout(r, 400));
+      await window.CHTEO.syncProfile();
+    }
     showToast('Account created successfully. Redirecting...', true);
     setTimeout(() => {
       // replace(), not href — see the note in handleSignin() above.
@@ -529,15 +534,7 @@ async function handleCreate(){
     showToast('Account created! Please check your email to confirm.', true);
   }
 }
-// ---- DEBUG: page load hobar shathe shathe ekbar dekhiye dey ----
 document.addEventListener('DOMContentLoaded', validateCreate);
-// ---- DEBUG END ----
-</script>
-
-<script>
-  var bar = document.getElementById('dbgBar');
-  if(bar) bar.textContent += ' | BOTTOM CANARY ✅ ' + new Date().toLocaleTimeString();
-  else console.log('dbgBar not found by bottom canary');
 </script>
 
 </body>
