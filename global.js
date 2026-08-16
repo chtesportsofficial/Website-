@@ -73,10 +73,18 @@
       teamName: (row && row.team_name) || current.teamName,
       slogan: (row && row.slogan) || current.slogan,
       country: (row && row.country) || current.country,
-      uid: (row && row.user_number != null) ? row.user_number : current.uid
+      uid: (row && row.user_number != null) ? row.user_number : current.uid,
+      avatarUrl: (row && row.avatar_url) || current.avatarUrl
     });
     localStorage.setItem("user_profile", JSON.stringify(merged));
     if (row && row.user_number != null) localStorage.setItem("user_uid", String(row.user_number));
+    // Keep the 'profile_picture' cache (read by profile.html, index.html,
+    // side_drawer.html, and the bottom-nav avatar below) in sync with the
+    // real Supabase Storage URL — this key already works as a plain
+    // <img src>, whether it holds a base64 string or a URL, so no other
+    // page needs to change.
+    if (row && row.avatar_url) localStorage.setItem("profile_picture", row.avatar_url);
+    else if (row && "avatar_url" in row && row.avatar_url == null) localStorage.removeItem("profile_picture");
     try {
       document.dispatchEvent(new CustomEvent("chteo:profile-synced", { detail: merged }));
     } catch (e) {}

@@ -251,6 +251,19 @@ updateSloganStatus();
 let pendingPicture=null;   // data URL of a newly-picked-but-not-yet-saved photo
 let pendingRemoved=false;  // true if the user chose to remove the photo
 
+// Converts a data URL (what the cropper produces) into a Blob so it can
+// be uploaded to Supabase Storage — Storage needs actual file bytes,
+// not a base64 text string.
+function dataURLToBlob(dataUrl){
+  const parts = dataUrl.split(',');
+  const mimeMatch = parts[0].match(/:(.*?);/);
+  const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+  const binary = atob(parts[1]);
+  const bytes = new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+  return new Blob([bytes], {type: mime});
+}
+
 function showPicture(src){
   avatarImg.src=src;
   avatarImg.style.display='block';
@@ -602,13 +615,60 @@ document.getElementById('profileForm').addEventListener('submit', async e=>{
         const { data: userRes } = await client.auth.getUser();
         const user = userRes && userRes.user;
         if(user){
-          const { error } = await client.from('profiles').update({
+          const updatePayload = {
             whatsapp: data.whatsapp,
             team_name: data.teamName,
             slogan: data.slogan,
             country: data.country
-          }).eq('id', user.id);
-          if(error) console.warn('Profile Supabase update failed:', error.message);
+          };
+
+          // Photo → Supabase Storage ('avatars' bucket), not just
+          // localStorage. The base64 copy saved to localStorage above is
+          // now only a fast local cache — this upload + the profiles.
+          // avatar_url column below are the real, cross-device copy.
+          if(pendingPicture){
+            try{
+              const path = user.id + '.jpg';
+              const blob = dataURLToBlob(pendingPicture);
+              const { error: uploadError } = await client.storage
+                .from('avatars')
+                .upload(path, blob, { upsert: true, contentType: blob.type || 'image/jpeg' });
+              if(uploadError){
+                console.warn('Avatar upload failed:', uploadError.message);
+                alert('Could not upload profile photo: ' + uploadError.message);
+              } else {
+                const { data: urlData } = client.storage.from('avatars').getPublicUrl(path);
+                // Cache-bust: same path gets overwritten (upsert) every
+                // save, so without a changing query string browsers keep
+                // showing the OLD cached image at that same URL.
+                const freshUrl = urlData.publicUrl + '?t=' + Date.now();
+                updatePayload.avatar_url = freshUrl;
+                localStorage.setItem('profile_picture', freshUrl);
+              }
+            }catch(err){
+              console.warn('Avatar upload failed:', err);
+              alert('Could not upload profile photo.');
+            }
+          } else if(pendingRemoved){
+            try{
+              await client.storage.from('avatars').remove([user.id + '.jpg']);
+            }catch(err){
+              console.warn('Avatar remove failed (continuing):', err);
+            }
+            updatePayload.avatar_url = null;
+          }
+
+          const { data: updatedRows, error } = await client.from('profiles').update(updatePayload).eq('id', user.id).select();
+          if(error){
+            console.warn('Profile Supabase update failed:', error.message);
+            // TEMPORARY diagnostic — surfaces silent backend save failures
+            // (e.g. missing RLS UPDATE policy on 'profiles') so they don't
+            // go unnoticed. Remove/replace with nicer UI once confirmed fixed.
+            alert('Could not save to server: ' + error.message);
+          } else if(!updatedRows || updatedRows.length === 0){
+            console.warn('Profile Supabase update matched 0 rows for user', user.id);
+            alert('Save did not reach the server — no matching profile row was updated. Check that a profiles row exists for this account and that RLS allows updates.');
+          }
         }
       }catch(err){
         console.warn('Profile Supabase update failed:', err);
