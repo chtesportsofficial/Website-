@@ -6,6 +6,7 @@
 <title>CHTEO — Sign in</title>
 <link rel="stylesheet" href="theme.css">
 <script src="global.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --navy-1:#1b2140;
@@ -353,6 +354,12 @@
   <div class="toast" id="toast"></div>
 
 <script>
+// ----- Supabase setup -----
+// এই দুইটা মান আপনার Supabase project → Settings → API থেকে বসান
+const SUPABASE_URL = 'https://myfficbwcbgbxbdqjexv.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 function switchView(view){
   document.getElementById('tab-signin').classList.toggle('active', view==='signin');
   document.getElementById('tab-create').classList.toggle('active', view==='create');
@@ -387,7 +394,7 @@ function setError(wrapId, errId, show){
   document.getElementById(errId).classList.toggle('show', show);
 }
 
-function handleSignin(){
+async function handleSignin(){
   const email = document.getElementById('si-email').value.trim();
   const pw = document.getElementById('si-password').value;
   let ok = true;
@@ -397,19 +404,32 @@ function handleSignin(){
   setError('si-password-wrap','si-password-err', pw.length === 0);
   if(pw.length === 0) ok = false;
 
-  if(ok){
-    localStorage.setItem('chteo_logged_in', 'true');
-    showToast('Signed in successfully. Redirecting...', true);
-    setTimeout(() => {
-      // replace(), not href: this sign-in screen shouldn't linger as a
-      // dead entry in history — otherwise one Back press from the home
-      // page would land the user right back on the login form instead
-      // of wherever they actually came from.
-      window.location.replace('index.html');
-    }, 700);
-  } else {
+  if(!ok){
     showToast('Please fill in all fields correctly.');
+    return;
   }
+
+  const submitBtn = document.querySelector('#view-signin .submit-btn');
+  submitBtn.disabled = true;
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password: pw });
+
+  submitBtn.disabled = false;
+
+  if(error){
+    showToast(error.message);
+    return;
+  }
+
+  localStorage.setItem('chteo_logged_in', 'true');
+  showToast('Signed in successfully. Redirecting...', true);
+  setTimeout(() => {
+    // replace(), not href: this sign-in screen shouldn't linger as a
+    // dead entry in history — otherwise one Back press from the home
+    // page would land the user right back on the login form instead
+    // of wherever they actually came from.
+    window.location.replace('index.html');
+  }, 700);
 }
 
 function validateCreate(){
@@ -425,23 +445,53 @@ function validateCreate(){
   return {emailOk, waOk, pwOk, refOk};
 }
 
-function handleCreate(){
+async function handleCreate(){
   const {emailOk, waOk, pwOk, refOk} = validateCreate();
   setError('ca-email-wrap','ca-email-err', !emailOk);
   setError('ca-whatsapp-wrap','ca-whatsapp-err', !waOk);
   setError('ca-password-wrap','ca-password-err', !pwOk);
   setError('ca-referral-wrap','ca-referral-err', !refOk);
 
-  if(emailOk && waOk && pwOk && refOk){
-    localStorage.setItem('chteo_logged_in', 'true');
-    localStorage.setItem('chteo_referral', document.getElementById('ca-referral').value.trim());
+  if(!(emailOk && waOk && pwOk && refOk)){
+    showToast('Please fill in all required fields to create an account.');
+    return;
+  }
+
+  const email = document.getElementById('ca-email').value.trim();
+  const pw = document.getElementById('ca-password').value;
+  const whatsapp = document.getElementById('ca-whatsapp').value.trim();
+  const referral = document.getElementById('ca-referral').value.trim();
+
+  const createBtn = document.getElementById('create-btn');
+  createBtn.disabled = true;
+
+  // whatsapp o referral eta user_metadata hisebe save hocche —
+  // pore Supabase dashboard e Authentication > Users e giye dekha jabe
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password: pw,
+    options: { data: { whatsapp, referral } }
+  });
+
+  createBtn.disabled = false;
+
+  if(error){
+    showToast(error.message);
+    return;
+  }
+
+  localStorage.setItem('chteo_logged_in', 'true');
+  localStorage.setItem('chteo_referral', referral);
+
+  if(data.session){
     showToast('Account created successfully. Redirecting...', true);
     setTimeout(() => {
       // replace(), not href — see the note in handleSignin() above.
       window.location.replace('index.html');
     }, 700);
   } else {
-    showToast('Please fill in all required fields to create an account.');
+    // email confirmation on thakle session immediately thakbe na
+    showToast('Account created! Please check your email to confirm.', true);
   }
 }
 </script>
