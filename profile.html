@@ -562,8 +562,12 @@ function copyValue(id){
   }).catch(()=>{});
 }
 
-(function(){
+function renderProfile(){
   const profile=getProfile();
+
+  // UID
+  const uidEl=document.getElementById('uid');
+  if(uidEl) uidEl.textContent = profile.uid ? ('#' + profile.uid) : '#99';
 
   // Team name
   const teamNameEl=document.getElementById('teamName');
@@ -605,7 +609,17 @@ function copyValue(id){
     }
     if(avatarPlaceholder) avatarPlaceholder.style.display='none';
   }
-})();
+}
+
+renderProfile();
+
+// global.js's syncProfile() runs an async fetch from Supabase (it also
+// kicks off automatically on page load for any already-logged-in user —
+// see global.js init()). That fetch can finish AFTER this page has already
+// rendered once from whatever was cached in localStorage, so re-render
+// when the fresh data actually lands — this is what keeps the UID (and
+// email/whatsapp/etc.) from getting stuck on stale or placeholder values.
+document.addEventListener('chteo:profile-synced', renderProfile);
 
 function getMsg(key, fallback){
   try{

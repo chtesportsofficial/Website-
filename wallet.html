@@ -286,7 +286,7 @@
       <button class="back-btn" onclick="history.back()">&#8592;</button>
       <h1 data-i18n="wallet.title">Wallet</h1>
     </div>
-    <div class="uid-chip">UID: #99</div>
+    <div class="uid-chip" id="uidChip">UID: #99</div>
   </div>
 
   <div class="card prize-card">
@@ -356,6 +356,22 @@
 </div>
 
 <script>
+function getProfile(){
+  try { return JSON.parse(localStorage.getItem('user_profile') || '{}'); }
+  catch(e){ return {}; }
+}
+function renderUid(){
+  const uidChip=document.getElementById('uidChip');
+  if(!uidChip) return;
+  const profile=getProfile();
+  const uid = profile.uid || localStorage.getItem('user_uid');
+  uidChip.textContent = 'UID: ' + (uid ? ('#' + uid) : '#99');
+}
+renderUid();
+// Same reasoning as profile.html: global.js's Supabase sync can resolve
+// after this page has already rendered from cached/placeholder data.
+document.addEventListener('chteo:profile-synced', renderUid);
+
 function showPanel(which){
   const panelAdd = document.getElementById('panelAdd');
   const panelWithdraw = document.getElementById('panelWithdraw');
