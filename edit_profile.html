@@ -628,7 +628,12 @@ document.getElementById('profileForm').addEventListener('submit', async e=>{
           // avatar_url column below are the real, cross-device copy.
           if(pendingPicture){
             try{
-              const path = user.id + '.jpg';
+              // Path must be "<user_id>/filename" — the RLS policy on this
+              // bucket is Supabase's standard "own folder" template, which
+              // checks that the first path segment equals the user's own
+              // id. A flat "<user_id>.jpg" filename (no folder) fails that
+              // check with "new row violates row-level security policy".
+              const path = user.id + '/avatar.jpg';
               const blob = dataURLToBlob(pendingPicture);
               const { error: uploadError } = await client.storage
                 .from('avatars')
@@ -651,7 +656,7 @@ document.getElementById('profileForm').addEventListener('submit', async e=>{
             }
           } else if(pendingRemoved){
             try{
-              await client.storage.from('avatars').remove([user.id + '.jpg']);
+              await client.storage.from('avatars').remove([user.id + '/avatar.jpg']);
             }catch(err){
               console.warn('Avatar remove failed (continuing):', err);
             }
