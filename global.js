@@ -70,7 +70,9 @@
     var merged = Object.assign({}, current, {
       email: (row && row.email) || authEmail || current.email,
       whatsapp: (row && row.whatsapp) || current.whatsapp,
-      teamName: (row && row.team_name) || current.teamName,
+      // Team Name lives in the 'full_name' column on Supabase (no
+      // separate 'team_name' column on this table).
+      teamName: (row && row.full_name) || current.teamName,
       slogan: (row && row.slogan) || current.slogan,
       country: (row && row.country) || current.country,
       uid: (row && row.user_number != null) ? row.user_number : current.uid,

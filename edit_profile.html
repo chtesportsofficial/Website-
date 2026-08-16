@@ -735,7 +735,9 @@ document.getElementById('profileForm').addEventListener('submit', async e=>{
         if(user){
           const updatePayload = {
             whatsapp: data.whatsapp,
-            team_name: data.teamName,
+            // Team Name is stored in the 'full_name' column on Supabase
+            // (there's no separate 'team_name' column on this table).
+            full_name: data.teamName,
             slogan: data.slogan
           };
 
