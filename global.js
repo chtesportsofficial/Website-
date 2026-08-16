@@ -19,6 +19,94 @@
   var AUTH_KEY = "chteo_logged_in";
 
   /* =========================================================
+     0. SUPABASE PROFILE SYNC
+     Keeps localStorage('user_profile') / localStorage('user_uid')
+     in sync with the REAL signed-in user's row in Supabase, so
+     every page (profile.html, index.html, side_drawer.html, ...)
+     shows the actual email / UID instead of the hardcoded
+     placeholder defaults ("userid99@gmail.com", "#99").
+
+     Before this, no page ever queried Supabase for profile data —
+     profile.html etc. only ever read localStorage('user_profile'),
+     which chteo_auth.html never wrote to after signup/login. That
+     is the entire reason the placeholder values were showing.
+
+     IMPORTANT: update PROFILE_TABLE / column names below to match
+     your actual Supabase table if they differ.
+     ========================================================= */
+  var SUPABASE_URL = "https://myfficbwcbgbxbdqjexv.supabase.co";
+  var SUPABASE_ANON_KEY = "sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5";
+  var PROFILE_TABLE = "profiles"; // <-- change if your table name differs
+
+  var _sbClient = null;
+  function getSupabaseClient(cb) {
+    if (_sbClient) { cb(_sbClient); return; }
+    if (window.supabase && window.supabase.createClient) {
+      _sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      cb(_sbClient);
+      return;
+    }
+    var existing = document.getElementById("sb-js-cdn");
+    if (!existing) {
+      var s = document.createElement("script");
+      s.id = "sb-js-cdn";
+      s.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+      s.onload = function () {
+        _sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        cb(_sbClient);
+      };
+      document.head.appendChild(s);
+    } else {
+      existing.addEventListener("load", function () {
+        _sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        cb(_sbClient);
+      });
+    }
+  }
+
+  function saveProfileLocally(row, authEmail) {
+    var current = {};
+    try { current = JSON.parse(localStorage.getItem("user_profile") || "{}"); } catch (e) {}
+    var merged = Object.assign({}, current, {
+      email: (row && row.email) || authEmail || current.email,
+      whatsapp: (row && row.whatsapp) || current.whatsapp,
+      teamName: (row && row.team_name) || current.teamName,
+      slogan: (row && row.slogan) || current.slogan,
+      country: (row && row.country) || current.country,
+      uid: (row && row.user_number != null) ? row.user_number : current.uid
+    });
+    localStorage.setItem("user_profile", JSON.stringify(merged));
+    if (row && row.user_number != null) localStorage.setItem("user_uid", String(row.user_number));
+    try {
+      document.dispatchEvent(new CustomEvent("chteo:profile-synced", { detail: merged }));
+    } catch (e) {}
+    return merged;
+  }
+
+  // Pulls the signed-in user's real row from Supabase and refreshes
+  // localStorage + fires 'chteo:profile-synced' so any page listening
+  // (see profile.html) can re-render with the fresh data.
+  function syncProfile() {
+    return new Promise(function (resolve) {
+      getSupabaseClient(function (client) {
+        client.auth.getUser().then(function (res) {
+          var user = res && res.data && res.data.user;
+          if (!user) { resolve(null); return; }
+          client.from(PROFILE_TABLE).select("*").eq("id", user.id).single()
+            .then(function (result) {
+              if (result && result.error) {
+                console.warn("CHTEO.syncProfile: could not read " + PROFILE_TABLE + " row —", result.error.message);
+              }
+              var merged = saveProfileLocally(result && result.data, user.email);
+              resolve(merged);
+            })
+            .catch(function () { resolve(saveProfileLocally(null, user.email)); });
+        }).catch(function () { resolve(null); });
+      });
+    });
+  }
+
+  /* =========================================================
      1. THEME
      ========================================================= */
   function getSystemTheme() {
@@ -589,6 +677,12 @@
   function init() {
     injectGlobalUI();
     applyLanguage(getLangPref());
+    // If a session already exists (e.g. user reopens the app / lands on
+    // profile.html directly), quietly refresh the cached profile from
+    // Supabase so real email/UID show up instead of stale/placeholder data.
+    if (localStorage.getItem(AUTH_KEY) === "true") {
+      syncProfile();
+    }
   }
 
   if (document.readyState === "loading") {
@@ -608,6 +702,8 @@
     applyLanguage: applyLanguage,
     translations: translations,
     openModal: openModal,
-    closeModal: closeModal
+    closeModal: closeModal,
+    syncProfile: syncProfile,
+    getSupabaseClient: getSupabaseClient
   };
 })();
