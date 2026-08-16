@@ -365,7 +365,7 @@ function renderUid(){
   if(!uidChip) return;
   const profile=getProfile();
   const uid = profile.uid || localStorage.getItem('user_uid');
-  uidChip.textContent = 'UID: ' + (uid ? ('#' + uid) : '#99');
+  uidChip.textContent = 'UID: ' + (uid ? ('#' + uid) : '—');
 }
 renderUid();
 // Same reasoning as profile.html: global.js's Supabase sync can resolve
