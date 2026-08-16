@@ -445,9 +445,9 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="#25D366"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2z"/></svg>
             WhatsApp
           </button>
-          <button class="share-btn" onclick="shareFacebook()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="#1877F2"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.4v7A10 10 0 0 0 22 12z"/></svg>
-            Facebook
+          <button class="share-btn" onclick="shareMessenger()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#0084FF"><path d="M12 2C6.5 2 2 6.1 2 11.2c0 2.9 1.4 5.5 3.7 7.2V22l3.4-1.9c.9.2 1.9.4 2.9.4 5.5 0 10-4.1 10-9.3S17.5 2 12 2zm1 12.5l-2.6-2.7-5 2.7 5.5-5.8 2.6 2.7 5-2.7-5.5 5.8z"/></svg>
+            Messenger
           </button>
           <button class="share-btn" onclick="shareTelegram()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="#29B6F6"><path d="M21.9 4.4L2.7 11.9c-1.3.5-1.3 1.2-.2 1.6l4.9 1.5 1.9 5.8c.2.6.4.8.9.8.4 0 .6-.2.9-.5l2.2-2.1 4.6 3.4c.8.5 1.4.2 1.6-.8l3-14c.3-1.2-.5-1.8-1.6-1.2z"/></svg>
@@ -631,28 +631,35 @@ function showToast(msg, success){
 function shareMessage(){
   const link = document.getElementById('inviteLink').value;
   const code = document.getElementById('inviteCode').value;
-  return 'Join CHT ESP ORG using my referral code ' + code + ' and get a bonus!\n' + link;
+  // Single asterisks render as bold in WhatsApp (and Telegram's composer
+  // auto-formats them too), so the message shows up styled, not just
+  // as plain text with literal asterisks.
+  return 'Play *daily Free Fire tournaments* on *CHT ESP ORG*.\n\n' +
+         'Join using referral code *' + code + '*:\n' + link;
 }
 
-// wa.me / t.me / facebook.com "universal links" — opening these on a
-// phone hands off straight into the installed app itself (WhatsApp,
-// Telegram, Facebook), not just a web page, exactly like tapping a
-// share icon inside those apps would.
+// wa.me / t.me "universal links" — opening these on a phone hands off
+// straight into the installed app itself (WhatsApp, Telegram), not just
+// a web page, exactly like tapping a share icon inside those apps would.
 function shareWhatsapp(){
   const url = 'https://wa.me/?text=' + encodeURIComponent(shareMessage());
   window.open(url, '_blank', 'noopener');
 }
 
-function shareFacebook(){
+// Messenger has no "universal https link" like WhatsApp/Telegram — the
+// only way to hand off straight into the app (without registering a
+// Facebook Developer app) is this app-only link scheme. It only works
+// if Messenger is installed, and it can only carry the link itself
+// (Messenger doesn't accept custom prefilled text through this scheme).
+function shareMessenger(){
   const link = document.getElementById('inviteLink').value;
-  const url = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(link);
-  window.open(url, '_blank', 'noopener');
+  window.location.href = 'fb-messenger://share/?link=' + encodeURIComponent(link);
 }
 
 function shareTelegram(){
   const link = document.getElementById('inviteLink').value;
   const code = document.getElementById('inviteCode').value;
-  const text = 'Join CHT ESP ORG using my referral code ' + code + ' and get a bonus!';
+  const text = 'Play *daily Free Fire tournaments* on *CHT ESP ORG*.\n\nJoin using referral code *' + code + '*:';
   const url = 'https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent(text);
   window.open(url, '_blank', 'noopener');
 }
