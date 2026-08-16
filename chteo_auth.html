@@ -254,8 +254,6 @@
 </head>
 <body>
 
-  <div style="background:red;color:#fff;padding:16px;font-size:16px;text-align:center;font-weight:bold;">TEST VERSION 5 — FILE UPDATED CONFIRM</div>
-
   <div class="bg-blob blob-a"></div>
   <div class="bg-blob blob-b"></div>
 
@@ -266,8 +264,8 @@
     </div>
 
     <div class="tabs">
-      <button class="tab active" id="tab-signin" onclick="alert('SIGNIN TAB CLICKED'); switchView('signin')">Sign in</button>
-      <button class="tab" id="tab-create" onclick="alert('CREATE TAB CLICKED'); switchView('create')">Create account</button>
+      <button class="tab active" id="tab-signin" type="button">Sign in</button>
+      <button class="tab" id="tab-create" type="button">Create account</button>
     </div>
 
     <!-- SIGN IN VIEW -->
@@ -362,20 +360,12 @@
 const SUPABASE_URL = 'https://myfficbwcbgbxbdqjexv.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
 
-// ---- DEBUG: mobile e error dekhar jonno (kaj shesh hole ei part soriye felben) ----
-window.onerror = function(msg, url, line, col, error){
-  alert('JS ERROR: ' + msg + ' (line ' + line + ')');
-};
 let supabase;
 try {
-  if(!window.supabase){
-    alert('Supabase library load hoyni! Internet slow othoba adblocker check korun.');
-  }
   supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 } catch(e){
-  alert('Supabase init error: ' + e.message);
+  showToast('Supabase init error: ' + e.message);
 }
-// ---- DEBUG END ----
 
 function switchView(view){
   document.getElementById('tab-signin').classList.toggle('active', view==='signin');
@@ -384,6 +374,9 @@ function switchView(view){
   document.getElementById('view-create').classList.toggle('active', view==='create');
   document.title = view === 'signin' ? 'CHTEO — Sign in' : 'CHTEO — Create account';
 }
+
+document.getElementById('tab-signin').addEventListener('click', function(){ switchView('signin'); });
+document.getElementById('tab-create').addEventListener('click', function(){ switchView('create'); });
 
 function togglePw(inputId, btn){
   const input = document.getElementById(inputId);
