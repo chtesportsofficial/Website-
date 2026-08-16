@@ -254,6 +254,8 @@
 </head>
 <body>
 
+  <div id="dbgBar" style="position:fixed;top:0;left:0;right:0;z-index:99999;background:#111;color:#0f0;font:11px monospace;padding:6px 10px;word-break:break-all;">DEBUG: waiting for tap…</div>
+
   <div class="bg-blob blob-a"></div>
   <div class="bg-blob blob-b"></div>
 
@@ -367,16 +369,29 @@ try {
   showToast('Supabase init error: ' + e.message);
 }
 
+function dbg(msg){
+  var el = document.getElementById('dbgBar');
+  if(el) el.textContent = 'DEBUG: ' + msg;
+}
+
 function switchView(view){
   document.getElementById('tab-signin').classList.toggle('active', view==='signin');
   document.getElementById('tab-create').classList.toggle('active', view==='create');
   document.getElementById('view-signin').classList.toggle('active', view==='signin');
   document.getElementById('view-create').classList.toggle('active', view==='create');
   document.title = view === 'signin' ? 'CHTEO — Sign in' : 'CHTEO — Create account';
+  dbg('switchView(' + view + ') ran. view-create active=' +
+    document.getElementById('view-create').classList.contains('active') +
+    ' | view-signin active=' +
+    document.getElementById('view-signin').classList.contains('active'));
 }
 
-document.getElementById('tab-signin').addEventListener('click', function(){ switchView('signin'); });
-document.getElementById('tab-create').addEventListener('click', function(){ switchView('create'); });
+var tabSigninEl = document.getElementById('tab-signin');
+var tabCreateEl = document.getElementById('tab-create');
+dbg('script loaded. tab-signin found=' + !!tabSigninEl + ' tab-create found=' + !!tabCreateEl);
+
+tabSigninEl.addEventListener('click', function(){ dbg('tab-signin CLICKED'); switchView('signin'); });
+tabCreateEl.addEventListener('click', function(){ dbg('tab-create CLICKED'); switchView('create'); });
 
 function togglePw(inputId, btn){
   const input = document.getElementById(inputId);
