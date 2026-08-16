@@ -21,6 +21,29 @@
 input,select{width:100%;border:0;outline:0;background:transparent;color:var(--text);font:inherit;font-size:16px}input::placeholder{color:#8f949c}select{appearance:none;color:#8f949c}select.has-value{color:var(--text)}.chevron{color:#b8bdc5;flex-shrink:0}
 .slogan-wrap{position:relative}.slogan-input{padding-right:70px}.counter{position:absolute;right:18px;top:50%;transform:translateY(-50%);color:#8f949c;font-size:14px;pointer-events:none}.slogan-error{display:none;margin:8px 4px 0;color:var(--red);font-size:13px;font-weight:700}.slogan-wrap.over-limit .input-wrap{border-color:var(--red)}.slogan-wrap.over-limit .counter,.slogan-wrap.over-limit .slogan-error{color:var(--red)}.slogan-wrap.over-limit .slogan-error{display:block}
 .save-btn{width:100%;min-height:74px;border:1px solid #159447;border-radius:17px;background:linear-gradient(180deg,#2bc75f,#1eae50);color:#fff;font-size:18px;font-weight:850;letter-spacing:.04em;cursor:pointer;position:relative;z-index:1;pointer-events:auto}.save-btn:disabled{opacity:.55;cursor:not-allowed}
+
+/* Field validation (WhatsApp number, Country, etc.) */
+.input-wrap.field-error{border-color:var(--red)}
+.field-error-text{display:none;margin:8px 4px 0;color:var(--red);font-size:13px;font-weight:700;line-height:1.5}
+.field-error-text.show{display:block}
+
+/* Toast notification — replaces alert() popups for both errors and
+   save-success confirmation. */
+.toast{
+  position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom,0px));
+  transform:translateX(-50%) translateY(20px);
+  background:#232840;color:#fff;
+  padding:13px 20px;border-radius:12px;
+  font-size:14px;font-weight:600;line-height:1.4;
+  max-width:min(90%,380px);text-align:center;
+  box-shadow:0 12px 30px -10px rgba(0,0,0,.55);
+  opacity:0;pointer-events:none;
+  transition:opacity .25s ease, transform .25s ease;
+  z-index:100001;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.success{background:#1c7c4d}
+.toast.error{background:#7c1c2b}
 @media(max-width:380px){.back-btn{width:60px;height:60px}.topbar h1{font-size:25px}.photo-card{height:330px}.avatar,.avatar-wrap{width:160px;height:160px}}
 
 /* Photo picker bottom sheet */
@@ -124,20 +147,22 @@ input,select{width:100%;border:0;outline:0;background:transparent;color:var(--te
 <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden>
 </div></div>
 
-<div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label" data-i18n="editprofile.whatsapp">WHATSAPP NUMBER :</span></div><div class="input-wrap"><span class="input-icon">☏</span><input id="whatsapp" type="tel" placeholder="Enter your WhatsApp number" data-i18n-placeholder="editprofile.whatsappPh"></div></div>
+<div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label" data-i18n="editprofile.whatsapp">WHATSAPP NUMBER :</span></div><div class="input-wrap" id="whatsapp-wrap"><span class="input-icon">☏</span><input id="whatsapp" type="tel" placeholder="Enter your WhatsApp number" data-i18n-placeholder="editprofile.whatsappPh"></div><div class="field-error-text" id="whatsapp-err" data-i18n="editprofile.whatsappErr">Please enter a valid WhatsApp number (at least 7 digits).</div></div>
 <div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label" data-i18n="editprofile.email">EMAIL :</span></div><div class="input-wrap readonly"><span class="input-icon">✉</span><input id="email" type="email" placeholder="Enter your email" data-i18n-placeholder="editprofile.emailPh" readonly></div><div class="field-note" data-i18n="editprofile.emailNote">This is your login email and can't be changed here. Contact support to change it.</div></div>
 <div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label" data-i18n="editprofile.teamName">TEAM NAME :</span></div><div class="input-wrap"><span class="input-icon">♧</span><input id="teamName" type="text" placeholder="Enter your team name" data-i18n-placeholder="editprofile.teamNamePh"></div></div>
 
 <div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label" data-i18n="editprofile.slogan">TEAM SLOGAN :</span><span class="limit" data-i18n="editprofile.sloganMax">max 50 characters</span></div>
 <div class="slogan-wrap" id="sloganWrap"><div class="input-wrap slogan-input"><span class="input-icon">⚑</span><input id="slogan" type="text" placeholder="Enter your team slogan" data-i18n-placeholder="editprofile.sloganPh"><span class="counter" id="counter">0/50</span></div><div class="slogan-error" data-i18n="editprofile.sloganError">Slogan is over 50 characters.</div></div></div>
 
-<div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label" data-i18n="editprofile.country">COUNTY :</span></div><div class="input-wrap"><span class="input-icon">◎</span><select id="country"><option value="" data-i18n="editprofile.countrySelect">Select your country</option><option>Bangladesh</option><option>India</option><option>Pakistan</option><option>Nepal</option><option>Sri Lanka</option><option>United Arab Emirates</option><option>Saudi Arabia</option><option>United Kingdom</option><option>United States</option><option>Other</option></select><span class="chevron">⌄</span></div></div>
+<div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label" data-i18n="editprofile.country">COUNTY :</span></div><div class="input-wrap" id="country-wrap"><span class="input-icon">◎</span><select id="country"><option value="" data-i18n="editprofile.countrySelect">Select your country</option><option>Bangladesh</option><option>India</option><option>Pakistan</option><option>Nepal</option><option>Sri Lanka</option><option>United Arab Emirates</option><option>Saudi Arabia</option><option>United Kingdom</option><option>United States</option><option>Other</option></select><span class="chevron">⌄</span></div><div class="field-error-text" id="country-err" data-i18n="editprofile.countryErr">Please select your country.</div></div>
 
 <div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label" data-i18n="editprofile.location">LOCATION :</span></div><div class="input-wrap"><span class="input-icon">⌖</span><input id="location" type="text" placeholder="Enter your location" data-i18n-placeholder="editprofile.locationPh"></div></div>
 
 <button class="save-btn" id="saveBtn" type="submit" data-i18n="editprofile.save">SAVE CHANGES</button>
 </form>
 </div>
+
+<div class="toast" id="toast"></div>
 
 <div class="sheet-overlay" id="pickerOverlay">
   <div class="sheet">
@@ -569,6 +594,57 @@ fields.country.addEventListener('change',function(){
   this.classList.toggle('has-value',!!this.value);
 });
 
+/* ---------------- Field validation + toast helpers ---------------- */
+function showToast(msg, type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.remove('success','error');
+  if(type) t.classList.add(type);
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+function setFieldError(wrapId, errId, show){
+  document.getElementById(wrapId).classList.toggle('field-error', show);
+  document.getElementById(errId).classList.toggle('show', show);
+}
+
+function isWhatsappValid(value){
+  // Require at least 7 digits so an obviously-incomplete/garbage entry
+  // (e.g. "123" or "asdf") can't be saved silently.
+  return value.replace(/\D/g,'').length>=7;
+}
+
+// Clear each field's error the moment the user fixes it, instead of only
+// re-checking on the next Save attempt.
+fields.whatsapp.addEventListener('input',function(){
+  if(isWhatsappValid(this.value.trim())) setFieldError('whatsapp-wrap','whatsapp-err',false);
+});
+fields.country.addEventListener('change',function(){
+  if(this.value) setFieldError('country-wrap','country-err',false);
+});
+
+function validateForm(){
+  let ok=true;
+
+  const whatsappValid=isWhatsappValid(fields.whatsapp.value.trim());
+  setFieldError('whatsapp-wrap','whatsapp-err', !whatsappValid);
+  if(!whatsappValid) ok=false;
+
+  const countryValid=!!fields.country.value;
+  setFieldError('country-wrap','country-err', !countryValid);
+  if(!countryValid) ok=false;
+
+  if(!ok){
+    // Focus/scroll to whichever invalid field comes first.
+    if(!whatsappValid) fields.whatsapp.focus();
+    else if(!countryValid) fields.country.focus();
+  }
+
+  return ok;
+}
+
 /* Save EVERYTHING, then return to profile */
 document.getElementById('profileForm').addEventListener('submit', async e=>{
   e.preventDefault();
@@ -576,6 +652,12 @@ document.getElementById('profileForm').addEventListener('submit', async e=>{
   if(fields.slogan.value.length>50){
     fields.slogan.focus();
     updateSloganStatus();
+    showToast('Please fix the highlighted field before saving.','error');
+    return;
+  }
+
+  if(!validateForm()){
+    showToast('Please fix the highlighted fields before saving.','error');
     return;
   }
 
@@ -593,7 +675,7 @@ document.getElementById('profileForm').addEventListener('submit', async e=>{
     // Storage full is now rare since photos are resized before this
     // point, but if it ever happens, don't let it silently swallow the
     // rest of the save — tell the user and still continue.
-    alert('Your other profile changes were saved, but the photo was too large to store on this device. Please try a smaller photo.');
+    showToast('Other profile changes were saved, but the photo was too large to store on this device.','error');
   }
 
   // Push the edited fields to the Supabase 'profiles' table so the
@@ -608,6 +690,7 @@ document.getElementById('profileForm').addEventListener('submit', async e=>{
   // no confirmed 'location' column on the profiles table yet — add
   // one in Supabase (or map it to an existing column) before syncing it.
   saveBtn.disabled = true;
+  let syncFailed = false;
   await new Promise(resolve=>{
     if(!(window.CHTEO && window.CHTEO.getSupabaseClient)){ resolve(); return; }
     window.CHTEO.getSupabaseClient(async function(client){
@@ -640,7 +723,7 @@ document.getElementById('profileForm').addEventListener('submit', async e=>{
                 .upload(path, blob, { upsert: true, contentType: blob.type || 'image/jpeg' });
               if(uploadError){
                 console.warn('Avatar upload failed:', uploadError.message);
-                alert('Could not upload profile photo: ' + uploadError.message);
+                showToast('Could not upload profile photo: ' + uploadError.message,'error');
               } else {
                 const { data: urlData } = client.storage.from('avatars').getPublicUrl(path);
                 // Cache-bust: same path gets overwritten (upsert) every
@@ -652,7 +735,7 @@ document.getElementById('profileForm').addEventListener('submit', async e=>{
               }
             }catch(err){
               console.warn('Avatar upload failed:', err);
-              alert('Could not upload profile photo.');
+              showToast('Could not upload profile photo.','error');
             }
           } else if(pendingRemoved){
             try{
@@ -669,21 +752,32 @@ document.getElementById('profileForm').addEventListener('submit', async e=>{
             // TEMPORARY diagnostic — surfaces silent backend save failures
             // (e.g. missing RLS UPDATE policy on 'profiles') so they don't
             // go unnoticed. Remove/replace with nicer UI once confirmed fixed.
-            alert('Could not save to server: ' + error.message);
+            showToast('Could not save to server: ' + error.message,'error');
+            syncFailed = true;
           } else if(!updatedRows || updatedRows.length === 0){
             console.warn('Profile Supabase update matched 0 rows for user', user.id);
-            alert('Save did not reach the server — no matching profile row was updated. Check that a profiles row exists for this account and that RLS allows updates.');
+            showToast('Save did not reach the server — no matching profile row was updated.','error');
+            syncFailed = true;
           }
         }
       }catch(err){
         console.warn('Profile Supabase update failed:', err);
+        syncFailed = true;
       }
       resolve();
     });
   });
   saveBtn.disabled = false;
 
-  window.location.href='profile.html';
+  if(syncFailed){
+    // Don't silently redirect after a failed server sync — the user
+    // just saw why it failed; let them stay, retry, or back out on
+    // purpose instead of getting swept on to profile.html regardless.
+    return;
+  }
+
+  showToast('✓ Profile updated successfully', 'success');
+  setTimeout(()=>{ window.location.href='profile.html'; }, 1200);
 });
 </script>
 </body>
