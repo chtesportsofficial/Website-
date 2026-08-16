@@ -306,6 +306,84 @@
     gap:10px;
     cursor:pointer;
   }
+
+  /* Logout confirm modal */
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.6);
+    backdrop-filter:blur(3px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    z-index:100;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s ease;
+  }
+  .modal-overlay.show{
+    opacity:1;
+    pointer-events:auto;
+  }
+  .modal-box{
+    width:100%;
+    max-width:340px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:26px 22px 20px;
+    text-align:center;
+    transform:translateY(10px) scale(0.97);
+    transition:transform .2s ease;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,0.6);
+  }
+  .modal-overlay.show .modal-box{
+    transform:translateY(0) scale(1);
+  }
+  .modal-icon{
+    width:56px;height:56px;
+    border-radius:50%;
+    background:rgba(239,68,68,0.12);
+    color:var(--red);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    margin:0 auto 16px;
+  }
+  .modal-title{
+    font-size:17px;
+    font-weight:800;
+    margin-bottom:8px;
+  }
+  .modal-text{
+    font-size:13.5px;
+    color:var(--muted);
+    line-height:1.5;
+    margin-bottom:22px;
+  }
+  .modal-actions{
+    display:flex;
+    gap:10px;
+  }
+  .modal-btn{
+    flex:1;
+    padding:13px;
+    border-radius:12px;
+    font-size:14.5px;
+    font-weight:700;
+    cursor:pointer;
+    border:1px solid var(--border);
+    background:var(--card-2);
+    color:var(--text);
+    font-family:inherit;
+  }
+  .modal-btn:active{ transform:scale(0.98); }
+  .modal-btn.danger{
+    background:var(--red);
+    border-color:var(--red);
+    color:#fff;
+  }
 </style>
 <style>
 :root{
@@ -453,6 +531,20 @@
 
 </div>
 
+<div class="modal-overlay" id="logoutModal">
+  <div class="modal-box">
+    <div class="modal-icon">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+    </div>
+    <div class="modal-title" id="logoutModalTitle">Log out?</div>
+    <div class="modal-text" id="logoutModalText">Are you sure you want to log out of your account?</div>
+    <div class="modal-actions">
+      <button class="modal-btn" id="logoutCancelBtn" type="button">Cancel</button>
+      <button class="modal-btn danger" id="logoutConfirmBtn" type="button">Log out</button>
+    </div>
+  </div>
+</div>
+
 <script>
 function getProfile(){
   try { return JSON.parse(localStorage.getItem('user_profile') || '{}'); }
@@ -524,10 +616,34 @@ function getMsg(key, fallback){
 }
 
 const logoutBtn=document.getElementById('logoutBtn');
+const logoutModal=document.getElementById('logoutModal');
+const logoutCancelBtn=document.getElementById('logoutCancelBtn');
+const logoutConfirmBtn=document.getElementById('logoutConfirmBtn');
+const logoutModalTitle=document.getElementById('logoutModalTitle');
+const logoutModalText=document.getElementById('logoutModalText');
+
+function openLogoutModal(){
+  if(logoutModalTitle) logoutModalTitle.textContent = getMsg('profile.logoutTitle','Log out?');
+  if(logoutModalText) logoutModalText.textContent = getMsg('profile.logoutConfirm','Are you sure you want to log out of your account?');
+  if(logoutModal) logoutModal.classList.add('show');
+}
+function closeLogoutModal(){
+  if(logoutModal) logoutModal.classList.remove('show');
+}
+
 if(logoutBtn){
-  logoutBtn.addEventListener('click',function(){
-    const confirmed=confirm(getMsg('profile.logoutConfirm','আপনি কি লগ আউট করতে চান?'));
-    if(!confirmed) return;
+  logoutBtn.addEventListener('click', openLogoutModal);
+}
+if(logoutCancelBtn){
+  logoutCancelBtn.addEventListener('click', closeLogoutModal);
+}
+if(logoutModal){
+  logoutModal.addEventListener('click', function(e){
+    if(e.target === logoutModal) closeLogoutModal();
+  });
+}
+if(logoutConfirmBtn){
+  logoutConfirmBtn.addEventListener('click', function(){
     // Only clear the logged-in/session flag. Keep the user's saved profile
     // data (team name, slogan, email, whatsapp, picture) so it's still
     // there the next time they sign back in.
