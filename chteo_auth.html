@@ -365,9 +365,9 @@
 const SUPABASE_URL = 'https://myfficbwcbgbxbdqjexv.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
 
-let supabase;
+let supabaseClient;
 try {
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 } catch(e){
   showToast('Supabase init error: ' + e.message);
 }
@@ -440,7 +440,7 @@ async function handleSignin(){
   const submitBtn = document.querySelector('#view-signin .submit-btn');
   submitBtn.disabled = true;
 
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password: pw });
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: pw });
 
   submitBtn.disabled = false;
 
@@ -502,7 +502,7 @@ async function handleCreate(){
 
   // whatsapp o referral eta user_metadata hisebe save hocche —
   // pore Supabase dashboard e Authentication > Users e giye dekha jabe
-  const { data, error } = await supabase.auth.signUp({
+  const { data, error } = await supabaseClient.auth.signUp({
     email,
     password: pw,
     options: { data: { whatsapp, referral } }
@@ -533,5 +533,12 @@ async function handleCreate(){
 document.addEventListener('DOMContentLoaded', validateCreate);
 // ---- DEBUG END ----
 </script>
+
+<script>
+  var bar = document.getElementById('dbgBar');
+  if(bar) bar.textContent += ' | BOTTOM CANARY ✅ ' + new Date().toLocaleTimeString();
+  else console.log('dbgBar not found by bottom canary');
+</script>
+
 </body>
 </html>
