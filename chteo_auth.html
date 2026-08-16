@@ -344,6 +344,7 @@
       </div>
 
       <button class="submit-btn" id="create-btn" onclick="handleCreate()" disabled>Create account</button>
+      <div id="debug-validate" style="font-size:11px; color:#e5484d; margin-top:8px; text-align:center;"></div>
 
       <div class="switch-line">
         Already have an account? <a onclick="switchView('signin')">Sign in</a>
@@ -456,6 +457,13 @@ function validateCreate(){
   const pwOk = pw.length >= 6;
   const refOk = /^#\d+$/.test(ref);
   document.getElementById('create-btn').disabled = !(emailOk && waOk && pwOk && refOk);
+  // ---- DEBUG: mobile e live dekhar jonno ----
+  document.getElementById('debug-validate').textContent =
+    'email(' + email + ')=' + emailOk +
+    ' | wa(' + wa + ')=' + waOk +
+    ' | pw len ' + pw.length + '=' + pwOk +
+    ' | ref(' + ref + ')=' + refOk;
+  // ---- DEBUG END ----
   return {emailOk, waOk, pwOk, refOk};
 }
 
@@ -508,6 +516,9 @@ async function handleCreate(){
     showToast('Account created! Please check your email to confirm.', true);
   }
 }
+// ---- DEBUG: page load hobar shathe shathe ekbar dekhiye dey ----
+document.addEventListener('DOMContentLoaded', validateCreate);
+// ---- DEBUG END ----
 </script>
 </body>
 </html>
