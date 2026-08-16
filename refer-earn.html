@@ -566,6 +566,39 @@ function maskPhone(num){
   const end = num.slice(-3);
   return start + '***' + end;
 }
+
+/* ---------------- Referral link & code (own UID) ---------------- */
+function getProfile(){
+  try { return JSON.parse(localStorage.getItem('user_profile') || '{}'); }
+  catch(e){ return {}; }
+}
+
+// chteo_auth.html lives in the same folder as this page, so this works
+// no matter which domain/subfolder the site is actually hosted on.
+function buildAuthUrl(){
+  const path = window.location.pathname.replace(/[^/]*$/, 'chteo_auth.html');
+  return window.location.origin + path;
+}
+
+function renderReferral(){
+  const profile = getProfile();
+  const uid = profile.uid || localStorage.getItem('user_uid');
+  const linkInput = document.getElementById('inviteLink');
+  const codeInput = document.getElementById('inviteCode');
+  if(uid){
+    codeInput.value = '#' + uid;
+    linkInput.value = buildAuthUrl() + '?ref=' + encodeURIComponent(uid);
+  } else {
+    // Not signed in / UID not synced yet — show something honest
+    // instead of a placeholder that looks like a real code.
+    codeInput.value = 'Sign in to get your code';
+    linkInput.value = buildAuthUrl();
+  }
+}
+renderReferral();
+// global.js's Supabase sync can resolve the real UID after this page has
+// already rendered from cached/placeholder data — refresh once it lands.
+document.addEventListener('chteo:profile-synced', renderReferral);
 </script>
 
 </body>
