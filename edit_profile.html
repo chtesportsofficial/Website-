@@ -218,7 +218,13 @@ function getProfile(){
   catch(e){ return {}; }
 }
 function setProfile(data){
-  localStorage.setItem('user_profile', JSON.stringify(data));
+  // Merge with whatever is already saved (uid, and any other fields synced
+  // down from Supabase via global.js) instead of replacing the whole
+  // object — overwriting wiped out 'uid' every time this form was saved,
+  // since this form never had a uid field of its own.
+  const existing=getProfile();
+  const merged=Object.assign({}, existing, data);
+  localStorage.setItem('user_profile', JSON.stringify(merged));
 }
 
 /* Load previously saved profile data */
@@ -549,7 +555,7 @@ fields.country.addEventListener('change',function(){
 });
 
 /* Save EVERYTHING, then return to profile */
-document.getElementById('profileForm').addEventListener('submit',e=>{
+document.getElementById('profileForm').addEventListener('submit', async e=>{
   e.preventDefault();
 
   if(fields.slogan.value.length>50){
@@ -574,6 +580,41 @@ document.getElementById('profileForm').addEventListener('submit',e=>{
     // rest of the save — tell the user and still continue.
     alert('Your other profile changes were saved, but the photo was too large to store on this device. Please try a smaller photo.');
   }
+
+  // Push the edited fields to the Supabase 'profiles' table so the
+  // change actually persists server-side and shows up on other
+  // devices/logins — until now this form only ever wrote to this
+  // browser's localStorage.
+  //
+  // NOTE: 'email' is intentionally NOT written here — it belongs to
+  // Supabase Auth (auth.users), not the profiles table, and updating
+  // it needs a separate auth.updateUser() call (that's problem #4,
+  // not this one). 'location' is also skipped for now since there's
+  // no confirmed 'location' column on the profiles table yet — add
+  // one in Supabase (or map it to an existing column) before syncing it.
+  saveBtn.disabled = true;
+  await new Promise(resolve=>{
+    if(!(window.CHTEO && window.CHTEO.getSupabaseClient)){ resolve(); return; }
+    window.CHTEO.getSupabaseClient(async function(client){
+      try{
+        const { data: userRes } = await client.auth.getUser();
+        const user = userRes && userRes.user;
+        if(user){
+          const { error } = await client.from('profiles').update({
+            whatsapp: data.whatsapp,
+            team_name: data.teamName,
+            slogan: data.slogan,
+            country: data.country
+          }).eq('id', user.id);
+          if(error) console.warn('Profile Supabase update failed:', error.message);
+        }
+      }catch(err){
+        console.warn('Profile Supabase update failed:', err);
+      }
+      resolve();
+    });
+  });
+  saveBtn.disabled = false;
 
   window.location.href='profile.html';
 });
