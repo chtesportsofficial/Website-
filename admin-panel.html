@@ -354,11 +354,10 @@
 const SUPABASE_URL = 'https://myfficbwcbgbxbdqjexv.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
 
-// Only this email is allowed into the dashboard. The actual data
-// access is enforced server-side by the RLS policy on the profiles
-// table (see admin_policy.sql) — this check is just what decides
-// whether to SHOW the dashboard UI in the browser.
-const ADMIN_EMAIL = 'joustochakma@gmail.com';
+// Who gets into the dashboard is now driven by the profiles.is_admin
+// flag (see admin_policy.sql) instead of a hardcoded email — this check
+// just decides whether to SHOW the dashboard UI; the RLS policy on the
+// profiles table is what actually enforces data access server-side.
 
 let supabaseClient;
 try {
@@ -422,7 +421,13 @@ async function checkAccess(){
     return;
   }
 
-  if(session.user.email !== ADMIN_EMAIL){
+  const { data: profile, error: profileErr } = await supabaseClient
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', session.user.id)
+    .single();
+
+  if(profileErr || !profile || !profile.is_admin){
     document.getElementById('denied-email').textContent = session.user.email;
     showGate('denied');
     return;
