@@ -76,7 +76,11 @@
       slogan: (row && row.slogan) || current.slogan,
       country: (row && row.country) || current.country,
       uid: (row && row.user_number != null) ? row.user_number : current.uid,
-      avatarUrl: (row && row.avatar_url) || current.avatarUrl
+      avatarUrl: (row && row.avatar_url) || current.avatarUrl,
+      // Whether this signed-in user is an admin (drives the "Admin Panel"
+      // row in profile.html). Use an explicit undefined-check rather than
+      // `||` so that a real `false` from Supabase isn't lost.
+      isAdmin: (row && typeof row.is_admin !== "undefined") ? !!row.is_admin : current.isAdmin
     });
     localStorage.setItem("user_profile", JSON.stringify(merged));
     if (row && row.user_number != null) localStorage.setItem("user_uid", String(row.user_number));
