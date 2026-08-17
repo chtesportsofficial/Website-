@@ -116,17 +116,22 @@
     width:7px;height:7px;border-radius:50%;
     background:#3557ff;
   }
+  .profile-meta{
+    display:flex; align-items:center; gap:9px;
+    margin-top:8px; flex-wrap:wrap;
+    padding-left:74px;
+  }
   .country-pill{
-    position:absolute;
-    top:18px; right:18px;
+    position:static;
     display:flex; align-items:center; gap:7px;
-    background:var(--line);
-    border-radius:20px;
-    padding:6px 12px 6px 14px;
-    font-size:10.5px; font-weight:800;
-    letter-spacing:0.4px; text-transform:uppercase;
+    background:#eef1f8;
+    border:1px solid #e0e4ee;
+    border-radius:18px;
+    padding:6px 11px 6px 12px;
+    font-size:10px; font-weight:900;
+    letter-spacing:.35px; text-transform:uppercase;
     color:var(--ink);
-    max-width:150px;
+    max-width:155px;
   }
   .country-pill span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .flag-dot{
@@ -137,10 +142,18 @@
     content:""; position:absolute; width:6px; height:6px; border-radius:50%;
     background:#c8102e; top:50%; left:46%; transform:translate(-50%,-50%);
   }
+  .meta-sep{ width:4px; height:4px; border-radius:50%; background:#cfd5e3; flex-shrink:0; }
+  .location-meta{
+    display:flex; align-items:center; gap:5px;
+    font-size:10.5px; font-weight:850; color:#5d6679;
+    max-width:145px;
+  }
+  .location-meta svg{ color:#28c76f; flex-shrink:0; }
+  .location-meta span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
   .card-head{
     display:flex; align-items:center; gap:12px;
-    padding-right:88px;
+    padding-right:0;
   }
   .avatar-lg{
     width:62px; height:62px;
@@ -174,7 +187,7 @@
     background:#f4f5fb;
     border-radius:12px;
     padding:10px 12px;
-    margin-top:12px;
+    margin-top:14px;
     font-size:13px; color:var(--muted);
     overflow-wrap:anywhere;
   }
@@ -302,8 +315,17 @@
           <div class="avatar-lg" id="avatarLg"></div>
           <div class="head-text">
             <div class="name" id="nameEl">----</div>
-            <div class="email" id="emailEl">—</div>
-            <div class="status-row" id="statusRow"></div>
+          </div>
+        </div>
+
+        <div class="profile-meta">
+          <div class="country-pill" id="countryPill">
+            <span class="flag-dot"></span><span id="countryPillText">----</span>
+          </div>
+          <span class="meta-sep"></span>
+          <div class="location-meta">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.7"/></svg>
+            <span id="locationMetaText">----</span>
           </div>
         </div>
 
@@ -375,7 +397,7 @@ function initials(name){
 
 // Fields already covered elsewhere on the page (avatar/name/badges,
 // the country pill, the slogan box) — never listed in either row list.
-const ALWAYS_HIDDEN = new Set(['id', 'full_name', 'avatar_url', 'is_admin', 'is_banned', 'bio', 'country', 'slogan']);
+const ALWAYS_HIDDEN = new Set(['id', 'full_name', 'avatar_url', 'is_admin', 'is_banned', 'bio', 'country', 'slogan', 'location']);
 
 // Everything below follows the requested serial:
 // UID, WhatsApp, Email, Location -> main info list (photo/team name/
@@ -456,7 +478,6 @@ function renderTarget(){
   const p = targetProfile;
 
   document.getElementById('nameEl').textContent = p.full_name ? p.full_name : '----';
-  document.getElementById('emailEl').textContent = p.email || '—';
 
   const avatarLg = document.getElementById('avatarLg');
   avatarLg.innerHTML = p.avatar_url
@@ -475,14 +496,9 @@ function renderTarget(){
     if(roleText) roleText.textContent = p.is_admin ? 'ADMIN' : 'USER';
   }
 
-  // Country pill, top-right of the card
-  const countryPill = document.getElementById('countryPill');
-  if(p.country){
-    document.getElementById('countryPillText').textContent = p.country;
-    countryPill.style.display = 'flex';
-  } else {
-    countryPill.style.display = 'none';
-  }
+  // Profile meta: country + location on the same line, like the main profile.
+  document.getElementById('countryPillText').textContent = p.country || '----';
+  document.getElementById('locationMetaText').textContent = p.location || '----';
 
   // Slogan box, under the avatar/name
   const sloganBox = document.getElementById('sloganBox');
