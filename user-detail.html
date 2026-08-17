@@ -89,10 +89,25 @@
   .profile-card{
     background:var(--white);
     border-radius:22px;
-    padding:20px 18px 8px;
+    padding:16px 14px 10px;
     box-shadow:0 20px 44px -22px rgba(0,0,0,0.35);
-    margin-bottom:16px;
+    margin-bottom:14px;
     position:relative;
+  }
+  .admin-corner{
+    position:absolute; top:12px; right:12px;
+    display:none; align-items:center; gap:5px;
+    padding:5px 9px; border-radius:999px;
+    background:#fff; color:#20242a;
+    border:1px solid #e3e5ea;
+    box-shadow:0 4px 12px rgba(0,0,0,.10);
+    font-size:9px; font-weight:900; letter-spacing:.04em;
+  }
+  .admin-corner.show{display:inline-flex;}
+  .admin-dot{
+    width:7px;height:7px;border-radius:50%;
+    background:#f59e0b;
+    box-shadow:0 0 0 3px rgba(245,158,11,.12);
   }
   .country-pill{
     position:absolute;
@@ -117,11 +132,11 @@
   }
 
   .card-head{
-    display:flex; align-items:center; gap:14px;
-    padding-right:64px;
+    display:flex; align-items:center; gap:12px;
+    padding-right:88px;
   }
   .avatar-lg{
-    width:64px; height:64px;
+    width:62px; height:62px;
     border-radius:50%;
     background:var(--navy-2);
     color:#fff;
@@ -132,14 +147,14 @@
   .avatar-lg img{ width:100%; height:100%; object-fit:cover; }
   .head-text{ min-width:0; }
   .card-head .name{
-    font-size:17px; font-weight:800; line-height:1.25;
+    font-size:18px; font-weight:900; line-height:1.2;
     overflow-wrap:anywhere;
   }
   .card-head .email{
     font-size:12.5px; color:var(--muted); margin-top:2px;
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
-  .status-row{ display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  .status-row{ display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
   .badge{
     padding:4px 11px; border-radius:20px;
     font-size:11px; font-weight:800;
@@ -151,8 +166,8 @@
   .slogan-box{
     background:#f4f5fb;
     border-radius:12px;
-    padding:11px 14px;
-    margin-top:16px;
+    padding:10px 12px;
+    margin-top:12px;
     font-size:13px; color:var(--muted);
     overflow-wrap:anywhere;
   }
@@ -165,22 +180,22 @@
 
   .info-list{ margin-top:4px; }
   .info-row{
-    display:flex; align-items:center; gap:12px;
-    padding:11px 0; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:10px;
+    padding:9px 0; border-bottom:1px solid var(--line);
   }
   .info-row:last-child{ border-bottom:none; }
   .icon-chip{
-    width:36px; height:36px; border-radius:10px; flex-shrink:0;
+    width:32px; height:32px; border-radius:9px; flex-shrink:0;
     background:rgba(28,124,77,0.1); color:var(--success);
     display:flex; align-items:center; justify-content:center;
   }
   .info-text{ flex:1; min-width:0; }
   .info-label{
-    font-size:10.5px; font-weight:700; text-transform:uppercase;
+    font-size:9.5px; font-weight:800; text-transform:uppercase;
     letter-spacing:0.3px; color:var(--muted);
   }
   .info-value{
-    font-size:14px; font-weight:700; margin-top:1px;
+    font-size:13px; font-weight:750; margin-top:1px;
     overflow-wrap:anywhere;
   }
   .copy-btn{
@@ -191,7 +206,36 @@
   }
   .copy-btn:hover{ background:#d7d9ea; }
 
-  .actions-row{ display:flex; gap:10px; margin-top:18px; }
+
+  .other-card{
+    background:var(--white);
+    border-radius:18px;
+    padding:12px;
+    box-shadow:0 14px 30px -20px rgba(0,0,0,.28);
+    margin-top:14px;
+  }
+  .other-heading{
+    display:flex; align-items:center; gap:7px;
+    font-size:10px; font-weight:900;
+    text-transform:uppercase; letter-spacing:.5px;
+    color:var(--ink); margin:0 2px 8px;
+  }
+  .other-heading-bar{
+    width:4px;height:15px;border-radius:999px;background:var(--success);
+  }
+  .other-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+  .other-item{
+    display:flex;align-items:center;gap:8px;min-width:0;
+    padding:8px;border-radius:11px;background:#f6f7fb;
+  }
+  .other-item .icon-chip{width:28px;height:28px;border-radius:8px;}
+  .other-item .icon-chip svg{width:14px;height:14px;}
+  .other-item .info-label{font-size:8px;}
+  .other-item .info-value{
+    font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  @media(max-width:360px){.other-grid{grid-template-columns:1fr;}}
+  .actions-row{ display:flex; gap:10px; margin-top:16px; }
   .action-btn{
     flex:1; padding:13px; border-radius:12px; border:1px solid var(--line);
     background:var(--white); font-size:13.5px; font-weight:700;
@@ -243,6 +287,7 @@
 
     <div class="content">
       <div class="profile-card">
+        <div class="admin-corner" id="adminCorner"><span class="admin-dot"></span>ADMIN</div>
         <div class="country-pill" id="countryPill" style="display:none;">
           <span class="flag-dot"></span><span id="countryPillText"></span>
         </div>
@@ -260,10 +305,11 @@
 
         <div class="info-list" id="detailsList"></div>
 
-        <div id="otherSection" style="display:none;">
-          <div class="section-label">Other details</div>
-          <div class="info-list" id="otherList"></div>
-        </div>
+      </div>
+
+      <div class="other-card" id="otherSection" style="display:none;">
+        <div class="other-heading"><span class="other-heading-bar"></span><span>OTHER DETAILS</span></div>
+        <div class="other-grid" id="otherList"></div>
       </div>
 
       <div class="actions-row">
@@ -415,6 +461,9 @@ function renderTarget(){
   else if(p.is_admin) badges = '<span class="badge badge-admin">Admin</span>';
   statusRow.innerHTML = badges;
 
+  const adminCorner = document.getElementById('adminCorner');
+  if(adminCorner) adminCorner.classList.toggle('show', !!p.is_admin);
+
   // Country pill, top-right of the card
   const countryPill = document.getElementById('countryPill');
   if(p.country){
@@ -459,7 +508,15 @@ function renderTarget(){
     otherRows.push([key, key, val]);
   });
 
-  const rowsHtml = rows => rows.map(([key, label, val], i) => `
+  const rowsHtml = (rows, compact=false) => rows.map(([key, label, val]) => compact ? `
+    <div class="other-item">
+      <div class="icon-chip">${ICONS[key] || ICONS.default}</div>
+      <div class="info-text">
+        <div class="info-label">${escapeHtml(label)}</div>
+        <div class="info-value">${escapeHtml(val)}</div>
+      </div>
+    </div>
+  ` : `
     <div class="info-row">
       <div class="icon-chip">${ICONS[key] || ICONS.default}</div>
       <div class="info-text">
@@ -471,7 +528,7 @@ function renderTarget(){
   `).join('');
 
   document.getElementById('detailsList').innerHTML = rowsHtml(profileRows);
-  document.getElementById('otherList').innerHTML = rowsHtml(otherRows);
+  document.getElementById('otherList').innerHTML = rowsHtml(otherRows, true);
   document.getElementById('otherSection').style.display = otherRows.length ? 'block' : 'none';
 
   document.querySelectorAll('.copy-btn').forEach(btn => {
