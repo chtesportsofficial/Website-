@@ -125,6 +125,14 @@
   .topbar .brand img{ width:30px; height:30px; border-radius:7px; }
   .topbar .brand span{ color:#fff; font-weight:800; font-size:15.5px; }
   .topbar .brand small{ color:rgba(255,255,255,0.5); font-size:11.5px; font-weight:600; margin-left:6px; }
+  .back-btn{
+    width:38px; height:38px; border-radius:10px;
+    background:rgba(255,255,255,0.08);
+    border:none; color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; flex-shrink:0;
+  }
+  .back-btn:hover{ background:rgba(255,255,255,0.15); }
   .signout-btn{
     background:rgba(255,255,255,0.08);
     color:#fff;
@@ -405,6 +413,9 @@
   <div class="app" id="app">
     <div class="topbar">
       <div class="brand">
+        <button class="back-btn" onclick="window.location.href='profile.html'" aria-label="Back">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </button>
         <img src="https://raw.githubusercontent.com/chtesportsofficial/Chteo_img/refs/heads/main/CHTEO%20(1).png" alt="CHTEO logo">
         <span>CHTEO</span>
         <small>ADMIN PANEL</small>
@@ -621,6 +632,10 @@ function initials(name){
 
 function renderUsers(){
   const search = document.getElementById('user-search').value.trim().toLowerCase();
+  // Users naturally type the UID as it's displayed, e.g. "#2" — but
+  // user_number in the DB is just the bare number (2), so strip a
+  // leading "#" before matching or the UID search never hits.
+  const searchUid = search.replace(/^#/, '');
   const list = document.getElementById('users-list');
   const empty = document.getElementById('users-empty');
 
@@ -636,7 +651,7 @@ function renderUsers(){
         String(u.full_name ?? '').toLowerCase().includes(search) ||
         String(u.email ?? '').toLowerCase().includes(search) ||
         String(u.whatsapp ?? '').toLowerCase().includes(search) ||
-        String(u.user_number ?? '').toLowerCase().includes(search)
+        String(u.user_number ?? '').toLowerCase().includes(searchUid)
       )
     : allUsers;
 

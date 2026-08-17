@@ -115,6 +115,14 @@
   .badge-user{ background:rgba(28,124,77,0.12); color:var(--success); }
   .badge-blocked{ background:rgba(229,72,77,0.12); color:var(--error); }
 
+  .panel-title{
+    color:rgba(255,255,255,0.6);
+    font-size:12px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:0.4px;
+    margin:0 4px 8px;
+  }
   .panel{
     background:var(--white);
     border-radius:20px;
@@ -194,7 +202,11 @@
         <div class="status-row" id="statusRow"></div>
       </div>
 
+      <div class="panel-title">Profile details</div>
       <div class="panel" id="detailsPanel"></div>
+
+      <div class="panel-title">Other details</div>
+      <div class="panel" id="otherPanel"></div>
 
       <div class="actions-row">
         <button class="action-btn make-admin" id="adminToggleBtn">Make Admin</button>
@@ -248,15 +260,30 @@ function initials(name){
   return name.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
 }
 
-// Fields to hide from the generic "all details" list because they
-// already have a dedicated spot (avatar/name/email/badges), are
-// internal (id), or just aren't useful to show here (bio).
-const HIDDEN_FIELDS = new Set(['id', 'full_name', 'avatar_url', 'email', 'is_admin', 'is_banned', 'bio']);
-const FIELD_LABELS = {
-  whatsapp: 'WhatsApp', uid: 'UID', user_number: 'UID', referral: 'Referral code',
-  bio: 'Bio', slogan: 'Slogan', country: 'Country',
-  created_at: 'Joined', updated_at: 'Last updated'
-};
+// Fields already covered elsewhere on the page (avatar/name/badges) or
+// not useful here — never listed in either details box.
+const ALWAYS_HIDDEN = new Set(['id', 'full_name', 'avatar_url', 'is_admin', 'is_banned', 'bio']);
+
+// Everything below follows the requested serial:
+// Profile photo, UID, WhatsApp, Email, Team name, Slogan, Country, Location
+// -> "Profile details" box (photo/team name are already shown above in
+//    the profile head, so this box covers the rest of that group)
+// Referral code, Joined, Last updated, User Serial
+// -> "Other details" box
+const PROFILE_FIELDS = [
+  ['user_number', 'UID', v => v != null ? ('#' + v) : null],
+  ['whatsapp', 'WhatsApp'],
+  ['email', 'Email'],
+  ['slogan', 'Slogan'],
+  ['country', 'Country'],
+  ['location', 'Location'],
+];
+const OTHER_FIELDS = [
+  ['referral', 'Referral code'],
+  ['created_at', 'Joined', v => v ? new Date(v).toLocaleString() : null],
+  ['updated_at', 'Last updated', v => v ? new Date(v).toLocaleString() : null],
+  ['user_number', 'User Serial'],
+];
 
 async function checkAccess(){
   showGate('checking');
@@ -320,26 +347,41 @@ function renderTarget(){
   else if(p.is_admin) badges = '<span class="badge badge-admin">Admin</span>';
   statusRow.innerHTML = badges;
 
-  const panel = document.getElementById('detailsPanel');
-  const uidVal = p.user_number != null ? ('#' + p.user_number) : '—';
-  const rows = [['UID', uidVal]];
+  function buildRows(fieldList){
+    const rows = [];
+    fieldList.forEach(([key, label, transform]) => {
+      let val = p[key];
+      if(val === null || val === undefined || val === '') return;
+      if(transform) val = transform(val);
+      if(val === null || val === undefined || val === '') return;
+      rows.push([label, val]);
+    });
+    return rows;
+  }
+
+  const profileRows = buildRows(PROFILE_FIELDS);
+  const otherRows = buildRows(OTHER_FIELDS);
+
+  // Any field not explicitly placed above and not always-hidden still
+  // shows up, so nothing silently disappears if the table gains a
+  // new column later — it lands in "Other details".
+  const placedKeys = new Set([...PROFILE_FIELDS, ...OTHER_FIELDS].map(f => f[0]));
   Object.keys(p).forEach(key => {
-    if(HIDDEN_FIELDS.has(key) || key === 'user_number') return;
-    let val = p[key];
+    if(ALWAYS_HIDDEN.has(key) || placedKeys.has(key)) return;
+    const val = p[key];
     if(val === null || val === undefined || val === '') return;
-    if((key === 'created_at' || key === 'updated_at') && val){
-      val = new Date(val).toLocaleString();
-    }
-    const label = FIELD_LABELS[key] || key;
-    rows.push([label, val]);
+    otherRows.push([key, val]);
   });
 
-  panel.innerHTML = rows.map(([label, val]) => `
+  const rowsHtml = rows => rows.map(([label, val]) => `
     <div class="info-row">
       <div class="info-label">${escapeHtml(label)}</div>
       <div class="info-value">${escapeHtml(val)}</div>
     </div>
   `).join('');
+
+  document.getElementById('detailsPanel').innerHTML = rowsHtml(profileRows);
+  document.getElementById('otherPanel').innerHTML = rowsHtml(otherRows);
 
   const adminBtn = document.getElementById('adminToggleBtn');
   adminBtn.textContent = p.is_admin ? 'Remove Admin' : 'Make Admin';
