@@ -207,6 +207,56 @@
   tr:last-child td{ border-bottom:none; }
   .table-wrap{ overflow-x:auto; padding-bottom:14px; }
 
+  /* ---------- Mobile card layout for tables ---------- */
+  /* Below 640px, tables stop scrolling sideways and instead render
+     each row as a stacked card — every cell shows its column name
+     (from data-label, set in JS/markup) above its value. */
+  @media (max-width: 640px){
+    .table-wrap{ overflow-x:visible; }
+    table, thead, tbody, th, td, tr{ display:block; width:100%; }
+    thead{
+      position:absolute;
+      width:1px; height:1px;
+      overflow:hidden;
+      clip:rect(0 0 0 0);
+      white-space:nowrap;
+    }
+    table{ border-collapse:separate; border-spacing:0 12px; }
+    tr{
+      background:var(--white);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:4px 4px 10px;
+      box-shadow:0 8px 20px -14px rgba(0,0,0,0.25);
+    }
+    td{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      padding:9px 12px;
+      border-bottom:1px solid var(--line);
+      max-width:none;
+      text-align:right;
+    }
+    td:last-child{ border-bottom:none; }
+    td::before{
+      content: attr(data-label);
+      font-size:11px;
+      font-weight:700;
+      text-transform:uppercase;
+      letter-spacing:0.3px;
+      color:var(--muted);
+      text-align:left;
+      flex-shrink:0;
+      padding-top:1px;
+    }
+    /* Leaderboard rank badge already carries its own meaning —
+       no need to duplicate a "#" label in front of it. */
+    #leaderboard-table td[data-label="#"]::before{ content:""; }
+    #leaderboard-table td[data-label="#"]{ justify-content:flex-start; }
+  }
+
   .rank-badge{
     display:inline-flex;
     align-items:center;
@@ -501,9 +551,9 @@ function renderLeaderboard(){
 
   body.innerHTML = ranked.map(([code, count], i) => `
     <tr>
-      <td><span class="rank-badge">${i + 1}</span></td>
-      <td>${escapeHtml(code)}</td>
-      <td>${count}</td>
+      <td data-label="#"><span class="rank-badge">${i + 1}</span></td>
+      <td data-label="Referral code">${escapeHtml(code)}</td>
+      <td data-label="Times used">${count}</td>
     </tr>
   `).join('');
 }
@@ -530,6 +580,15 @@ function renderUsers(){
     ...preferredOrder.filter(k => allKeys.includes(k)),
     ...allKeys.filter(k => !preferredOrder.includes(k) && k !== 'id')
   ];
+  // Human-readable label for each column's data-label (drives the
+  // mobile card view's field name) — falls back to the raw column
+  // name for anything not in this map.
+  const columnLabels = {
+    email: 'Email', whatsapp: 'WhatsApp', referral: 'Referral',
+    uid: 'UID', created_at: 'Created at', full_name: 'Full name',
+    avatar_url: 'Avatar URL', bio: 'Bio', updated_at: 'Updated at',
+    is_admin: 'Admin'
+  };
 
   thead.innerHTML = '<tr>' + columns.map(c => `<th>${escapeHtml(c)}</th>`).join('') + '</tr>';
 
@@ -550,7 +609,8 @@ function renderUsers(){
     if(c === 'created_at' && val){
       val = new Date(val).toLocaleString();
     }
-    return `<td>${escapeHtml(val ?? '—')}</td>`;
+    const label = columnLabels[c] || c;
+    return `<td data-label="${escapeHtml(label)}">${escapeHtml(val ?? '—')}</td>`;
   }).join('') + '</tr>').join('');
 }
 
