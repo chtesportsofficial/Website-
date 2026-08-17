@@ -57,55 +57,22 @@
     font-weight:800;
   }
 
-  /* Profile Card */
-  .profile-card{
+  /* Compact professional profile card */
+  .id-card{
     background:var(--card);
     border:1px solid var(--border);
     border-radius:20px;
-    padding:22px;
-    position:relative;
-    margin-bottom:18px;
+    padding:14px;
+    margin-bottom:16px;
+    box-shadow:0 10px 28px rgba(0,0,0,.08);
   }
-  .country-badge{
-    position:absolute;
-    top:22px; right:22px;
-    background:var(--card-2);
-    border:1px solid var(--border);
-    border-radius:20px;
-    padding:8px 14px;
+  .id-head{
     display:flex;
     align-items:center;
-    gap:8px;
-    font-size:12px;
-    letter-spacing:0.06em;
-    color:var(--text);
-    font-weight:700;
-  }
-  .flag-dot{
-    width:16px;height:16px;
-    border-radius:50%;
-    background:#0b3d1f;
-    position:relative;
-    overflow:hidden;
-    display:inline-block;
-  }
-  .flag-dot::after{
-    content:"";
-    position:absolute;
-    width:8px;height:8px;
-    border-radius:50%;
-    background:#c8102e;
-    top:50%; left:45%;
-    transform:translate(-50%,-50%);
-  }
-  .avatar-row{
-    display:flex;
-    align-items:center;
-    gap:18px;
-    margin-top:34px;
+    gap:12px;
   }
   .avatar{
-    width:110px;height:110px;
+    width:64px;height:64px;
     border-radius:50%;
     background:var(--card-2);
     border:1px solid var(--border);
@@ -114,9 +81,9 @@
     display:flex;
     align-items:center;
     justify-content:center;
-    overflow:visible;
+    overflow:hidden;
   }
-  .avatar svg{ width:60%; height:60%; opacity:0.55; }
+  .avatar svg{ width:52%; height:52%; opacity:.55; }
   .avatar #avatarImg{
     position:absolute;
     inset:0;
@@ -126,91 +93,144 @@
     object-fit:cover;
     z-index:1;
   }
-  .team-name{
-    font-size:28px;
-    font-weight:900;
-    letter-spacing:0.01em;
-    margin:0;
+  .id-head-text{
+    flex:1;
+    min-width:0;
   }
-  .slogan-box{
+  .team-name{
+    font-size:20px;
+    font-weight:900;
+    letter-spacing:.01em;
+    margin:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .country-location{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    margin-top:7px;
+    min-width:0;
+    color:var(--muted);
+    font-size:10.5px;
+    font-weight:800;
+    letter-spacing:.035em;
+    text-transform:uppercase;
+  }
+  .country-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
     background:var(--card-2);
     border:1px solid var(--border);
-    border-radius:14px;
-    padding:14px 16px;
-    margin-top:14px;
+    border-radius:999px;
+    padding:5px 8px;
+    color:var(--text);
+    white-space:nowrap;
+  }
+  .flag-dot{
+    width:11px;height:11px;
+    border-radius:50%;
+    background:#0b3d1f;
+    position:relative;
+    overflow:hidden;
+    display:inline-block;
+    flex-shrink:0;
+  }
+  .flag-dot::after{
+    content:"";
+    position:absolute;
+    width:5px;height:5px;
+    border-radius:50%;
+    background:#c8102e;
+    top:50%;left:45%;
+    transform:translate(-50%,-50%);
+  }
+  .location-text{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .location-text svg{width:12px;height:12px;flex-shrink:0;color:var(--green);}
+  .meta-dot{color:var(--border);font-size:12px;}
+  .slogan-box{
+    margin-top:12px;
+    background:var(--card-2);
+    border:1px solid var(--border);
+    border-radius:13px;
+    padding:9px 11px;
   }
   .slogan-label{
-    color:var(--green);
-    font-size:11px;
-    font-weight:700;
-    letter-spacing:0.05em;
-    margin-bottom:6px;
-    text-transform:uppercase;
+    display:none;
   }
   .slogan-text{
     color:var(--muted);
-    font-size:13.5px;
-    line-height:1.5;
+    font-size:12px;
+    line-height:1.45;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
   }
-
-  /* User info section */
-  .section-title{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    font-size:14px;
-    font-weight:800;
-    letter-spacing:0.04em;
-    margin:22px 0 12px;
+  .id-divider{
+    height:1px;
+    background:var(--border);
+    margin:12px 0 9px;
   }
-  .section-title .bar{
-    width:4px;height:16px;
-    background:var(--green);
-    border-radius:2px;
-  }
-  .info-card{
-    background:var(--card);
-    border:1px solid var(--border);
-    border-radius:18px;
-    padding:6px;
+  .info-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:7px;
   }
   .info-row{
     display:flex;
     align-items:center;
-    gap:14px;
-    padding:14px 10px;
-    border-bottom:1px solid var(--border);
+    gap:8px;
+    padding:8px;
+    border-radius:11px;
+    background:var(--card-2);
+    min-width:0;
   }
-  .info-row:last-child{ border-bottom:none; }
+  .info-row.wide{grid-column:1 / -1;}
   .icon-chip{
-    width:38px;height:38px;
-    border-radius:10px;
+    width:29px;height:29px;
+    border-radius:9px;
     background:var(--green-dim);
-    display:flex;align-items:center;justify-content:center;
+    display:flex;
+    align-items:center;
+    justify-content:center;
     color:var(--green);
     flex-shrink:0;
   }
-  .info-text{ flex:1; min-width:0; }
+  .icon-chip svg{width:14px;height:14px;}
+  .info-text{flex:1;min-width:0;}
   .info-label{
-    font-size:11px;
+    font-size:9px;
     color:var(--muted);
-    letter-spacing:0.06em;
+    letter-spacing:.05em;
     text-transform:uppercase;
-    margin-bottom:2px;
+    margin-bottom:1px;
   }
   .info-value{
-    font-size:15px;
-    font-weight:700;
+    font-size:12px;
+    font-weight:750;
     overflow:hidden;
     text-overflow:ellipsis;
     white-space:nowrap;
   }
   .copy-btn{
-    width:38px;height:38px;
-    border-radius:10px;
-    background:var(--card-2);
+    width:25px;height:25px;
+    border-radius:8px;
+    background:transparent;
     border:1px solid var(--border);
-    display:flex;align-items:center;justify-content:center;
+    display:flex;
+    align-items:center;
+    justify-content:center;
     color:var(--muted);
     cursor:pointer;
     flex-shrink:0;
@@ -219,13 +239,13 @@
   /* Stats row */
   .stats-row{
     display:flex;
-    gap:14px;
-    margin:18px 0;
+    gap:10px;
+    margin:14px 0;
   }
   .stat-card{
     flex:1;
-    border-radius:18px;
-    padding:18px;
+    border-radius:15px;
+    padding:12px;
     position:relative;
     overflow:hidden;
     border:1px solid var(--border);
@@ -239,23 +259,23 @@
     border-color:rgba(167,139,250,0.35);
   }
   .stat-icon{
-    width:42px;height:42px;
+    width:34px;height:34px;
     border-radius:50%;
     display:flex;align-items:center;justify-content:center;
-    margin-bottom:10px;
+    margin-bottom:7px;
   }
   .slot .stat-icon{ background:var(--green-dim); color:var(--green); }
   .rank .stat-icon{ background:var(--purple-dim); color:var(--purple); }
   .stat-label{
-    font-size:11px;
+    font-size:9px;
     font-weight:800;
-    letter-spacing:0.05em;
+    letter-spacing:.04em;
     text-transform:uppercase;
-    margin-bottom:6px;
+    margin-bottom:4px;
   }
   .slot .stat-label{ color:var(--green); }
   .rank .stat-label{ color:var(--purple); }
-  .stat-value{ font-size:30px; font-weight:900; }
+  .stat-value{ font-size:22px; font-weight:900; }
 
   /* Menu list */
   .menu-card{
@@ -407,59 +427,68 @@
     <h1 data-i18n="profile.title">Profile</h1>
   </div>
 
-  <div class="profile-card">
-    <div class="country-badge">
-      <span>BANGLADESH</span>
-      <span class="flag-dot"></span>
-    </div>
-
-    <div class="avatar-row">
+  <div class="id-card">
+    <div class="id-head">
       <div class="avatar" id="avatar">
         <svg id="avatarPlaceholder" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
         <img id="avatarImg" alt="Profile picture" style="display:none;width:100%;height:100%;object-fit:cover;">
-
       </div>
-      <div style="flex:1;">
+
+      <div class="id-head-text">
         <div class="team-name" id="teamName">Team Name</div>
+
+        <div class="country-location">
+          <span class="country-pill">
+            <span class="flag-dot"></span>
+            <span id="countryBadgeText">BANGLADESH</span>
+          </span>
+          <span class="meta-dot">•</span>
+          <span class="location-text">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+            <span id="location">----</span>
+          </span>
+        </div>
       </div>
     </div>
 
     <div class="slogan-box">
-      <div class="slogan-label" id="sloganLabel">Teams Slogan (up to 50 characters)</div>
-      <div class="slogan-text" id="slogan">Write your team slogan here. You can use up to 50 characters to show your team spirit. Make it short, strong, and unforgettable.</div>
+      <div class="slogan-text" id="slogan">----</div>
     </div>
-  </div>
 
-  <div class="section-title"><span class="bar"></span><span data-i18n="profile.userInfo">USER INFORMATION</span></div>
-  <div class="info-card">
-    <div class="info-row">
-      <div class="icon-chip">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+    <div class="id-divider"></div>
+
+    <div class="info-grid">
+      <div class="info-row">
+        <div class="icon-chip">
+          <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+        </div>
+        <div class="info-text">
+          <div class="info-label" data-i18n="profile.uid">UID</div>
+          <div class="info-value" id="uid">—</div>
+        </div>
+        <button class="copy-btn" id="copyBtn" type="button" onclick="copyValue('uid')" aria-label="Copy UID">
+          <svg id="copyIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+        </button>
       </div>
-      <div class="info-text">
-        <div class="info-label" data-i18n="profile.uid">UID</div>
-        <div class="info-value" id="uid">#99</div>
+
+      <div class="info-row">
+        <div class="icon-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-4.1-1.1L3 20l1.1-5.4A8.5 8.5 0 1 1 21 11.5z"/></svg>
+        </div>
+        <div class="info-text">
+          <div class="info-label" data-i18n="profile.whatsapp">WhatsApp</div>
+          <div class="info-value" id="whatsapp">----</div>
+        </div>
       </div>
-      <button class="copy-btn" id="copyBtn" type="button" onclick="copyValue('uid')" aria-label="Copy UID">
-        <svg id="copyIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-      </button>
-    </div>
-    <div class="info-row">
-      <div class="icon-chip">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
-      </div>
-      <div class="info-text">
-        <div class="info-label" data-i18n="profile.email">Email</div>
-        <div class="info-value">userid99@gmail.com</div>
-      </div>
-    </div>
-    <div class="info-row">
-      <div class="icon-chip">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-4.1-1.1L3 20l1.1-5.4A8.5 8.5 0 1 1 21 11.5z"/></svg>
-      </div>
-      <div class="info-text">
-        <div class="info-label" data-i18n="profile.whatsapp">WhatsApp</div>
-        <div class="info-value">01999999999</div>
+
+      <div class="info-row wide">
+        <div class="icon-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+        </div>
+        <div class="info-text">
+          <div class="info-label" data-i18n="profile.email">Email</div>
+          <div class="info-value" id="email">----</div>
+        </div>
       </div>
     </div>
   </div>
@@ -575,65 +604,51 @@ function copyValue(id){
 function renderProfile(){
   const profile=getProfile();
 
-  // UID
   const uidEl=document.getElementById('uid');
   if(uidEl) uidEl.textContent = profile.uid ? ('#' + profile.uid) : '—';
 
-  // Team name
   const teamNameEl=document.getElementById('teamName');
-  if(teamNameEl) teamNameEl.textContent = profile.teamName ? profile.teamName : 'Team Name';
+  if(teamNameEl) teamNameEl.textContent = profile.teamName || 'Team Name';
 
-  // Slogan
   const sloganEl=document.getElementById('slogan');
-  const sloganLabelEl=document.getElementById('sloganLabel');
-  if(profile.slogan){
-    if(sloganEl) sloganEl.textContent = '#' + profile.slogan;
-    if(sloganLabelEl) sloganLabelEl.style.display='none';
-  } else {
-    if(sloganEl) sloganEl.textContent = 'Write your team slogan here. You can use up to 50 characters to show your team spirit. Make it short, strong, and unforgettable.';
-    if(sloganLabelEl) sloganLabelEl.style.display='';
+  if(sloganEl){
+    sloganEl.textContent = profile.slogan ? ('#' + profile.slogan) : '----';
   }
 
-  // Email
-  const emailRow=document.querySelectorAll('.info-row .info-value')[1];
-  if(emailRow) emailRow.textContent = profile.email ? profile.email : 'userid99@gmail.com';
+  const whatsappEl=document.getElementById('whatsapp');
+  if(whatsappEl) whatsappEl.textContent = profile.whatsapp || '----';
 
-  // WhatsApp
-  const whatsappRow=document.querySelectorAll('.info-row .info-value')[2];
-  if(whatsappRow) whatsappRow.textContent = profile.whatsapp ? profile.whatsapp : '01999999999';
+  const emailEl=document.getElementById('email');
+  if(emailEl) emailEl.textContent = profile.email || '----';
 
-  // Admin Panel row — only shown to users whose profiles.is_admin = true
-  // (kept in sync by global.js's syncProfile()).
+  const countryEl=document.getElementById('countryBadgeText');
+  if(countryEl) countryEl.textContent = (profile.country || 'Bangladesh').toUpperCase();
+
+  const locationEl=document.getElementById('location');
+  if(locationEl) locationEl.textContent = profile.location || '----';
+
   const adminRow=document.getElementById('adminPanelRow');
   if(adminRow) adminRow.style.display = profile.isAdmin ? 'flex' : 'none';
 
-  // Country badge
-  if(profile.country){
-    const badgeSpan=document.querySelector('.country-badge span');
-    if(badgeSpan) badgeSpan.textContent = profile.country.toUpperCase();
-  }
-
-  // Profile picture
   const savedPicture=localStorage.getItem('profile_picture');
-  if(savedPicture){
-    const avatarImg=document.getElementById('avatarImg');
-    const avatarPlaceholder=document.getElementById('avatarPlaceholder');
-    if(avatarImg){
-      avatarImg.src=savedPicture;
-      avatarImg.style.display='block';
-    }
+  const avatarImg=document.getElementById('avatarImg');
+  const avatarPlaceholder=document.getElementById('avatarPlaceholder');
+
+  if(savedPicture && avatarImg){
+    avatarImg.src=savedPicture;
+    avatarImg.style.display='block';
     if(avatarPlaceholder) avatarPlaceholder.style.display='none';
+  }else{
+    if(avatarImg) avatarImg.style.display='none';
+    if(avatarPlaceholder) avatarPlaceholder.style.display='';
   }
 }
 
 renderProfile();
 
-// global.js's syncProfile() runs an async fetch from Supabase (it also
-// kicks off automatically on page load for any already-logged-in user —
-// see global.js init()). That fetch can finish AFTER this page has already
-// rendered once from whatever was cached in localStorage, so re-render
-// when the fresh data actually lands — this is what keeps the UID (and
-// email/whatsapp/etc.) from getting stuck on stale or placeholder values.
+// Re-render after global.js finishes its Supabase sync. The profile card
+// reads all editable fields from the same user_profile object used by
+// edit_profile.html, including location.
 document.addEventListener('chteo:profile-synced', renderProfile);
 
 function getMsg(key, fallback){
