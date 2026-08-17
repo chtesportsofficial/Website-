@@ -292,7 +292,7 @@
       </div>
 
       <div class="forgot">
-        <a href="#" onclick="showToast('Password reset link would be sent here.'); return false;">Forgot your password?</a>
+        <a href="#" onclick="handleForgotPassword(); return false;">Forgot your password?</a>
       </div>
 
       <button class="submit-btn" onclick="handleSignin()">Sign in</button>
@@ -364,6 +364,29 @@ try {
   supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 } catch(e){
   showToast('Supabase init error: ' + e.message);
+}
+
+async function handleForgotPassword(){
+  const email = document.getElementById('si-email').value.trim();
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  setError('si-email-wrap','si-email-err', !emailOk);
+
+  if(!emailOk){
+    showToast('Enter your email above first, then tap "Forgot your password?".');
+    return;
+  }
+
+  // reset-password.html is where the emailed link lands — it reads the
+  // recovery token from the URL and lets the person set a new password.
+  const redirectTo = new URL('reset-password.html', window.location.href).toString();
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo });
+
+  if(error){
+    showToast(error.message);
+    return;
+  }
+
+  showToast('Reset link sent — check your email.', true);
 }
 
 function switchView(view){
