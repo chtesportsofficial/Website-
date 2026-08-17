@@ -376,17 +376,21 @@ async function handleForgotPassword(){
     return;
   }
 
-  // reset-password.html is where the emailed link lands — it reads the
-  // recovery token from the URL and lets the person set a new password.
-  const redirectTo = new URL('reset-password.html', window.location.href).toString();
-  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo });
+  // Sends a 6-digit code to the email (Supabase's Reset Password email
+  // template must use {{ .Token }} — see dashboard note). reset-password.html
+  // reads chteo_reset_email from sessionStorage and shows the code-entry step.
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
 
   if(error){
     showToast(error.message);
     return;
   }
 
-  showToast('Reset link sent — check your email.', true);
+  sessionStorage.setItem('chteo_reset_email', email);
+  showToast('Code sent — check your email.', true);
+  setTimeout(() => {
+    window.location.href = 'reset-password.html';
+  }, 700);
 }
 
 function switchView(view){
