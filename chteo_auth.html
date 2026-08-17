@@ -340,7 +340,7 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.8 1.4 6.8L12 17.3 5.9 20.7l1.4-6.8-5.1-4.8 6.9-.8L12 2z"/></svg>
           <input type="text" id="ca-referral" placeholder="e.g. #2" autocomplete="off" value="#2" oninput="onReferralInput()">
         </div>
-        <div class="error-text" id="ca-referral-err">Invalid format, example: #99</div>
+        <div class="error-text" id="ca-referral-err">Invalid format, example: #2</div>
       </div>
 
       <button class="submit-btn" id="create-btn" onclick="handleCreate()" disabled>Create account</button>
@@ -469,7 +469,7 @@ let refUidState = 'ok';
 let refUidCheckedValue = null;
 let refCheckSeq = 0;
 let refDebounceTimer = null;
-const REF_FORMAT_ERR_TEXT = 'Invalid format, example: #99';
+const REF_FORMAT_ERR_TEXT = 'Invalid format, example: #2';
 const REF_UID_ERR_TEXT = 'Invalid UID — this referral code does not exist.';
 const REF_UID_CHECK_FAIL_TEXT = 'Could not verify referral code, please try again.';
 
@@ -498,12 +498,13 @@ function validateCreate(){
     document.getElementById('ca-referral-err').textContent = REF_FORMAT_ERR_TEXT;
   }
 
-  // A value only counts as verified if it's the EXACT string we last
-  // ran the Supabase lookup against — not just "state happens to be ok".
-  const refVerified = refFormatOk && ref === refUidCheckedValue && refUidState === 'ok';
-  const refOk = refFormatOk && (ref === '' || refVerified);
-  document.getElementById('create-btn').disabled = !(emailOk && waOk && pwOk && refOk);
-  return {emailOk, waOk, pwOk, refOk, refFormatOk};
+  // The button is gated on FORMAT only — a nonexistent uid is no longer
+  // a hard block. handleCreate() below silently swaps it for the
+  // default #2 code instead of stopping the signup. The "Invalid UID"
+  // text/red border still shows (via checkReferralUid) purely as a
+  // heads-up to the person typing it.
+  document.getElementById('create-btn').disabled = !(emailOk && waOk && pwOk && refFormatOk);
+  return {emailOk, waOk, pwOk, refFormatOk};
 }
 
 function onReferralInput(){
@@ -586,26 +587,23 @@ async function handleCreate(){
     return;
   }
 
-  // Never trust refUidState blindly here — force a fresh check unless
-  // it's already been verified against exactly what's in the field
-  // right now (see refUidCheckedValue above).
+  // Make sure we know whether the typed uid actually exists before
+  // deciding what referral value to submit — force a fresh check
+  // unless it's already been verified against exactly what's in the
+  // field right now (see refUidCheckedValue above).
   const currentRef = document.getElementById('ca-referral').value.trim();
-  if(!(currentRef === '' || (currentRef === refUidCheckedValue && refUidState === 'ok'))){
+  if(!(currentRef === '' || (currentRef === refUidCheckedValue && refUidState !== 'checking'))){
     clearTimeout(refDebounceTimer);
     await checkReferralUid();
-  }
-  if(refUidState === 'invalid'){
-    setError('ca-referral-wrap','ca-referral-err', true);
-    showToast('Please enter a valid referral code.');
-    return;
   }
 
   const email = document.getElementById('ca-email').value.trim();
   const pw = document.getElementById('ca-password').value;
   const whatsapp = document.getElementById('ca-whatsapp').value.trim();
-  // Empty referral field → silently fall back to the site's default
-  // code (#2) instead of blocking signup or leaving no attribution.
-  const referral = document.getElementById('ca-referral').value.trim() || '#2';
+  // Empty field, or a uid that doesn't actually exist → silently fall
+  // back to the site's default code (#2) instead of blocking signup.
+  const typedRef = document.getElementById('ca-referral').value.trim();
+  const referral = (typedRef === '' || refUidState === 'invalid') ? '#2' : typedRef;
 
   const createBtn = document.getElementById('create-btn');
   createBtn.disabled = true;
