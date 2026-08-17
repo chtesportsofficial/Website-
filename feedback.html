@@ -228,6 +228,16 @@
     opacity:1;
     transform:translateX(-50%) translateY(0);
   }
+  .toast.error{
+    background:#7c1c2b;
+    white-space:normal;
+    text-align:center;
+  }
+
+  .submit-btn:disabled{
+    opacity:.6;
+    cursor:not-allowed;
+  }
 </style>
 <style>
 :root{
@@ -296,7 +306,7 @@
 
 </div>
 
-<div class="toast" id="toast">&#10003; Thanks for your feedback!</div>
+<div class="toast" id="toast"></div>
 
 <script>
   const uploadBox = document.getElementById('uploadBox');
@@ -336,17 +346,87 @@
     charCount.textContent = feedbackText.value.length;
   });
 
-  submitBtn.addEventListener('click', () => {
+  function showToast(msg, type){
+    toast.innerHTML = msg;
+    toast.classList.remove('error');
+    if(type === 'error') toast.classList.add('error');
     toast.classList.add('show');
-    setTimeout(() => {
-      toast.classList.remove('show');
-    }, 2500);
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+  }
 
-    feedbackText.value = '';
-    charCount.textContent = 0;
-    fileInput.value = '';
-    previewImg.src = '';
-    previewWrap.classList.remove('active');
+  submitBtn.addEventListener('click', async () => {
+    const text = feedbackText.value.trim();
+    if(!text){
+      showToast('Please describe your problem or suggestion before submitting.', 'error');
+      feedbackText.focus();
+      return;
+    }
+
+    if(!(window.CHTEO && window.CHTEO.getSupabaseClient)){
+      showToast('Could not connect to the server. Please try again shortly.', 'error');
+      return;
+    }
+
+    const originalLabel = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+
+    window.CHTEO.getSupabaseClient(async function(client){
+      try{
+        const { data: userRes, error: userErr } = await client.auth.getUser();
+        const user = userRes && userRes.user;
+        if(userErr || !user){
+          showToast('Could not verify your account. Please log in again.', 'error');
+          return;
+        }
+
+        let screenshotUrl = null;
+        const file = fileInput.files[0];
+        if(file){
+          try{
+            // Path must start with the user's own id — same "own folder"
+            // RLS pattern used for the avatars bucket in edit_profile.html.
+            const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+            const path = user.id + '/' + Date.now() + '_' + safeName;
+            const { error: uploadErr } = await client.storage
+              .from('feedback')
+              .upload(path, file, { contentType: file.type || 'image/jpeg' });
+            if(uploadErr){
+              showToast('Could not upload screenshot: ' + uploadErr.message, 'error');
+              return;
+            }
+            const { data: urlData } = client.storage.from('feedback').getPublicUrl(path);
+            screenshotUrl = urlData.publicUrl;
+          }catch(err){
+            showToast('Could not upload screenshot. Please try again.', 'error');
+            return;
+          }
+        }
+
+        const { error: insertErr } = await client.from('feedback').insert({
+          user_id: user.id,
+          message: text,
+          screenshot_url: screenshotUrl
+        });
+        if(insertErr){
+          showToast('Could not submit feedback: ' + insertErr.message, 'error');
+          return;
+        }
+
+        showToast('&#10003; Thanks for your feedback!');
+        feedbackText.value = '';
+        charCount.textContent = 0;
+        fileInput.value = '';
+        previewImg.src = '';
+        previewWrap.classList.remove('active');
+      }catch(err){
+        showToast('Something went wrong. Please try again.', 'error');
+      }finally{
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalLabel;
+      }
+    });
   });
 </script>
 
