@@ -338,9 +338,9 @@
         <label for="ca-referral">Referral code</label>
         <div class="input-wrap" id="ca-referral-wrap">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.8 1.4 6.8L12 17.3 5.9 20.7l1.4-6.8-5.1-4.8 6.9-.8L12 2z"/></svg>
-          <input type="text" id="ca-referral" placeholder="e.g. #99" autocomplete="off" oninput="validateCreate()">
+          <input type="text" id="ca-referral" placeholder="e.g. #2" autocomplete="off" oninput="validateCreate()">
         </div>
-        <div class="error-text" id="ca-referral-err">Referral code is required, format: #99</div>
+        <div class="error-text" id="ca-referral-err">Invalid format, example: #99</div>
       </div>
 
       <button class="submit-btn" id="create-btn" onclick="handleCreate()" disabled>Create account</button>
@@ -465,7 +465,10 @@ function validateCreate(){
   const emailOk = /\S+@\S+\.\S+/.test(email);
   const waOk = wa.length >= 8;
   const pwOk = pw.length >= 6;
-  const refOk = /^#\d+$/.test(ref);
+  // Referral is optional — an empty field silently falls back to the
+  // site's default code (#2) at signup, so it's only "invalid" if the
+  // person typed something that doesn't match the #<digits> format.
+  const refOk = ref === '' || /^#\d+$/.test(ref);
   document.getElementById('create-btn').disabled = !(emailOk && waOk && pwOk && refOk);
   return {emailOk, waOk, pwOk, refOk};
 }
@@ -485,7 +488,9 @@ async function handleCreate(){
   const email = document.getElementById('ca-email').value.trim();
   const pw = document.getElementById('ca-password').value;
   const whatsapp = document.getElementById('ca-whatsapp').value.trim();
-  const referral = document.getElementById('ca-referral').value.trim();
+  // Empty referral field → silently fall back to the site's default
+  // code (#2) instead of blocking signup or leaving no attribution.
+  const referral = document.getElementById('ca-referral').value.trim() || '#2';
 
   const createBtn = document.getElementById('create-btn');
   createBtn.disabled = true;
