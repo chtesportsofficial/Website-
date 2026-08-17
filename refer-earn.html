@@ -631,11 +631,11 @@ function showToast(msg, success){
 function shareMessage(){
   const link = document.getElementById('inviteLink').value;
   const code = document.getElementById('inviteCode').value;
-  // Single asterisks render as bold in WhatsApp (and Telegram's composer
-  // auto-formats them too), so the message shows up styled, not just
-  // as plain text with literal asterisks.
-  return 'Play *daily Free Fire tournaments* on *CHT ESP ORG*.\n\n' +
-         'Join using referral code *' + code + '*:\n' + link;
+  // Plain text, no markdown — Telegram's share link doesn't render
+  // *asterisks* as bold (they'd just show up as literal characters),
+  // so keeping this plain avoids ugly stray asterisks in the message.
+  return 'Play daily Free Fire tournaments on CHT ESP ORG.\n' +
+         'Join using referral code ' + code + ' :\n' + link;
 }
 
 // wa.me / t.me "universal links" — opening these on a phone hands off
@@ -656,11 +656,12 @@ function shareMessenger(){
   window.location.href = 'fb-messenger://share/?link=' + encodeURIComponent(link);
 }
 
+// NOTE: passing a (even empty) 'url' param alongside 'text' makes
+// Telegram render the link ABOVE the caption instead of after it. Only
+// passing 'text' — with the link included inside it, at the end — keeps
+// the same order as WhatsApp: caption first, link last.
 function shareTelegram(){
-  const link = document.getElementById('inviteLink').value;
-  const code = document.getElementById('inviteCode').value;
-  const text = 'Play *daily Free Fire tournaments* on *CHT ESP ORG*.\n\nJoin using referral code *' + code + '*:';
-  const url = 'https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent(text);
+  const url = 'https://t.me/share/url?text=' + encodeURIComponent(shareMessage());
   window.open(url, '_blank', 'noopener');
 }
 
