@@ -249,9 +249,9 @@ function initials(name){
 }
 
 // Fields to hide from the generic "all details" list because they
-// already have a dedicated spot (avatar/name/email/badges) or are
-// internal (the row's own primary key).
-const HIDDEN_FIELDS = new Set(['id', 'full_name', 'avatar_url', 'email', 'is_admin', 'is_banned']);
+// already have a dedicated spot (avatar/name/email/badges), are
+// internal (id), or just aren't useful to show here (bio).
+const HIDDEN_FIELDS = new Set(['id', 'full_name', 'avatar_url', 'email', 'is_admin', 'is_banned', 'bio']);
 const FIELD_LABELS = {
   whatsapp: 'WhatsApp', uid: 'UID', user_number: 'UID', referral: 'Referral code',
   bio: 'Bio', slogan: 'Slogan', country: 'Country',
@@ -326,11 +326,12 @@ function renderTarget(){
   Object.keys(p).forEach(key => {
     if(HIDDEN_FIELDS.has(key) || key === 'user_number') return;
     let val = p[key];
+    if(val === null || val === undefined || val === '') return;
     if((key === 'created_at' || key === 'updated_at') && val){
       val = new Date(val).toLocaleString();
     }
     const label = FIELD_LABELS[key] || key;
-    rows.push([label, val ?? '—']);
+    rows.push([label, val]);
   });
 
   panel.innerHTML = rows.map(([label, val]) => `

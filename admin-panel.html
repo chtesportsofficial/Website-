@@ -297,6 +297,14 @@
     text-overflow:ellipsis;
     white-space:nowrap;
   }
+  .user-meta{
+    font-size:11.5px;
+    color:var(--muted);
+    margin-top:2px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
   .badge{
     padding:5px 12px;
     border-radius:20px;
@@ -652,12 +660,16 @@ function renderUsers(){
     if(u.is_banned) badge = '<span class="badge badge-blocked">Blocked</span>';
     else if(u.is_admin) badge = '<span class="badge badge-admin">Admin</span>';
 
+    const uid = u.user_number != null ? ('#' + escapeHtml(u.user_number)) : '#—';
+    const whatsapp = escapeHtml(u.whatsapp || '—');
+
     return `
       <a class="user-card" href="user-detail.html?uid=${encodeURIComponent(u.id)}">
         <div class="user-avatar">${avatarInner}</div>
         <div class="user-info">
           <div class="user-name">${name}</div>
           <div class="user-email">${email}</div>
+          <div class="user-meta">${uid} &nbsp;·&nbsp; ${whatsapp}</div>
         </div>
         ${badge}
       </a>
