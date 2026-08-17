@@ -714,16 +714,9 @@ document.getElementById('profileForm').addEventListener('submit', async e=>{
   // devices/logins — until now this form only ever wrote to this
   // browser's localStorage.
   //
-  // NOTE: 'email' is intentionally NOT written here — it belongs to
-  // Supabase Auth (auth.users), not the profiles table, and updating
-  // it needs a separate auth.updateUser() call (that's problem #4,
-  // not this one). 'location' is also skipped for now since there's
-  // no confirmed 'location' column on the profiles table yet — add
-  // one in Supabase (or map it to an existing column) before syncing it.
-  // 'country' is skipped too, for the same reason (that's what was
-  // throwing "Could not find the 'country' column of 'profiles' in the
-  // schema cache") — it's locked to Bangladesh in the UI for now and
-  // doesn't need to round-trip to the server.
+  // NOTE: email belongs to Supabase Auth, so it is not written to profiles here.
+  // Country and location are saved in profiles so Admin User Details can show
+  // the same values as the user's own Profile page.
   saveBtn.disabled = true;
   let syncFailed = false;
   await new Promise(resolve=>{
@@ -735,10 +728,11 @@ document.getElementById('profileForm').addEventListener('submit', async e=>{
         if(user){
           const updatePayload = {
             whatsapp: data.whatsapp,
-            // Team Name is stored in the 'full_name' column on Supabase
-            // (there's no separate 'team_name' column on this table).
+            // Team Name is stored in the 'full_name' column on Supabase.
             full_name: data.teamName,
-            slogan: data.slogan
+            slogan: data.slogan,
+            country: data.country || 'Bangladesh',
+            location: data.location || null
           };
 
           // Photo → Supabase Storage ('avatars' bucket), not just
