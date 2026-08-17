@@ -527,9 +527,10 @@ function onReferralInput(){
   refDebounceTimer = setTimeout(checkReferralUid, 400);
 }
 
-// Looks the referral code's digits up as a uid in Supabase's `profiles`
-// table. If your project uses a different table/column name for uid,
-// change the .from()/.eq() below to match.
+// Looks the referral code's digits up via the referral_uid_exists()
+// Supabase RPC function (see referral_check_function.sql) — this
+// avoids depending on the profiles table's RLS policies, since this
+// check runs on the signup form before the visitor is logged in.
 async function checkReferralUid(){
   const ref = document.getElementById('ca-referral').value.trim();
 
@@ -551,10 +552,7 @@ async function checkReferralUid(){
   validateCreate();
 
   const { data, error } = await supabaseClient
-    .from('profiles')
-    .select('uid')
-    .eq('uid', digits)
-    .maybeSingle();
+    .rpc('referral_uid_exists', { check_uid: digits });
 
   if(mySeq !== refCheckSeq) return; // field changed again while this was in flight
 
