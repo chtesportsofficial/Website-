@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHTEO — User Details</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --navy-1:#1b2140;
+    --navy-2:#2a3266;
+    --navy-3:#333c7a;
+    --white:#ffffff;
+    --ink:#1b2140;
+    --muted:#7a7f9a;
+    --line:#e2e3ee;
+    --accent:#3557ff;
+    --accent-dark:#2846e0;
+    --error:#e5484d;
+    --success:#1c7c4d;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    background:
+      radial-gradient(circle at 12% 0%, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 40%),
+      linear-gradient(160deg, var(--navy-1) 0%, var(--navy-2) 55%, var(--navy-3) 100%);
+    color:var(--ink);
+  }
+  .gate{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .gate-card{
+    width:100%;
+    max-width:380px;
+    background:var(--white);
+    border-radius:24px;
+    padding:36px 30px;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,0.45);
+    text-align:center;
+  }
+  .gate-card h1{ font-size:18px; font-weight:800; margin:0 0 8px; }
+  .gate-card p{ font-size:13.5px; color:var(--muted); line-height:1.6; margin:0 0 22px; }
+  .gate-btn{
+    width:100%; padding:13px; border:none; border-radius:10px;
+    background:var(--accent); color:#fff; font-size:14.5px; font-weight:700;
+    cursor:pointer; font-family:inherit;
+  }
+  .gate-btn:hover{ background:var(--accent-dark); }
+  .spinner{
+    width:32px; height:32px;
+    border:3px solid rgba(255,255,255,0.25);
+    border-top-color:#fff;
+    border-radius:50%;
+    margin:0 auto 16px;
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .gate-text{ color:rgba(255,255,255,0.75); font-size:14px; }
+
+  .app{ display:none; }
+  .app.active{ display:block; }
+
+  .topbar{
+    display:flex; align-items:center; gap:14px;
+    padding:18px 24px;
+    background:rgba(255,255,255,0.04);
+    border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+  .back-btn{
+    width:38px; height:38px; border-radius:10px;
+    background:rgba(255,255,255,0.08);
+    border:none; color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; flex-shrink:0;
+  }
+  .back-btn:hover{ background:rgba(255,255,255,0.15); }
+  .topbar h1{ color:#fff; font-size:16px; font-weight:800; margin:0; }
+
+  .content{ max-width:560px; margin:0 auto; padding:24px 20px 60px; }
+
+  .profile-head{
+    background:var(--white);
+    border-radius:20px;
+    padding:26px 22px;
+    text-align:center;
+    box-shadow:0 20px 44px -22px rgba(0,0,0,0.35);
+    margin-bottom:18px;
+  }
+  .avatar-lg{
+    width:84px; height:84px;
+    border-radius:50%;
+    background:var(--navy-2);
+    color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:28px;
+    margin:0 auto 14px;
+    overflow:hidden;
+  }
+  .avatar-lg img{ width:100%; height:100%; object-fit:cover; }
+  .profile-head .name{ font-size:19px; font-weight:800; margin-bottom:4px; }
+  .profile-head .email{ font-size:13.5px; color:var(--muted); }
+  .status-row{ display:flex; gap:8px; justify-content:center; margin-top:14px; flex-wrap:wrap; }
+  .badge{
+    padding:6px 14px; border-radius:20px;
+    font-size:12px; font-weight:800;
+  }
+  .badge-admin{ background:rgba(53,87,255,0.12); color:var(--accent); }
+  .badge-user{ background:rgba(28,124,77,0.12); color:var(--success); }
+  .badge-blocked{ background:rgba(229,72,77,0.12); color:var(--error); }
+
+  .panel{
+    background:var(--white);
+    border-radius:20px;
+    padding:8px 20px;
+    box-shadow:0 20px 44px -22px rgba(0,0,0,0.35);
+    margin-bottom:18px;
+  }
+  .info-row{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    gap:14px; padding:13px 0; border-bottom:1px solid var(--line);
+  }
+  .info-row:last-child{ border-bottom:none; }
+  .info-label{
+    font-size:11.5px; font-weight:700; text-transform:uppercase;
+    letter-spacing:0.3px; color:var(--muted); flex-shrink:0; padding-top:1px;
+  }
+  .info-value{
+    font-size:14px; font-weight:600; text-align:right;
+    overflow-wrap:anywhere; max-width:65%;
+  }
+
+  .actions-row{ display:flex; gap:10px; }
+  .action-btn{
+    flex:1; padding:13px; border-radius:12px; border:1px solid var(--line);
+    background:var(--white); font-size:13.5px; font-weight:700;
+    cursor:pointer; font-family:inherit;
+  }
+  .action-btn.make-admin{ color:var(--accent); border-color:rgba(53,87,255,0.35); }
+  .action-btn.block{ color:var(--error); border-color:rgba(229,72,77,0.35); }
+  .action-btn:disabled{ opacity:0.5; cursor:not-allowed; }
+
+  .toast{
+    position:fixed; bottom:24px; left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--ink); color:#fff; padding:11px 18px; border-radius:10px;
+    font-size:13px; font-weight:600; opacity:0; pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease; z-index:10;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+  <div class="gate" id="gate-checking">
+    <div><div class="spinner"></div><div class="gate-text">Checking access...</div></div>
+  </div>
+
+  <div class="gate" id="gate-denied" style="display:none;">
+    <div class="gate-card">
+      <h1>Access denied</h1>
+      <p>You don't have admin access to view this page.</p>
+      <button class="gate-btn" onclick="window.location.href='admin-panel.html'">Back to admin panel</button>
+    </div>
+  </div>
+
+  <div class="gate" id="gate-notfound" style="display:none;">
+    <div class="gate-card">
+      <h1>User not found</h1>
+      <p>This user doesn't exist or couldn't be loaded.</p>
+      <button class="gate-btn" onclick="window.location.href='admin-panel.html'">Back to admin panel</button>
+    </div>
+  </div>
+
+  <div class="app" id="app">
+    <div class="topbar">
+      <button class="back-btn" onclick="window.location.href='admin-panel.html'" aria-label="Back">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </button>
+      <h1>User details</h1>
+    </div>
+
+    <div class="content">
+      <div class="profile-head">
+        <div class="avatar-lg" id="avatarLg"></div>
+        <div class="name" id="nameEl">----</div>
+        <div class="email" id="emailEl">—</div>
+        <div class="status-row" id="statusRow"></div>
+      </div>
+
+      <div class="panel" id="detailsPanel"></div>
+
+      <div class="actions-row">
+        <button class="action-btn make-admin" id="adminToggleBtn">Make Admin</button>
+        <button class="action-btn block" id="banToggleBtn">Block User</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://myfficbwcbgbxbdqjexv.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+
+const params = new URLSearchParams(window.location.search);
+const targetUid = params.get('uid');
+
+let supabaseClient;
+try {
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} catch(e){
+  document.getElementById('gate-checking').innerHTML =
+    '<div class="gate-text">Supabase init error: ' + e.message + '</div>';
+}
+
+let targetProfile = null;
+
+function showGate(name){
+  document.getElementById('gate-checking').style.display = name === 'checking' ? 'flex' : 'none';
+  document.getElementById('gate-denied').style.display = name === 'denied' ? 'flex' : 'none';
+  document.getElementById('gate-notfound').style.display = name === 'notfound' ? 'flex' : 'none';
+  document.getElementById('app').classList.toggle('active', name === 'app');
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, m => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[m]));
+}
+
+function initials(name){
+  if(!name) return '?';
+  return name.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+}
+
+// Fields to hide from the generic "all details" list because they
+// already have a dedicated spot (avatar/name/email/badges) or are
+// internal (the row's own primary key).
+const HIDDEN_FIELDS = new Set(['id', 'full_name', 'avatar_url', 'email', 'is_admin', 'is_banned']);
+const FIELD_LABELS = {
+  whatsapp: 'WhatsApp', uid: 'UID', user_number: 'UID', referral: 'Referral code',
+  bio: 'Bio', slogan: 'Slogan', country: 'Country',
+  created_at: 'Joined', updated_at: 'Last updated'
+};
+
+async function checkAccess(){
+  showGate('checking');
+
+  if(!targetUid){
+    showGate('notfound');
+    return;
+  }
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session){
+    window.location.href = 'admin-panel.html';
+    return;
+  }
+
+  const { data: me, error: meErr } = await supabaseClient
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', session.user.id)
+    .single();
+
+  if(meErr || !me || !me.is_admin){
+    showGate('denied');
+    return;
+  }
+
+  await loadTarget();
+}
+
+async function loadTarget(){
+  const { data, error } = await supabaseClient
+    .from('profiles')
+    .select('*')
+    .eq('id', targetUid)
+    .single();
+
+  if(error || !data){
+    showGate('notfound');
+    return;
+  }
+
+  targetProfile = data;
+  renderTarget();
+  showGate('app');
+}
+
+function renderTarget(){
+  const p = targetProfile;
+
+  document.getElementById('nameEl').textContent = p.full_name ? p.full_name : '----';
+  document.getElementById('emailEl').textContent = p.email || '—';
+
+  const avatarLg = document.getElementById('avatarLg');
+  avatarLg.innerHTML = p.avatar_url
+    ? `<img src="${escapeHtml(p.avatar_url)}" alt="">`
+    : escapeHtml(initials(p.full_name || p.email));
+
+  const statusRow = document.getElementById('statusRow');
+  let badges = '<span class="badge badge-user">User</span>';
+  if(p.is_banned) badges = '<span class="badge badge-blocked">Blocked</span>';
+  else if(p.is_admin) badges = '<span class="badge badge-admin">Admin</span>';
+  statusRow.innerHTML = badges;
+
+  const panel = document.getElementById('detailsPanel');
+  const uidVal = p.user_number != null ? ('#' + p.user_number) : '—';
+  const rows = [['UID', uidVal]];
+  Object.keys(p).forEach(key => {
+    if(HIDDEN_FIELDS.has(key) || key === 'user_number') return;
+    let val = p[key];
+    if((key === 'created_at' || key === 'updated_at') && val){
+      val = new Date(val).toLocaleString();
+    }
+    const label = FIELD_LABELS[key] || key;
+    rows.push([label, val ?? '—']);
+  });
+
+  panel.innerHTML = rows.map(([label, val]) => `
+    <div class="info-row">
+      <div class="info-label">${escapeHtml(label)}</div>
+      <div class="info-value">${escapeHtml(val)}</div>
+    </div>
+  `).join('');
+
+  const adminBtn = document.getElementById('adminToggleBtn');
+  adminBtn.textContent = p.is_admin ? 'Remove Admin' : 'Make Admin';
+  const banBtn = document.getElementById('banToggleBtn');
+  banBtn.textContent = p.is_banned ? 'Unblock User' : 'Block User';
+}
+
+async function toggleField(field, currentVal, btnEl){
+  btnEl.disabled = true;
+  const { error } = await supabaseClient
+    .from('profiles')
+    .update({ [field]: !currentVal })
+    .eq('id', targetUid);
+
+  btnEl.disabled = false;
+
+  if(error){
+    showToast('Could not update: ' + error.message);
+    return;
+  }
+  targetProfile[field] = !currentVal;
+  renderTarget();
+  showToast('Updated.');
+}
+
+document.getElementById('adminToggleBtn').addEventListener('click', function(){
+  toggleField('is_admin', !!targetProfile.is_admin, this);
+});
+document.getElementById('banToggleBtn').addEventListener('click', function(){
+  toggleField('is_banned', !!targetProfile.is_banned, this);
+});
+
+checkAccess();
+</script>
+
+</body>
+</html>

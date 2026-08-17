@@ -257,6 +257,58 @@
     #leaderboard-table td[data-label="#"]{ justify-content:flex-start; }
   }
 
+  /* ---------- User list cards ---------- */
+  .user-card{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:12px 8px;
+    border-bottom:1px solid var(--line);
+    cursor:pointer;
+    text-decoration:none;
+    color:inherit;
+  }
+  .user-card:last-child{ border-bottom:none; }
+  .user-card:hover{ background:#f7f8fc; }
+  .user-avatar{
+    width:44px; height:44px;
+    border-radius:50%;
+    background:var(--navy-2);
+    color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800;
+    font-size:14px;
+    flex-shrink:0;
+    overflow:hidden;
+  }
+  .user-avatar img{ width:100%; height:100%; object-fit:cover; }
+  .user-info{ flex:1; min-width:0; }
+  .user-name{
+    font-weight:800;
+    font-size:14.5px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .user-email{
+    font-size:12.5px;
+    color:var(--muted);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .badge{
+    padding:5px 12px;
+    border-radius:20px;
+    font-size:11px;
+    font-weight:800;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .badge-admin{ background:rgba(53,87,255,0.12); color:var(--accent); }
+  .badge-user{ background:rgba(28,124,77,0.12); color:var(--success); }
+  .badge-blocked{ background:rgba(229,72,77,0.12); color:var(--error); }
+
   .rank-badge{
     display:inline-flex;
     align-items:center;
@@ -386,12 +438,7 @@
           <h2>All users</h2>
           <input type="text" class="search-box" id="user-search" placeholder="Search users..." oninput="renderUsers()">
         </div>
-        <div class="table-wrap">
-          <table id="users-table">
-            <thead id="users-thead"></thead>
-            <tbody id="users-body"></tbody>
-          </table>
-        </div>
+        <div id="users-list"></div>
         <div class="load-note" id="users-loading">Loading users...</div>
         <div class="empty-note" id="users-empty" style="display:none;">No users found.</div>
       </div>
@@ -558,60 +605,64 @@ function renderLeaderboard(){
   `).join('');
 }
 
+function initials(name){
+  if(!name) return '?';
+  const parts = name.trim().split(/\s+/).slice(0, 2);
+  return parts.map(w => w[0]).join('').toUpperCase();
+}
+
 function renderUsers(){
   const search = document.getElementById('user-search').value.trim().toLowerCase();
-  const thead = document.getElementById('users-thead');
-  const body = document.getElementById('users-body');
+  const list = document.getElementById('users-list');
   const empty = document.getElementById('users-empty');
 
   if(allUsers.length === 0){
-    thead.innerHTML = '';
-    body.innerHTML = '';
+    list.innerHTML = '';
     empty.style.display = 'block';
+    empty.textContent = 'No users found.';
     return;
   }
 
-  // Render columns dynamically from whatever the profiles table
-  // actually has, so this doesn't break if the schema differs from
-  // what we assumed (email/whatsapp/referral/created_at).
-  const preferredOrder = ['email', 'whatsapp', 'referral', 'uid', 'created_at'];
-  const allKeys = Object.keys(allUsers[0]);
-  const columns = [
-    ...preferredOrder.filter(k => allKeys.includes(k)),
-    ...allKeys.filter(k => !preferredOrder.includes(k) && k !== 'id')
-  ];
-  // Human-readable label for each column's data-label (drives the
-  // mobile card view's field name) — falls back to the raw column
-  // name for anything not in this map.
-  const columnLabels = {
-    email: 'Email', whatsapp: 'WhatsApp', referral: 'Referral',
-    uid: 'UID', created_at: 'Created at', full_name: 'Full name',
-    avatar_url: 'Avatar URL', bio: 'Bio', updated_at: 'Updated at',
-    is_admin: 'Admin'
-  };
-
-  thead.innerHTML = '<tr>' + columns.map(c => `<th>${escapeHtml(c)}</th>`).join('') + '</tr>';
-
   const filtered = search
-    ? allUsers.filter(u => columns.some(c => String(u[c] ?? '').toLowerCase().includes(search)))
+    ? allUsers.filter(u =>
+        String(u.full_name ?? '').toLowerCase().includes(search) ||
+        String(u.email ?? '').toLowerCase().includes(search) ||
+        String(u.whatsapp ?? '').toLowerCase().includes(search) ||
+        String(u.user_number ?? '').toLowerCase().includes(search)
+      )
     : allUsers;
 
   if(filtered.length === 0){
-    body.innerHTML = '';
+    list.innerHTML = '';
     empty.style.display = 'block';
     empty.textContent = 'No users match your search.';
     return;
   }
   empty.style.display = 'none';
 
-  body.innerHTML = filtered.map(u => '<tr>' + columns.map(c => {
-    let val = u[c];
-    if(c === 'created_at' && val){
-      val = new Date(val).toLocaleString();
-    }
-    const label = columnLabels[c] || c;
-    return `<td data-label="${escapeHtml(label)}">${escapeHtml(val ?? '—')}</td>`;
-  }).join('') + '</tr>').join('');
+  list.innerHTML = filtered.map(u => {
+    // Team name shows as "----" when the user hasn't set one yet.
+    const name = u.full_name ? escapeHtml(u.full_name) : '----';
+    const email = escapeHtml(u.email ?? '—');
+    const avatarInner = u.avatar_url
+      ? `<img src="${escapeHtml(u.avatar_url)}" alt="">`
+      : escapeHtml(initials(u.full_name || u.email));
+
+    let badge = '<span class="badge badge-user">User</span>';
+    if(u.is_banned) badge = '<span class="badge badge-blocked">Blocked</span>';
+    else if(u.is_admin) badge = '<span class="badge badge-admin">Admin</span>';
+
+    return `
+      <a class="user-card" href="user-detail.html?uid=${encodeURIComponent(u.id)}">
+        <div class="user-avatar">${avatarInner}</div>
+        <div class="user-info">
+          <div class="user-name">${name}</div>
+          <div class="user-email">${email}</div>
+        </div>
+        ${badge}
+      </a>
+    `;
+  }).join('');
 }
 
 function escapeHtml(str){
