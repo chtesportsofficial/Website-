@@ -579,15 +579,18 @@ async function sendNotice(){
   const input=document.getElementById('notice-message');
   const message=input.value.trim();
   if(!message){showToast('Write a notice first.');return;}
-  let result=await supabaseClient.from('site_notices').update({is_active:false}).eq('is_active',true);
-  if(result.error){showToast('Could not replace old notice: '+result.error.message);return;}
-  result=await supabaseClient.from('site_notices').insert({message:message,is_active:true});
-  if(result.error){showToast('Could not send notice: '+result.error.message);return;}
+
+  // Add a new notice instead of updating the old row.
+  // The homepage always reads the newest notice.
+  const {error}=await supabaseClient.from('site_notices').insert({message:message,is_active:true});
+  if(error){showToast('Could not send notice: '+error.message);return;}
+
   input.value=''; await loadActiveNotice(); showToast('Notice sent successfully.');
 }
 function clearNoticeForm(){document.getElementById('notice-message').value='';}
 async function removeActiveNotice(){
-  const {error}=await supabaseClient.from('site_notices').update({is_active:false}).eq('is_active',true);
+  // Do not update/delete old rows. Add a newest "No Notice" row instead.
+  const {error}=await supabaseClient.from('site_notices').insert({message:'No Notice',is_active:true});
   if(error){showToast('Could not remove notice: '+error.message);return;}
   await loadActiveNotice(); showToast('Notice removed.');
 }
