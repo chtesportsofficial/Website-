@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CHT ESP ORG</title>
 <link rel="stylesheet" href="theme.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="global.js" defer></script>
 <style>
 :root{
@@ -42,8 +41,6 @@ button{font-family:inherit;cursor:pointer}
 .ticker{display:flex;align-items:center;gap:9px;background:var(--surface);border-bottom:1px solid var(--line);padding:9px 16px;font-size:12px;color:var(--text-dim);overflow:hidden;white-space:nowrap}
 .ticker .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);flex-shrink:0}
 .ticker b{color:var(--text)}
-#siteNoticeText{min-width:max-content}
-#siteNoticeText span{display:inline-block;margin-right:18px}
 
 /* YouTube tutorial promo card */
 .yt-promo{display:block;text-decoration:none;color:inherit;margin:16px;padding:16px;border-radius:20px;position:relative;overflow:hidden;background:radial-gradient(120% 160% at 0% 0%,rgba(255,45,45,.22),transparent 60%),#0b0a0e;border:1px solid rgba(255,61,61,.5);box-shadow:0 0 22px rgba(255,40,40,.22)}
@@ -437,13 +434,13 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
   </div>
 </div>
 
-<div class="ticker" id="siteNoticeBar">
+<div class="ticker" id="site-notice">
   <div class="dot"></div>
   <div class="ticker-fixed"><b>NOTICE:</b></div>
-  <div class="ticker-track" id="siteNoticeTrack">
-    <div class="ticker-track-inner" id="siteNoticeText">
-      <span>No Notice</span>
-      <span>No Notice</span>
+  <div class="ticker-track">
+    <div class="ticker-track-inner" id="site-notice-track">
+      <span id="site-notice-text">No Notice</span>
+      <span id="site-notice-text-2">No Notice</span>
     </div>
   </div>
 </div>
@@ -719,41 +716,26 @@ window.addEventListener('pageshow', function(event){
     location.reload();
   }
 });
-
-/* ============ Live Notice System ============ */
-(function(){
-  const SUPABASE_URL = 'https://myfficbwcbgbxbdqjexv.supabase.co';
-  const SUPABASE_ANON_KEY = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
-
-  async function loadHomepageNotice(){
-    const textEl = document.getElementById('siteNoticeText');
-    if (!textEl || !window.supabase) return;
-
-    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    const { data, error } = await client
-      .from('site_notices')
-      .select('message')
-      .eq('is_active', true)
-      .order('created_at', { ascending:false })
-      .limit(1)
-      .maybeSingle();
-
-    const message = (!error && data && data.message && data.message.trim())
-      ? data.message.trim()
-      : 'No Notice';
-
-    textEl.innerHTML = '<span></span><span></span>';
-    textEl.children[0].textContent = message + ' • ';
-    textEl.children[1].textContent = message + ' • ';
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', loadHomepageNotice);
-  } else {
-    loadHomepageNotice();
-  }
-})();
 </script>
 
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+  const url = 'https://myfficbwcbgbxbdqjexv.supabase.co';
+  const key = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+  const client = window.supabase.createClient(url, key);
+  const a = document.getElementById('site-notice-text');
+  const b = document.getElementById('site-notice-text-2');
+  async function loadNotice(){
+    const { data, error } = await client.from('site_notices').select('message').eq('is_active', true).order('created_at', {ascending:false}).limit(1).maybeSingle();
+    const message = (!error && data && data.message) ? data.message : 'No Notice';
+    a.textContent = message + ' •';
+    b.textContent = message + ' •';
+  }
+  loadNotice();
+  setInterval(loadNotice, 30000);
+})();
+</script>
 </body>
 </html>

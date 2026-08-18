@@ -110,70 +110,6 @@
   .gate-text{ color:rgba(255,255,255,0.75); font-size:14px; }
 
   /* ---------- Dashboard ---------- */
-
-  /* ---------- Notice management ---------- */
-  .notice-form{
-    display:grid;
-    gap:12px;
-  }
-  .notice-form textarea{
-    width:100%;
-    min-height:110px;
-    resize:vertical;
-    border:1px solid var(--line);
-    border-radius:12px;
-    padding:12px 13px;
-    font:inherit;
-    font-size:14px;
-    line-height:1.5;
-    outline:none;
-  }
-  .notice-form textarea:focus{ border-color:var(--accent); }
-  .notice-actions{
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-  }
-  .notice-btn{
-    border:none;
-    border-radius:10px;
-    padding:11px 16px;
-    font:inherit;
-    font-size:13px;
-    font-weight:800;
-    cursor:pointer;
-  }
-  .notice-btn.primary{ background:var(--accent); color:#fff; }
-  .notice-btn.primary:hover{ background:var(--accent-dark); }
-  .notice-btn.secondary{ background:#eef0fb; color:var(--ink); }
-  .notice-btn.danger{ background:rgba(229,72,77,.1); color:var(--error); }
-  .notice-current{
-    margin-top:14px;
-    padding:13px 14px;
-    border:1px solid var(--line);
-    border-radius:12px;
-    background:#fafbff;
-  }
-  .notice-current-label{
-    font-size:11px;
-    font-weight:800;
-    text-transform:uppercase;
-    letter-spacing:.4px;
-    color:var(--muted);
-    margin-bottom:6px;
-  }
-  .notice-current-text{
-    font-size:14px;
-    line-height:1.55;
-    white-space:pre-wrap;
-    overflow-wrap:anywhere;
-  }
-  .notice-status{
-    margin-top:8px;
-    font-size:12px;
-    color:var(--muted);
-  }
-
   .app{ display:none; }
   .app.active{ display:block; }
 
@@ -435,6 +371,8 @@
   }
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 </style>
+<style>
+.notice-action-primary,.notice-action-secondary,.notice-action-danger{border:0;border-radius:10px;padding:11px 16px;font:inherit;font-weight:800;cursor:pointer}.notice-action-primary{background:var(--accent);color:#fff}.notice-action-secondary{background:#eef0f6;color:var(--ink)}.notice-action-danger{background:#fff0f0;color:#d64545}</style>
 </head>
 <body>
 
@@ -504,26 +442,16 @@
       </div>
 
 
-      <div class="panel">
-        <div class="panel-head">
-          <h2>Send Notice</h2>
-        </div>
-
-        <div class="notice-form">
-          <textarea id="notice-message" maxlength="500"
-            placeholder="Write the notice that should appear in the homepage notice bar..."></textarea>
-
-          <div class="notice-actions">
-            <button class="notice-btn primary" onclick="sendNotice()">Send Notice</button>
-            <button class="notice-btn secondary" onclick="clearNoticeForm()">Clear</button>
-            <button class="notice-btn danger" onclick="removeActiveNotice()">Remove Active Notice</button>
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-head"><h2>Send Notice</h2></div>
+        <div style="display:grid;gap:12px;">
+          <textarea id="notice-message" maxlength="500" placeholder="Write your notice..." style="width:100%;min-height:100px;resize:vertical;border:1px solid var(--line);border-radius:12px;padding:12px;font:inherit;box-sizing:border-box;"></textarea>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="notice-action-primary" onclick="sendNotice()">Send Notice</button>
+            <button class="notice-action-secondary" onclick="clearNoticeForm()">Clear</button>
+            <button class="notice-action-danger" onclick="removeActiveNotice()">Remove Notice</button>
           </div>
-        </div>
-
-        <div class="notice-current" id="notice-current">
-          <div class="notice-current-label">Current notice</div>
-          <div class="notice-current-text" id="current-notice-text">Loading...</div>
-          <div class="notice-status" id="current-notice-status"></div>
+          <div style="font-size:12px;color:var(--muted);">Current: <span id="current-notice-text">Loading...</span></div>
         </div>
       </div>
 
@@ -642,90 +570,26 @@ async function checkAccess(){
 }
 
 
-// ---------- Notice management ----------
 async function loadActiveNotice(){
-  const textEl = document.getElementById('current-notice-text');
-  const statusEl = document.getElementById('current-notice-status');
-
-  const { data, error } = await supabaseClient
-    .from('site_notices')
-    .select('id,message,created_at,is_active')
-    .eq('is_active', true)
-    .order('created_at', { ascending:false })
-    .limit(1)
-    .maybeSingle();
-
-  if(error){
-    textEl.textContent = 'Could not load notice.';
-    statusEl.textContent = error.message;
-    return;
-  }
-
-  if(!data){
-    textEl.textContent = 'No active notice.';
-    statusEl.textContent = '';
-    return;
-  }
-
-  textEl.textContent = data.message;
-  statusEl.textContent = 'Sent ' + new Date(data.created_at).toLocaleString();
+  const el=document.getElementById('current-notice-text');
+  const {data,error}=await supabaseClient.from('site_notices').select('message').eq('is_active',true).order('created_at',{ascending:false}).limit(1).maybeSingle();
+  el.textContent=(!error&&data&&data.message)?data.message:'No Notice';
 }
-
 async function sendNotice(){
-  const input = document.getElementById('notice-message');
-  const message = input.value.trim();
-
-  if(!message){
-    showToast('Write a notice first.');
-    input.focus();
-    return;
-  }
-
-  // Keep only one active notice at a time.
-  const { error: deactivateError } = await supabaseClient
-    .from('site_notices')
-    .update({ is_active:false })
-    .eq('is_active', true);
-
-  if(deactivateError){
-    showToast('Could not replace the old notice: ' + deactivateError.message);
-    return;
-  }
-
-  const { error } = await supabaseClient
-    .from('site_notices')
-    .insert({
-      message: message,
-      is_active: true
-    });
-
-  if(error){
-    showToast('Could not send notice: ' + error.message);
-    return;
-  }
-
-  input.value = '';
-  await loadActiveNotice();
-  showToast('Notice sent successfully.');
+  const input=document.getElementById('notice-message');
+  const message=input.value.trim();
+  if(!message){showToast('Write a notice first.');return;}
+  let result=await supabaseClient.from('site_notices').update({is_active:false}).eq('is_active',true);
+  if(result.error){showToast('Could not replace old notice: '+result.error.message);return;}
+  result=await supabaseClient.from('site_notices').insert({message:message,is_active:true});
+  if(result.error){showToast('Could not send notice: '+result.error.message);return;}
+  input.value=''; await loadActiveNotice(); showToast('Notice sent successfully.');
 }
-
-function clearNoticeForm(){
-  document.getElementById('notice-message').value = '';
-}
-
+function clearNoticeForm(){document.getElementById('notice-message').value='';}
 async function removeActiveNotice(){
-  const { error } = await supabaseClient
-    .from('site_notices')
-    .update({ is_active:false })
-    .eq('is_active', true);
-
-  if(error){
-    showToast('Could not remove notice: ' + error.message);
-    return;
-  }
-
-  await loadActiveNotice();
-  showToast('Active notice removed.');
+  const {error}=await supabaseClient.from('site_notices').update({is_active:false}).eq('is_active',true);
+  if(error){showToast('Could not remove notice: '+error.message);return;}
+  await loadActiveNotice(); showToast('Notice removed.');
 }
 
 // ---------- Dashboard data ----------
