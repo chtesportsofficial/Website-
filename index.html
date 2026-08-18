@@ -418,6 +418,21 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
 }
 </style>
 
+
+<style id="notice-popup-styles">
+.notice-popup-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.62);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;padding:20px;z-index:9999}
+.notice-popup-backdrop.show{display:flex}
+.notice-popup{width:min(520px,100%);background:var(--surface,#131826);border:1px solid var(--line,#232b3d);border-radius:20px;box-shadow:0 24px 80px rgba(0,0,0,.45);overflow:hidden;animation:noticePop .22s ease}
+@keyframes noticePop{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+.notice-popup-head{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--line,#232b3d)}
+.notice-popup-dot{width:10px;height:10px;border-radius:50%;background:var(--green,#22e08a);box-shadow:0 0 12px rgba(34,224,138,.55);flex-shrink:0}
+.notice-popup-title{font-weight:900;flex:1}
+.notice-popup-close{width:34px;height:34px;border:1px solid var(--line,#232b3d);border-radius:10px;background:transparent;color:var(--text,#eef1f7);font-size:22px;line-height:1;cursor:pointer}
+.notice-popup-body{padding:18px;color:var(--text-dim,#8b93a9);font-size:15px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;max-height:60vh;overflow:auto}
+.notice-popup-foot{padding:0 18px 18px;display:flex;justify-content:flex-end}
+.notice-popup-ok{border:0;border-radius:11px;padding:10px 16px;background:var(--green,#22e08a);color:#06110c;font-weight:900;cursor:pointer}
+.ticker{cursor:pointer}
+</style>
 </head>
 <body>
 <div class="app">
@@ -434,14 +449,26 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
   </div>
 </div>
 
-<div class="ticker" id="site-notice">
+<div class="ticker" id="siteNoticeBar" role="button" tabindex="0" aria-label="Open full notice">
   <div class="dot"></div>
   <div class="ticker-fixed"><b>NOTICE:</b></div>
   <div class="ticker-track">
-    <div class="ticker-track-inner" id="site-notice-track">
-      <span id="site-notice-text">No Notice</span>
-      <span id="site-notice-text-2">No Notice</span>
+    <div class="ticker-track-inner" id="siteNoticeTrack">
+      <span id="siteNoticeText">No Notice</span>
+      <span aria-hidden="true">No Notice</span>
     </div>
+  </div>
+</div>
+
+<div class="notice-popup-backdrop" id="noticePopup" aria-hidden="true">
+  <div class="notice-popup" role="dialog" aria-modal="true" aria-labelledby="noticePopupTitle">
+    <div class="notice-popup-head">
+      <span class="notice-popup-dot"></span>
+      <div class="notice-popup-title" id="noticePopupTitle">Full Notice</div>
+      <button class="notice-popup-close" id="noticePopupClose" aria-label="Close">&times;</button>
+    </div>
+    <div class="notice-popup-body" id="noticePopupBody">No Notice</div>
+    <div class="notice-popup-foot"><button class="notice-popup-ok" id="noticePopupOk">Close</button></div>
   </div>
 </div>
 
@@ -716,26 +743,44 @@ window.addEventListener('pageshow', function(event){
     location.reload();
   }
 });
-</script>
 
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
+/* ============ Live Notice + Full Notice popup ============ */
 (function(){
-  const url = 'https://myfficbwcbgbxbdqjexv.supabase.co';
-  const key = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
-  const client = window.supabase.createClient(url, key);
-  const a = document.getElementById('site-notice-text');
-  const b = document.getElementById('site-notice-text-2');
-  async function loadNotice(){
-    const { data, error } = await client.from('site_notices').select('message').eq('is_active', true).order('created_at', {ascending:false}).limit(1).maybeSingle();
-    const message = (!error && data && data.message) ? data.message : 'No Notice';
-    a.textContent = message + ' •';
-    b.textContent = message + ' •';
+  const NOTICE_URL = 'https://myfficbwcbgbxbdqjexv.supabase.co/rest/v1/site_notices?select=message,is_active,created_at&is_active=eq.true&order=created_at.desc&limit=1';
+  const NOTICE_KEY = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+  const bar=document.getElementById('siteNoticeBar');
+  const track=document.getElementById('siteNoticeTrack');
+  const popup=document.getElementById('noticePopup');
+  const body=document.getElementById('noticePopupBody');
+  const close=document.getElementById('noticePopupClose');
+  const ok=document.getElementById('noticePopupOk');
+  let currentNotice='No Notice';
+  function renderNotice(message){
+    currentNotice=(message&&String(message).trim())?String(message).trim():'No Notice';
+    track.innerHTML='<span>'+escapeHtml(currentNotice)+'</span><span aria-hidden="true">'+escapeHtml(currentNotice)+'</span>';
+    body.textContent=currentNotice;
   }
-  loadNotice();
-  setInterval(loadNotice, 30000);
+  function escapeHtml(v){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+  async function loadNotice(){
+    try{
+      const r=await fetch(NOTICE_URL,{headers:{apikey:NOTICE_KEY,Authorization:'Bearer '+NOTICE_KEY}});
+      if(!r.ok) throw new Error('notice request failed');
+      const rows=await r.json();
+      renderNotice(rows[0]?.message||'No Notice');
+    }catch(e){
+      renderNotice('No Notice');
+    }
+  }
+  function open(){popup.classList.add('show');popup.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';}
+  function hide(){popup.classList.remove('show');popup.setAttribute('aria-hidden','true');document.body.style.overflow='';}
+  bar.addEventListener('click',open);
+  bar.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
+  close.addEventListener('click',hide); ok.addEventListener('click',hide);
+  popup.addEventListener('click',e=>{if(e.target===popup)hide();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&popup.classList.contains('show'))hide();});
+  loadNotice(); setInterval(loadNotice,30000);
 })();
 </script>
+
 </body>
 </html>
