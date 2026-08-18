@@ -370,6 +370,16 @@
     z-index:10;
   }
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* Notice management */
+.notice-panel{margin-bottom:16px}
+.notice-form{display:grid;gap:12px}
+.notice-form textarea{width:100%;min-height:110px;resize:vertical;border:1px solid #d9dce4;border-radius:12px;padding:12px;box-sizing:border-box;font:inherit;color:#202333;background:#fff}
+.notice-actions{display:flex;gap:10px;flex-wrap:wrap}
+.notice-btn{border:0;border-radius:10px;padding:11px 16px;font-weight:800;cursor:pointer}
+.notice-btn.primary{background:#22c55e;color:#fff}.notice-btn.secondary{background:#eef0f5;color:#222}.notice-btn.danger{background:#ef4444;color:#fff}
+.notice-current{margin-top:12px;padding:12px;border-radius:12px;background:#f6f7fa;border:1px solid #e2e5ec}
+.notice-current-label{font-size:11px;font-weight:800;color:#7b8190;text-transform:uppercase}.notice-current-text{margin-top:5px;font-weight:700;color:#202333;white-space:pre-wrap;word-break:break-word}
 </style>
 </head>
 <body>
@@ -436,6 +446,22 @@
         <div class="stat-card">
           <div class="label">Signed up (today)</div>
           <div class="value" id="stat-today">—</div>
+        </div>
+      </div>
+
+      <div class="panel notice-panel">
+        <div class="panel-head"><h2>Send Notice</h2></div>
+        <div class="notice-form">
+          <textarea id="notice-message" maxlength="1000" placeholder="Write the notice that should appear on the homepage..."></textarea>
+          <div class="notice-actions">
+            <button class="notice-btn primary" type="button" onclick="sendNotice()">Send Notice</button>
+            <button class="notice-btn secondary" type="button" onclick="clearNoticeForm()">Clear</button>
+            <button class="notice-btn danger" type="button" onclick="removeNotice()">Remove Notice</button>
+          </div>
+        </div>
+        <div class="notice-current">
+          <div class="notice-current-label">Current Notice</div>
+          <div class="notice-current-text" id="current-notice-text">Loading...</div>
         </div>
       </div>
 
@@ -520,7 +546,48 @@ async function handleAdminLogin(){
     return;
   }
 
-  await checkAccess();
+  await async function getAdminName(){
+  try{
+    const {data:{user}} = await supabaseClient.auth.getUser();
+    if(!user) return 'Admin';
+    const {data:profile} = await supabaseClient.from('profiles').select('full_name').eq('id',user.id).maybeSingle();
+    return (profile && profile.full_name) || user.email || 'Admin';
+  }catch(e){ return 'Admin'; }
+}
+
+async function loadCurrentNotice(){
+  const el=document.getElementById('current-notice-text');
+  if(!el) return;
+  const {data,error}=await supabaseClient.from('site_notices').select('message,is_active,created_at,admin_name').order('created_at',{ascending:false}).limit(1).maybeSingle();
+  if(error || !data){ el.textContent='No Notice'; return; }
+  el.textContent=data.is_active ? data.message : 'No Notice';
+}
+
+async function sendNotice(){
+  const input=document.getElementById('notice-message');
+  const message=(input?.value||'').trim();
+  if(!message){ showToast('Write a notice first.'); return; }
+  const adminName=await getAdminName();
+  const {error}=await supabaseClient.from('site_notices').insert({message,is_active:true,admin_name:adminName});
+  if(error){ showToast('Could not send notice: '+error.message); return; }
+  input.value='';
+  showToast('Notice sent successfully.');
+  loadCurrentNotice();
+}
+
+async function removeNotice(){
+  const adminName=await getAdminName();
+  // Insert an inactive marker instead of UPDATE/DELETE. This avoids the old
+  // "Could not replace old notice" problem and lets the homepage use the newest row.
+  const {error}=await supabaseClient.from('site_notices').insert({message:'No Notice',is_active:true,admin_name:adminName});
+  if(error){ showToast('Could not remove notice: '+error.message); return; }
+  showToast('Notice removed.');
+  loadCurrentNotice();
+}
+
+function clearNoticeForm(){ const input=document.getElementById('notice-message'); if(input) input.value=''; }
+
+checkAccess();
 }
 
 async function signOutAndReload(){
@@ -699,59 +766,6 @@ function escapeHtml(str){
 }
 
 checkAccess();
-
-// ---------- Notice system ----------
-async function sendNotice(){
-  const input = document.getElementById('notice-message');
-  if(!input) return;
-  const message = input.value.trim();
-  if(!message){ showToast('Write a notice first.'); return; }
-
-  const { data:{ user } } = await supabaseClient.auth.getUser();
-  if(!user){ showToast('Please login again.'); return; }
-
-  const { data: profile } = await supabaseClient
-    .from('profiles')
-    .select('full_name')
-    .eq('id', user.id)
-    .single();
-
-  const adminName = profile?.full_name || user.email || 'Admin';
-
-  const { error } = await supabaseClient.from('site_notices').insert({
-    message,
-    is_active: true,
-    admin_name: adminName
-  });
-
-  if(error){ showToast('Could not send notice: ' + error.message); return; }
-  input.value = '';
-  showToast('Notice sent successfully.');
-}
-
-async function removeNotice(){
-  const { data:{ user } } = await supabaseClient.auth.getUser();
-  if(!user){ showToast('Please login again.'); return; }
-
-  const { data: profile } = await supabaseClient
-    .from('profiles')
-    .select('full_name')
-    .eq('id', user.id)
-    .single();
-
-  const adminName = profile?.full_name || user.email || 'Admin';
-
-  // No update/delete required: create a new inactive marker.
-  const { error } = await supabaseClient.from('site_notices').insert({
-    message: 'No Notice',
-    is_active: false,
-    admin_name: adminName
-  });
-
-  if(error){ showToast('Could not remove notice: ' + error.message); return; }
-  showToast('Notice removed.');
-}
-
 </script>
 
 </body>
