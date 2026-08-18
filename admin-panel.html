@@ -371,16 +371,18 @@
   }
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
-  .notice-textarea{width:100%;min-height:140px;border:1px solid var(--line);border-radius:14px;padding:14px 16px;font:inherit;font-size:16px;resize:vertical;outline:none;color:var(--ink);background:#fff;}
-  .notice-textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(53,87,255,.10);}
-  .notice-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px;}
-  .notice-btn{border:0;border-radius:12px;padding:13px 20px;font:inherit;font-weight:800;cursor:pointer;min-width:105px;}
-  .notice-btn:disabled{opacity:.55;cursor:not-allowed;}
-  .notice-btn.send{background:#22c55e;color:#fff;} .notice-btn.clear{background:#eef0f5;color:#222;} .notice-btn.remove{background:#ef4444;color:#fff;}
-  .current-notice{margin-top:16px;background:#f6f7fb;border:1px solid #e0e2ea;border-radius:14px;padding:15px;}
-  .current-label{font-size:12px;font-weight:800;color:var(--muted);margin-bottom:7px;}
-  #currentNoticeText{font-size:18px;font-weight:800;line-height:1.4;word-break:break-word;}
-  .current-meta{font-size:12px;color:var(--muted);margin-top:7px;}
+/* ================= NOTICE MANAGEMENT ================= */
+.notice-panel textarea{width:100%;min-height:130px;resize:vertical;padding:14px;border:1px solid #dfe3ea;border-radius:14px;font:inherit;font-size:15px;box-sizing:border-box;outline:none;background:#fff;color:#202535}
+.notice-panel textarea:focus{border-color:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.12)}
+.notice-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.notice-actions button{border:0;border-radius:12px;padding:12px 18px;font:inherit;font-weight:800;cursor:pointer}
+#send-notice-btn{background:#22c55e;color:#fff}
+#clear-notice-btn{background:#eef0f5;color:#202535}
+#remove-notice-btn{background:#ef4444;color:#fff}
+.notice-current{margin-top:14px;padding:14px;border:1px solid #dfe3ea;border-radius:14px;background:#f6f7fa}
+.notice-current .nc-label{font-size:12px;font-weight:800;color:#7b8190;text-transform:uppercase}
+.notice-current .nc-text{margin-top:5px;font-size:15px;font-weight:700;color:#202535;white-space:pre-wrap;word-break:break-word}
+.notice-current .nc-meta{margin-top:8px;font-size:12px;color:#7b8190}
 </style>
 </head>
 <body>
@@ -450,20 +452,20 @@
         </div>
       </div>
 
-      <div class="panel notice-admin-panel">
+      <div class="panel notice-panel">
         <div class="panel-head">
           <h2>Send Notice</h2>
         </div>
-        <textarea id="notice-message" class="notice-textarea" placeholder="Write the notice that should appear on the homepage..."></textarea>
+        <textarea id="notice-message" placeholder="Write the notice that should appear on the homepage..."></textarea>
         <div class="notice-actions">
-          <button type="button" class="notice-btn send" id="sendNoticeBtn">Send Notice</button>
-          <button type="button" class="notice-btn clear" id="clearNoticeBtn">Clear</button>
-          <button type="button" class="notice-btn remove" id="removeNoticeBtn">Remove Notice</button>
+          <button id="send-notice-btn" type="button">Send Notice</button>
+          <button id="clear-notice-btn" type="button">Clear</button>
+          <button id="remove-notice-btn" type="button">Remove Notice</button>
         </div>
-        <div class="current-notice">
-          <div class="current-label">CURRENT NOTICE</div>
-          <div id="currentNoticeText">Loading...</div>
-          <div id="currentNoticeMeta" class="current-meta"></div>
+        <div class="notice-current">
+          <div class="nc-label">Current Notice</div>
+          <div class="nc-text" id="current-notice-text">Loading...</div>
+          <div class="nc-meta" id="current-notice-meta"></div>
         </div>
       </div>
 
@@ -548,75 +550,7 @@ async function handleAdminLogin(){
     return;
   }
 
-  await 
-// ---------- Notice system ----------
-async function getAdminName(){
-  try{
-    const {data:{user}}=await supabaseClient.auth.getUser();
-    if(!user) return 'Admin';
-    const {data}=await supabaseClient.from('profiles').select('full_name').eq('id',user.id).single();
-    return (data && data.full_name) || user.email || 'Admin';
-  }catch(e){ return 'Admin'; }
-}
-
-function noticeErrorText(error){
-  return error && (error.message || error.details || error.hint) ? (error.message || error.details || error.hint) : 'Unknown error';
-}
-
-async function loadCurrentNotice(){
-  const textEl=document.getElementById('currentNoticeText');
-  const metaEl=document.getElementById('currentNoticeMeta');
-  if(!textEl) return;
-  textEl.textContent='Loading...'; metaEl.textContent='';
-  const {data,error}=await supabaseClient.from('site_notices')
-    .select('message,created_at,admin_name,is_active')
-    .eq('is_active',true).order('created_at',{ascending:false}).limit(1).maybeSingle();
-  if(error){
-    textEl.textContent='Could not load notice';
-    metaEl.textContent=noticeErrorText(error);
-    return;
-  }
-  if(!data){ textEl.textContent='No Notice'; return; }
-  textEl.textContent=data.message || 'No Notice';
-  metaEl.textContent=(data.admin_name ? 'Admin: '+data.admin_name+' • ' : '') + new Date(data.created_at).toLocaleString('en-BD');
-}
-
-async function sendNotice(){
-  const btn=document.getElementById('sendNoticeBtn');
-  const input=document.getElementById('notice-message');
-  const message=input.value.trim();
-  if(!message){ showToast('Write a notice first.'); input.focus(); return; }
-  btn.disabled=true;
-  try{
-    const adminName=await getAdminName();
-    const {error}=await supabaseClient.from('site_notices').insert({message,is_active:true,admin_name:adminName});
-    if(error) throw error;
-    input.value='';
-    showToast('Notice sent successfully.');
-    await loadCurrentNotice();
-  }catch(e){
-    showToast('Could not send notice: '+noticeErrorText(e));
-  }finally{ btn.disabled=false; }
-}
-
-async function removeNotice(){
-  const btn=document.getElementById('removeNoticeBtn');
-  btn.disabled=true;
-  try{
-    const adminName=await getAdminName();
-    // Insert a newest active "No Notice" marker. This avoids UPDATE/DELETE RLS issues.
-    const {error}=await supabaseClient.from('site_notices').insert({message:'No Notice',is_active:true,admin_name:adminName});
-    if(error) throw error;
-    showToast('Notice removed.');
-    await loadCurrentNotice();
-  }catch(e){ showToast('Could not remove notice: '+noticeErrorText(e)); }
-  finally{ btn.disabled=false; }
-}
-
-document.getElementById('sendNoticeBtn')?.addEventListener('click',sendNotice);
-document.getElementById('clearNoticeBtn')?.addEventListener('click',()=>{document.getElementById('notice-message').value='';document.getElementById('notice-message').focus();});
-document.getElementById('removeNoticeBtn')?.addEventListener('click',removeNotice);
-
+  await \n// ---------- Notice management ----------\nfunction formatNoticeDate(value){\n  if(!value) return '';\n  const d=new Date(value);\n  if(Number.isNaN(d.getTime())) return String(value);\n  return d.toLocaleString('en-BD',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});\n}\n\nasync function getCurrentNotice(){\n  const textEl=document.getElementById('current-notice-text');\n  const metaEl=document.getElementById('current-notice-meta');\n  try{\n    const {data,error}=await supabaseClient.from('site_notices')\n      .select('id,message,created_at,admin_name,is_active')\n      .eq('is_active',true).order('created_at',{ascending:false}).limit(1).maybeSingle();\n    if(error) throw error;\n    if(!data){ textEl.textContent='No Notice'; metaEl.textContent=''; return null; }\n    textEl.textContent=data.message || 'No Notice';\n    metaEl.textContent='Admin — '+(data.admin_name || 'Admin')+'  •  '+formatNoticeDate(data.created_at);\n    return data;\n  }catch(e){\n    textEl.textContent='Could not load notice';\n    metaEl.textContent=e.message || '';\n    return null;\n  }\n}\n\nasync function getAdminName(){\n  const {data:{user}}=await supabaseClient.auth.getUser();\n  if(!user) return 'Admin';\n  const {data:profile}=await supabaseClient.from('profiles').select('full_name,email').eq('id',user.id).single();\n  return (profile && (profile.full_name || profile.email)) || user.email || 'Admin';\n}\n\nasync function sendNotice(){\n  const input=document.getElementById('notice-message');\n  const btn=document.getElementById('send-notice-btn');\n  const message=input.value.trim();\n  if(!message){showToast('Write a notice first.');return;}\n  btn.disabled=true;\n  try{\n    const adminName=await getAdminName();\n    const {error:offError}=await supabaseClient.from('site_notices').update({is_active:false}).eq('is_active',true);\n    if(offError) throw offError;\n    const {error}=await supabaseClient.from('site_notices').insert({message,is_active:true,admin_name:adminName});\n    if(error) throw error;\n    input.value='';\n    showToast('Notice sent successfully.');\n    await getCurrentNotice();\n  }catch(e){\n    showToast('Notice failed: '+(e.message || 'Unknown error'));\n    console.error('sendNotice',e);\n  }finally{btn.disabled=false;}\n}\n\nasync function removeNotice(){\n  const btn=document.getElementById('remove-notice-btn');\n  btn.disabled=true;\n  try{\n    const {error}=await supabaseClient.from('site_notices').update({is_active:false}).eq('is_active',true);\n    if(error) throw error;\n    document.getElementById('notice-message').value='';\n    showToast('Notice removed.');\n    await getCurrentNotice();\n  }catch(e){\n    showToast('Remove failed: '+(e.message || 'Unknown error'));\n    console.error('removeNotice',e);\n  }finally{btn.disabled=false;}\n}\n\nfunction setupNoticeUI(){\n  document.getElementById('send-notice-btn').addEventListener('click',sendNotice);\n  document.getElementById('clear-notice-btn').addEventListener('click',()=>{document.getElementById('notice-message').value='';});\n  document.getElementById('remove-notice-btn').addEventListener('click',removeNotice);\n  getCurrentNotice();\n}\n
 checkAccess();
 }
 
@@ -647,8 +581,8 @@ async function checkAccess(){
   }
 
   showGate('app');
+  setupNoticeUI();
   loadDashboard();
-  loadCurrentNotice();
 }
 
 // ---------- Dashboard data ----------
