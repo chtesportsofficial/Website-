@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Feedbacks</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
+<style>
+:root{
+  --bg:#0b0f19;--card:#141a29;--card2:#171f33;--border:#232c42;
+  --text:#fff;--muted:#8a93a6;--blue:#6366f1;--green:#22c55e;--red:#ef4444;--yellow:#f59e0b;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Segoe UI,Roboto,Arial,sans-serif;padding:20px 0 50px}
+.wrap{width:100%;max-width:700px;margin:auto;padding:0 16px}
+.header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.back{width:48px;height:48px;border:1px solid var(--border);border-radius:15px;background:var(--card2);color:#fff;font-size:25px}
+h1{font-size:26px;margin:0}.sub{color:var(--muted);font-size:13px;margin-top:3px}
+.toolbar{display:flex;gap:8px;overflow:auto;margin-bottom:16px}
+.filter{border:1px solid var(--border);background:var(--card);color:var(--muted);padding:9px 13px;border-radius:10px;white-space:nowrap}
+.filter.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.feedback{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:14px}
+.top{display:flex;justify-content:space-between;gap:10px}
+.user{font-size:12px;color:var(--muted);word-break:break-all}
+.date{font-size:12px;color:var(--muted);margin-top:4px}
+.badge{font-size:11px;padding:6px 9px;border-radius:20px;font-weight:700;text-transform:capitalize;height:max-content}
+.pending{background:rgba(245,158,11,.14);color:var(--yellow)}
+.reviewed{background:rgba(99,102,241,.15);color:#818cf8}
+.resolved{background:rgba(34,197,94,.14);color:var(--green)}
+.message{font-size:15px;line-height:1.55;white-space:pre-wrap;margin:15px 0}
+.shot{width:100%;max-height:360px;object-fit:contain;border-radius:12px;background:#080b12;border:1px solid var(--border);cursor:pointer}
+.reply{width:100%;min-height:80px;resize:vertical;background:#0d1220;color:#fff;border:1px solid var(--border);border-radius:11px;padding:11px;font:inherit;outline:none;margin-top:12px}
+.actions{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap}
+button.action{border:0;border-radius:10px;padding:10px 13px;color:#fff;font-weight:700;cursor:pointer}
+.review{background:var(--blue)}.resolve{background:var(--green)}.save{background:#475569}.delete{background:var(--red)}
+.empty,.loading{padding:35px 10px;text-align:center;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;background:#16a34a;color:#fff;padding:12px 18px;border-radius:11px;font-weight:600;transition:.2s;z-index:10}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.error{background:#991b1b}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <button class="back" onclick="history.back()">‹</button>
+    <div>
+      <h1>Feedbacks</h1>
+      <div class="sub">Admin feedback management</div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button class="filter active" data-filter="all">All</button>
+    <button class="filter" data-filter="pending">Pending</button>
+    <button class="filter" data-filter="reviewed">Reviewed</button>
+    <button class="filter" data-filter="resolved">Resolved</button>
+  </div>
+
+  <div id="list" class="loading">Loading feedbacks...</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const list = document.getElementById('list');
+const toast = document.getElementById('toast');
+let allFeedbacks = [];
+let currentFilter = 'all';
+
+function showToast(msg, error=false){
+  toast.textContent = msg;
+  toast.classList.toggle('error', error);
+  toast.classList.add('show');
+  clearTimeout(window._toast);
+  window._toast = setTimeout(()=>toast.classList.remove('show'), 2800);
+}
+
+function esc(value){
+  return String(value ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+  }[c]));
+}
+
+function formatDate(v){
+  return new Date(v).toLocaleString('en-BD',{
+    dateStyle:'medium',timeStyle:'short'
+  });
+}
+
+function render(){
+  const data = currentFilter === 'all'
+    ? allFeedbacks
+    : allFeedbacks.filter(x => x.status === currentFilter);
+
+  if(!data.length){
+    list.innerHTML = '<div class="empty">No feedback found.</div>';
+    return;
+  }
+
+  list.innerHTML = data.map(f => `
+    <div class="feedback" data-id="${esc(f.id)}">
+      <div class="top">
+        <div>
+          <div class="user">User ID: ${esc(f.user_id)}</div>
+          <div class="date">${esc(formatDate(f.created_at))}</div>
+        </div>
+        <span class="badge ${esc(f.status)}">${esc(f.status)}</span>
+      </div>
+
+      <div class="message">${esc(f.message)}</div>
+
+      ${f.screenshot_url ? `
+        <img class="shot" src="${esc(f.screenshot_url)}"
+             alt="Feedback screenshot"
+             onclick="window.open(this.src,'_blank')">
+      ` : ''}
+
+      <textarea class="reply" placeholder="Write admin reply...">${esc(f.admin_reply || '')}</textarea>
+
+      <div class="actions">
+        <button class="action review" onclick="changeStatus('${esc(f.id)}','reviewed')">Mark Reviewed</button>
+        <button class="action resolve" onclick="changeStatus('${esc(f.id)}','resolved')">Resolve</button>
+        <button class="action save" onclick="saveReply('${esc(f.id)}', this)">Save Reply</button>
+        <button class="action delete" onclick="deleteFeedback('${esc(f.id)}')">Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function getClient(){
+  if(!(window.CHTEO && window.CHTEO.getSupabaseClient)){
+    throw new Error('Supabase client is not available.');
+  }
+  return await new Promise(resolve => window.CHTEO.getSupabaseClient(resolve));
+}
+
+async function verifyAdmin(client){
+  const {data:{user}, error} = await client.auth.getUser();
+  if(error || !user) throw new Error('Please login again.');
+
+  const {data, error:adminErr} = await client
+    .from('admins')
+    .select('user_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if(adminErr) throw adminErr;
+  if(!data) throw new Error('Access denied. You are not an admin.');
+}
+
+async function loadFeedbacks(){
+  try{
+    const client = await getClient();
+    await verifyAdmin(client);
+
+    const {data,error} = await client
+      .from('feedback')
+      .select('id,user_id,message,screenshot_url,status,admin_reply,created_at,updated_at')
+      .order('created_at',{ascending:false});
+
+    if(error) throw error;
+
+    allFeedbacks = data || [];
+    render();
+  }catch(err){
+    list.innerHTML = `<div class="empty">${esc(err.message || 'Could not load feedbacks.')}</div>`;
+  }
+}
+
+async function changeStatus(id,status){
+  try{
+    const client = await getClient();
+    const {error} = await client
+      .from('feedback')
+      .update({status})
+      .eq('id',id);
+
+    if(error) throw error;
+
+    const item = allFeedbacks.find(x=>x.id===id);
+    if(item) item.status = status;
+    render();
+    showToast('Status updated.');
+  }catch(err){
+    showToast(err.message || 'Could not update status.',true);
+  }
+}
+
+async function saveReply(id,button){
+  try{
+    const card = button.closest('.feedback');
+    const reply = card.querySelector('.reply').value.trim();
+    const client = await getClient();
+
+    const {error} = await client
+      .from('feedback')
+      .update({admin_reply: reply})
+      .eq('id',id);
+
+    if(error) throw error;
+
+    const item = allFeedbacks.find(x=>x.id===id);
+    if(item) item.admin_reply = reply;
+    showToast('Reply saved.');
+  }catch(err){
+    showToast(err.message || 'Could not save reply.',true);
+  }
+}
+
+async function deleteFeedback(id){
+  if(!confirm('Delete this feedback permanently?')) return;
+
+  try{
+    const client = await getClient();
+    const {error} = await client
+      .from('feedback')
+      .delete()
+      .eq('id',id);
+
+    if(error) throw error;
+
+    allFeedbacks = allFeedbacks.filter(x=>x.id!==id);
+    render();
+    showToast('Feedback deleted.');
+  }catch(err){
+    showToast(err.message || 'Could not delete feedback.',true);
+  }
+}
+
+document.querySelectorAll('.filter').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.filter').forEach(x=>x.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    render();
+  });
+});
+
+loadFeedbacks();
+</script>
+</body>
+</html>
