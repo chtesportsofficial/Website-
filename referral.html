@@ -147,105 +147,136 @@
   .signout-btn:hover{ background:rgba(255,255,255,0.15); }
 
   .content{
-    max-width:1080px;
+    max-width:760px;
     margin:0 auto;
-    padding:28px 24px 60px;
+    padding:24px 16px 70px;
   }
 
   .panel{
     background:var(--white);
-    border-radius:20px;
-    padding:22px 22px 8px;
-    box-shadow:0 20px 44px -22px rgba(0,0,0,0.35);
-    margin-bottom:22px;
+    border-radius:18px;
+    padding:20px 16px 14px;
+    box-shadow:0 12px 30px -20px rgba(0,0,0,.35);
   }
+
   .panel-head{
     display:flex;
     align-items:center;
     justify-content:space-between;
     gap:12px;
-    margin-bottom:16px;
-    flex-wrap:wrap;
+    margin-bottom:14px;
   }
-  .panel-head h2{ font-size:16px; font-weight:800; margin:0; }
 
-  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  .panel-head h2{
+    font-size:20px;
+    font-weight:800;
+    margin:0;
+    color:var(--ink);
+  }
+
+  .ref-info-btn{
+    width:36px;
+    height:36px;
+    border:1px solid #e1e4f2;
+    border-radius:10px;
+    background:#f5f6fc;
+    color:var(--accent);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .ref-info-btn:active{ transform:scale(.96); }
+
+  .ref-subtitle{
+    margin:-7px 0 16px;
+    color:var(--muted);
+    font-size:12.5px;
+  }
+
+  table{ width:100%; border-collapse:separate; border-spacing:0 8px; font-size:13px; }
   th{
     text-align:left;
-    font-size:11.5px;
+    font-size:10.5px;
     text-transform:uppercase;
-    letter-spacing:0.3px;
+    letter-spacing:.35px;
     color:var(--muted);
-    padding:10px 12px;
-    border-bottom:2px solid var(--line);
+    padding:0 12px 4px;
     white-space:nowrap;
   }
   td{
-    padding:11px 12px;
+    padding:12px;
+    vertical-align:middle;
+    background:#fff;
+    border-top:1px solid var(--line);
     border-bottom:1px solid var(--line);
-    vertical-align:top;
-    max-width:220px;
-    overflow-wrap:anywhere;
   }
-  tr:last-child td{ border-bottom:none; }
-  .table-wrap{ overflow-x:auto; padding-bottom:14px; }
-
-  /* ---------- Mobile card layout for tables ---------- */
-  @media (max-width: 640px){
-    .table-wrap{ overflow-x:visible; }
-    table, thead, tbody, th, td, tr{ display:block; width:100%; }
-    thead{
-      position:absolute;
-      width:1px; height:1px;
-      overflow:hidden;
-      clip:rect(0 0 0 0);
-      white-space:nowrap;
-    }
-    table{ border-collapse:separate; border-spacing:0 12px; }
-    tr{
-      background:var(--white);
-      border:1px solid var(--line);
-      border-radius:14px;
-      padding:4px 4px 10px;
-      box-shadow:0 8px 20px -14px rgba(0,0,0,0.25);
-    }
-    td{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:14px;
-      padding:9px 12px;
-      border-bottom:1px solid var(--line);
-      max-width:none;
-      text-align:right;
-    }
-    td:last-child{ border-bottom:none; }
-    td::before{
-      content: attr(data-label);
-      font-size:11px;
-      font-weight:700;
-      text-transform:uppercase;
-      letter-spacing:0.3px;
-      color:var(--muted);
-      text-align:left;
-      flex-shrink:0;
-      padding-top:1px;
-    }
-    #leaderboard-table td[data-label="#"]::before{ content:""; }
-    #leaderboard-table td[data-label="#"]{ justify-content:flex-start; }
+  td:first-child{
+    border-left:1px solid var(--line);
+    border-radius:12px 0 0 12px;
+    width:64px;
   }
+  td:last-child{
+    border-right:1px solid var(--line);
+    border-radius:0 12px 12px 0;
+    text-align:right;
+    width:90px;
+  }
+  tr{ cursor:pointer; transition:transform .15s ease, box-shadow .15s ease; }
+  tbody tr:hover{ transform:translateY(-1px); }
+  tbody tr:active{ transform:scale(.99); }
 
   .rank-badge{
     display:inline-flex;
     align-items:center;
     justify-content:center;
-    width:22px; height:22px;
+    width:28px; height:28px;
     border-radius:50%;
-    background:#eef0fb;
-    font-size:11.5px;
+    background:#eef1ff;
+    font-size:12px;
     font-weight:800;
     color:var(--accent);
-    margin-right:8px;
+  }
+
+  .code-cell{
+    font-size:14px;
+    font-weight:800;
+    color:var(--ink);
+  }
+  .used-cell{
+    font-size:14px;
+    font-weight:800;
+    color:var(--ink);
+  }
+  .row-arrow{
+    display:inline-flex;
+    margin-left:7px;
+    color:#9aa0b8;
+    font-size:15px;
+  }
+
+  @media (max-width:640px){
+    .topbar{ padding:14px 16px; }
+    .topbar .brand{ gap:8px; }
+    .topbar .brand img{ width:28px; height:28px; }
+    .topbar .brand span{ font-size:15px; }
+    .topbar .brand small{ font-size:10px; }
+    .back-btn{ width:40px; height:40px; }
+    .signout-btn{ padding:9px 13px; }
+
+    .content{ padding:18px 12px 80px; }
+    .panel{ border-radius:16px; padding:18px 10px 10px; }
+
+    .panel-head h2{ font-size:19px; }
+    .ref-subtitle{ font-size:12px; margin-bottom:12px; }
+
+    table{ border-spacing:0 7px; }
+    th{ padding:0 10px 3px; font-size:10px; }
+    td{ padding:10px; }
+    td:first-child{ width:54px; }
+    td:last-child{ width:82px; }
+    .rank-badge{ width:27px; height:27px; }
   }
 
   .empty-note{
@@ -329,7 +360,15 @@
       <div class="panel">
         <div class="panel-head">
           <h2>Top referrers</h2>
+          <button class="ref-info-btn" onclick="showReferralInfo()" aria-label="Referral information" title="Referral information">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M19 8v6M22 11h-6"/>
+            </svg>
+          </button>
         </div>
+        <div class="ref-subtitle">Users who used a referral code</div>
         <div class="table-wrap">
           <table id="leaderboard-table">
             <thead><tr><th>#</th><th>Referral code</th><th>Times used</th></tr></thead>
@@ -466,12 +505,21 @@ function renderLeaderboard(){
   empty.style.display = 'none';
 
   body.innerHTML = ranked.map(([code, count], i) => `
-    <tr>
+    <tr onclick="openUserDetail('${encodeURIComponent(code)}')" title="Open user details">
       <td data-label="#"><span class="rank-badge">${i + 1}</span></td>
-      <td data-label="Referral code">${escapeHtml(code)}</td>
-      <td data-label="Times used">${count}</td>
+      <td data-label="Referral code" class="code-cell">${escapeHtml(code)}</td>
+      <td data-label="Times used" class="used-cell">${count}<span class="row-arrow">›</span></td>
     </tr>
   `).join('');
+}
+
+function openUserDetail(code){
+  // Opens the existing user-detail page and passes the referral code.
+  window.location.href = 'user-detail.html?referral=' + code;
+}
+
+function showReferralInfo(){
+  showToast('Tap a referral row to open that user’s details.');
 }
 
 function escapeHtml(str){
