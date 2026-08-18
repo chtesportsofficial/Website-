@@ -96,31 +96,50 @@
   }
   .admin-corner{
     position:absolute; top:12px; right:12px;
-    display:none; align-items:center; gap:5px;
+    display:inline-flex; align-items:center; gap:5px;
     padding:5px 9px; border-radius:999px;
-    background:#fff; color:#20242a;
-    border:1px solid #e3e5ea;
-    box-shadow:0 4px 12px rgba(0,0,0,.10);
+    background:rgba(53,87,255,0.10); color:var(--accent);
+    border:1px solid rgba(53,87,255,0.18);
+    box-shadow:0 4px 12px rgba(0,0,0,.06);
     font-size:9px; font-weight:900; letter-spacing:.04em;
   }
-  .admin-corner.show{display:inline-flex;}
+  .admin-corner.user{
+    background:rgba(28,124,77,0.10); color:var(--success);
+    border-color:rgba(28,124,77,0.18);
+  }
+  .admin-corner.blocked{
+    background:rgba(229,72,77,0.10); color:var(--error);
+    border-color:rgba(229,72,77,0.18);
+  }
   .admin-dot{
     width:7px;height:7px;border-radius:50%;
-    background:#f59e0b;
-    box-shadow:0 0 0 3px rgba(245,158,11,.12);
+    background:currentColor;
+    box-shadow:0 0 0 3px rgba(53,87,255,.08);
   }
   .country-pill{
-    position:absolute;
-    top:18px; right:18px;
     display:flex; align-items:center; gap:7px;
-    background:var(--line);
+    background:#eef0f7;
     border-radius:20px;
-    padding:6px 12px 6px 14px;
+    padding:6px 11px;
     font-size:10.5px; font-weight:800;
     letter-spacing:0.4px; text-transform:uppercase;
     color:var(--ink);
-    max-width:150px;
+    max-width:180px;
   }
+  .location-inline{
+    display:flex; align-items:center; gap:5px;
+    color:var(--muted); font-size:10.5px; font-weight:800;
+    text-transform:uppercase; letter-spacing:.3px;
+    min-width:0;
+  }
+  .location-inline .loc-dot{
+    color:#24b66f; display:inline-flex; align-items:center;
+  }
+  .head-meta{
+    display:flex; align-items:center; gap:8px; margin-top:7px;
+    flex-wrap:wrap; min-width:0;
+  }
+  .head-meta .sep{ color:#d8dbea; font-weight:900; }
   .country-pill span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .flag-dot{
     width:13px; height:13px; border-radius:50%; flex-shrink:0;
@@ -133,7 +152,7 @@
 
   .card-head{
     display:flex; align-items:center; gap:12px;
-    padding-right:88px;
+    padding-right:92px;
   }
   .avatar-lg{
     width:62px; height:62px;
@@ -289,17 +308,17 @@
 
     <div class="content">
       <div class="profile-card">
-        <div class="admin-corner" id="adminCorner"><span class="admin-dot"></span>ADMIN</div>
-        <div class="country-pill" id="countryPill" style="display:none;">
-          <span class="flag-dot"></span><span id="countryPillText"></span>
-        </div>
+        <div class="admin-corner" id="adminCorner"><span class="admin-dot"></span><span id="roleText">USER</span></div>
 
         <div class="card-head">
           <div class="avatar-lg" id="avatarLg"></div>
           <div class="head-text">
             <div class="name" id="nameEl">----</div>
-            <div class="email" id="emailEl">—</div>
-            <div class="status-row" id="statusRow"></div>
+            <div class="head-meta">
+              <div class="country-pill" id="countryPill" style="display:none;"><span class="flag-dot"></span><span id="countryPillText"></span></div>
+              <span class="sep" id="metaSep" style="display:none;">•</span>
+              <div class="location-inline" id="locationInline" style="display:none;"><span class="loc-dot">⌖</span><span id="locationText">----</span></div>
+            </div>
           </div>
         </div>
 
@@ -370,7 +389,7 @@ function initials(name){
 
 // Fields already covered elsewhere on the page (avatar/name/badges,
 // the country pill, the slogan box) — never listed in either row list.
-const ALWAYS_HIDDEN = new Set(['id', 'full_name', 'avatar_url', 'is_admin', 'is_banned', 'bio', 'country', 'slogan', 'location', 'user_serial']);
+const ALWAYS_HIDDEN = new Set(['id', 'full_name', 'avatar_url', 'is_admin', 'is_banned', 'bio', 'country', 'slogan', 'location', 'user_serial', 'user_serial_number', 'serial', 'user_serial_no']);
 
 // Everything below follows the requested serial:
 // UID, WhatsApp, Email, Location -> main info list (photo/team name/
@@ -385,7 +404,6 @@ const OTHER_FIELDS = [
   ['referral', 'Referral code'],
   ['created_at', 'Joined', v => v ? new Date(v).toLocaleString() : null],
   ['updated_at', 'Last updated', v => v ? new Date(v).toLocaleString() : null],
-  ['user_number', 'User Serial'],
 ];
 
 // Small icon per field key, shown in the icon-chip next to each row.
@@ -451,29 +469,35 @@ function renderTarget(){
   const p = targetProfile;
 
   document.getElementById('nameEl').textContent = p.full_name ? p.full_name : '----';
-  document.getElementById('emailEl').textContent = p.email || '—';
 
   const avatarLg = document.getElementById('avatarLg');
   avatarLg.innerHTML = p.avatar_url
     ? `<img src="${escapeHtml(p.avatar_url)}" alt="">`
     : escapeHtml(initials(p.full_name || p.email));
 
-  const statusRow = document.getElementById('statusRow');
-  let badges = '<span class="badge badge-user">User</span>';
-  if(p.is_banned) badges = '<span class="badge badge-blocked">Blocked</span>';
-  else if(p.is_admin) badges = '<span class="badge badge-admin">Admin</span>';
-  statusRow.innerHTML = badges;
-
   const adminCorner = document.getElementById('adminCorner');
-  if(adminCorner) adminCorner.classList.toggle('show', !!p.is_admin);
+  const roleText = document.getElementById('roleText');
+  if(adminCorner){
+    adminCorner.classList.remove('user','blocked');
+    if(p.is_banned){ adminCorner.classList.add('blocked'); roleText.textContent = 'BLOCKED'; }
+    else if(p.is_admin){ roleText.textContent = 'ADMIN'; }
+    else { adminCorner.classList.add('user'); roleText.textContent = 'USER'; }
+  }
 
-  // Country pill, top-right of the card
   const countryPill = document.getElementById('countryPill');
+  const locationInline = document.getElementById('locationInline');
+  const metaSep = document.getElementById('metaSep');
   if(p.country){
     document.getElementById('countryPillText').textContent = p.country;
     countryPill.style.display = 'flex';
+  } else { countryPill.style.display = 'none'; }
+  if(p.location){
+    document.getElementById('locationText').textContent = p.location;
+    locationInline.style.display = 'flex';
+    metaSep.style.display = p.country ? 'inline' : 'none';
   } else {
-    countryPill.style.display = 'none';
+    locationInline.style.display = 'none';
+    metaSep.style.display = 'none';
   }
 
   // Slogan box, under the avatar/name
@@ -505,7 +529,7 @@ function renderTarget(){
   // new column later — it lands in "Other details".
   const placedKeys = new Set([...PROFILE_FIELDS, ...OTHER_FIELDS].map(f => f[0]));
   Object.keys(p).forEach(key => {
-    if(ALWAYS_HIDDEN.has(key) || placedKeys.has(key) || key === 'user_serial') return;
+    if(ALWAYS_HIDDEN.has(key) || placedKeys.has(key) || (key === 'user_serial' || key === 'user_serial_number' || key === 'serial' || key === 'user_serial_no') || key === 'location') return;
     const val = p[key];
     if(val === null || val === undefined || val === '') return;
     otherRows.push([key, key, val]);
