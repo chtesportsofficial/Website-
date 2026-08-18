@@ -505,7 +505,7 @@ function renderTarget(){
   // new column later — it lands in "Other details".
   const placedKeys = new Set([...PROFILE_FIELDS, ...OTHER_FIELDS].map(f => f[0]));
   Object.keys(p).forEach(key => {
-    if(ALWAYS_HIDDEN.has(key) || placedKeys.has(key)) return;
+    if(ALWAYS_HIDDEN.has(key) || placedKeys.has(key) || key === 'user_serial') return;
     const val = p[key];
     if(val === null || val === undefined || val === '') return;
     otherRows.push([key, key, val]);
