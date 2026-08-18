@@ -223,6 +223,17 @@
     font-weight:800;
     color:var(--ink);
   }
+  .user-email{
+    display:block;
+    margin-top:3px;
+    font-size:11px;
+    font-weight:500;
+    color:var(--muted);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    max-width:260px;
+  }
   .used-cell{
     font-size:14px;
     font-weight:800;
@@ -342,7 +353,7 @@
         </div>
         <div class="table-wrap">
           <table id="leaderboard-table">
-            <thead><tr><th>#</th><th>Referral code</th><th>Times used</th></tr></thead>
+            <thead><tr><th>#</th><th>User</th><th>Times used</th></tr></thead>
             <tbody id="leaderboard-body"></tbody>
           </table>
         </div>
@@ -475,13 +486,27 @@ function renderLeaderboard(){
   }
   empty.style.display = 'none';
 
-  body.innerHTML = ranked.map(([code, count], i) => `
-    <tr onclick="openUserDetail('${encodeURIComponent(code)}')" title="Open user details">
-      <td data-label="#"><span class="rank-badge">${i + 1}</span></td>
-      <td data-label="Referral code" class="code-cell">${escapeHtml(code)}</td>
-      <td data-label="Times used" class="used-cell">${count}<span class="row-arrow">›</span></td>
-    </tr>
-  `).join('');
+  body.innerHTML = ranked.map(([code, count], i) => {
+    const normalized = String(code).replace(/^#/, '').trim();
+    const target = allUsers.find(u =>
+      u.user_number !== null &&
+      u.user_number !== undefined &&
+      String(u.user_number).trim() === normalized
+    );
+    const uidText = '#' + normalized;
+    const emailText = target && target.email ? target.email : 'Email not available';
+
+    return `
+      <tr onclick="openUserDetail('${encodeURIComponent(code)}')" title="Open user details">
+        <td data-label="#"><span class="rank-badge">${i + 1}</span></td>
+        <td data-label="User" class="code-cell">
+          ${escapeHtml(uidText)}
+          <span class="user-email">${escapeHtml(emailText)}</span>
+        </td>
+        <td data-label="Times used" class="used-cell">${count}<span class="row-arrow">›</span></td>
+      </tr>
+    `;
+  }).join('');
 }
 
 function openUserDetail(code){
