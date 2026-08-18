@@ -75,6 +75,7 @@
       teamName: (row && row.full_name) || current.teamName,
       slogan: (row && row.slogan) || current.slogan,
       country: (row && row.country) || current.country,
+      location: (row && row.location) || current.location,
       uid: (row && row.user_number != null) ? row.user_number : current.uid,
       avatarUrl: (row && row.avatar_url) || current.avatarUrl,
       // Whether this signed-in user is an admin (drives the "Admin Panel"
