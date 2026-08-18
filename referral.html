@@ -174,27 +174,6 @@
     color:var(--ink);
   }
 
-  .ref-info-btn{
-    width:36px;
-    height:36px;
-    border:1px solid #e1e4f2;
-    border-radius:10px;
-    background:#f5f6fc;
-    color:var(--accent);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    cursor:pointer;
-    flex-shrink:0;
-  }
-  .ref-info-btn:active{ transform:scale(.96); }
-
-  .ref-subtitle{
-    margin:-7px 0 16px;
-    color:var(--muted);
-    font-size:12.5px;
-  }
-
   table{ width:100%; border-collapse:separate; border-spacing:0 8px; font-size:13px; }
   th{
     text-align:left;
@@ -360,15 +339,7 @@
       <div class="panel">
         <div class="panel-head">
           <h2>Top referrers</h2>
-          <button class="ref-info-btn" onclick="showReferralInfo()" aria-label="Referral information" title="Referral information">
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-              <circle cx="9" cy="7" r="4"/>
-              <path d="M19 8v6M22 11h-6"/>
-            </svg>
-          </button>
         </div>
-        <div class="ref-subtitle">Users who used a referral code</div>
         <div class="table-wrap">
           <table id="leaderboard-table">
             <thead><tr><th>#</th><th>Referral code</th><th>Times used</th></tr></thead>
@@ -514,12 +485,23 @@ function renderLeaderboard(){
 }
 
 function openUserDetail(code){
-  // Opens the existing user-detail page and passes the referral code.
-  window.location.href = 'user-detail.html?referral=' + code;
-}
+  // The leaderboard code is the user's referral/serial code (for example #2).
+  // Find that exact profile from the already-loaded profiles, then open the
+  // existing user-detail page with its UID — the parameter expected there.
+  const normalized = decodeURIComponent(code).replace(/^#/, '').trim();
 
-function showReferralInfo(){
-  showToast('Tap a referral row to open that user’s details.');
+  const target = allUsers.find(u => {
+    const number = u.user_number;
+    return number !== null && number !== undefined &&
+           String(number).trim() === normalized;
+  });
+
+  if(!target || !target.id){
+    showToast('User profile not found.');
+    return;
+  }
+
+  window.location.href = 'user-detail.html?uid=' + encodeURIComponent(target.id);
 }
 
 function escapeHtml(str){
