@@ -407,6 +407,20 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
 .icon-chat{background:rgba(33,230,193,.14);color:var(--cyan)}
 
 @media(min-width:480px){.drawer{width:340px}}
+
+.notice-clickable{cursor:pointer;}
+.notice-clickable:active{opacity:.86;}
+.notice-tap{flex:0 0 auto;font-size:9px;font-weight:900;color:var(--fire-2);border:1px solid rgba(255,138,61,.35);padding:4px 7px;border-radius:999px;white-space:nowrap;}
+.notice-arrow{flex:0 0 auto;font-size:16px;font-weight:900;color:var(--fire-2);margin-left:4px;}
+.notice-modal{position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.68);backdrop-filter:blur(5px);}
+.notice-modal.show{display:flex;}
+.notice-modal-box{position:relative;width:min(430px,100%);max-height:78vh;overflow:auto;background:var(--surface);border:1px solid rgba(255,138,61,.4);border-radius:22px;padding:22px;box-shadow:0 25px 70px rgba(0,0,0,.55);}
+.notice-modal-close{position:absolute;right:12px;top:12px;width:36px;height:36px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--text);font-size:23px;cursor:pointer;}
+.notice-modal-icon{width:48px;height:48px;border-radius:15px;background:rgba(255,90,46,.13);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:12px;}
+.notice-modal-box h3{margin:0 42px 7px 0;color:var(--text);font-size:20px;}
+.notice-modal-meta{font-size:11px;color:var(--text-dim);margin-bottom:15px;}
+.notice-modal-message{font-size:14px;line-height:1.75;color:var(--text);white-space:pre-wrap;word-break:break-word;}
+.notice-modal-admin{border-top:1px solid var(--line);margin-top:18px;padding-top:13px;font-size:12px;color:var(--text-dim);}
 </style>
 <style>
 :root{
@@ -419,16 +433,6 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
   --text-dim: var(--g-muted);
   --text-dimmer: var(--g-muted);
 }
-
-/* Clickable homepage notice */
-#siteNoticeBar{cursor:pointer;position:relative}
-#siteNoticeBar:active{opacity:.86}
-.notice-tap{font-size:9px;font-weight:900;color:#ff8a3d;border:1px solid rgba(255,138,61,.35);border-radius:999px;padding:4px 7px;flex:0 0 auto}
-.notice-arrow{font-weight:900;color:#ff8a3d;flex:0 0 auto}
-.notice-modal{position:fixed;inset:0;z-index:100000;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.68);backdrop-filter:blur(5px)}
-.notice-modal.show{display:flex}
-.notice-modal-box{width:100%;max-width:430px;max-height:78vh;overflow:auto;background:var(--surface);border:1px solid rgba(255,138,61,.4);border-radius:22px;padding:22px;box-shadow:0 24px 70px rgba(0,0,0,.55);position:relative}
-.notice-modal-icon{font-size:26px;margin-bottom:10px}.notice-modal-box h3{margin:0 42px 6px 0;color:var(--text);font-size:20px}.notice-modal-meta{font-size:11px;color:var(--text-dim);margin-bottom:15px}.notice-modal-text{font-size:14px;line-height:1.75;color:var(--text);white-space:pre-wrap;word-break:break-word}.notice-modal-admin{margin-top:16px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;color:var(--text-dim)}.notice-modal-close{position:absolute;right:12px;top:12px;width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--text);font-size:20px}
 </style>
 
 </head>
@@ -447,23 +451,25 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
   </div>
 </div>
 
-<div class="ticker" id="siteNoticeBar" role="button" tabindex="0" aria-label="Open full notice">
+<div class="ticker notice-clickable" id="siteNoticeBar" role="button" tabindex="0" aria-label="Open full notice">
   <div class="dot"></div>
   <div class="ticker-fixed"><b>NOTICE:</b></div>
   <div class="ticker-track" id="siteNoticeTrack">
-    <div class="ticker-track-inner" id="siteNoticeText"><span>No Notice</span><span>No Notice</span></div>
+    <div class="ticker-track-inner" id="siteNoticeText">
+      <span>No Notice</span><span>No Notice</span>
+    </div>
   </div>
-  <span class="notice-tap">TAP TO READ</span><span class="notice-arrow">→</span>
+  <div class="notice-tap">TAP TO READ</div><div class="notice-arrow">→</div>
 </div>
 
-<div class="notice-modal" id="noticeModal" aria-hidden="true">
-  <div class="notice-modal-box" role="dialog" aria-modal="true" aria-labelledby="noticeModalTitle">
-    <button class="notice-modal-close" id="noticeModalClose" aria-label="Close">×</button>
+<div class="notice-modal" id="siteNoticeModal" aria-hidden="true">
+  <div class="notice-modal-box" role="dialog" aria-modal="true">
+    <button class="notice-modal-close" id="siteNoticeClose" type="button">×</button>
     <div class="notice-modal-icon">📢</div>
-    <h3 id="noticeModalTitle">Full Notice</h3>
-    <div class="notice-modal-meta" id="noticeModalMeta">—</div>
-    <div class="notice-modal-text" id="noticeModalText">No Notice</div>
-    <div class="notice-modal-admin" id="noticeModalAdmin">Admin —</div>
+    <h3>Full Notice</h3>
+    <div class="notice-modal-meta" id="siteNoticeMeta">—</div>
+    <div class="notice-modal-message" id="siteNoticeMessage">No Notice</div>
+    <div class="notice-modal-admin" id="siteNoticeAdmin">Admin —</div>
   </div>
 </div>
 
@@ -743,27 +749,37 @@ window.addEventListener('pageshow', function(event){
 (function(){
   const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
   const SUPABASE_ANON_KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
-  const bar=document.getElementById('siteNoticeBar');
-  const textEl=document.getElementById('siteNoticeText');
-  const modal=document.getElementById('noticeModal');
-  const modalText=document.getElementById('noticeModalText');
-  const modalMeta=document.getElementById('noticeModalMeta');
-  const modalAdmin=document.getElementById('noticeModalAdmin');
-  const closeBtn=document.getElementById('noticeModalClose');
-  let current=null;
-  function dt(v){ if(!v)return '—'; const d=new Date(v); return d.toLocaleString('en-BD',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true}); }
-  function setTicker(msg){ const m=msg||'No Notice'; textEl.innerHTML='<span></span><span></span>'; textEl.children[0].textContent=m+' • '; textEl.children[1].textContent=m+' • '; }
-  function open(){ if(!current || !current.is_active)return; modalText.textContent=current.message||'No Notice'; modalMeta.textContent='📅 '+dt(current.created_at); modalAdmin.textContent='Admin — '+(current.admin_name||'Admin'); modal.classList.add('show'); modal.setAttribute('aria-hidden','false'); }
-  function close(){ modal.classList.remove('show'); modal.setAttribute('aria-hidden','true'); }
-  bar?.addEventListener('click',open); bar?.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}}); closeBtn?.addEventListener('click',close); modal?.addEventListener('click',e=>{if(e.target===modal)close();}); document.addEventListener('keydown',e=>{if(e.key==='Escape')close();});
-  async function load(){
-    if(!textEl||!window.supabase)return;
-    const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-    const {data,error}=await client.from('site_notices').select('message,is_active,created_at,admin_name').order('created_at',{ascending:false}).limit(1).maybeSingle();
-    current=(!error&&data)?data:null;
-    setTicker(current&&current.is_active?current.message:'No Notice');
+  let currentNotice=null;
+  const bar=document.getElementById('siteNoticeBar'), textEl=document.getElementById('siteNoticeText');
+  const modal=document.getElementById('siteNoticeModal'), close=document.getElementById('siteNoticeClose');
+  function setNotice(msg){
+    const m=msg||'No Notice';
+    textEl.innerHTML='';
+    const a=document.createElement('span'),b=document.createElement('span');
+    a.textContent=m+' • '; b.textContent=m+' • ';
+    textEl.append(a,b);
   }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load);else load();
+  function fmt(v){const d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleString('en-BD',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});}
+  function open(){
+    if(!currentNotice || (currentNotice.message||'No Notice')==='No Notice') return;
+    document.getElementById('siteNoticeMessage').textContent=currentNotice.message||'No Notice';
+    document.getElementById('siteNoticeMeta').textContent='📅 '+fmt(currentNotice.created_at);
+    document.getElementById('siteNoticeAdmin').textContent='Admin — '+(currentNotice.admin_name||'Admin');
+    modal.classList.add('show');modal.setAttribute('aria-hidden','false');
+  }
+  function hide(){modal.classList.remove('show');modal.setAttribute('aria-hidden','true');}
+  async function load(){
+    if(!window.supabase) return;
+    const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+    const {data,error}=await client.from('site_notices').select('message,created_at,admin_name').eq('is_active',true).order('created_at',{ascending:false}).limit(1).maybeSingle();
+    if(error||!data){currentNotice=null;setNotice('No Notice');return;}
+    currentNotice=data;setNotice(data.message);
+  }
+  bar?.addEventListener('click',open);
+  bar?.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
+  close?.addEventListener('click',hide); modal?.addEventListener('click',e=>{if(e.target===modal)hide();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')hide();});
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',load); else load();
   setInterval(load,30000);
 })();
 </script>
