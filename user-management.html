@@ -103,20 +103,62 @@
     padding:28px 24px 60px;
   }
 
-  .stats-row{
-    display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
-    gap:14px;
-    margin-bottom:24px;
-  }
-  .stat-card{
+  .stats-card{
     background:var(--white);
-    border-radius:16px;
-    padding:18px 20px;
-    box-shadow:0 16px 32px -18px rgba(0,0,0,0.35);
+    border-radius:20px;
+    padding:22px 24px;
+    box-shadow:0 20px 44px -22px rgba(0,0,0,0.35);
+    margin-bottom:22px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:18px;
+    flex-wrap:wrap;
   }
-  .stat-card .label{ font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.4px; }
-  .stat-card .value{ font-size:26px; font-weight:800; margin-top:6px; }
+  .stats-main .label{ font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; }
+  .stats-main .value{ font-size:34px; font-weight:800; margin-top:4px; line-height:1; }
+  .stats-graph{ flex:1; min-width:120px; max-width:220px; height:56px; }
+  .stats-graph svg{ width:100%; height:100%; display:block; }
+  .stats-side{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .stats-side .row{
+    display:flex;
+    align-items:baseline;
+    justify-content:flex-end;
+    gap:10px;
+    min-width:100px;
+  }
+  .stats-side .row .k{ font-size:13px; color:var(--muted); font-weight:600; }
+  .stats-side .row .v{ font-size:18px; font-weight:800; }
+  .stats-side .row.today .v{ color:var(--success); }
+
+  /* ---------- Filter pills ---------- */
+  .filter-row{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-bottom:14px;
+  }
+  .filter-pill{
+    padding:8px 18px;
+    border-radius:20px;
+    border:1px solid var(--line);
+    background:var(--white);
+    color:var(--ink);
+    font-size:13px;
+    font-weight:800;
+    font-family:inherit;
+    cursor:pointer;
+  }
+  .filter-pill:hover{ border-color:var(--accent); }
+  .filter-pill.active{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:#fff;
+  }
 
   .panel{
     background:var(--white);
@@ -249,18 +291,21 @@
     </div>
 
     <div class="content">
-      <div class="stats-row">
-        <div class="stat-card">
+      <div class="stats-card">
+        <div class="stats-main">
           <div class="label">Total users</div>
           <div class="value" id="stat-total">—</div>
         </div>
-        <div class="stat-card">
-          <div class="label">Signed up (7 days)</div>
-          <div class="value" id="stat-week">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Signed up (today)</div>
-          <div class="value" id="stat-today">—</div>
+        <div class="stats-graph" id="stat-graph"></div>
+        <div class="stats-side">
+          <div class="row">
+            <span class="k">7 days</span>
+            <span class="v" id="stat-week">—</span>
+          </div>
+          <div class="row today">
+            <span class="k">Today</span>
+            <span class="v" id="stat-today">—</span>
+          </div>
         </div>
       </div>
 
@@ -268,6 +313,12 @@
         <div class="panel-head">
           <h2>All users</h2>
           <input type="text" class="search-box" id="user-search" placeholder="Search users..." oninput="renderUsers()">
+        </div>
+        <div class="filter-row" id="filter-row">
+          <button class="filter-pill active" data-filter="all" onclick="setFilter('all')">All</button>
+          <button class="filter-pill" data-filter="admin" onclick="setFilter('admin')">Admin</button>
+          <button class="filter-pill" data-filter="user" onclick="setFilter('user')">User</button>
+          <button class="filter-pill" data-filter="blocked" onclick="setFilter('blocked')">Blocked</button>
         </div>
         <div id="users-list"></div>
         <div class="load-note" id="users-loading">Loading users...</div>
@@ -289,6 +340,22 @@ try {
 }
 
 let allUsers = [];
+let activeFilter = 'all';
+
+function setFilter(f){
+  activeFilter = f;
+  document.querySelectorAll('.filter-pill').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === f);
+  });
+  renderUsers();
+}
+
+function roleKey(u){
+  if(u.is_banned) return 'blocked';
+  if(u.is_owner) return 'admin'; // owner counts under admin filter too
+  if(u.is_admin) return 'admin';
+  return 'user';
+}
 
 function showGate(name){
   document.getElementById('gate-checking').style.display = name === 'checking' ? 'flex' : 'none';
@@ -325,6 +392,44 @@ function renderStats(){
 
   document.getElementById('stat-today').textContent = today;
   document.getElementById('stat-week').textContent = week;
+
+  renderGraph();
+}
+
+function renderGraph(){
+  const graphEl = document.getElementById('stat-graph');
+  const days = 7;
+  const now = new Date();
+  const counts = new Array(days).fill(0);
+
+  allUsers.forEach(u => {
+    if(!u.created_at) return;
+    const d = new Date(u.created_at);
+    const diffDays = Math.floor((now - d) / (24 * 60 * 60 * 1000));
+    if(diffDays >= 0 && diffDays < days){
+      counts[days - 1 - diffDays]++;
+    }
+  });
+
+  const w = 200, h = 56, pad = 6;
+  const max = Math.max(1, ...counts);
+  const stepX = (w - pad * 2) / (days - 1);
+
+  const points = counts.map((c, i) => {
+    const x = pad + i * stepX;
+    const y = h - pad - (c / max) * (h - pad * 2);
+    return [x, y];
+  });
+
+  const pathD = points.map((p, i) => (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+  const last = points[points.length - 1];
+
+  graphEl.innerHTML = `
+    <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+      <path d="${pathD}" fill="none" stroke="#3557ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="5" fill="#3557ff"/>
+    </svg>
+  `;
 }
 
 function renderUsers(){
@@ -343,19 +448,25 @@ function renderUsers(){
     return;
   }
 
-  const filtered = search
-    ? allUsers.filter(u =>
-        String(u.full_name ?? '').toLowerCase().includes(search) ||
-        String(u.email ?? '').toLowerCase().includes(search) ||
-        String(u.whatsapp ?? '').toLowerCase().includes(search) ||
-        String(u.user_number ?? '').toLowerCase().includes(searchUid)
-      )
-    : allUsers;
+  let filtered = activeFilter === 'all'
+    ? allUsers
+    : allUsers.filter(u => roleKey(u) === activeFilter);
+
+  if(search){
+    filtered = filtered.filter(u =>
+      String(u.full_name ?? '').toLowerCase().includes(search) ||
+      String(u.email ?? '').toLowerCase().includes(search) ||
+      String(u.whatsapp ?? '').toLowerCase().includes(search) ||
+      String(u.user_number ?? '').toLowerCase().includes(searchUid)
+    );
+  }
 
   if(filtered.length === 0){
     list.innerHTML = '';
     empty.style.display = 'block';
-    empty.textContent = 'No users match your search.';
+    empty.textContent = activeFilter === 'all'
+      ? 'No users match your search.'
+      : 'No users match this filter.';
     return;
   }
   empty.style.display = 'none';
