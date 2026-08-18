@@ -324,6 +324,7 @@
   .badge-admin{ background:rgba(53,87,255,0.12); color:var(--accent); }
   .badge-user{ background:rgba(28,124,77,0.12); color:var(--success); }
   .badge-blocked{ background:rgba(229,72,77,0.12); color:var(--error); }
+  .badge-owner{ background:rgba(180,120,0,0.13); color:#b47800; }
 
   .rank-badge{
     display:inline-flex;
@@ -781,6 +782,7 @@ function renderUsers(){
 
     let badge = '<span class="badge badge-user">User</span>';
     if(u.is_banned) badge = '<span class="badge badge-blocked">Blocked</span>';
+    else if(u.is_owner) badge = '<span class="badge badge-owner">Owner</span>';
     else if(u.is_admin) badge = '<span class="badge badge-admin">Admin</span>';
 
     const uid = u.user_number != null ? ('#' + escapeHtml(u.user_number)) : '#—';
