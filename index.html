@@ -41,6 +41,29 @@ button{font-family:inherit;cursor:pointer}
 .ticker{display:flex;align-items:center;gap:9px;background:var(--surface);border-bottom:1px solid var(--line);padding:9px 16px;font-size:12px;color:var(--text-dim);overflow:hidden;white-space:nowrap}
 .ticker .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);flex-shrink:0}
 .ticker b{color:var(--text)}
+/* Clickable notice ticker */
+.notice-ticker{cursor:pointer;position:relative;user-select:none}
+.notice-ticker:active{opacity:.88}
+.notice-ticker .notice-click-hint{
+  flex:0 0 auto;font-size:10px;font-weight:800;color:var(--fire-2);
+  border:1px solid rgba(255,138,61,.35);border-radius:999px;padding:3px 7px;
+}
+.notice-ticker .notice-arrow{font-size:15px;font-weight:900;color:var(--fire-2);flex:0 0 auto}
+.notice-ticker .ticker-track{flex:1;min-width:0;overflow:hidden}
+.notice-ticker .ticker-track-inner{display:flex;width:max-content;will-change:transform;animation:tickerMove 18s linear infinite}
+.notice-ticker .ticker-track span{display:block;flex:0 0 auto;padding-right:48px}
+
+/* Full notice popup */
+.notice-modal{position:fixed;inset:0;z-index:100000;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.68);backdrop-filter:blur(5px)}
+.notice-modal.show{display:flex}
+.notice-modal-box{width:100%;max-width:430px;max-height:min(78vh,620px);overflow:auto;background:var(--surface);border:1px solid rgba(255,138,61,.38);border-radius:22px;padding:22px;box-shadow:0 24px 70px rgba(0,0,0,.55);position:relative}
+.notice-modal-icon{width:48px;height:48px;border-radius:15px;background:rgba(255,90,46,.13);border:1px solid rgba(255,138,61,.35);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:12px}
+.notice-modal-box h3{margin:0 38px 7px 0;font-size:20px;color:var(--text)}
+.notice-modal-meta{font-size:11px;color:var(--text-dim);margin-bottom:16px}
+.notice-modal-text{font-size:14px;line-height:1.75;color:var(--text);white-space:pre-wrap;word-break:break-word}
+.notice-modal-close{position:absolute;right:12px;top:12px;width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--text);font-size:20px;cursor:pointer}
+.notice-modal-admin{margin-top:18px;padding-top:13px;border-top:1px solid var(--line);font-size:12px;color:var(--text-dim)}
+
 
 /* YouTube tutorial promo card */
 .yt-promo{display:block;text-decoration:none;color:inherit;margin:16px;padding:16px;border-radius:20px;position:relative;overflow:hidden;background:radial-gradient(120% 160% at 0% 0%,rgba(255,45,45,.22),transparent 60%),#0b0a0e;border:1px solid rgba(255,61,61,.5);box-shadow:0 0 22px rgba(255,40,40,.22)}
@@ -418,21 +441,6 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
 }
 </style>
 
-
-<style id="notice-popup-styles">
-.notice-popup-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.62);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;padding:20px;z-index:9999}
-.notice-popup-backdrop.show{display:flex}
-.notice-popup{width:min(520px,100%);background:var(--surface,#131826);border:1px solid var(--line,#232b3d);border-radius:20px;box-shadow:0 24px 80px rgba(0,0,0,.45);overflow:hidden;animation:noticePop .22s ease}
-@keyframes noticePop{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
-.notice-popup-head{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--line,#232b3d)}
-.notice-popup-dot{width:10px;height:10px;border-radius:50%;background:var(--green,#22e08a);box-shadow:0 0 12px rgba(34,224,138,.55);flex-shrink:0}
-.notice-popup-title{font-weight:900;flex:1}
-.notice-popup-close{width:34px;height:34px;border:1px solid var(--line,#232b3d);border-radius:10px;background:transparent;color:var(--text,#eef1f7);font-size:22px;line-height:1;cursor:pointer}
-.notice-popup-body{padding:18px;color:var(--text-dim,#8b93a9);font-size:15px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;max-height:60vh;overflow:auto}
-.notice-popup-foot{padding:0 18px 18px;display:flex;justify-content:flex-end}
-.notice-popup-ok{border:0;border-radius:11px;padding:10px 16px;background:var(--green,#22e08a);color:#06110c;font-weight:900;cursor:pointer}
-.ticker{cursor:pointer}
-</style>
 </head>
 <body>
 <div class="app">
@@ -449,26 +457,23 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
   </div>
 </div>
 
-<div class="ticker" id="siteNoticeBar" role="button" tabindex="0" aria-label="Open full notice">
-  <div class="dot"></div>
-  <div class="ticker-fixed"><b>NOTICE:</b></div>
+<div class="ticker notice-ticker" id="noticeTicker" role="button" tabindex="0" aria-label="Open full notice">
+  <span class="dot"></span>
+  <span class="ticker-fixed"><b>NOTICE:</b></span>
   <div class="ticker-track">
-    <div class="ticker-track-inner" id="siteNoticeTrack">
-      <span id="siteNoticeText">No Notice</span>
-      <span aria-hidden="true">No Notice</span>
+    <div class="ticker-track-inner" id="noticeTickerInner">
+      <span id="noticeTickerText">No Notice</span>
+      <span id="noticeTickerTextClone">No Notice</span>
     </div>
   </div>
-</div>
-
-<div class="notice-popup-backdrop" id="noticePopup" aria-hidden="true">
-  <div class="notice-popup" role="dialog" aria-modal="true" aria-labelledby="noticePopupTitle">
-    <div class="notice-popup-head">
-      <span class="notice-popup-dot"></span>
-      <div class="notice-popup-title" id="noticePopupTitle">Full Notice</div>
-      <button class="notice-popup-close" id="noticePopupClose" aria-label="Close">&times;</button>
+  <span class="notice-click-hint">TAP TO READ</span>
+  <span class="notice-arrow">→</span>
+</div><div class="ticker-fixed"><b>NOTICE:</b></div>
+  <div class="ticker-track">
+    <div class="ticker-track-inner">
+      <span>৳35 - Time : 3/4/5/8/9/10/11/12/1 • ৳25 - Time : 3/4/5/8/9/10/11/12/1 •</span>
+      <span>৳35 - Time : 3/4/5/8/9/10/11/12/1 • ৳25 - Time : 3/4/5/8/9/10/11/12/1 •</span>
     </div>
-    <div class="notice-popup-body" id="noticePopupBody">No Notice</div>
-    <div class="notice-popup-foot"><button class="notice-popup-ok" id="noticePopupOk">Close</button></div>
   </div>
 </div>
 
@@ -743,42 +748,88 @@ window.addEventListener('pageshow', function(event){
     location.reload();
   }
 });
+</script>
 
-/* ============ Live Notice + Full Notice popup ============ */
-(function(){
-  const NOTICE_URL = 'https://myfficbwcbgbxbdqjexv.supabase.co/rest/v1/site_notices?select=message,is_active,created_at&is_active=eq.true&order=created_at.desc&limit=1';
-  const NOTICE_KEY = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
-  const bar=document.getElementById('siteNoticeBar');
-  const track=document.getElementById('siteNoticeTrack');
-  const popup=document.getElementById('noticePopup');
-  const body=document.getElementById('noticePopupBody');
-  const close=document.getElementById('noticePopupClose');
-  const ok=document.getElementById('noticePopupOk');
-  let currentNotice='No Notice';
-  function renderNotice(message){
-    currentNotice=(message&&String(message).trim())?String(message).trim():'No Notice';
-    track.innerHTML='<span>'+escapeHtml(currentNotice)+'</span><span aria-hidden="true">'+escapeHtml(currentNotice)+'</span>';
-    body.textContent=currentNotice;
+
+<script>
+/* CHT ESP ORG — Notice ticker + full notice popup */
+(() => {
+  const SUPABASE_URL = 'https://myfficbwcbgbxbdqjexv.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+  const client = window.supabase?.createClient
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    : null;
+
+  const ticker = document.getElementById('noticeTicker');
+  const tickerText = document.getElementById('noticeTickerText');
+  const tickerClone = document.getElementById('noticeTickerTextClone');
+  const modal = document.getElementById('noticeModal');
+  const modalText = document.getElementById('noticeModalText');
+  const modalMeta = document.getElementById('noticeModalMeta');
+  const modalAdmin = document.getElementById('noticeModalAdmin');
+  const closeBtn = document.getElementById('noticeModalClose');
+
+  let currentNotice = null;
+
+  function formatDateTime(value){
+    if(!value) return '—';
+    const d = new Date(value);
+    if(Number.isNaN(d.getTime())) return String(value);
+    return d.toLocaleString('en-BD', {
+      day:'2-digit', month:'short', year:'numeric',
+      hour:'2-digit', minute:'2-digit', hour12:true
+    });
   }
-  function escapeHtml(v){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+
+  function setTicker(message){
+    const msg = message || 'No Notice';
+    tickerText.textContent = msg;
+    tickerClone.textContent = msg;
+  }
+
+  function openNotice(){
+    if(!currentNotice) return;
+    modalText.textContent = currentNotice.message || 'No Notice';
+    modalMeta.textContent = '📅 ' + formatDateTime(currentNotice.created_at);
+    modalAdmin.textContent = 'Admin — ' + (currentNotice.admin_name || 'Admin');
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden','false');
+  }
+
+  function closeNotice(){
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden','true');
+  }
+
+  ticker?.addEventListener('click', openNotice);
+  ticker?.addEventListener('keydown', e => {
+    if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openNotice(); }
+  });
+  closeBtn?.addEventListener('click', closeNotice);
+  modal?.addEventListener('click', e => { if(e.target === modal) closeNotice(); });
+  document.addEventListener('keydown', e => { if(e.key === 'Escape') closeNotice(); });
+
   async function loadNotice(){
-    try{
-      const r=await fetch(NOTICE_URL,{headers:{apikey:NOTICE_KEY,Authorization:'Bearer '+NOTICE_KEY}});
-      if(!r.ok) throw new Error('notice request failed');
-      const rows=await r.json();
-      renderNotice(rows[0]?.message||'No Notice');
-    }catch(e){
-      renderNotice('No Notice');
+    if(!client) return;
+    const { data, error } = await client
+      .from('site_notices')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending:false })
+      .limit(1)
+      .maybeSingle();
+
+    if(error || !data){
+      currentNotice = null;
+      setTicker('No Notice');
+      return;
     }
+    currentNotice = data;
+    setTicker(data.message);
   }
-  function open(){popup.classList.add('show');popup.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';}
-  function hide(){popup.classList.remove('show');popup.setAttribute('aria-hidden','true');document.body.style.overflow='';}
-  bar.addEventListener('click',open);
-  bar.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
-  close.addEventListener('click',hide); ok.addEventListener('click',hide);
-  popup.addEventListener('click',e=>{if(e.target===popup)hide();});
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&popup.classList.contains('show'))hide();});
-  loadNotice(); setInterval(loadNotice,30000);
+
+  loadNotice();
+  setInterval(loadNotice, 30000);
 })();
 </script>
 
