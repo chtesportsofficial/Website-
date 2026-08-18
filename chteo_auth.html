@@ -460,6 +460,24 @@ async function handleSignin(){
     return;
   }
 
+  // Blocked-user check: a correct password shouldn't be enough to get a
+  // banned account past this screen. Look up the fresh profiles row
+  // (not any locally-cached copy) and immediately sign back out if the
+  // admin has flagged this account.
+  const { data: gateProfile, error: gateErr } = await supabaseClient
+    .from('profiles')
+    .select('is_banned')
+    .eq('id', data.user.id)
+    .single();
+
+  if(gateErr){
+    console.error('Could not verify account status:', gateErr.message);
+  } else if(gateProfile && gateProfile.is_banned){
+    await supabaseClient.auth.signOut();
+    showToast('Your account has been blocked. Please contact support.');
+    return;
+  }
+
   // Wipe any cached team name / slogan / profile picture from whoever
   // was last signed in on this device/browser before this one.
   localStorage.removeItem('user_profile');

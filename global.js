@@ -122,6 +122,78 @@
   }
 
   /* =========================================================
+     0b. BAN WATCHER
+     Logs a signed-in user out IMMEDIATELY once an admin flips
+     profiles.is_banned to true — not just the next time they try
+     to log in. Two layers, so this works even if the project's
+     Realtime setup isn't ready yet:
+       1. Supabase Realtime — near-instant, fires as soon as the
+          admin's update lands (requires the profiles table to be
+          added to the supabase_realtime publication — see
+          enable_realtime.sql).
+       2. A 20s fallback poll — a safety net in case Realtime
+          isn't enabled, so a blocked user is still caught within
+          seconds either way.
+     ========================================================= */
+  var _banWatcherStarted = false;
+
+  function handleBanDetected() {
+    try {
+      localStorage.removeItem("user_profile");
+      localStorage.removeItem("profile_picture");
+      localStorage.removeItem("user_uid");
+      localStorage.removeItem(AUTH_KEY);
+    } catch (e) {}
+    getSupabaseClient(function (client) {
+      client.auth.signOut().finally(function () {
+        window.location.replace("chteo_auth.html?blocked=1");
+      });
+    });
+  }
+
+  function startBanWatcher() {
+    if (_banWatcherStarted) return;
+    _banWatcherStarted = true;
+
+    getSupabaseClient(function (client) {
+      client.auth.getUser().then(function (res) {
+        var user = res && res.data && res.data.user;
+        if (!user) return;
+
+        function checkNow() {
+          client.from(PROFILE_TABLE).select("is_banned").eq("id", user.id).single()
+            .then(function (result) {
+              if (result && result.data && result.data.is_banned) handleBanDetected();
+            })
+            .catch(function () {});
+        }
+
+        // Catch a ban that already happened before this page loaded.
+        checkNow();
+
+        // Layer 1: instant catch via Realtime (silently does nothing if
+        // the table isn't in the realtime publication yet).
+        try {
+          client
+            .channel("ban-watch-" + user.id)
+            .on("postgres_changes", {
+              event: "UPDATE",
+              schema: "public",
+              table: PROFILE_TABLE,
+              filter: "id=eq." + user.id
+            }, function (payload) {
+              if (payload && payload.new && payload.new.is_banned) handleBanDetected();
+            })
+            .subscribe();
+        } catch (e) {}
+
+        // Layer 2: fallback poll every 20s.
+        setInterval(checkNow, 20000);
+      }).catch(function () {});
+    });
+  }
+
+  /* =========================================================
      1. THEME
      ========================================================= */
   function getSystemTheme() {
@@ -699,6 +771,7 @@
     // Supabase so real email/UID show up instead of stale/placeholder data.
     if (localStorage.getItem(AUTH_KEY) === "true") {
       syncProfile();
+      startBanWatcher();
     }
   }
 
@@ -721,6 +794,7 @@
     openModal: openModal,
     closeModal: closeModal,
     syncProfile: syncProfile,
-    getSupabaseClient: getSupabaseClient
+    getSupabaseClient: getSupabaseClient,
+    startBanWatcher: startBanWatcher
   };
 })();
