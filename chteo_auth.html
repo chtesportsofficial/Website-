@@ -248,8 +248,40 @@
   .toast.show{
     opacity:1;
     transform:translateX(-50%) translateY(0);
+    pointer-events:auto;
   }
   .toast.success{background:#1c7c4d;}
+  .toast.blocked{
+    background:#7c1c2b;
+    max-width:min(92vw,360px);
+    text-align:center;
+    line-height:1.5;
+  }
+  .toast.blocked .toast-actions{
+    display:flex;
+    gap:8px;
+    justify-content:center;
+    margin-top:10px;
+  }
+  .toast.blocked .toast-actions a{
+    flex:1;
+    background:#fff;
+    color:#7c1c2b;
+    text-decoration:none;
+    font-size:12.5px;
+    font-weight:700;
+    padding:9px 10px;
+    border-radius:8px;
+  }
+  .toast.blocked .toast-close{
+    position:absolute;
+    top:6px;right:8px;
+    background:none;border:none;
+    color:#fff;
+    font-size:16px;
+    cursor:pointer;
+    opacity:.75;
+  }
 </style>
 </head>
 <body>
@@ -421,11 +453,32 @@ function togglePw(inputId, btn){
 
 function showToast(msg, success){
   const t = document.getElementById('toast');
+  t.classList.remove('blocked');
+  t.style.position = '';
   t.textContent = msg;
   t.classList.toggle('success', !!success);
   t.classList.add('show');
   clearTimeout(window._toastTimer);
   window._toastTimer = setTimeout(()=> t.classList.remove('show'), 2600);
+}
+
+// Blocked accounts get their own toast: it doesn't auto-hide (so there's
+// time to actually read and tap it) and it has real WhatsApp/email links,
+// since "contact support" with no way to contact support isn't useful.
+function showBlockedToast(){
+  const t = document.getElementById('toast');
+  clearTimeout(window._toastTimer);
+  t.classList.remove('success');
+  t.classList.add('blocked');
+  t.style.position = 'fixed';
+  t.innerHTML =
+    '<button type="button" class="toast-close" onclick="this.parentElement.classList.remove(\'show\')">&#10005;</button>' +
+    'Your account has been blocked.<br>Contact support if you think this is a mistake.' +
+    '<div class="toast-actions">' +
+      '<a href="https://wa.me/8801989242505" target="_blank" rel="noopener">WhatsApp</a>' +
+      '<a href="mailto:cht.eSports.official@gmail.com">Email</a>' +
+    '</div>';
+  t.classList.add('show');
 }
 
 function setError(wrapId, errId, show){
@@ -474,7 +527,7 @@ async function handleSignin(){
     console.error('Could not verify account status:', gateErr.message);
   } else if(gateProfile && gateProfile.is_banned){
     await supabaseClient.auth.signOut();
-    showToast('Your account has been blocked. Please contact support.');
+    showBlockedToast();
     return;
   }
 
@@ -698,6 +751,12 @@ async function handleCreate(){
   }
 }
 document.addEventListener('DOMContentLoaded', function(){
+  // Landed here because global.js's ban watcher (or the login gate
+  // above) just signed a blocked account out — let them know why.
+  if(new URLSearchParams(window.location.search).get('blocked') === '1'){
+    showBlockedToast();
+  }
+
   // A referral link (from refer-earn.html) looks like
   // ...chteo_auth.html?ref=<uid> — land straight on Create Account with
   // the code pre-filled, instead of making the invited friend find the
