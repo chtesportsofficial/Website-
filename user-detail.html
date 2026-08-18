@@ -111,6 +111,10 @@
     background:rgba(229,72,77,0.10); color:var(--error);
     border-color:rgba(229,72,77,0.18);
   }
+  .admin-corner.owner{
+    background:rgba(180,120,0,0.12); color:#b47800;
+    border-color:rgba(180,120,0,0.28);
+  }
   .admin-dot{
     width:7px;height:7px;border-radius:50%;
     background:currentColor;
@@ -478,8 +482,9 @@ function renderTarget(){
   const adminCorner = document.getElementById('adminCorner');
   const roleText = document.getElementById('roleText');
   if(adminCorner){
-    adminCorner.classList.remove('user','blocked');
+    adminCorner.classList.remove('user','blocked','owner');
     if(p.is_banned){ adminCorner.classList.add('blocked'); roleText.textContent = 'BLOCKED'; }
+    else if(p.is_owner){ adminCorner.classList.add('owner'); roleText.textContent = 'OWNER'; }
     else if(p.is_admin){ roleText.textContent = 'ADMIN'; }
     else { adminCorner.classList.add('user'); roleText.textContent = 'USER'; }
   }
@@ -565,12 +570,21 @@ function renderTarget(){
   });
 
   const adminBtn = document.getElementById('adminToggleBtn');
-  adminBtn.textContent = p.is_admin ? 'Remove Admin' : 'Make Admin';
+  if(p.is_owner){
+    adminBtn.style.display = 'none';
+  } else {
+    adminBtn.style.display = '';
+    adminBtn.textContent = p.is_admin ? 'Remove Admin' : 'Make Admin';
+  }
   const banBtn = document.getElementById('banToggleBtn');
   banBtn.textContent = p.is_banned ? 'Unblock User' : 'Block User';
 }
 
 async function toggleField(field, currentVal, btnEl){
+  if(field === 'is_admin' && targetProfile.is_owner){
+    showToast('Owner-এর access পরিবর্তন করা যাবে না।');
+    return;
+  }
   btnEl.disabled = true;
   const { error } = await supabaseClient
     .from('profiles')
