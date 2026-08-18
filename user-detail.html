@@ -253,6 +253,8 @@
     transition:opacity .25s ease, transform .25s ease; z-index:10;
   }
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+.confirm-overlay{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(8,12,25,.62);backdrop-filter:blur(5px)}.confirm-overlay.show{display:flex}.confirm-box{width:min(360px,100%);background:#fff;border-radius:22px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.28);text-align:center}.confirm-icon{width:54px;height:54px;border-radius:16px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;background:#eef2ff;color:#315edb;font-size:24px;font-weight:800}.confirm-title{margin:0;color:#17203a;font-size:19px;font-weight:800}.confirm-text{margin:8px 0 18px;color:#70798d;font-size:14px;line-height:1.45}.confirm-actions{display:flex;gap:10px}.confirm-actions button{flex:1;border:0;border-radius:13px;padding:12px 10px;font-size:14px;font-weight:800;cursor:pointer}.confirm-cancel{background:#eef1f7;color:#536078}.confirm-ok{background:#315edb;color:#fff}.confirm-ok.danger{background:#d85a5a}
 </style>
 </head>
 <body>
@@ -321,6 +323,8 @@
 
   <div class="toast" id="toast"></div>
 
+
+<div class="confirm-overlay" id="confirmOverlay" aria-hidden="true"><div class="confirm-box" role="dialog" aria-modal="true" aria-labelledby="confirmTitle"><div class="confirm-icon" id="confirmIcon">?</div><h3 class="confirm-title" id="confirmTitle">Are you sure?</h3><div class="confirm-text" id="confirmText"></div><div class="confirm-actions"><button type="button" class="confirm-cancel" id="confirmCancel">Cancel</button><button type="button" class="confirm-ok" id="confirmOk">Confirm</button></div></div></div>
 <script>
 const SUPABASE_URL = 'https://myfficbwcbgbxbdqjexv.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
@@ -366,7 +370,7 @@ function initials(name){
 
 // Fields already covered elsewhere on the page (avatar/name/badges,
 // the country pill, the slogan box) — never listed in either row list.
-const ALWAYS_HIDDEN = new Set(['id', 'full_name', 'avatar_url', 'is_admin', 'is_banned', 'bio', 'country', 'slogan', 'location']);
+const ALWAYS_HIDDEN = new Set(['id', 'full_name', 'avatar_url', 'is_admin', 'is_banned', 'bio', 'country', 'slogan', 'location', 'user_serial']);
 
 // Everything below follows the requested serial:
 // UID, WhatsApp, Email, Location -> main info list (photo/team name/
@@ -560,12 +564,12 @@ async function toggleField(field, currentVal, btnEl){
   showToast('Updated.');
 }
 
-document.getElementById('adminToggleBtn').addEventListener('click', function(){
-  toggleField('is_admin', !!targetProfile.is_admin, this);
-});
-document.getElementById('banToggleBtn').addEventListener('click', function(){
-  toggleField('is_banned', !!targetProfile.is_banned, this);
-});
+const confirmOverlay=document.getElementById('confirmOverlay'),confirmTitle=document.getElementById('confirmTitle'),confirmText=document.getElementById('confirmText'),confirmOk=document.getElementById('confirmOk'),confirmCancel=document.getElementById('confirmCancel'),confirmIcon=document.getElementById('confirmIcon');let confirmAction=null;
+function askConfirmation(title,message,action,danger=false){confirmTitle.textContent=title;confirmText.textContent=message;confirmIcon.textContent=danger?'!':'?';confirmOk.textContent='Yes, continue';confirmOk.classList.toggle('danger',danger);confirmAction=action;confirmOverlay.classList.add('show');confirmOverlay.setAttribute('aria-hidden','false')}
+function closeConfirmation(){confirmOverlay.classList.remove('show');confirmOverlay.setAttribute('aria-hidden','true');confirmAction=null}
+confirmCancel.addEventListener('click',closeConfirmation);confirmOverlay.addEventListener('click',e=>{if(e.target===confirmOverlay)closeConfirmation()});confirmOk.addEventListener('click',async()=>{const action=confirmAction;closeConfirmation();if(action)await action()});
+document.getElementById('adminToggleBtn').addEventListener('click',function(){const makeAdmin=!targetProfile.is_admin;askConfirmation(makeAdmin?'Make Admin?':'Remove Admin?',makeAdmin?'Are you sure you want to make this user an admin?':'Are you sure you want to remove admin access from this user?',()=>toggleField('is_admin',!!targetProfile.is_admin,document.getElementById('adminToggleBtn')),false)});
+document.getElementById('banToggleBtn').addEventListener('click',function(){const blockUser=!targetProfile.is_banned;askConfirmation(blockUser?'Block User?':'Unblock User?',blockUser?'Are you sure you want to block this user?':'Are you sure you want to unblock this user?',()=>toggleField('is_banned',!!targetProfile.is_banned,document.getElementById('banToggleBtn')),blockUser)});
 
 checkAccess();
 </script>
