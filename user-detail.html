@@ -393,7 +393,7 @@ function initials(name){
 
 // Fields already covered elsewhere on the page (avatar/name/badges,
 // the country pill, the slogan box) — never listed in either row list.
-const ALWAYS_HIDDEN = new Set(['id', 'full_name', 'avatar_url', 'is_admin', 'is_banned', 'bio', 'country', 'slogan', 'location', 'user_serial', 'user_serial_number', 'serial', 'user_serial_no']);
+const ALWAYS_HIDDEN = new Set(['id', 'full_name', 'avatar_url', 'is_admin', 'is_banned', 'is_owner', 'bio', 'country', 'slogan', 'location', 'user_serial', 'user_serial_number', 'serial', 'user_serial_no']);
 
 // Everything below follows the requested serial:
 // UID, WhatsApp, Email, Location -> main info list (photo/team name/
@@ -577,12 +577,17 @@ function renderTarget(){
     adminBtn.textContent = p.is_admin ? 'Remove Admin' : 'Make Admin';
   }
   const banBtn = document.getElementById('banToggleBtn');
-  banBtn.textContent = p.is_banned ? 'Unblock User' : 'Block User';
+  if(p.is_owner){
+    banBtn.style.display = 'none';
+  } else {
+    banBtn.style.display = '';
+    banBtn.textContent = p.is_banned ? 'Unblock User' : 'Block User';
+  }
 }
 
 async function toggleField(field, currentVal, btnEl){
-  if(field === 'is_admin' && targetProfile.is_owner){
-    showToast('Owner-এর access পরিবর্তন করা যাবে না।');
+  if(targetProfile.is_owner){
+    showToast('Owner-এর profile পরিবর্তন করা যাবে না।');
     return;
   }
   btnEl.disabled = true;
