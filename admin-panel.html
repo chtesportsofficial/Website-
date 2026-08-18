@@ -549,25 +549,6 @@ async function handleAdminLogin(){
     errEl.classList.add('show');
     return;
   }
-
-async function handleAdminLogin(){
-  const email = document.getElementById('al-email').value.trim();
-  const password = document.getElementById('al-password').value;
-  const errEl = document.getElementById('al-err');
-  errEl.classList.remove('show');
-
-  if(!email || !password){
-    errEl.textContent = 'Enter both email and password.';
-    errEl.classList.add('show');
-    return;
-  }
-
-  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-  if(error){
-    errEl.textContent = error.message;
-    errEl.classList.add('show');
-    return;
-  }
   await checkAccess();
 }
 

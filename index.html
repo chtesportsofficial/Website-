@@ -416,7 +416,20 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
   --text-dim: var(--g-muted);
   --text-dimmer: var(--g-muted);
 }
-\n/* Clickable dynamic notice */\n.notice-ticker{cursor:pointer;position:relative}\n.notice-ticker:active{opacity:.85}\n.notice-click-hint{flex:0 0 auto;font-size:9px;font-weight:900;color:var(--fire-2);border:1px solid rgba(255,138,61,.35);border-radius:999px;padding:3px 7px;background:var(--surface)}\n.notice-arrow{flex:0 0 auto;color:var(--fire-2);font-weight:900}\n.notice-modal{position:fixed;inset:0;z-index:100000;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.68);backdrop-filter:blur(5px)}\n.notice-modal.show{display:flex}\n.notice-modal-box{width:min(430px,100%);max-height:78vh;overflow:auto;background:var(--surface);color:var(--text);border:1px solid rgba(255,138,61,.4);border-radius:22px;padding:22px;position:relative;box-shadow:0 24px 70px rgba(0,0,0,.5)}\n.notice-modal-close{position:absolute;right:12px;top:12px;width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--text);font-size:22px;cursor:pointer}\n.notice-modal-box h3{margin:0 42px 7px 0;font-size:20px}\n.notice-modal-meta{font-size:11px;color:var(--text-dim);margin-bottom:16px}\n.notice-modal-text{font-size:14px;line-height:1.75;white-space:pre-wrap;word-break:break-word}\n.notice-modal-admin{margin-top:17px;padding-top:13px;border-top:1px solid var(--line);font-size:12px;color:var(--text-dim)}\n</style>
+/* Clickable dynamic notice */
+.notice-ticker{cursor:pointer;position:relative}
+.notice-ticker:active{opacity:.85}
+.notice-click-hint{flex:0 0 auto;font-size:9px;font-weight:900;color:var(--fire-2);border:1px solid rgba(255,138,61,.35);border-radius:999px;padding:3px 7px;background:var(--surface)}
+.notice-arrow{flex:0 0 auto;color:var(--fire-2);font-weight:900}
+.notice-modal{position:fixed;inset:0;z-index:100000;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.68);backdrop-filter:blur(5px)}
+.notice-modal.show{display:flex}
+.notice-modal-box{width:min(430px,100%);max-height:78vh;overflow:auto;background:var(--surface);color:var(--text);border:1px solid rgba(255,138,61,.4);border-radius:22px;padding:22px;position:relative;box-shadow:0 24px 70px rgba(0,0,0,.5)}
+.notice-modal-close{position:absolute;right:12px;top:12px;width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--text);font-size:22px;cursor:pointer}
+.notice-modal-box h3{margin:0 42px 7px 0;font-size:20px}
+.notice-modal-meta{font-size:11px;color:var(--text-dim);margin-bottom:16px}
+.notice-modal-text{font-size:14px;line-height:1.75;white-space:pre-wrap;word-break:break-word}
+.notice-modal-admin{margin-top:17px;padding-top:13px;border-top:1px solid var(--line);font-size:12px;color:var(--text-dim)}
+</style>
 
 </head>
 <body>
@@ -717,7 +730,40 @@ window.addEventListener('pageshow', function(event){
     location.reload();
   }
 });
-\n/* ============ Dynamic Notice ============ */\n(function(){\n  const URL='https://myfficbwcbgbxbdqjexv.supabase.co';\n  const KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';\n  function start(){\n    if(!window.supabase || !window.supabase.createClient){setTimeout(start,200);return;}\n    const sb=window.supabase.createClient(URL,KEY);\n    const ticker=document.getElementById('noticeTicker');\n    const t1=document.getElementById('noticeTickerText');\n    const t2=document.getElementById('noticeTickerTextClone');\n    const modal=document.getElementById('noticeModal');\n    const text=document.getElementById('noticeModalText');\n    const meta=document.getElementById('noticeModalMeta');\n    const admin=document.getElementById('noticeModalAdmin');\n    const close=document.getElementById('noticeModalClose');\n    let current=null;\n    function dt(v){const d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleString('en-BD',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});}\n    function open(){if(!current)return;text.textContent=current.message||'No Notice';meta.textContent='📅 '+dt(current.created_at);admin.textContent='Admin — '+(current.admin_name||'Admin');modal.classList.add('show');modal.setAttribute('aria-hidden','false');}\n    function hide(){modal.classList.remove('show');modal.setAttribute('aria-hidden','true');}\n    async function load(){\n      const {data,error}=await sb.from('site_notices').select('id,message,created_at,admin_name').eq('is_active',true).order('created_at',{ascending:false}).limit(1).maybeSingle();\n      if(error||!data){current=null;t1.textContent='No Notice';t2.textContent='No Notice';return;}\n      current=data;t1.textContent=data.message||'No Notice';t2.textContent=data.message||'No Notice';\n    }\n    ticker.addEventListener('click',open);\n    ticker.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});\n    close.addEventListener('click',hide);\n    modal.addEventListener('click',e=>{if(e.target===modal)hide();});\n    document.addEventListener('keydown',e=>{if(e.key==='Escape')hide();});\n    load();setInterval(load,30000);\n  }\n  start();\n})();\n</script>
+/* ============ Dynamic Notice ============ */
+(function(){
+  const URL='https://myfficbwcbgbxbdqjexv.supabase.co';
+  const KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+  function start(){
+    if(!window.supabase || !window.supabase.createClient){setTimeout(start,200);return;}
+    const sb=window.supabase.createClient(URL,KEY);
+    const ticker=document.getElementById('noticeTicker');
+    const t1=document.getElementById('noticeTickerText');
+    const t2=document.getElementById('noticeTickerTextClone');
+    const modal=document.getElementById('noticeModal');
+    const text=document.getElementById('noticeModalText');
+    const meta=document.getElementById('noticeModalMeta');
+    const admin=document.getElementById('noticeModalAdmin');
+    const close=document.getElementById('noticeModalClose');
+    let current=null;
+    function dt(v){const d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleString('en-BD',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});}
+    function open(){if(!current)return;text.textContent=current.message||'No Notice';meta.textContent='📅 '+dt(current.created_at);admin.textContent='Admin — '+(current.admin_name||'Admin');modal.classList.add('show');modal.setAttribute('aria-hidden','false');}
+    function hide(){modal.classList.remove('show');modal.setAttribute('aria-hidden','true');}
+    async function load(){
+      const {data,error}=await sb.from('site_notices').select('id,message,created_at,admin_name').eq('is_active',true).order('created_at',{ascending:false}).limit(1).maybeSingle();
+      if(error||!data){current=null;t1.textContent='No Notice';t2.textContent='No Notice';return;}
+      current=data;t1.textContent=data.message||'No Notice';t2.textContent=data.message||'No Notice';
+    }
+    ticker.addEventListener('click',open);
+    ticker.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
+    close.addEventListener('click',hide);
+    modal.addEventListener('click',e=>{if(e.target===modal)hide();});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')hide();});
+    load();setInterval(load,30000);
+  }
+  start();
+})();
+</script>
 
 
 <div class="notice-modal" id="noticeModal" aria-hidden="true">
