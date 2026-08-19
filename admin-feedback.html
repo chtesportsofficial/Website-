@@ -646,7 +646,7 @@ function userInitial(f){
 // Sends the admin to that user's own detail page.
 function goToUserDetail(userId){
   if(!userId) return;
-  window.location.href = 'user-detail.html?id=' + encodeURIComponent(userId);
+  window.location.href = 'user-detail.html?uid=' + encodeURIComponent(userId);
 }
 
 // screenshot_url may already be a full public URL, or just a storage
