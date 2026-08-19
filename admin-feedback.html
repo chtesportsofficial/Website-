@@ -255,19 +255,21 @@
     flex-shrink:0;
   }
   .fb-row-info{ flex:1; min-width:0; }
-  .fb-row-top{ display:flex; align-items:center; gap:8px; }
+  .fb-row-top{ display:flex; align-items:center; gap:8px; cursor:pointer; }
+  .fb-row-top:hover .fb-uid,
+  .fb-row-top:hover .fb-user{ text-decoration:underline; }
   .fb-user{
-    font-size:13.5px;
-    font-weight:800;
-    color:var(--ink);
+    font-size:12px;
+    font-weight:600;
+    color:var(--muted);
     overflow:hidden;
     text-overflow:ellipsis;
     white-space:nowrap;
   }
   .fb-uid{
-    font-size:10.5px;
-    font-weight:600;
-    color:var(--muted);
+    font-size:13.5px;
+    font-weight:800;
+    color:var(--ink);
     font-family:monospace;
     flex-shrink:0;
   }
@@ -641,6 +643,12 @@ function userInitial(f){
   return label.charAt(0).toUpperCase();
 }
 
+// Sends the admin to that user's own detail page.
+function goToUserDetail(userId){
+  if(!userId) return;
+  window.location.href = 'user-detail.html?id=' + encodeURIComponent(userId);
+}
+
 // screenshot_url may already be a full public URL, or just a storage
 // path inside the `feedback` bucket — handle both.
 function resolveScreenshotUrl(value){
@@ -678,9 +686,9 @@ function renderFeedbacks(){
     <button type="button" class="fb-row" data-id="${escHtml(f.id)}" onclick="openFeedbackModal('${escHtml(f.id)}')">
       <div class="fb-avatar">${escHtml(userInitial(f))}</div>
       <div class="fb-row-info">
-        <div class="fb-row-top">
-          <div class="fb-user">${escHtml(userLabel(f))}</div>
+        <div class="fb-row-top" onclick="event.stopPropagation(); goToUserDetail('${escHtml(f.user_id)}')">
           <span class="fb-uid">${escHtml(userShortId(f))}</span>
+          <div class="fb-user">${escHtml(userLabel(f))}</div>
         </div>
         <div class="fb-date">${escHtml(formatFbDate(f.created_at))}</div>
         <div class="fb-preview">${escHtml(f.message)}</div>
@@ -699,7 +707,10 @@ function renderFeedbackModal(f){
   document.getElementById('fb-modal-card').innerHTML = `
     <div class="fb-modal-head">
       <div>
-        <div class="fb-user">${escHtml(userLabel(f))} <span class="fb-uid">${escHtml(userShortId(f))}</span></div>
+        <div class="fb-row-top" onclick="goToUserDetail('${escHtml(f.user_id)}')">
+          <span class="fb-uid">${escHtml(userShortId(f))}</span>
+          <div class="fb-user">${escHtml(userLabel(f))}</div>
+        </div>
         <div class="fb-date">${escHtml(formatFbDate(f.created_at))}</div>
       </div>
       <button class="fb-modal-close" type="button" aria-label="Close" onclick="closeFeedbackModal()">
