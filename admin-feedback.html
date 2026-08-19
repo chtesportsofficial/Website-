@@ -534,13 +534,13 @@ function showGate(name){
   document.getElementById('app').classList.toggle('active', name === 'app');
 }
 
-function showToast(msg, isError, durationMs){
+function showToast(msg, isError){
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.toggle('error', !!isError);
   t.classList.add('show');
   clearTimeout(window._toastTimer);
-  window._toastTimer = setTimeout(() => t.classList.remove('show'), durationMs || 2800);
+  window._toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
 }
 
 async function handleAdminLogin(){
@@ -740,12 +740,10 @@ async function loadFeedbacks(){
   // select so the page still works either way.
   let { data, error } = await supabaseClient
     .from('feedback')
-    .select('id,user_id,message,screenshot_url,status,admin_reply,created_at,updated_at,profiles:user_id(full_name,email)')
+    .select('id,user_id,message,screenshot_url,status,admin_reply,created_at,updated_at,profiles:profiles!user_id(full_name,email)')
     .order('created_at', { ascending: false });
 
   if(error){
-    console.error('Embed query failed, falling back to plain select:', error);
-    showToast('DEBUG embed error: ' + (error.message || JSON.stringify(error)), true, 15000);
     const fallback = await supabaseClient
       .from('feedback')
       .select('id,user_id,message,screenshot_url,status,admin_reply,created_at,updated_at')
