@@ -223,27 +223,56 @@
   }
   .fb-filter.active{ background:var(--accent); color:#fff; border-color:var(--accent); }
 
-  /* ---------- Feedback cards ---------- */
+  /* ---------- Feedback list (compact, clickable rows) ---------- */
   .fb-list{ margin-top:8px; }
-  .fb-card{
-    background:#f9fafc;
-    border:1px solid var(--line);
-    border-radius:16px;
-    padding:16px;
-    margin-top:14px;
-  }
-  .fb-top{
+  .fb-row{
     display:flex;
-    align-items:flex-start;
-    justify-content:space-between;
-    gap:10px;
+    align-items:center;
+    gap:12px;
+    padding:13px 6px;
+    border-bottom:1px solid var(--line);
+    cursor:pointer;
+    background:none;
+    border-left:none; border-right:none; border-top:none;
+    width:100%;
+    text-align:left;
+    font-family:inherit;
   }
-  .fb-user{ font-size:12.5px; font-weight:700; color:var(--ink); word-break:break-all; }
-  .fb-date{ font-size:11.5px; color:var(--muted); margin-top:3px; }
-  .fb-badge{
-    font-size:11px;
+  .fb-row:last-child{ border-bottom:none; }
+  .fb-row:hover{ background:#f7f8fc; }
+  .fb-avatar{
+    width:38px; height:38px;
+    border-radius:50%;
+    background:var(--navy-2);
+    color:#fff;
+    display:flex; align-items:center; justify-content:center;
     font-weight:800;
-    padding:5px 12px;
+    font-size:13px;
+    flex-shrink:0;
+  }
+  .fb-row-info{ flex:1; min-width:0; }
+  .fb-row-top{ display:flex; align-items:center; gap:8px; }
+  .fb-user{
+    font-size:13.5px;
+    font-weight:800;
+    color:var(--ink);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .fb-date{ font-size:11px; color:var(--muted); margin-top:2px; }
+  .fb-preview{
+    font-size:12.5px;
+    color:var(--muted);
+    margin-top:3px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .fb-badge{
+    font-size:10.5px;
+    font-weight:800;
+    padding:4px 10px;
     border-radius:20px;
     white-space:nowrap;
     flex-shrink:0;
@@ -252,13 +281,55 @@
   .fb-badge-pending{ background:rgba(180,120,0,0.13); color:var(--warn); }
   .fb-badge-reviewed{ background:rgba(53,87,255,0.12); color:var(--accent); }
   .fb-badge-resolved{ background:rgba(28,124,77,0.12); color:var(--success); }
+  .fb-chevron{ color:var(--muted); flex-shrink:0; display:flex; }
+
+  /* ---------- Feedback detail popup ---------- */
+  .fb-modal-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(20,23,45,0.6);
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    z-index:55;
+  }
+  .fb-modal-overlay.show{ display:flex; }
+  .fb-modal-card{
+    width:100%;
+    max-width:480px;
+    max-height:92vh;
+    overflow-y:auto;
+    background:var(--white);
+    border-radius:22px;
+    padding:22px 20px 20px;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,0.5);
+  }
+  .fb-modal-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .fb-modal-close{
+    width:32px; height:32px;
+    border:none;
+    border-radius:9px;
+    background:#f1f2f8;
+    color:var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .fb-modal-close:hover{ background:#e5e7f3; }
 
   .fb-message{
     font-size:14.5px;
     line-height:1.6;
     white-space:pre-wrap;
     word-break:break-word;
-    margin:13px 0;
+    margin:0 0 14px;
     color:var(--ink);
   }
 
@@ -271,7 +342,7 @@
     border:1px solid var(--line);
     cursor:zoom-in;
     display:block;
-    margin-bottom:12px;
+    margin-bottom:14px;
   }
 
   .fb-reply-label{
@@ -294,6 +365,7 @@
     outline:none;
     background:#fff;
     color:var(--ink);
+    box-sizing:border-box;
   }
   .fb-reply:focus{ border-color:var(--accent); }
 
@@ -301,7 +373,7 @@
     display:flex;
     gap:8px;
     flex-wrap:wrap;
-    margin-top:12px;
+    margin-top:14px;
   }
   .fb-btn{
     border:0;
@@ -325,13 +397,6 @@
   .fb-btn-save:hover:not(:disabled){ background:#454a67; }
   .fb-btn-delete{ background:var(--error); }
   .fb-btn-delete:hover:not(:disabled){ background:#c93f43; }
-  .fb-badge-current{
-    font-size:11px;
-    font-weight:700;
-    color:var(--muted);
-    align-self:center;
-    margin-left:auto;
-  }
 
   /* ---------- Lightbox for screenshots ---------- */
   .lightbox{
@@ -424,6 +489,13 @@
           <div class="load-note">Loading feedback...</div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- FEEDBACK DETAIL POPUP -->
+  <div class="fb-modal-overlay" id="fb-modal-overlay">
+    <div class="fb-modal-card" id="fb-modal-card">
+      <!-- filled by JS -->
     </div>
   </div>
 
@@ -522,6 +594,7 @@ async function checkAccess(){
 const fbList = document.getElementById('fb-list');
 let allFeedbacks = [];
 let currentFilter = 'all';
+let openFeedbackId = null;
 
 function escHtml(value){
   return String(value ?? '').replace(/[&<>"']/g, c => ({
@@ -534,6 +607,20 @@ function formatFbDate(v){
   const d = new Date(v);
   if(Number.isNaN(d.getTime())) return String(v);
   return d.toLocaleString('en-BD',{dateStyle:'medium',timeStyle:'short'});
+}
+
+// Human-friendly label for a feedback row: prefers the submitter's
+// name/email (joined from `profiles`) and falls back to a shortened
+// user_id if the join isn't available.
+function userLabel(f){
+  const p = f.profiles;
+  if(p && (p.full_name || p.email)) return p.full_name || p.email;
+  if(!f.user_id) return 'Unknown user';
+  return 'User ' + String(f.user_id).slice(0, 8);
+}
+function userInitial(f){
+  const label = userLabel(f);
+  return label.charAt(0).toUpperCase();
 }
 
 // screenshot_url may already be a full public URL, or just a storage
@@ -558,6 +645,7 @@ function closeLightbox(){
   document.getElementById('lightbox-img').src = '';
 }
 
+// ---------- Compact list ----------
 function renderFeedbacks(){
   const data = currentFilter === 'all'
     ? allFeedbacks
@@ -568,53 +656,105 @@ function renderFeedbacks(){
     return;
   }
 
-  fbList.innerHTML = data.map(f => {
-    const shotUrl = resolveScreenshotUrl(f.screenshot_url);
-    return `
-    <div class="fb-card" data-id="${escHtml(f.id)}">
-      <div class="fb-top">
-        <div>
-          <div class="fb-user">User ID: ${escHtml(f.user_id)}</div>
-          <div class="fb-date">${escHtml(formatFbDate(f.created_at))}</div>
+  fbList.innerHTML = data.map(f => `
+    <button type="button" class="fb-row" data-id="${escHtml(f.id)}" onclick="openFeedbackModal('${escHtml(f.id)}')">
+      <div class="fb-avatar">${escHtml(userInitial(f))}</div>
+      <div class="fb-row-info">
+        <div class="fb-row-top">
+          <div class="fb-user">${escHtml(userLabel(f))}</div>
         </div>
-        <span class="fb-badge fb-badge-${escHtml(f.status)}">${escHtml(f.status)}</span>
+        <div class="fb-date">${escHtml(formatFbDate(f.created_at))}</div>
+        <div class="fb-preview">${escHtml(f.message)}</div>
       </div>
-
-      <div class="fb-message">${escHtml(f.message)}</div>
-
-      ${shotUrl ? `
-        <img class="fb-shot" src="${escHtml(shotUrl)}" alt="Feedback screenshot"
-             onclick="openLightbox('${escHtml(shotUrl)}')">
-      ` : ''}
-
-      <div class="fb-reply-label">Admin reply</div>
-      <textarea class="fb-reply" placeholder="Write a reply to this user...">${escHtml(f.admin_reply || '')}</textarea>
-
-      <div class="fb-actions">
-        <button class="fb-btn fb-btn-review" ${f.status==='reviewed' ? 'disabled' : ''} onclick="changeFbStatus('${escHtml(f.id)}','reviewed')">Mark Reviewed</button>
-        <button class="fb-btn fb-btn-resolve" ${f.status==='resolved' ? 'disabled' : ''} onclick="changeFbStatus('${escHtml(f.id)}','resolved')">Resolve</button>
-        <button class="fb-btn fb-btn-save" onclick="saveFbReply('${escHtml(f.id)}', this)">Save Reply</button>
-        <button class="fb-btn fb-btn-delete" onclick="deleteFeedback('${escHtml(f.id)}')">Delete</button>
-      </div>
-    </div>
-  `; }).join('');
+      <span class="fb-badge fb-badge-${escHtml(f.status)}">${escHtml(f.status)}</span>
+      <span class="fb-chevron">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </span>
+    </button>
+  `).join('');
 }
+
+// ---------- Detail popup ----------
+function renderFeedbackModal(f){
+  const shotUrl = resolveScreenshotUrl(f.screenshot_url);
+  document.getElementById('fb-modal-card').innerHTML = `
+    <div class="fb-modal-head">
+      <div>
+        <div class="fb-user">${escHtml(userLabel(f))}</div>
+        <div class="fb-date">${escHtml(formatFbDate(f.created_at))}</div>
+      </div>
+      <button class="fb-modal-close" type="button" aria-label="Close" onclick="closeFeedbackModal()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <span class="fb-badge fb-badge-${escHtml(f.status)}" style="margin-bottom:14px;display:inline-block;">${escHtml(f.status)}</span>
+
+    <div class="fb-message">${escHtml(f.message)}</div>
+
+    ${shotUrl ? `
+      <img class="fb-shot" src="${escHtml(shotUrl)}" alt="Feedback screenshot"
+           onclick="openLightbox('${escHtml(shotUrl)}')">
+    ` : ''}
+
+    <div class="fb-reply-label">Admin reply</div>
+    <textarea class="fb-reply" id="fb-modal-reply" placeholder="Write a reply to this user...">${escHtml(f.admin_reply || '')}</textarea>
+
+    <div class="fb-actions">
+      <button class="fb-btn fb-btn-review" ${f.status==='reviewed' ? 'disabled' : ''} onclick="changeFbStatus('${escHtml(f.id)}','reviewed')">Mark Reviewed</button>
+      <button class="fb-btn fb-btn-resolve" ${f.status==='resolved' ? 'disabled' : ''} onclick="changeFbStatus('${escHtml(f.id)}','resolved')">Resolve</button>
+      <button class="fb-btn fb-btn-save" onclick="saveFbReply('${escHtml(f.id)}', this)">Save Reply</button>
+      <button class="fb-btn fb-btn-delete" onclick="deleteFeedback('${escHtml(f.id)}')">Delete</button>
+    </div>
+  `;
+}
+
+function openFeedbackModal(id){
+  const f = allFeedbacks.find(x => x.id === id);
+  if(!f) return;
+  openFeedbackId = id;
+  renderFeedbackModal(f);
+  document.getElementById('fb-modal-overlay').classList.add('show');
+}
+function closeFeedbackModal(){
+  openFeedbackId = null;
+  document.getElementById('fb-modal-overlay').classList.remove('show');
+}
+document.getElementById('fb-modal-overlay').addEventListener('click', (e) => {
+  if(e.target.id === 'fb-modal-overlay') closeFeedbackModal();
+});
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape') closeFeedbackModal();
+});
 
 async function loadFeedbacks(){
   fbList.innerHTML = '<div class="load-note">Loading feedback...</div>';
-  try{
-    const { data, error } = await supabaseClient
+
+  // Try to join the submitter's profile (name/email) for a readable
+  // label. If no FK relationship exists between feedback.user_id and
+  // profiles.id, PostgREST rejects the embed — fall back to a plain
+  // select so the page still works either way.
+  let { data, error } = await supabaseClient
+    .from('feedback')
+    .select('id,user_id,message,screenshot_url,status,admin_reply,created_at,updated_at,profiles:user_id(full_name,email)')
+    .order('created_at', { ascending: false });
+
+  if(error){
+    const fallback = await supabaseClient
       .from('feedback')
       .select('id,user_id,message,screenshot_url,status,admin_reply,created_at,updated_at')
       .order('created_at', { ascending: false });
-
-    if(error) throw error;
-
-    allFeedbacks = data || [];
-    renderFeedbacks();
-  }catch(err){
-    fbList.innerHTML = `<div class="empty-note">${escHtml(err.message || 'Could not load feedback.')}</div>`;
+    data = fallback.data;
+    error = fallback.error;
   }
+
+  if(error){
+    fbList.innerHTML = `<div class="empty-note">${escHtml(error.message || 'Could not load feedback.')}</div>`;
+    return;
+  }
+
+  allFeedbacks = data || [];
+  renderFeedbacks();
 }
 
 async function changeFbStatus(id, status){
@@ -629,6 +769,7 @@ async function changeFbStatus(id, status){
     const item = allFeedbacks.find(x => x.id === id);
     if(item) item.status = status;
     renderFeedbacks();
+    if(openFeedbackId === id) renderFeedbackModal(item);
     showToast('Status updated.');
   }catch(err){
     showToast(err.message || 'Could not update status.', true);
@@ -636,8 +777,7 @@ async function changeFbStatus(id, status){
 }
 
 async function saveFbReply(id, button){
-  const card = button.closest('.fb-card');
-  const reply = card.querySelector('.fb-reply').value.trim();
+  const reply = document.getElementById('fb-modal-reply').value.trim();
   button.disabled = true;
   try{
     const { error } = await supabaseClient
@@ -669,6 +809,7 @@ async function deleteFeedback(id){
     if(error) throw error;
 
     allFeedbacks = allFeedbacks.filter(x => x.id !== id);
+    closeFeedbackModal();
     renderFeedbacks();
     showToast('Feedback deleted.');
   }catch(err){
