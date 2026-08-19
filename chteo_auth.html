@@ -487,13 +487,13 @@ function setError(wrapId, errId, show){
 }
 
 
-// ----- MySQL Wallet sync -----
+// ----- Step 3: Supabase User -> MySQL Wallet Mapping -----
 // After Supabase authentication succeeds, send the Supabase access token
-// to the PHP API. The PHP API verifies the token and creates/fetches the
-// matching wallet_users row.
-const WALLET_SYNC_URL = 'https://cht.gamer.gd/api/sync-wallet.php';
+// to sync-user.php. The PHP API verifies the token and creates/fetches
+// the matching wallet_users row.
+const WALLET_SYNC_URL = 'https://cht.gamer.gd/api/sync-user.php';
 
-async function syncWalletWithMySQL(session){
+async function syncUserWithMySQL(session){
   if(!session || !session.access_token){
     console.warn('Wallet sync skipped: no Supabase session/token.');
     return null;
@@ -558,7 +558,7 @@ async function handleSignin(){
   }
 
   // Step 3: link the authenticated Supabase user to wallet_users in MySQL.
-  await syncWalletWithMySQL(data.session);
+  await syncUserWithMySQL(data.session);
 
   // Blocked-user check: a correct password shouldn't be enough to get a
   // banned account past this screen. Look up the fresh profiles row
@@ -781,7 +781,7 @@ async function handleCreate(){
 
   if(data.session){
     // Step 3: create/fetch the matching wallet_users row in MySQL.
-    await syncWalletWithMySQL(data.session);
+    await syncUserWithMySQL(data.session);
 
     // Give the Supabase trigger (which inserts the profiles row on new
     // auth.users signup) a brief moment, then pull the real row down so
