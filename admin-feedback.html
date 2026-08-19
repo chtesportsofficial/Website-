@@ -3,208 +3,657 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Feedbacks</title>
+<title>CHTEO — Feedback</title>
 <link rel="stylesheet" href="theme.css">
 <script src="global.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{
-  --bg:#0b0f19;--card:#141a29;--card2:#171f33;--border:#232c42;
-  --text:#fff;--muted:#8a93a6;--blue:#6366f1;--green:#22c55e;--red:#ef4444;--yellow:#f59e0b;
-}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font-family:Segoe UI,Roboto,Arial,sans-serif;padding:20px 0 50px}
-.wrap{width:100%;max-width:700px;margin:auto;padding:0 16px}
-.header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
-.back{width:48px;height:48px;border:1px solid var(--border);border-radius:15px;background:var(--card2);color:#fff;font-size:25px}
-h1{font-size:26px;margin:0}.sub{color:var(--muted);font-size:13px;margin-top:3px}
-.toolbar{display:flex;gap:8px;overflow:auto;margin-bottom:16px}
-.filter{border:1px solid var(--border);background:var(--card);color:var(--muted);padding:9px 13px;border-radius:10px;white-space:nowrap}
-.filter.active{background:var(--blue);color:#fff;border-color:var(--blue)}
-.feedback{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:14px}
-.top{display:flex;justify-content:space-between;gap:10px}
-.user{font-size:12px;color:var(--muted);word-break:break-all}
-.date{font-size:12px;color:var(--muted);margin-top:4px}
-.badge{font-size:11px;padding:6px 9px;border-radius:20px;font-weight:700;text-transform:capitalize;height:max-content}
-.pending{background:rgba(245,158,11,.14);color:var(--yellow)}
-.reviewed{background:rgba(99,102,241,.15);color:#818cf8}
-.resolved{background:rgba(34,197,94,.14);color:var(--green)}
-.message{font-size:15px;line-height:1.55;white-space:pre-wrap;margin:15px 0}
-.shot{width:100%;max-height:360px;object-fit:contain;border-radius:12px;background:#080b12;border:1px solid var(--border);cursor:pointer}
-.reply{width:100%;min-height:80px;resize:vertical;background:#0d1220;color:#fff;border:1px solid var(--border);border-radius:11px;padding:11px;font:inherit;outline:none;margin-top:12px}
-.actions{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap}
-button.action{border:0;border-radius:10px;padding:10px 13px;color:#fff;font-weight:700;cursor:pointer}
-.review{background:var(--blue)}.resolve{background:var(--green)}.save{background:#475569}.delete{background:var(--red)}
-.empty,.loading{padding:35px 10px;text-align:center;color:var(--muted)}
-.toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;background:#16a34a;color:#fff;padding:12px 18px;border-radius:11px;font-weight:600;transition:.2s;z-index:10}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.toast.error{background:#991b1b}
+  :root{
+    --navy-1:#1b2140;
+    --navy-2:#2a3266;
+    --navy-3:#333c7a;
+    --white:#ffffff;
+    --ink:#1b2140;
+    --muted:#7a7f9a;
+    --line:#e2e3ee;
+    --accent:#3557ff;
+    --accent-dark:#2846e0;
+    --error:#e5484d;
+    --success:#1c7c4d;
+    --warn:#b47800;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    background:
+      radial-gradient(circle at 12% 0%, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 40%),
+      linear-gradient(160deg, var(--navy-1) 0%, var(--navy-2) 55%, var(--navy-3) 100%);
+    color:var(--ink);
+  }
+
+  /* ---------- Gate views (login / checking / denied) ---------- */
+  .gate{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .gate-card{
+    width:100%;
+    max-width:380px;
+    background:var(--white);
+    border-radius:24px;
+    padding:36px 30px;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,0.45);
+    text-align:center;
+  }
+  .gate-card h1{
+    font-size:18px;
+    font-weight:800;
+    margin:0 0 8px;
+  }
+  .gate-card p{
+    font-size:13.5px;
+    color:var(--muted);
+    line-height:1.6;
+    margin:0 0 22px;
+  }
+  .field{ text-align:left; margin-bottom:14px; }
+  .field label{
+    display:block;
+    font-size:13px;
+    font-weight:700;
+    margin-bottom:6px;
+  }
+  .field input{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:11px 13px;
+    font-size:14px;
+    font-family:inherit;
+    outline:none;
+  }
+  .field input:focus{ border-color:var(--accent); }
+  .gate-btn{
+    width:100%;
+    padding:13px;
+    border:none;
+    border-radius:10px;
+    background:var(--accent);
+    color:#fff;
+    font-size:14.5px;
+    font-weight:700;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .gate-btn:hover{ background:var(--accent-dark); }
+  .gate-btn:disabled{ background:#d3d6ea; color:#9a9dbb; cursor:not-allowed; }
+  .gate-err{
+    font-size:12.5px;
+    color:var(--error);
+    margin-top:12px;
+    display:none;
+  }
+  .gate-err.show{ display:block; }
+  .spinner{
+    width:32px; height:32px;
+    border:3px solid rgba(255,255,255,0.25);
+    border-top-color:#fff;
+    border-radius:50%;
+    margin:0 auto 16px;
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .gate-text{ color:rgba(255,255,255,0.75); font-size:14px; }
+
+  /* ---------- Dashboard shell ---------- */
+  .app{ display:none; }
+  .app.active{ display:block; }
+
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:18px 28px;
+    background:rgba(255,255,255,0.04);
+    border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+  .topbar .brand{ display:flex; align-items:center; gap:10px; }
+  .topbar .brand img{ width:30px; height:30px; border-radius:7px; }
+  .topbar .brand span{ color:#fff; font-weight:800; font-size:15.5px; }
+  .topbar .brand small{ color:rgba(255,255,255,0.5); font-size:11.5px; font-weight:600; margin-left:6px; }
+  .back-btn{
+    width:38px; height:38px; border-radius:10px;
+    background:rgba(255,255,255,0.08);
+    border:none; color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; flex-shrink:0;
+  }
+  .back-btn:hover{ background:rgba(255,255,255,0.15); }
+  .signout-btn{
+    background:rgba(255,255,255,0.08);
+    color:#fff;
+    border:none;
+    padding:9px 16px;
+    border-radius:10px;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .signout-btn:hover{ background:rgba(255,255,255,0.15); }
+
+  .content{
+    max-width:1080px;
+    margin:0 auto;
+    padding:28px 24px 60px;
+  }
+
+  .panel{
+    background:var(--white);
+    border-radius:20px;
+    padding:22px;
+    box-shadow:0 20px 44px -22px rgba(0,0,0,0.35);
+    margin-bottom:22px;
+  }
+  .panel-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:6px;
+    flex-wrap:wrap;
+  }
+  .panel-head h2{ font-size:17px; font-weight:800; margin:0; }
+  .panel-head p{ font-size:12.5px; color:var(--muted); margin:3px 0 0; }
+
+  .empty-note, .load-note{
+    text-align:center;
+    color:var(--muted);
+    font-size:13.5px;
+    padding:34px 10px;
+  }
+
+  .toast{
+    position:fixed;
+    bottom:24px;
+    left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--ink);
+    color:#fff;
+    padding:11px 18px;
+    border-radius:10px;
+    font-size:13px;
+    font-weight:600;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease;
+    z-index:10;
+    max-width:88vw;
+    text-align:center;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .toast.error{ background:var(--error); }
+
+  /* ---------- Filter tabs ---------- */
+  .fb-toolbar{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding:16px 0 4px;
+    -ms-overflow-style:none;
+    scrollbar-width:none;
+  }
+  .fb-toolbar::-webkit-scrollbar{ display:none; }
+  .fb-filter{
+    border:1px solid var(--line);
+    background:#f7f8fc;
+    color:var(--muted);
+    padding:9px 15px;
+    border-radius:20px;
+    font-size:13px;
+    font-weight:700;
+    font-family:inherit;
+    white-space:nowrap;
+    cursor:pointer;
+  }
+  .fb-filter.active{ background:var(--accent); color:#fff; border-color:var(--accent); }
+
+  /* ---------- Feedback cards ---------- */
+  .fb-list{ margin-top:8px; }
+  .fb-card{
+    background:#f9fafc;
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:16px;
+    margin-top:14px;
+  }
+  .fb-top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .fb-user{ font-size:12.5px; font-weight:700; color:var(--ink); word-break:break-all; }
+  .fb-date{ font-size:11.5px; color:var(--muted); margin-top:3px; }
+  .fb-badge{
+    font-size:11px;
+    font-weight:800;
+    padding:5px 12px;
+    border-radius:20px;
+    white-space:nowrap;
+    flex-shrink:0;
+    text-transform:capitalize;
+  }
+  .fb-badge-pending{ background:rgba(180,120,0,0.13); color:var(--warn); }
+  .fb-badge-reviewed{ background:rgba(53,87,255,0.12); color:var(--accent); }
+  .fb-badge-resolved{ background:rgba(28,124,77,0.12); color:var(--success); }
+
+  .fb-message{
+    font-size:14.5px;
+    line-height:1.6;
+    white-space:pre-wrap;
+    word-break:break-word;
+    margin:13px 0;
+    color:var(--ink);
+  }
+
+  .fb-shot{
+    width:100%;
+    max-height:320px;
+    object-fit:contain;
+    border-radius:12px;
+    background:#eef0f5;
+    border:1px solid var(--line);
+    cursor:zoom-in;
+    display:block;
+    margin-bottom:12px;
+  }
+
+  .fb-reply-label{
+    font-size:11.5px;
+    font-weight:800;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:0.3px;
+    margin-bottom:6px;
+  }
+  .fb-reply{
+    width:100%;
+    min-height:76px;
+    resize:vertical;
+    padding:12px 13px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    font:inherit;
+    font-size:13.5px;
+    outline:none;
+    background:#fff;
+    color:var(--ink);
+  }
+  .fb-reply:focus{ border-color:var(--accent); }
+
+  .fb-actions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:12px;
+  }
+  .fb-btn{
+    border:0;
+    border-radius:10px;
+    padding:10px 14px;
+    font-size:12.5px;
+    font-weight:800;
+    font-family:inherit;
+    color:#fff;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+  }
+  .fb-btn:disabled{ opacity:0.55; cursor:not-allowed; }
+  .fb-btn-review{ background:var(--accent); }
+  .fb-btn-review:hover:not(:disabled){ background:var(--accent-dark); }
+  .fb-btn-resolve{ background:var(--success); }
+  .fb-btn-resolve:hover:not(:disabled){ background:#166840; }
+  .fb-btn-save{ background:#565c7c; }
+  .fb-btn-save:hover:not(:disabled){ background:#454a67; }
+  .fb-btn-delete{ background:var(--error); }
+  .fb-btn-delete:hover:not(:disabled){ background:#c93f43; }
+  .fb-badge-current{
+    font-size:11px;
+    font-weight:700;
+    color:var(--muted);
+    align-self:center;
+    margin-left:auto;
+  }
+
+  /* ---------- Lightbox for screenshots ---------- */
+  .lightbox{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(10,12,26,0.9);
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    z-index:60;
+    cursor:zoom-out;
+  }
+  .lightbox.show{ display:flex; }
+  .lightbox img{
+    max-width:100%;
+    max-height:100%;
+    border-radius:10px;
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="header">
-    <button class="back" onclick="history.back()">‹</button>
+
+  <!-- CHECKING SESSION -->
+  <div class="gate" id="gate-checking">
     <div>
-      <h1>Feedbacks</h1>
-      <div class="sub">Admin feedback management</div>
+      <div class="spinner"></div>
+      <div class="gate-text">Checking access...</div>
     </div>
   </div>
 
-  <div class="toolbar">
-    <button class="filter active" data-filter="all">All</button>
-    <button class="filter" data-filter="pending">Pending</button>
-    <button class="filter" data-filter="reviewed">Reviewed</button>
-    <button class="filter" data-filter="resolved">Resolved</button>
+  <!-- LOGIN FORM (shown if no session at all) -->
+  <div class="gate" id="gate-login" style="display:none;">
+    <div class="gate-card">
+      <h1>Admin sign in</h1>
+      <p>This panel is restricted. Sign in with the admin account to continue.</p>
+      <div class="field">
+        <label for="al-email">Email</label>
+        <input type="email" id="al-email" placeholder="admin@example.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="al-password">Password</label>
+        <input type="password" id="al-password" placeholder="Password" autocomplete="current-password">
+      </div>
+      <button class="gate-btn" onclick="handleAdminLogin()">Sign in</button>
+      <div class="gate-err" id="al-err">Incorrect email or password.</div>
+    </div>
   </div>
 
-  <div id="list" class="loading">Loading feedbacks...</div>
-</div>
+  <!-- ACCESS DENIED (logged in, but not an admin) -->
+  <div class="gate" id="gate-denied" style="display:none;">
+    <div class="gate-card">
+      <h1>Access denied</h1>
+      <p>The account you're signed in with (<strong id="denied-email"></strong>) doesn't have admin access to this panel.</p>
+      <button class="gate-btn" onclick="signOutAndReload()">Sign out</button>
+    </div>
+  </div>
 
-<div class="toast" id="toast"></div>
+  <!-- DASHBOARD -->
+  <div class="app" id="app">
+    <div class="topbar">
+      <div class="brand">
+        <button class="back-btn" onclick="window.location.href='admin-panel.html'" aria-label="Back">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </button>
+        <img src="https://raw.githubusercontent.com/chtesportsofficial/Chteo_img/refs/heads/main/CHTEO%20(1).png" alt="CHTEO logo">
+        <span>CHTEO</span>
+        <small>FEEDBACK</small>
+      </div>
+      <button class="signout-btn" onclick="signOutAndReload()">Sign out</button>
+    </div>
+
+    <div class="content">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>User Feedback</h2>
+            <p>Review screenshots, update status and reply to users</p>
+          </div>
+        </div>
+
+        <div class="fb-toolbar" id="fb-toolbar">
+          <button class="fb-filter active" data-filter="all">All</button>
+          <button class="fb-filter" data-filter="pending">Pending</button>
+          <button class="fb-filter" data-filter="reviewed">Reviewed</button>
+          <button class="fb-filter" data-filter="resolved">Resolved</button>
+        </div>
+
+        <div class="fb-list" id="fb-list">
+          <div class="load-note">Loading feedback...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <img id="lightbox-img" src="" alt="Feedback screenshot">
+  </div>
+
+  <div class="toast" id="toast"></div>
 
 <script>
-const list = document.getElementById('list');
-const toast = document.getElementById('toast');
+const SUPABASE_URL = 'https://myfficbwcbgbxbdqjexv.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+
+// Access to this page is gated the same way as the rest of the admin
+// panel: profiles.is_admin decides whether the UI is shown, and the
+// RLS policies on `feedback` / `admins` (if present) are what actually
+// enforce access server-side. See admin-panel.html for the same check.
+
+let supabaseClient;
+try {
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} catch(e){
+  document.getElementById('gate-checking').innerHTML =
+    '<div class="gate-text">Supabase init error: ' + e.message + '</div>';
+}
+
+function showGate(name){
+  document.getElementById('gate-checking').style.display = name === 'checking' ? 'flex' : 'none';
+  document.getElementById('gate-login').style.display = name === 'login' ? 'flex' : 'none';
+  document.getElementById('gate-denied').style.display = name === 'denied' ? 'flex' : 'none';
+  document.getElementById('app').classList.toggle('active', name === 'app');
+}
+
+function showToast(msg, isError){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('error', !!isError);
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+async function handleAdminLogin(){
+  const email = document.getElementById('al-email').value.trim();
+  const password = document.getElementById('al-password').value;
+  const errEl = document.getElementById('al-err');
+  errEl.classList.remove('show');
+
+  if(!email || !password){
+    errEl.textContent = 'Enter both email and password.';
+    errEl.classList.add('show');
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+  if(error){
+    errEl.textContent = error.message;
+    errEl.classList.add('show');
+    return;
+  }
+  await checkAccess();
+}
+
+async function signOutAndReload(){
+  await supabaseClient.auth.signOut();
+  window.location.reload();
+}
+
+async function checkAccess(){
+  showGate('checking');
+  const { data: { session } } = await supabaseClient.auth.getSession();
+
+  if(!session){
+    showGate('login');
+    return;
+  }
+
+  const { data: profile, error: profileErr } = await supabaseClient
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', session.user.id)
+    .single();
+
+  if(profileErr || !profile || !profile.is_admin){
+    document.getElementById('denied-email').textContent = session.user.email;
+    showGate('denied');
+    return;
+  }
+
+  showGate('app');
+  loadFeedbacks();
+}
+
+// ---------- Feedback management ----------
+const fbList = document.getElementById('fb-list');
 let allFeedbacks = [];
 let currentFilter = 'all';
 
-function showToast(msg, error=false){
-  toast.textContent = msg;
-  toast.classList.toggle('error', error);
-  toast.classList.add('show');
-  clearTimeout(window._toast);
-  window._toast = setTimeout(()=>toast.classList.remove('show'), 2800);
-}
-
-function esc(value){
+function escHtml(value){
   return String(value ?? '').replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
   }[c]));
 }
 
-function formatDate(v){
-  return new Date(v).toLocaleString('en-BD',{
-    dateStyle:'medium',timeStyle:'short'
-  });
+function formatFbDate(v){
+  if(!v) return '';
+  const d = new Date(v);
+  if(Number.isNaN(d.getTime())) return String(v);
+  return d.toLocaleString('en-BD',{dateStyle:'medium',timeStyle:'short'});
 }
 
-function render(){
+// screenshot_url may already be a full public URL, or just a storage
+// path inside the `feedback` bucket — handle both.
+function resolveScreenshotUrl(value){
+  if(!value) return '';
+  if(/^https?:\/\//i.test(value)) return value;
+  try{
+    const { data } = supabaseClient.storage.from('feedback').getPublicUrl(value);
+    return (data && data.publicUrl) || '';
+  }catch(e){
+    return '';
+  }
+}
+
+function openLightbox(src){
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('show');
+}
+function closeLightbox(){
+  document.getElementById('lightbox').classList.remove('show');
+  document.getElementById('lightbox-img').src = '';
+}
+
+function renderFeedbacks(){
   const data = currentFilter === 'all'
     ? allFeedbacks
     : allFeedbacks.filter(x => x.status === currentFilter);
 
   if(!data.length){
-    list.innerHTML = '<div class="empty">No feedback found.</div>';
+    fbList.innerHTML = '<div class="empty-note">No feedback found.</div>';
     return;
   }
 
-  list.innerHTML = data.map(f => `
-    <div class="feedback" data-id="${esc(f.id)}">
-      <div class="top">
+  fbList.innerHTML = data.map(f => {
+    const shotUrl = resolveScreenshotUrl(f.screenshot_url);
+    return `
+    <div class="fb-card" data-id="${escHtml(f.id)}">
+      <div class="fb-top">
         <div>
-          <div class="user">User ID: ${esc(f.user_id)}</div>
-          <div class="date">${esc(formatDate(f.created_at))}</div>
+          <div class="fb-user">User ID: ${escHtml(f.user_id)}</div>
+          <div class="fb-date">${escHtml(formatFbDate(f.created_at))}</div>
         </div>
-        <span class="badge ${esc(f.status)}">${esc(f.status)}</span>
+        <span class="fb-badge fb-badge-${escHtml(f.status)}">${escHtml(f.status)}</span>
       </div>
 
-      <div class="message">${esc(f.message)}</div>
+      <div class="fb-message">${escHtml(f.message)}</div>
 
-      ${f.screenshot_url ? `
-        <img class="shot" src="${esc(f.screenshot_url)}"
-             alt="Feedback screenshot"
-             onclick="window.open(this.src,'_blank')">
+      ${shotUrl ? `
+        <img class="fb-shot" src="${escHtml(shotUrl)}" alt="Feedback screenshot"
+             onclick="openLightbox('${escHtml(shotUrl)}')">
       ` : ''}
 
-      <textarea class="reply" placeholder="Write admin reply...">${esc(f.admin_reply || '')}</textarea>
+      <div class="fb-reply-label">Admin reply</div>
+      <textarea class="fb-reply" placeholder="Write a reply to this user...">${escHtml(f.admin_reply || '')}</textarea>
 
-      <div class="actions">
-        <button class="action review" onclick="changeStatus('${esc(f.id)}','reviewed')">Mark Reviewed</button>
-        <button class="action resolve" onclick="changeStatus('${esc(f.id)}','resolved')">Resolve</button>
-        <button class="action save" onclick="saveReply('${esc(f.id)}', this)">Save Reply</button>
-        <button class="action delete" onclick="deleteFeedback('${esc(f.id)}')">Delete</button>
+      <div class="fb-actions">
+        <button class="fb-btn fb-btn-review" ${f.status==='reviewed' ? 'disabled' : ''} onclick="changeFbStatus('${escHtml(f.id)}','reviewed')">Mark Reviewed</button>
+        <button class="fb-btn fb-btn-resolve" ${f.status==='resolved' ? 'disabled' : ''} onclick="changeFbStatus('${escHtml(f.id)}','resolved')">Resolve</button>
+        <button class="fb-btn fb-btn-save" onclick="saveFbReply('${escHtml(f.id)}', this)">Save Reply</button>
+        <button class="fb-btn fb-btn-delete" onclick="deleteFeedback('${escHtml(f.id)}')">Delete</button>
       </div>
     </div>
-  `).join('');
-}
-
-async function getClient(){
-  if(!(window.CHTEO && window.CHTEO.getSupabaseClient)){
-    throw new Error('Supabase client is not available.');
-  }
-  return await new Promise(resolve => window.CHTEO.getSupabaseClient(resolve));
-}
-
-async function verifyAdmin(client){
-  const {data:{user}, error} = await client.auth.getUser();
-  if(error || !user) throw new Error('Please login again.');
-
-  const {data, error:adminErr} = await client
-    .from('admins')
-    .select('user_id')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if(adminErr) throw adminErr;
-  if(!data) throw new Error('Access denied. You are not an admin.');
+  `; }).join('');
 }
 
 async function loadFeedbacks(){
+  fbList.innerHTML = '<div class="load-note">Loading feedback...</div>';
   try{
-    const client = await getClient();
-    await verifyAdmin(client);
-
-    const {data,error} = await client
+    const { data, error } = await supabaseClient
       .from('feedback')
       .select('id,user_id,message,screenshot_url,status,admin_reply,created_at,updated_at')
-      .order('created_at',{ascending:false});
+      .order('created_at', { ascending: false });
 
     if(error) throw error;
 
     allFeedbacks = data || [];
-    render();
+    renderFeedbacks();
   }catch(err){
-    list.innerHTML = `<div class="empty">${esc(err.message || 'Could not load feedbacks.')}</div>`;
+    fbList.innerHTML = `<div class="empty-note">${escHtml(err.message || 'Could not load feedback.')}</div>`;
   }
 }
 
-async function changeStatus(id,status){
+async function changeFbStatus(id, status){
   try{
-    const client = await getClient();
-    const {error} = await client
+    const { error } = await supabaseClient
       .from('feedback')
-      .update({status})
-      .eq('id',id);
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', id);
 
     if(error) throw error;
 
-    const item = allFeedbacks.find(x=>x.id===id);
+    const item = allFeedbacks.find(x => x.id === id);
     if(item) item.status = status;
-    render();
+    renderFeedbacks();
     showToast('Status updated.');
   }catch(err){
-    showToast(err.message || 'Could not update status.',true);
+    showToast(err.message || 'Could not update status.', true);
   }
 }
 
-async function saveReply(id,button){
+async function saveFbReply(id, button){
+  const card = button.closest('.fb-card');
+  const reply = card.querySelector('.fb-reply').value.trim();
+  button.disabled = true;
   try{
-    const card = button.closest('.feedback');
-    const reply = card.querySelector('.reply').value.trim();
-    const client = await getClient();
-
-    const {error} = await client
+    const { error } = await supabaseClient
       .from('feedback')
-      .update({admin_reply: reply})
-      .eq('id',id);
+      .update({ admin_reply: reply, updated_at: new Date().toISOString() })
+      .eq('id', id);
 
     if(error) throw error;
 
-    const item = allFeedbacks.find(x=>x.id===id);
+    const item = allFeedbacks.find(x => x.id === id);
     if(item) item.admin_reply = reply;
     showToast('Reply saved.');
   }catch(err){
-    showToast(err.message || 'Could not save reply.',true);
+    showToast(err.message || 'Could not save reply.', true);
+  }finally{
+    button.disabled = false;
   }
 }
 
@@ -212,32 +661,32 @@ async function deleteFeedback(id){
   if(!confirm('Delete this feedback permanently?')) return;
 
   try{
-    const client = await getClient();
-    const {error} = await client
+    const { error } = await supabaseClient
       .from('feedback')
       .delete()
-      .eq('id',id);
+      .eq('id', id);
 
     if(error) throw error;
 
-    allFeedbacks = allFeedbacks.filter(x=>x.id!==id);
-    render();
+    allFeedbacks = allFeedbacks.filter(x => x.id !== id);
+    renderFeedbacks();
     showToast('Feedback deleted.');
   }catch(err){
-    showToast(err.message || 'Could not delete feedback.',true);
+    showToast(err.message || 'Could not delete feedback.', true);
   }
 }
 
-document.querySelectorAll('.filter').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    document.querySelectorAll('.filter').forEach(x=>x.classList.remove('active'));
-    btn.classList.add('active');
-    currentFilter = btn.dataset.filter;
-    render();
-  });
+document.getElementById('fb-toolbar').addEventListener('click', (e) => {
+  const btn = e.target.closest('.fb-filter');
+  if(!btn) return;
+  document.querySelectorAll('.fb-filter').forEach(x => x.classList.remove('active'));
+  btn.classList.add('active');
+  currentFilter = btn.dataset.filter;
+  renderFeedbacks();
 });
 
-loadFeedbacks();
+checkAccess();
 </script>
+
 </body>
 </html>
