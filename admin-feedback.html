@@ -264,6 +264,13 @@
     text-overflow:ellipsis;
     white-space:nowrap;
   }
+  .fb-uid{
+    font-size:10.5px;
+    font-weight:600;
+    color:var(--muted);
+    font-family:monospace;
+    flex-shrink:0;
+  }
   .fb-date{ font-size:11px; color:var(--muted); margin-top:2px; }
   .fb-preview{
     font-size:12.5px;
@@ -479,7 +486,7 @@
         <div class="panel-head">
           <div>
             <h2>User Feedback</h2>
-            <p>Review screenshots, update status and reply to users &middot; <small style="opacity:.5">build v2</small></p>
+            <p>Review screenshots, update status and reply to users</p>
           </div>
         </div>
 
@@ -534,13 +541,13 @@ function showGate(name){
   document.getElementById('app').classList.toggle('active', name === 'app');
 }
 
-function showToast(msg, isError, durationMs){
+function showToast(msg, isError){
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.toggle('error', !!isError);
   t.classList.add('show');
   clearTimeout(window._toastTimer);
-  window._toastTimer = setTimeout(() => t.classList.remove('show'), durationMs || 2800);
+  window._toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
 }
 
 async function handleAdminLogin(){
@@ -623,6 +630,10 @@ function userLabel(f){
   if(!f.user_id) return 'Unknown user';
   return 'User ' + String(f.user_id).slice(0, 8);
 }
+function userShortId(f){
+  if(!f.user_id) return '';
+  return String(f.user_id).slice(0, 8);
+}
 function userInitial(f){
   const label = userLabel(f);
   return label.charAt(0).toUpperCase();
@@ -667,6 +678,7 @@ function renderFeedbacks(){
       <div class="fb-row-info">
         <div class="fb-row-top">
           <div class="fb-user">${escHtml(userLabel(f))}</div>
+          <span class="fb-uid">#${escHtml(userShortId(f))}</span>
         </div>
         <div class="fb-date">${escHtml(formatFbDate(f.created_at))}</div>
         <div class="fb-preview">${escHtml(f.message)}</div>
@@ -685,7 +697,7 @@ function renderFeedbackModal(f){
   document.getElementById('fb-modal-card').innerHTML = `
     <div class="fb-modal-head">
       <div>
-        <div class="fb-user">${escHtml(userLabel(f))}</div>
+        <div class="fb-user">${escHtml(userLabel(f))} <span class="fb-uid">#${escHtml(userShortId(f))}</span></div>
         <div class="fb-date">${escHtml(formatFbDate(f.created_at))}</div>
       </div>
       <button class="fb-modal-close" type="button" aria-label="Close" onclick="closeFeedbackModal()">
@@ -744,8 +756,6 @@ async function loadFeedbacks(){
     .order('created_at', { ascending: false });
 
   if(error){
-    console.error('Embed query failed, falling back to plain select:', error);
-    showToast('DEBUG v2: ' + (error.message || JSON.stringify(error)), true, 15000);
     const fallback = await supabaseClient
       .from('feedback')
       .select('id,user_id,message,screenshot_url,status,admin_reply,created_at,updated_at')
