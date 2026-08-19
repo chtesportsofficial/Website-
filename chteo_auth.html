@@ -486,6 +486,50 @@ function setError(wrapId, errId, show){
   document.getElementById(errId).classList.toggle('show', show);
 }
 
+
+// ----- MySQL Wallet sync -----
+// After Supabase authentication succeeds, send the Supabase access token
+// to the PHP API. The PHP API verifies the token and creates/fetches the
+// matching wallet_users row.
+const WALLET_SYNC_URL = 'https://cht.gamer.gd/api/sync-wallet.php';
+
+async function syncWalletWithMySQL(session){
+  if(!session || !session.access_token){
+    console.warn('Wallet sync skipped: no Supabase session/token.');
+    return null;
+  }
+
+  try{
+    const response = await fetch(WALLET_SYNC_URL, {
+      method: 'GET',
+      headers: {
+        'Authorization': 'Bearer ' + session.access_token,
+        'Accept': 'application/json'
+      }
+    });
+
+    const result = await response.json();
+
+    if(!response.ok || !result.success){
+      console.error('Wallet sync failed:', result);
+      showToast('Login successful, but wallet could not be synced.');
+      return null;
+    }
+
+    // Keep the wallet user data available to the current page.
+    if(result.user){
+      localStorage.setItem('wallet_user', JSON.stringify(result.user));
+    }
+
+    console.log('Wallet sync successful:', result);
+    return result;
+  }catch(error){
+    console.error('Wallet sync request failed:', error);
+    showToast('Login successful, but wallet connection failed.');
+    return null;
+  }
+}
+
 async function handleSignin(){
   const email = document.getElementById('si-email').value.trim();
   const pw = document.getElementById('si-password').value;
@@ -512,6 +556,9 @@ async function handleSignin(){
     showToast(error.message);
     return;
   }
+
+  // Step 3: link the authenticated Supabase user to wallet_users in MySQL.
+  await syncWalletWithMySQL(data.session);
 
   // Blocked-user check: a correct password shouldn't be enough to get a
   // banned account past this screen. Look up the fresh profiles row
@@ -733,6 +780,9 @@ async function handleCreate(){
   localStorage.setItem('chteo_referral', referral);
 
   if(data.session){
+    // Step 3: create/fetch the matching wallet_users row in MySQL.
+    await syncWalletWithMySQL(data.session);
+
     // Give the Supabase trigger (which inserts the profiles row on new
     // auth.users signup) a brief moment, then pull the real row down so
     // profile.html shows the actual email/UID instead of placeholders.
