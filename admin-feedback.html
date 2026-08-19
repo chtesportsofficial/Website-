@@ -391,15 +391,13 @@
     align-items:center;
     gap:6px;
   }
-  .fb-btn:disabled{ opacity:0.55; cursor:not-allowed; }
   .fb-btn-review{ background:var(--accent); }
-  .fb-btn-review:hover:not(:disabled){ background:var(--accent-dark); }
+  .fb-btn-review:hover{ background:var(--accent-dark); }
   .fb-btn-resolve{ background:var(--success); }
-  .fb-btn-resolve:hover:not(:disabled){ background:#166840; }
-  .fb-btn-save{ background:#565c7c; }
-  .fb-btn-save:hover:not(:disabled){ background:#454a67; }
+  .fb-btn-resolve:hover{ background:#166840; }
+  .fb-btn-active{ box-shadow:inset 0 0 0 2px rgba(255,255,255,0.7); }
   .fb-btn-delete{ background:var(--error); }
-  .fb-btn-delete:hover:not(:disabled){ background:#c93f43; }
+  .fb-btn-delete:hover{ background:#c93f43; }
 
   /* ---------- Lightbox for screenshots ---------- */
   .lightbox{
@@ -700,13 +698,12 @@ function renderFeedbackModal(f){
            onclick="openLightbox('${escHtml(shotUrl)}')">
     ` : ''}
 
-    <div class="fb-reply-label">Admin reply</div>
+    <div class="fb-reply-label">Admin reply${f.admin_reply ? ` &middot; replied ${escHtml(formatFbDate(f.updated_at))}` : ''}</div>
     <textarea class="fb-reply" id="fb-modal-reply" placeholder="Write a reply to this user...">${escHtml(f.admin_reply || '')}</textarea>
 
     <div class="fb-actions">
-      <button class="fb-btn fb-btn-review" ${f.status==='reviewed' ? 'disabled' : ''} onclick="changeFbStatus('${escHtml(f.id)}','reviewed')">Mark Reviewed</button>
-      <button class="fb-btn fb-btn-resolve" ${f.status==='resolved' ? 'disabled' : ''} onclick="changeFbStatus('${escHtml(f.id)}','resolved')">Resolve</button>
-      <button class="fb-btn fb-btn-save" onclick="saveFbReply('${escHtml(f.id)}', this)">Save Reply</button>
+      <button class="fb-btn fb-btn-review ${f.status==='reviewed' ? 'fb-btn-active' : ''}" onclick="changeFbStatus('${escHtml(f.id)}','reviewed')">Mark Reviewed</button>
+      <button class="fb-btn fb-btn-resolve ${f.status==='resolved' ? 'fb-btn-active' : ''}" onclick="changeFbStatus('${escHtml(f.id)}','resolved')">Resolve</button>
       <button class="fb-btn fb-btn-delete" onclick="deleteFeedback('${escHtml(f.id)}')">Delete</button>
     </div>
   `;
@@ -786,27 +783,6 @@ async function changeFbStatus(id, status){
     showToast('admin_reply' in update ? 'Status & reply updated.' : 'Status updated.');
   }catch(err){
     showToast(err.message || 'Could not update status.', true);
-  }
-}
-
-async function saveFbReply(id, button){
-  const reply = document.getElementById('fb-modal-reply').value.trim();
-  button.disabled = true;
-  try{
-    const { error } = await supabaseClient
-      .from('feedback')
-      .update({ admin_reply: reply, updated_at: new Date().toISOString() })
-      .eq('id', id);
-
-    if(error) throw error;
-
-    const item = allFeedbacks.find(x => x.id === id);
-    if(item) item.admin_reply = reply;
-    showToast('Reply saved.');
-  }catch(err){
-    showToast(err.message || 'Could not save reply.', true);
-  }finally{
-    button.disabled = false;
   }
 }
 

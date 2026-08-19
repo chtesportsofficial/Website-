@@ -230,7 +230,7 @@ function render(rows){
 
       ${f.admin_reply ? `
         <div class="fb-reply">
-          <div class="fb-reply-label">Admin reply</div>
+          <div class="fb-reply-label">Admin reply &middot; ${escHtml(formatDate(f.updated_at))}</div>
           <div class="fb-reply-text">${escHtml(f.admin_reply)}</div>
         </div>
       ` : ''}
@@ -272,7 +272,7 @@ function loadMyFeedbackNow(){
 
       const { data, error } = await client
         .from('feedback')
-        .select('id,message,screenshot_url,status,admin_reply,created_at')
+        .select('id,message,screenshot_url,status,admin_reply,created_at,updated_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
