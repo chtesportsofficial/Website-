@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Join our WhatsApp - CHT ESP ORG</title>
+<style>
+  :root{
+    --bg: #f3f1fb;
+    --card: #ffffff;
+    --ink: #17151f;
+    --sub: #7b7788;
+    --purple: #6c4ff2;
+    --purple-soft: #ece7fd;
+    --green: #22c55e;
+    --green-soft: #e7f9ee;
+    --green-border: #b7ecc9;
+    --shadow: 0 4px 18px rgba(30, 20, 70, 0.06);
+    --radius: 20px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height:100vh;
+    padding-bottom: 40px;
+  }
+  header{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding: 18px 20px;
+    background: var(--card);
+    position: sticky;
+    top:0;
+    z-index: 10;
+    box-shadow: var(--shadow);
+  }
+  .back-btn{
+    width:40px; height:40px;
+    border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    background: var(--purple-soft);
+    color: var(--purple);
+    text-decoration:none;
+    flex-shrink:0;
+  }
+  .back-btn svg{width:20px; height:20px;}
+  header h1{
+    font-size: 19px;
+    font-weight: 700;
+  }
+  header p{
+    font-size: 12.5px;
+    color: var(--sub);
+    margin-top:2px;
+  }
+
+  main{
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 22px 18px 0;
+  }
+
+  .hero{
+    text-align:center;
+    padding: 10px 10px 26px;
+  }
+  .hero .wa-badge{
+    width:64px; height:64px;
+    border-radius:20px;
+    background: var(--green-soft);
+    border: 1.5px solid var(--green-border);
+    display:flex; align-items:center; justify-content:center;
+    margin: 0 auto 14px;
+  }
+  .hero .wa-badge svg{width:32px; height:32px;}
+  .hero h2{
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+  }
+  .hero p{
+    color: var(--sub);
+    font-size: 13.5px;
+    margin-top:6px;
+    line-height:1.5;
+  }
+
+  .section-label{
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--sub);
+    margin: 22px 4px 10px;
+  }
+
+  .card{
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 6px;
+    margin-bottom: 4px;
+  }
+
+  a.row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding: 14px 12px;
+    text-decoration:none;
+    color: inherit;
+    border-radius: 16px;
+    transition: background 0.15s ease;
+  }
+  a.row:active{ background: #f6f4ff; }
+
+  .icon{
+    width:46px; height:46px;
+    border-radius:50%;
+    background: var(--green-soft);
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .icon svg{width:22px; height:22px;}
+
+  .row-text{flex:1; min-width:0;}
+  .row-text .title{
+    font-size:15.5px;
+    font-weight:700;
+    color: var(--ink);
+  }
+  .row-text .desc{
+    font-size:12.5px;
+    color: var(--sub);
+    margin-top:2px;
+  }
+  .badge{
+    display:inline-block;
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:0.03em;
+    padding: 3px 9px;
+    border-radius: 20px;
+    flex-shrink:0;
+  }
+  .badge.group{ background:#6c4ff2; color:#ffffff; }
+  .badge.channel{ background:#0ea5a5; color:#ffffff; }
+
+  .chevron{
+    color:#c9c5d8;
+    flex-shrink:0;
+  }
+  .chevron svg{width:18px; height:18px;}
+
+  .divider{
+    height:1px;
+    background:#f0eef8;
+    margin: 2px 14px;
+  }
+
+  .combo-card{
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 22px 16px 14px;
+    margin-bottom: 18px;
+  }
+  .combo-center{
+    text-align:center;
+    padding: 0 10px 16px;
+  }
+  .combo-center .title{
+    font-size:18px;
+    font-weight:800;
+    letter-spacing:-0.2px;
+  }
+  .combo-center .sub{
+    font-size:12.5px;
+    color: var(--sub);
+    margin-top:4px;
+  }
+  .combo-links{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  a.mini-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding: 12px 12px;
+    text-decoration:none;
+    color:inherit;
+    background:#faf9ff;
+    border-radius:14px;
+  }
+  a.mini-row:active{ background:#f1eefe; }
+  .mini-icon{
+    width:32px; height:32px;
+    border-radius:50%;
+    background: var(--green-soft);
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .mini-icon svg{width:16px; height:16px;}
+  .mini-row .label{
+    font-size:13.5px;
+    font-weight:700;
+    flex:1 1 auto;
+    min-width:0;
+  }
+  .mini-row .label.nowrap{
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size:12.5px;
+  }
+  .mini-row .badge{
+    margin-left:auto;
+  }
+  .mini-row .chevron{
+    margin-left:2px;
+  }
+  .mini-row .chevron svg{width:16px; height:16px;}
+
+  footer{
+    text-align:center;
+    color: var(--sub);
+    font-size:12px;
+    margin-top: 30px;
+    padding: 0 20px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="#" class="back-btn" aria-label="Back">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+  </a>
+  <div>
+    <h1>Join our WhatsApp</h1>
+    <p>CHT ESP ORG</p>
+  </div>
+</header>
+
+<main>
+
+  <div class="combo-card">
+    <div class="combo-center">
+      <div class="title">DAILY TOURNAMENTS</div>
+    </div>
+    <div class="combo-links">
+      <a class="mini-row" href="https://whatsapp.com/channel/0029Vb8h7iAHltY9Uvl9nY22" target="_blank" rel="noopener">
+        <div class="mini-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 11-14h-7l1-6z"/></svg></div>
+        <div class="label nowrap">Follow for daily updates</div>
+        <span class="badge channel">Channel</span>
+        <div class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+      </a>
+      <a class="mini-row" href="https://chat.whatsapp.com/LvuvfHUw6gjB9g3j98LS1p" target="_blank" rel="noopener">
+        <div class="mini-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/></svg></div>
+        <div class="label nowrap">CHTEO DAILY SCRIM</div>
+        <span class="badge group">Group</span>
+        <div class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+      </a>
+    </div>
+  </div>
+
+  <div class="combo-card">
+    <div class="combo-center">
+      <div class="title">QUALIFY PAID TOURNAMENTS</div>
+    </div>
+    <div class="combo-links">
+      <a class="mini-row" href="https://whatsapp.com/channel/0029Vb6djCfGOj9t3QeBtl3G" target="_blank" rel="noopener">
+        <div class="mini-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 11-14h-7l1-6z"/></svg></div>
+        <div class="label nowrap">Follow for updates</div>
+        <span class="badge channel">Channel</span>
+        <div class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+      </a>
+      <a class="mini-row" href="https://chat.whatsapp.com/E9Onb3Hm5URJNLskkTFhd8" target="_blank" rel="noopener">
+        <div class="mini-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/></svg></div>
+        <div class="label nowrap">CHT ESP ORG - BIG PAID</div>
+        <span class="badge group">Group</span>
+        <div class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+      </a>
+      <a class="mini-row" href="https://chat.whatsapp.com/Fptli3hePGX3GN970ppGGh" target="_blank" rel="noopener">
+        <div class="mini-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/></svg></div>
+        <div class="label nowrap">CHT ESP ORG - MINI, WEEKLY PAID</div>
+        <span class="badge group">Group</span>
+        <div class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+      </a>
+    </div>
+  </div>
+
+  <footer>©CHT ESP ORG. All Rights Reserved</footer>
+</main>
+
+</body>
+</html>
