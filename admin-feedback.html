@@ -762,18 +762,28 @@ async function loadFeedbacks(){
 
 async function changeFbStatus(id, status){
   try{
+    const update = { status, updated_at: new Date().toISOString() };
+
+    // If this feedback's modal is open, also save whatever reply text is
+    // currently typed — so clicking Reviewed/Resolve doesn't silently
+    // discard an unsaved reply.
+    if(openFeedbackId === id){
+      const replyBox = document.getElementById('fb-modal-reply');
+      if(replyBox) update.admin_reply = replyBox.value.trim();
+    }
+
     const { error } = await supabaseClient
       .from('feedback')
-      .update({ status, updated_at: new Date().toISOString() })
+      .update(update)
       .eq('id', id);
 
     if(error) throw error;
 
     const item = allFeedbacks.find(x => x.id === id);
-    if(item) item.status = status;
+    if(item) Object.assign(item, update);
     renderFeedbacks();
     if(openFeedbackId === id) renderFeedbackModal(item);
-    showToast('Status updated.');
+    showToast('admin_reply' in update ? 'Status & reply updated.' : 'Status updated.');
   }catch(err){
     showToast(err.message || 'Could not update status.', true);
   }
