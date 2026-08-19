@@ -292,17 +292,20 @@
     align-items:center;
     justify-content:center;
     padding:16px;
-    z-index:55;
+    z-index:9999; /* above the site's fixed bottom nav bar (from global.js) */
+    overscroll-behavior:contain;
   }
   .fb-modal-overlay.show{ display:flex; }
   .fb-modal-card{
     width:100%;
     max-width:480px;
-    max-height:92vh;
+    max-height:85vh; /* leaves room so the card never sits under the bottom nav */
     overflow-y:auto;
+    -webkit-overflow-scrolling:touch; /* reliable touch scroll on mobile */
+    overscroll-behavior:contain;
     background:var(--white);
     border-radius:22px;
-    padding:22px 20px 20px;
+    padding:22px 20px calc(20px + env(safe-area-inset-bottom, 0px));
     box-shadow:0 30px 60px -20px rgba(0,0,0,0.5);
   }
   .fb-modal-head{
@@ -407,7 +410,7 @@
     align-items:center;
     justify-content:center;
     padding:24px;
-    z-index:60;
+    z-index:10000;
     cursor:zoom-out;
   }
   .lightbox.show{ display:flex; }

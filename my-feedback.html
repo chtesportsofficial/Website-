@@ -238,12 +238,29 @@ function render(rows){
   `).join('');
 }
 
-function loadMyFeedback(){
-  if(!(window.CHTEO && window.CHTEO.getSupabaseClient)){
+// global.js loads with `defer`, so it can finish AFTER this inline script
+// runs. Poll briefly for window.CHTEO instead of failing on the first
+// check — this is what caused the "Could not connect to the server" error
+// even though the connection itself was fine.
+function waitForCHTEO(callback, attemptsLeft){
+  if(attemptsLeft === undefined) attemptsLeft = 50; // ~5s at 100ms
+
+  if(window.CHTEO && window.CHTEO.getSupabaseClient){
+    callback();
+    return;
+  }
+  if(attemptsLeft <= 0){
     list.innerHTML = '<div class="empty">Could not connect to the server. Please try again shortly.</div>';
     return;
   }
+  setTimeout(() => waitForCHTEO(callback, attemptsLeft - 1), 100);
+}
 
+function loadMyFeedback(){
+  waitForCHTEO(() => loadMyFeedbackNow());
+}
+
+function loadMyFeedbackNow(){
   window.CHTEO.getSupabaseClient(async function(client){
     try{
       const { data: userRes, error: userErr } = await client.auth.getUser();
