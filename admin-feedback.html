@@ -631,8 +631,10 @@ function userLabel(f){
   return 'User ' + String(f.user_id).slice(0, 8);
 }
 function userShortId(f){
+  const p = f.profiles;
+  if(p && p.uid) return '#' + p.uid;
   if(!f.user_id) return '';
-  return String(f.user_id).slice(0, 8);
+  return '#' + String(f.user_id).slice(0, 8);
 }
 function userInitial(f){
   const label = userLabel(f);
@@ -678,7 +680,7 @@ function renderFeedbacks(){
       <div class="fb-row-info">
         <div class="fb-row-top">
           <div class="fb-user">${escHtml(userLabel(f))}</div>
-          <span class="fb-uid">#${escHtml(userShortId(f))}</span>
+          <span class="fb-uid">${escHtml(userShortId(f))}</span>
         </div>
         <div class="fb-date">${escHtml(formatFbDate(f.created_at))}</div>
         <div class="fb-preview">${escHtml(f.message)}</div>
@@ -697,7 +699,7 @@ function renderFeedbackModal(f){
   document.getElementById('fb-modal-card').innerHTML = `
     <div class="fb-modal-head">
       <div>
-        <div class="fb-user">${escHtml(userLabel(f))} <span class="fb-uid">#${escHtml(userShortId(f))}</span></div>
+        <div class="fb-user">${escHtml(userLabel(f))} <span class="fb-uid">${escHtml(userShortId(f))}</span></div>
         <div class="fb-date">${escHtml(formatFbDate(f.created_at))}</div>
       </div>
       <button class="fb-modal-close" type="button" aria-label="Close" onclick="closeFeedbackModal()">
@@ -752,7 +754,7 @@ async function loadFeedbacks(){
   // select so the page still works either way.
   let { data, error } = await supabaseClient
     .from('feedback')
-    .select('id,user_id,message,screenshot_url,status,admin_reply,created_at,updated_at,profiles:profiles!user_id(full_name,email)')
+    .select('id,user_id,message,screenshot_url,status,admin_reply,created_at,updated_at,profiles:profiles!user_id(full_name,email,uid)')
     .order('created_at', { ascending: false });
 
   if(error){
