@@ -632,7 +632,7 @@ function userLabel(f){
 }
 function userShortId(f){
   const p = f.profiles;
-  if(p && p.uid) return '#' + p.uid;
+  if(p && p.user_number) return '#' + p.user_number;
   if(!f.user_id) return '';
   return '#' + String(f.user_id).slice(0, 8);
 }
@@ -754,7 +754,7 @@ async function loadFeedbacks(){
   // select so the page still works either way.
   let { data, error } = await supabaseClient
     .from('feedback')
-    .select('id,user_id,message,screenshot_url,status,admin_reply,created_at,updated_at,profiles:profiles!user_id(full_name,email,uid)')
+    .select('id,user_id,message,screenshot_url,status,admin_reply,created_at,updated_at,profiles:profiles!user_id(full_name,email,user_number)')
     .order('created_at', { ascending: false });
 
   if(error){
