@@ -479,7 +479,7 @@
         <div class="panel-head">
           <div>
             <h2>User Feedback</h2>
-            <p>Review screenshots, update status and reply to users</p>
+            <p>Review screenshots, update status and reply to users &middot; <small style="opacity:.5">build v2</small></p>
           </div>
         </div>
 
@@ -534,13 +534,13 @@ function showGate(name){
   document.getElementById('app').classList.toggle('active', name === 'app');
 }
 
-function showToast(msg, isError){
+function showToast(msg, isError, durationMs){
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.toggle('error', !!isError);
   t.classList.add('show');
   clearTimeout(window._toastTimer);
-  window._toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+  window._toastTimer = setTimeout(() => t.classList.remove('show'), durationMs || 2800);
 }
 
 async function handleAdminLogin(){
@@ -744,6 +744,8 @@ async function loadFeedbacks(){
     .order('created_at', { ascending: false });
 
   if(error){
+    console.error('Embed query failed, falling back to plain select:', error);
+    showToast('DEBUG v2: ' + (error.message || JSON.stringify(error)), true, 15000);
     const fallback = await supabaseClient
       .from('feedback')
       .select('id,user_id,message,screenshot_url,status,admin_reply,created_at,updated_at')
