@@ -177,7 +177,7 @@ function loadUserDetail(){
 
   renderState('Loading...');
 
-  fetch('/api/admin-user-detail.php', {
+  fetch('https://cht.gamer.gd/api/admin-user-detail.php', {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({ access_token: currentSession.access_token, user_id: targetUserId })
