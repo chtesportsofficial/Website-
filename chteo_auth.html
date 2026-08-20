@@ -539,7 +539,7 @@ async function syncWalletAfterLogin(session) {
 
     return {
       success: false,
-      message: 'Could not connect to wallet server',
+      message: 'Could not connect to wallet server: ' + error.message,
       error: error.message
     };
   }
