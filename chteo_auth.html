@@ -486,56 +486,61 @@ function setError(wrapId, errId, show){
   document.getElementById(errId).classList.toggle('show', show);
 }
 
-const WALLET_SYNC_URL = 'https://cht.gamer.gd/api/sync-wallet.php';
+async function syncWalletAfterLogin(session) {
+  const WALLET_SYNC_URL = 'https://cht.gamer.gd/api/sync-wallet.php';
 
-async function syncWalletWithSupabase(session){
-  if(!session || !session.access_token){
-    return { success:false, message:'Supabase access token is missing.' };
+  if (!session || !session.access_token) {
+    return {
+      success: false,
+      message: 'Supabase access token missing on client'
+    };
   }
 
   try {
     const response = await fetch(WALLET_SYNC_URL, {
-      method: 'GET',
+      method: 'POST',
       headers: {
-        'Authorization': 'Bearer ' + session.access_token,
+        'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
-      cache: 'no-store'
+      body: JSON.stringify({
+        access_token: session.access_token
+      })
     });
 
-    const text = await response.text();
-    console.log('[Wallet Sync] HTTP:', response.status);
-    console.log('[Wallet Sync] Response:', text);
-
+    const raw = await response.text();
     let result;
+
     try {
-      result = JSON.parse(text);
-    } catch(e) {
+      result = JSON.parse(raw);
+    } catch (e) {
+      console.error('Wallet sync returned non-JSON:', raw);
       return {
-        success:false,
-        message:'Wallet server returned an invalid response.',
-        httpStatus:response.status,
-        raw:text
+        success: false,
+        message: 'Wallet server returned invalid response',
+        raw: raw
       };
     }
 
-    if(!response.ok || !result.success){
+    console.log('Wallet sync response:', response.status, result);
+
+    if (!response.ok || !result.success) {
       return {
-        success:false,
-        message: result.message || 'Wallet synchronization failed.',
-        httpStatus:response.status,
-        data:result
+        success: false,
+        message: result.message || 'Wallet sync failed',
+        details: result
       };
     }
 
-    return { success:true, data:result };
+    return result;
 
-  } catch(error) {
-    console.error('[Wallet Sync] Fetch error:', error);
+  } catch (error) {
+    console.error('Wallet sync request failed:', error);
+
     return {
-      success:false,
-      message:'Could not connect to wallet server.',
-      error:error.message
+      success: false,
+      message: 'Could not connect to wallet server',
+      error: error.message
     };
   }
 }
@@ -558,7 +563,10 @@ async function handleSignin(){
   const submitBtn = document.querySelector('#view-signin .submit-btn');
   submitBtn.disabled = true;
 
-  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: pw });
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password: pw
+  });
 
   submitBtn.disabled = false;
 
@@ -567,21 +575,7 @@ async function handleSignin(){
     return;
   }
 
-  // Supabase login is successful at this point. Sync the same session
-  // with the PHP/MySQL wallet system before redirecting. If the wallet
-  // server fails, login is NOT cancelled; the user can still enter the
-  // website and the exact wallet error is logged for diagnosis.
-  const walletResult = await syncWalletWithSupabase(data.session);
-
-  if(!walletResult.success){
-    console.error('[Wallet Sync] Failed:', walletResult);
-    showToast('Login successful. Wallet sync failed: ' + walletResult.message);
-  }
-
-  // Blocked-user check: a correct password shouldn't be enough to get a
-  // banned account past this screen. Look up the fresh profiles row
-  // (not any locally-cached copy) and immediately sign back out if the
-  // admin has flagged this account.
+  // Blocked-user check.
   const { data: gateProfile, error: gateErr } = await supabaseClient
     .from('profiles')
     .select('is_banned')
@@ -596,34 +590,40 @@ async function handleSignin(){
     return;
   }
 
-  // Wipe any cached team name / slogan / profile picture from whoever
-  // was last signed in on this device/browser before this one.
+  // Clear old local profile data.
   localStorage.removeItem('user_profile');
   localStorage.removeItem('profile_picture');
   localStorage.removeItem('user_uid');
   localStorage.setItem('chteo_logged_in', 'true');
 
-  // Pull this user's real row (email, whatsapp, uid...) from Supabase
-  // BEFORE redirecting, so profile.html / index.html don't briefly (or
-  // permanently, on a fresh browser) show placeholder default values.
+  // Keep the existing Supabase profile sync.
   if (window.CHTEO && window.CHTEO.syncProfile) {
-    await window.CHTEO.syncProfile();
+    try {
+      await window.CHTEO.syncProfile();
+    } catch (profileError) {
+      console.error('Profile sync failed:', profileError);
+    }
   }
 
-  if(walletResult.success){
-    showToast('Signed in successfully. Wallet connected.', true);
+  // IMPORTANT:
+  // Wallet sync is attempted separately. A wallet failure must NOT
+  // block a successful Supabase login or redirect.
+  const walletResult = await syncWalletAfterLogin(data.session);
+
+  if (!walletResult.success) {
+    console.error('WALLET SYNC FAILED:', walletResult);
+
+    // Show the exact server message for debugging, but still allow login.
+    showToast('Login successful. Wallet sync failed: ' + walletResult.message);
   } else {
-    // Keep the login successful. The detailed wallet response is visible
-    // in the browser console and the user is still redirected normally.
+    console.log('WALLET SYNC SUCCESS:', walletResult);
+    showToast('Signed in successfully. Wallet connected.', true);
   }
 
+  // Always finish the login flow.
   setTimeout(() => {
-    // replace(), not href: this sign-in screen shouldn't linger as a
-    // dead entry in history — otherwise one Back press from the home
-    // page would land the user right back on the login form instead
-    // of wherever they actually came from.
     window.location.replace('index.html');
-  }, 700);
+  }, 900);
 }
 
 // Tracks the result of the async "does this UID actually exist in
@@ -811,14 +811,6 @@ async function handleCreate(){
       await new Promise(r => setTimeout(r, 400));
       await window.CHTEO.syncProfile();
     }
-
-    // If Supabase returned a session immediately, create the matching
-    // wallet_users row as part of the same signup flow.
-    const walletResult = await syncWalletWithSupabase(data.session);
-    if(!walletResult.success){
-      console.error('[Wallet Sync] Signup wallet sync failed:', walletResult);
-    }
-
     showToast('Account created successfully. Redirecting...', true);
     setTimeout(() => {
       // replace(), not href — see the note in handleSignin() above.
