@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Deposit Requests</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
+<style>
+  :root{
+    --bg:#0b0f19;
+    --card:#141a29;
+    --card-2:#171f33;
+    --border:#232c42;
+    --text:#ffffff;
+    --muted:#8a93a6;
+    --green:#22c55e;
+    --green-dark:#16a34a;
+    --orange:#ff7a1a;
+    --red:#ef4444;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    font-family:'Segoe UI',Roboto,Arial,sans-serif;
+    color:var(--text);
+    display:flex;
+    justify-content:center;
+    padding:20px 0 60px;
+  }
+  .phone{
+    width:100%;
+    max-width:460px;
+    padding:0 16px;
+  }
+  .header{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:10px 4px 20px;
+  }
+  .back-btn{
+    width:64px;height:64px;
+    border:none;
+    border-radius:20px;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--text);
+    background:var(--card);
+    cursor:pointer;
+    font-size:26px;
+  }
+  .header h1{
+    font-size:28px;
+    font-weight:800;
+    margin:0;
+  }
+  .tabs{
+    display:flex;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:6px;
+    margin-bottom:16px;
+    gap:6px;
+  }
+  .tab-btn{
+    flex:1;
+    border:none;
+    border-radius:10px;
+    padding:12px 0;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+    background:transparent;
+    color:var(--muted);
+  }
+  .tab-btn.active{
+    background:var(--green);
+    color:#06210f;
+  }
+  .state-box{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:30px 16px;
+    text-align:center;
+    color:var(--muted);
+    font-size:14px;
+  }
+  .req-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:14px;
+  }
+  .req-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    margin-bottom:10px;
+  }
+  .req-amount{
+    font-size:22px;
+    font-weight:800;
+    color:var(--green);
+  }
+  .req-method{
+    background:var(--card-2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:4px 10px;
+    font-size:12px;
+    font-weight:700;
+  }
+  .req-row{
+    display:flex;
+    justify-content:space-between;
+    font-size:13px;
+    padding:4px 0;
+    border-bottom:1px dashed var(--border);
+  }
+  .req-row:last-of-type{border-bottom:none;}
+  .req-row .lbl{color:var(--muted);}
+  .req-row .val{font-weight:600;text-align:right;}
+  .req-note{
+    width:100%;
+    background:var(--card-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:10px 12px;
+    border-radius:8px;
+    font-size:13px;
+    margin:10px 0;
+    outline:none;
+  }
+  .req-actions{
+    display:flex;
+    gap:10px;
+    margin-top:8px;
+  }
+  .btn{
+    flex:1;
+    border:none;
+    border-radius:10px;
+    padding:12px 0;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .btn-approve{
+    background:var(--green);
+    color:#06210f;
+  }
+  .btn-decline{
+    background:var(--red);
+    color:#2c0a0a;
+  }
+  .btn[disabled]{
+    opacity:.5;
+    cursor:default;
+  }
+  .status-chip{
+    font-size:11px;
+    font-weight:700;
+    padding:3px 8px;
+    border-radius:6px;
+  }
+  .status-approved{background:rgba(34,197,94,0.12);color:var(--green);}
+  .status-declined{background:rgba(239,68,68,0.12);color:var(--red);}
+  .status-pending{background:rgba(255,122,26,0.12);color:var(--orange);}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <div class="header">
+    <button class="back-btn" onclick="history.back()">&#8592;</button>
+    <h1>Deposit Requests</h1>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-status="pending" onclick="switchTab('pending')">Pending</button>
+    <button class="tab-btn" data-status="approved" onclick="switchTab('approved')">Approved</button>
+    <button class="tab-btn" data-status="declined" onclick="switchTab('declined')">Declined</button>
+  </div>
+
+  <div id="listArea">
+    <div class="state-box">Loading...</div>
+  </div>
+
+</div>
+
+<script>
+const SB_URL = 'https://myfficbwcbgbxbdqjexv.supabase.co';
+const SB_KEY = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+let sbClient = null;
+let currentTab = 'pending';
+let currentSession = null;
+
+function getClient(cb){
+  if (sbClient){ cb(sbClient); return; }
+  if (window.supabase && window.supabase.createClient){
+    sbClient = window.supabase.createClient(SB_URL, SB_KEY);
+    cb(sbClient);
+    return;
+  }
+  if (!document.getElementById('sb-js-cdn-admin')){
+    const s = document.createElement('script');
+    s.id = 'sb-js-cdn-admin';
+    s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+    s.onload = function(){ getClient(cb); };
+    document.head.appendChild(s);
+    return;
+  }
+  setTimeout(function(){ getClient(cb); }, 200);
+}
+
+function renderState(html){
+  document.getElementById('listArea').innerHTML = '<div class="state-box">' + html + '</div>';
+}
+
+function switchTab(status){
+  currentTab = status;
+  document.querySelectorAll('.tab-btn').forEach(function(b){
+    b.classList.toggle('active', b.getAttribute('data-status') === status);
+  });
+  loadRequests();
+}
+
+function escapeHtml(str){
+  return String(str == null ? '' : str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function statusChip(status){
+  return '<span class="status-chip status-' + status + '">' + status.toUpperCase() + '</span>';
+}
+
+function loadRequests(){
+  if (!currentSession){ return; }
+  renderState('Loading...');
+
+  fetch('/api/admin-deposits-list.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ access_token: currentSession.access_token, status: currentTab })
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if (!res || !res.success){
+        renderState(escapeHtml((res && res.message) || 'Failed to load requests.'));
+        return;
+      }
+      if (!res.requests.length){
+        renderState('No ' + currentTab + ' requests.');
+        return;
+      }
+      const listArea = document.getElementById('listArea');
+      listArea.innerHTML = '';
+      res.requests.forEach(function(req){
+        listArea.appendChild(buildCard(req));
+      });
+    })
+    .catch(function(err){
+      renderState('Could not connect: ' + escapeHtml(err.message));
+    });
+}
+
+function buildCard(req){
+  const card = document.createElement('div');
+  card.className = 'req-card';
+
+  const isPending = req.status === 'pending';
+
+  card.innerHTML =
+    '<div class="req-top">' +
+      '<div class="req-amount">৳' + escapeHtml(req.amount) + '</div>' +
+      '<div style="display:flex;gap:8px;align-items:center;">' +
+        '<div class="req-method">' + escapeHtml(req.method) + '</div>' +
+        (isPending ? '' : statusChip(req.status)) +
+      '</div>' +
+    '</div>' +
+    '<div class="req-row"><span class="lbl">User ID</span><span class="val"><a href="admin-user-detail.html?id=' + encodeURIComponent(req.user_id) + '" style="color:inherit;text-decoration:underline;">#' + escapeHtml(req.user_id) + '</a></span></div>' +
+    '<div class="req-row"><span class="lbl">Sender Number</span><span class="val">' + escapeHtml(req.sender_number) + '</span></div>' +
+    '<div class="req-row"><span class="lbl">TrxID</span><span class="val">' + escapeHtml(req.trx_id) + '</span></div>' +
+    '<div class="req-row"><span class="lbl">Submitted</span><span class="val">' + escapeHtml(req.created_at) + '</span></div>' +
+    (req.admin_note ? '<div class="req-row"><span class="lbl">Note</span><span class="val">' + escapeHtml(req.admin_note) + '</span></div>' : '');
+
+  if (isPending){
+    const noteInput = document.createElement('input');
+    noteInput.type = 'text';
+    noteInput.className = 'req-note';
+    noteInput.placeholder = 'Optional note (visible on decline)';
+    card.appendChild(noteInput);
+
+    const actions = document.createElement('div');
+    actions.className = 'req-actions';
+
+    const approveBtn = document.createElement('button');
+    approveBtn.className = 'btn btn-approve';
+    approveBtn.textContent = 'Approve';
+
+    const declineBtn = document.createElement('button');
+    declineBtn.className = 'btn btn-decline';
+    declineBtn.textContent = 'Decline';
+
+    function review(action){
+      approveBtn.disabled = true;
+      declineBtn.disabled = true;
+      approveBtn.textContent = action === 'approve' ? 'Approving...' : 'Approve';
+      declineBtn.textContent = action === 'decline' ? 'Declining...' : 'Decline';
+
+      fetch('/api/admin-deposits-review.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          access_token: currentSession.access_token,
+          request_id: req.id,
+          action: action,
+          admin_note: noteInput.value.trim()
+        })
+      })
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+          if (res && res.success){
+            loadRequests();
+          } else {
+            alert((res && res.message) || 'Action failed.');
+            approveBtn.disabled = false;
+            declineBtn.disabled = false;
+            approveBtn.textContent = 'Approve';
+            declineBtn.textContent = 'Decline';
+          }
+        })
+        .catch(function(err){
+          alert('Could not connect: ' + err.message);
+          approveBtn.disabled = false;
+          declineBtn.disabled = false;
+          approveBtn.textContent = 'Approve';
+          declineBtn.textContent = 'Decline';
+        });
+    }
+
+    approveBtn.addEventListener('click', function(){ review('approve'); });
+    declineBtn.addEventListener('click', function(){ review('decline'); });
+
+    actions.appendChild(approveBtn);
+    actions.appendChild(declineBtn);
+    card.appendChild(actions);
+  }
+
+  return card;
+}
+
+/* ============ Auth + admin gate ============ */
+getClient(function(sb){
+  sb.auth.getSession().then(function(res){
+    const session = res.data && res.data.session;
+    if (!session){
+      renderState('Please sign in first.');
+      return;
+    }
+    currentSession = session;
+
+    sb.from('profiles').select('is_admin,is_owner').eq('id', session.user.id).single()
+      .then(function(res){
+        const profile = res.data;
+        const isAdmin = profile && (profile.is_admin || profile.is_owner);
+        if (!isAdmin){
+          renderState('Access denied — admin only.');
+          return;
+        }
+        loadRequests();
+      });
+  });
+});
+</script>
+
+</body>
+</html>

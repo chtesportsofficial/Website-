@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — User Detail</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
+<style>
+  :root{
+    --bg:#0b0f19;
+    --card:#141a29;
+    --card-2:#171f33;
+    --border:#232c42;
+    --text:#ffffff;
+    --muted:#8a93a6;
+    --green:#22c55e;
+    --orange:#ff7a1a;
+    --red:#ef4444;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    font-family:'Segoe UI',Roboto,Arial,sans-serif;
+    color:var(--text);
+    display:flex;
+    justify-content:center;
+    padding:20px 0 60px;
+  }
+  .phone{
+    width:100%;
+    max-width:460px;
+    padding:0 16px;
+  }
+  .header{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:10px 4px 20px;
+  }
+  .back-btn{
+    width:64px;height:64px;
+    border:none;
+    border-radius:20px;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--text);
+    background:var(--card);
+    cursor:pointer;
+    font-size:26px;
+  }
+  .header h1{
+    font-size:24px;
+    font-weight:800;
+    margin:0;
+  }
+  .state-box{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:30px 16px;
+    text-align:center;
+    color:var(--muted);
+    font-size:14px;
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:14px;
+  }
+  .row{
+    display:flex;
+    justify-content:space-between;
+    font-size:13px;
+    padding:6px 0;
+    border-bottom:1px dashed var(--border);
+  }
+  .row:last-of-type{border-bottom:none;}
+  .row .lbl{color:var(--muted);}
+  .row .val{font-weight:600;text-align:right;word-break:break-all;}
+  .balance{
+    font-size:26px;
+    font-weight:800;
+    color:var(--green);
+    text-align:center;
+    margin-bottom:6px;
+  }
+  .section-title{
+    font-size:14px;
+    font-weight:700;
+    margin:18px 0 10px;
+    color:var(--muted);
+  }
+  .dep-card{
+    background:var(--card-2);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px;
+    margin-bottom:10px;
+    font-size:13px;
+  }
+  .status-chip{
+    font-size:11px;
+    font-weight:700;
+    padding:3px 8px;
+    border-radius:6px;
+  }
+  .status-approved{background:rgba(34,197,94,0.12);color:var(--green);}
+  .status-declined{background:rgba(239,68,68,0.12);color:var(--red);}
+  .status-pending{background:rgba(255,122,26,0.12);color:var(--orange);}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <div class="header">
+    <button class="back-btn" onclick="history.back()">&#8592;</button>
+    <h1>User Detail</h1>
+  </div>
+
+  <div id="content">
+    <div class="state-box">Loading...</div>
+  </div>
+
+</div>
+
+<script>
+const SB_URL = 'https://myfficbwcbgbxbdqjexv.supabase.co';
+const SB_KEY = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+let sbClient = null;
+let currentSession = null;
+
+function getClient(cb){
+  if (sbClient){ cb(sbClient); return; }
+  if (window.supabase && window.supabase.createClient){
+    sbClient = window.supabase.createClient(SB_URL, SB_KEY);
+    cb(sbClient);
+    return;
+  }
+  if (!document.getElementById('sb-js-cdn-userdetail')){
+    const s = document.createElement('script');
+    s.id = 'sb-js-cdn-userdetail';
+    s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+    s.onload = function(){ getClient(cb); };
+    document.head.appendChild(s);
+    return;
+  }
+  setTimeout(function(){ getClient(cb); }, 200);
+}
+
+function escapeHtml(str){
+  return String(str == null ? '' : str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function statusChip(status){
+  return '<span class="status-chip status-' + status + '">' + status.toUpperCase() + '</span>';
+}
+
+function renderState(html){
+  document.getElementById('content').innerHTML = '<div class="state-box">' + html + '</div>';
+}
+
+function getUserIdFromUrl(){
+  const params = new URLSearchParams(window.location.search);
+  return params.get('id') || '';
+}
+
+function loadUserDetail(){
+  const targetUserId = getUserIdFromUrl();
+  if (!targetUserId){
+    renderState('No user id given in URL (expected ?id=...).');
+    return;
+  }
+
+  renderState('Loading...');
+
+  fetch('/api/admin-user-detail.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ access_token: currentSession.access_token, user_id: targetUserId })
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if (!res || !res.success){
+        renderState(escapeHtml((res && res.message) || 'Failed to load user.'));
+        return;
+      }
+      renderContent(res.user, res.deposits);
+    })
+    .catch(function(err){
+      renderState('Could not connect: ' + escapeHtml(err.message));
+    });
+}
+
+function renderContent(user, deposits){
+  const content = document.getElementById('content');
+  content.innerHTML = '';
+
+  const userCard = document.createElement('div');
+  userCard.className = 'card';
+  userCard.innerHTML =
+    '<div class="balance">৳' + escapeHtml(user.balance === null ? 'N/A' : user.balance) + '</div>' +
+    '<div class="row"><span class="lbl">User ID</span><span class="val">' + escapeHtml(user.id) + '</span></div>' +
+    '<div class="row"><span class="lbl">Email</span><span class="val">' + escapeHtml(user.email) + '</span></div>' +
+    '<div class="row"><span class="lbl">Role</span><span class="val">' + (user.is_owner ? 'Owner' : (user.is_admin ? 'Admin' : 'User')) + '</span></div>';
+  content.appendChild(userCard);
+
+  const sectionTitle = document.createElement('div');
+  sectionTitle.className = 'section-title';
+  sectionTitle.textContent = 'Deposit History';
+  content.appendChild(sectionTitle);
+
+  if (!deposits.length){
+    const empty = document.createElement('div');
+    empty.className = 'state-box';
+    empty.textContent = 'No deposit requests yet.';
+    content.appendChild(empty);
+    return;
+  }
+
+  deposits.forEach(function(dep){
+    const depCard = document.createElement('div');
+    depCard.className = 'dep-card';
+    depCard.innerHTML =
+      '<div class="row"><span class="lbl">Amount</span><span class="val">৳' + escapeHtml(dep.amount) + ' &nbsp; ' + statusChip(dep.status) + '</span></div>' +
+      '<div class="row"><span class="lbl">Method</span><span class="val">' + escapeHtml(dep.method) + '</span></div>' +
+      '<div class="row"><span class="lbl">TrxID</span><span class="val">' + escapeHtml(dep.trx_id) + '</span></div>' +
+      '<div class="row"><span class="lbl">Submitted</span><span class="val">' + escapeHtml(dep.created_at) + '</span></div>' +
+      (dep.admin_note ? '<div class="row"><span class="lbl">Note</span><span class="val">' + escapeHtml(dep.admin_note) + '</span></div>' : '');
+    content.appendChild(depCard);
+  });
+}
+
+/* ============ Auth + admin gate ============ */
+getClient(function(sb){
+  sb.auth.getSession().then(function(res){
+    const session = res.data && res.data.session;
+    if (!session){
+      renderState('Please sign in first.');
+      return;
+    }
+    currentSession = session;
+
+    sb.from('profiles').select('is_admin,is_owner').eq('id', session.user.id).single()
+      .then(function(res){
+        const profile = res.data;
+        const isAdmin = profile && (profile.is_admin || profile.is_owner);
+        if (!isAdmin){
+          renderState('Access denied — admin only.');
+          return;
+        }
+        loadUserDetail();
+      });
+  });
+});
+</script>
+
+</body>
+</html>
