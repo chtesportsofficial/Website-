@@ -390,6 +390,7 @@
 // এই দুইটা মান আপনার Supabase project → Settings → API থেকে বসান
 const SUPABASE_URL = 'https://myfficbwcbgbxbdqjexv.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+const WALLET_SYNC_URL = 'https://cht.gamer.gd/api/sync-wallet.php';
 
 let supabaseClient;
 try {
@@ -486,17 +487,10 @@ function setError(wrapId, errId, show){
   document.getElementById(errId).classList.toggle('show', show);
 }
 
-
-// ----- Step 3: Supabase User -> MySQL Wallet Mapping -----
-// After Supabase authentication succeeds, send the Supabase access token
-// to sync-user.php. The PHP API verifies the token and creates/fetches
-// the matching wallet_users row.
-const WALLET_SYNC_URL = 'https://cht.gamer.gd/api/sync-user.php';
-
-async function syncUserWithMySQL(session){
+async function syncWallet(session){
   if(!session || !session.access_token){
-    console.warn('Wallet sync skipped: no Supabase session/token.');
-    return null;
+    console.error('Wallet sync: Supabase access token missing.');
+    return { success:false, message:'Supabase access token missing' };
   }
 
   try{
@@ -505,28 +499,32 @@ async function syncUserWithMySQL(session){
       headers: {
         'Authorization': 'Bearer ' + session.access_token,
         'Accept': 'application/json'
-      }
+      },
+      cache: 'no-store'
     });
 
-    const result = await response.json();
+    const text = await response.text();
+    console.log('Wallet sync HTTP status:', response.status);
+    console.log('Wallet sync response:', text);
+
+    let result;
+    try{
+      result = JSON.parse(text);
+    }catch(e){
+      console.error('Wallet sync returned invalid JSON:', text);
+      return { success:false, message:'Invalid wallet server response' };
+    }
 
     if(!response.ok || !result.success){
       console.error('Wallet sync failed:', result);
-      showToast('Login successful, but wallet could not be synced.');
-      return null;
+      return result;
     }
 
-    // Keep the wallet user data available to the current page.
-    if(result.user){
-      localStorage.setItem('wallet_user', JSON.stringify(result.user));
-    }
-
-    console.log('Wallet sync successful:', result);
+    console.log('Wallet sync successful:', result.user);
     return result;
   }catch(error){
     console.error('Wallet sync request failed:', error);
-    showToast('Login successful, but wallet connection failed.');
-    return null;
+    return { success:false, message:error.message || 'Wallet connection failed' };
   }
 }
 
@@ -556,9 +554,6 @@ async function handleSignin(){
     showToast(error.message);
     return;
   }
-
-  // Step 3: link the authenticated Supabase user to wallet_users in MySQL.
-  await syncUserWithMySQL(data.session);
 
   // Blocked-user check: a correct password shouldn't be enough to get a
   // banned account past this screen. Look up the fresh profiles row
@@ -590,6 +585,15 @@ async function handleSignin(){
   // permanently, on a fresh browser) show placeholder default values.
   if (window.CHTEO && window.CHTEO.syncProfile) {
     await window.CHTEO.syncProfile();
+  }
+
+  // Sync the authenticated Supabase user with the PHP/MySQL wallet system.
+  const walletResult = await syncWallet(data.session);
+
+  if (!walletResult.success) {
+    console.error('Login successful, but wallet connection failed:', walletResult);
+    showToast('Login successful, but wallet connection failed.');
+    return;
   }
 
   showToast('Signed in successfully. Redirecting...', true);
@@ -780,9 +784,6 @@ async function handleCreate(){
   localStorage.setItem('chteo_referral', referral);
 
   if(data.session){
-    // Step 3: create/fetch the matching wallet_users row in MySQL.
-    await syncUserWithMySQL(data.session);
-
     // Give the Supabase trigger (which inserts the profiles row on new
     // auth.users signup) a brief moment, then pull the real row down so
     // profile.html shows the actual email/UID instead of placeholders.
@@ -790,6 +791,16 @@ async function handleCreate(){
       await new Promise(r => setTimeout(r, 400));
       await window.CHTEO.syncProfile();
     }
+
+    // Create/sync the MySQL wallet account immediately after signup.
+    const walletResult = await syncWallet(data.session);
+
+    if (!walletResult.success) {
+      console.error('Account created, but wallet connection failed:', walletResult);
+      showToast('Account created, but wallet connection failed.');
+      return;
+    }
+
     showToast('Account created successfully. Redirecting...', true);
     setTimeout(() => {
       // replace(), not href — see the note in handleSignin() above.
