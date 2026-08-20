@@ -295,6 +295,11 @@
       <span>CHT ESP ORG</span>
     </div>
 
+    <div style="border:1px dashed #999;border-radius:8px;padding:10px;margin-bottom:16px;font-size:12px;">
+      <button type="button" onclick="runDiagTest()" style="padding:6px 10px;">Test wallet connection</button>
+      <div id="diag-result" style="margin-top:8px;word-break:break-all;color:#333;">(not tested yet)</div>
+    </div>
+
     <div class="tabs">
       <button class="tab active" id="tab-signin" type="button">Sign in</button>
       <button class="tab" id="tab-create" type="button">Create account</button>
@@ -484,6 +489,21 @@ function showBlockedToast(){
 function setError(wrapId, errId, show){
   document.getElementById(wrapId).classList.toggle('error', show);
   document.getElementById(errId).classList.toggle('show', show);
+}
+
+// TEMPORARY DIAGNOSTIC — remove once wallet sync is fixed.
+// Does a bare GET fetch (no custom headers) to isolate whether ALL
+// cross-origin fetches are blocked, or just the POST/JSON ones.
+async function runDiagTest(){
+  const box = document.getElementById('diag-result');
+  box.textContent = 'Testing...';
+  try {
+    const res = await fetch('https://cht.gamer.gd/api/sync-wallet.php', { method: 'GET' });
+    const text = await res.text();
+    box.textContent = 'GET fetch worked. Status: ' + res.status + ' | Body: ' + text;
+  } catch (e) {
+    box.textContent = 'GET fetch FAILED: ' + e.message;
+  }
 }
 
 async function syncWalletAfterLogin(session) {
