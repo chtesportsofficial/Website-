@@ -500,8 +500,7 @@ async function syncWalletAfterLogin(session) {
     const response = await fetch(WALLET_SYNC_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Content-Type': 'text/plain'
       },
       body: JSON.stringify({
         access_token: session.access_token
