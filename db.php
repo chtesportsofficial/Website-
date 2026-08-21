@@ -1,9 +1,9 @@
 <?php
 
-$host = "sql312.infinityfree.com";
-$user = "if0_42695077";
-$password = "h2jEoDfBkjiI";
-$dbname = "if0_42695077_cht";
+$host = getenv('DB_HOST') ?: 'sql312.infinityfree.com';
+$user = getenv('DB_USER') ?: 'if0_42695077';
+$password = getenv('DB_PASSWORD') ?: 'h2jEoDfBkjiI';
+$dbname = getenv('DB_NAME') ?: 'if0_42695077_cht';
 
 $conn = new mysqli($host, $user, $password, $dbname);
 
