@@ -838,10 +838,10 @@ async function handleCreate(){
     const walletResult = await syncWalletAfterLogin(data.session);
     if (!walletResult.success) {
       console.error('WALLET SYNC FAILED (signup):', walletResult);
-      // Visible on mobile without needing devtools — mirrors the
-      // sign-in flow's toast so the exact failure reason is on screen.
-      showToast('Account created. Wallet sync failed: ' + (walletResult.message || 'unknown error'));
-      await new Promise(r => setTimeout(r, 2200));
+      // alert() blocks until the person taps OK — guaranteed visible on
+      // mobile (unlike the toast, which can auto-advance/disappear
+      // before it's read) so the exact failure reason is never missed.
+      alert('WALLET SYNC FAILED:\n' + JSON.stringify(walletResult, null, 2));
     } else {
       console.log('WALLET SYNC SUCCESS (signup):', walletResult);
     }
