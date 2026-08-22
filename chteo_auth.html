@@ -830,6 +830,18 @@ async function handleCreate(){
       await new Promise(r => setTimeout(r, 400));
       await window.CHTEO.syncProfile();
     }
+
+    // Same wallet sync as sign-in — without this, a brand-new signup
+    // never gets a wallet_users row (and no balance) until the person
+    // happens to sign out and back in again. A wallet failure must not
+    // block the signup/redirect, same reasoning as handleSignin().
+    const walletResult = await syncWalletAfterLogin(data.session);
+    if (!walletResult.success) {
+      console.error('WALLET SYNC FAILED (signup):', walletResult);
+    } else {
+      console.log('WALLET SYNC SUCCESS (signup):', walletResult);
+    }
+
     showToast('Account created successfully. Redirecting...', true);
     setTimeout(() => {
       // replace(), not href — see the note in handleSignin() above.
