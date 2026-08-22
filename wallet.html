@@ -398,17 +398,35 @@ function updateNumberLabel(){
   input.placeholder = method ? ('Enter your ' + method + ' number') : 'Enter your number';
 }
 
+// Tracks the uid we last fetched balance for, so a repeat call with the
+// same uid (e.g. from the profile-synced event firing after the cached
+// load already succeeded) doesn't flash the loading state again.
+let _walletLastFetchedUid = null;
+
 function loadWalletBalance(){
   const profile = getProfile();
-  const uid = profile.supabase_uid;
+  // Read straight from the plain 'supabase_uid' key first — global.js
+  // writes this synchronously and it's available instantly on page load,
+  // before the slower Supabase auth/profile-table round trip finishes.
+  // Falls back to the profile object for older cached sessions.
+  const uid = localStorage.getItem('supabase_uid') || profile.supabase_uid;
   const balanceEl = document.getElementById('balanceAmount');
   if(!uid || !balanceEl) return;
+
+  if(uid === _walletLastFetchedUid) return;
+
+  if(_walletLastFetchedUid === null){
+    // First attempt on this page load — show a loading state instead of
+    // leaving the hardcoded '৳0' up while the request is in flight.
+    balanceEl.textContent = '...';
+  }
 
   fetch('https://chteo-api.onrender.com/api/get-balance.php?uid=' + encodeURIComponent(uid))
     .then(res => res.json())
     .then(data => {
       if(data.success){
         balanceEl.textContent = '৳' + data.balance;
+        _walletLastFetchedUid = uid;
       }
     })
     .catch(err => console.warn('Wallet balance load failed:', err));
