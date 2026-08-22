@@ -400,8 +400,9 @@ function updateNumberLabel(){
 
 // Tracks the uid we last fetched balance for, so a repeat call with the
 // same uid (e.g. from the profile-synced event firing after the cached
-// load already succeeded) doesn't flash the loading state again.
+// load already succeeded) doesn't re-fetch unnecessarily.
 let _walletLastFetchedUid = null;
+const WALLET_CACHE_KEY = 'cached_balance';
 
 function loadWalletBalance(){
   const profile = getProfile();
@@ -413,20 +414,22 @@ function loadWalletBalance(){
   const balanceEl = document.getElementById('balanceAmount');
   if(!uid || !balanceEl) return;
 
+  // Instant paint: show last-known balance from localStorage immediately,
+  // with zero network wait, instead of the hardcoded '৳0'.
+  const cached = localStorage.getItem(WALLET_CACHE_KEY);
+  if(cached !== null) balanceEl.textContent = '৳' + cached;
+
   if(uid === _walletLastFetchedUid) return;
 
-  if(_walletLastFetchedUid === null){
-    // First attempt on this page load — show a loading state instead of
-    // leaving the hardcoded '৳0' up while the request is in flight.
-    balanceEl.textContent = '...';
-  }
-
+  // Then quietly refresh from the server in the background and correct
+  // the number if it changed (stale-while-revalidate).
   fetch('https://chteo-api.onrender.com/api/get-balance.php?uid=' + encodeURIComponent(uid))
     .then(res => res.json())
     .then(data => {
       if(data.success){
         balanceEl.textContent = '৳' + data.balance;
         _walletLastFetchedUid = uid;
+        localStorage.setItem(WALLET_CACHE_KEY, data.balance);
       }
     })
     .catch(err => console.warn('Wallet balance load failed:', err));

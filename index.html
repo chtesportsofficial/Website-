@@ -772,6 +772,7 @@ window.addEventListener('pageshow', function(event){
   // top balance chip doesn't have to wait for the full Supabase
   // auth+profile round trip before showing a number.
   let lastFetchedUid = null;
+  const CACHE_KEY = 'cached_balance';
 
   function loadTopBalance(){
     let profile = {};
@@ -779,14 +780,23 @@ window.addEventListener('pageshow', function(event){
     const uid = localStorage.getItem('supabase_uid') || profile.supabase_uid;
     const el = document.getElementById('topBalanceAmount');
     if(!uid || !el) return;
+
+    // Instant paint: show last-known balance from localStorage immediately,
+    // with zero network wait, so the chip never sits on a stale '৳ 0'.
+    const cached = localStorage.getItem(CACHE_KEY);
+    if(cached !== null) el.textContent = '৳ ' + cached;
+
     if(uid === lastFetchedUid) return;
 
+    // Then quietly refresh from the server in the background and correct
+    // the number if it changed (stale-while-revalidate).
     fetch('https://chteo-api.onrender.com/api/get-balance.php?uid=' + encodeURIComponent(uid))
       .then(res => res.json())
       .then(data => {
         if(data.success){
           el.textContent = '৳ ' + data.balance;
           lastFetchedUid = uid;
+          localStorage.setItem(CACHE_KEY, data.balance);
         }
       })
       .catch(err => console.warn('Top balance load failed:', err));
