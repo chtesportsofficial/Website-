@@ -443,7 +443,7 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
     <div class="brand-name">CHT ESP ORG</div>
   </div>
   <div class="balance-chip">
-    <div class="coin">▣</div><div class="amt">৳ 0</div>
+    <div class="coin">▣</div><div class="amt" id="topBalanceAmount">৳ 0</div>
   </div>
 </div>
 
@@ -762,6 +762,37 @@ window.addEventListener('pageshow', function(event){
     load();setInterval(load,30000);
   }
   start();
+})();
+</script>
+
+<script>
+(function(){
+  // Same fast-path as wallet.html: read the plain 'supabase_uid' key
+  // directly (global.js writes this synchronously on login/sync) so the
+  // top balance chip doesn't have to wait for the full Supabase
+  // auth+profile round trip before showing a number.
+  let lastFetchedUid = null;
+
+  function loadTopBalance(){
+    let profile = {};
+    try { profile = JSON.parse(localStorage.getItem('user_profile') || '{}'); } catch(e){}
+    const uid = localStorage.getItem('supabase_uid') || profile.supabase_uid;
+    const el = document.getElementById('topBalanceAmount');
+    if(!uid || !el) return;
+    if(uid === lastFetchedUid) return;
+
+    fetch('https://chteo-api.onrender.com/api/get-balance.php?uid=' + encodeURIComponent(uid))
+      .then(res => res.json())
+      .then(data => {
+        if(data.success){
+          el.textContent = '৳ ' + data.balance;
+          lastFetchedUid = uid;
+        }
+      })
+      .catch(err => console.warn('Top balance load failed:', err));
+  }
+  loadTopBalance();
+  document.addEventListener('chteo:profile-synced', loadTopBalance);
 })();
 </script>
 
