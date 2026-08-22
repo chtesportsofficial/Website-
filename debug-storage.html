@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Debug</title></head>
+<body style="background:#000;color:#0f0;font-family:monospace;padding:20px;word-break:break-all;">
+<h3>user_profile:</h3>
+<pre id="a"></pre>
+<h3>user_uid:</h3>
+<pre id="b"></pre>
+<script>
+document.getElementById('a').textContent = localStorage.getItem('user_profile');
+document.getElementById('b').textContent = localStorage.getItem('user_uid');
+</script>
+</body>
+</html>
