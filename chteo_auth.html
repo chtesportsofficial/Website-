@@ -498,7 +498,7 @@ async function runDiagTest(){
   const box = document.getElementById('diag-result');
   box.textContent = 'Testing...';
   try {
-    const res = await fetch('https://cht.gamer.gd/api/sync-wallet.php', { method: 'GET' });
+    const res = await fetch('https://chteo-api.onrender.com/api/sync-wallet.php', { method: 'GET' });
     const text = await res.text();
     box.textContent = 'GET fetch worked. Status: ' + res.status + ' | Body: ' + text;
   } catch (e) {
@@ -507,7 +507,7 @@ async function runDiagTest(){
 }
 
 async function syncWalletAfterLogin(session) {
-  const WALLET_SYNC_URL = 'https://cht.gamer.gd/api/sync-wallet.php';
+  const WALLET_SYNC_URL = 'https://chteo-api.onrender.com/api/sync-wallet.php';
 
   if (!session || !session.access_token) {
     return {
