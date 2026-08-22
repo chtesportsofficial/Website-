@@ -64,7 +64,7 @@
     }
   }
 
-  function saveProfileLocally(row, authEmail) {
+  function saveProfileLocally(row, authEmail, authUid) {
     var current = {};
     try { current = JSON.parse(localStorage.getItem("user_profile") || "{}"); } catch (e) {}
     var merged = Object.assign({}, current, {
@@ -81,10 +81,12 @@
       // Whether this signed-in user is an admin (drives the "Admin Panel"
       // row in profile.html). Use an explicit undefined-check rather than
       // `||` so that a real `false` from Supabase isn't lost.
-      isAdmin: (row && typeof row.is_admin !== "undefined") ? !!row.is_admin : current.isAdmin
+      isAdmin: (row && typeof row.is_admin !== "undefined") ? !!row.is_admin : current.isAdmin,
+      supabase_uid: authUid || current.supabase_uid
     });
     localStorage.setItem("user_profile", JSON.stringify(merged));
     if (row && row.user_number != null) localStorage.setItem("user_uid", String(row.user_number));
+    if (authUid) localStorage.setItem("supabase_uid", authUid);
     // Keep the 'profile_picture' cache (read by profile.html, index.html,
     // side_drawer.html, and the bottom-nav avatar below) in sync with the
     // real Supabase Storage URL — this key already works as a plain
@@ -112,10 +114,10 @@
               if (result && result.error) {
                 console.warn("CHTEO.syncProfile: could not read " + PROFILE_TABLE + " row —", result.error.message);
               }
-              var merged = saveProfileLocally(result && result.data, user.email);
+              var merged = saveProfileLocally(result && result.data, user.email, user.id);
               resolve(merged);
             })
-            .catch(function () { resolve(saveProfileLocally(null, user.email)); });
+            .catch(function () { resolve(saveProfileLocally(null, user.email, user.id)); });
         }).catch(function () { resolve(null); });
       });
     });
