@@ -295,11 +295,6 @@
       <span>CHT ESP ORG</span>
     </div>
 
-    <div style="border:1px dashed #999;border-radius:8px;padding:10px;margin-bottom:16px;font-size:12px;">
-      <button type="button" onclick="runDiagTest()" style="padding:6px 10px;">Test wallet connection</button>
-      <div id="diag-result" style="margin-top:8px;word-break:break-all;color:#333;">(not tested yet)</div>
-    </div>
-
     <div class="tabs">
       <button class="tab active" id="tab-signin" type="button">Sign in</button>
       <button class="tab" id="tab-create" type="button">Create account</button>
@@ -795,6 +790,7 @@ async function handleCreate(){
 
   const createBtn = document.getElementById('create-btn');
   createBtn.disabled = true;
+  createBtn.textContent = 'Creating account...';
 
   // Wipe any team name / slogan / profile picture left over in this
   // browser's localStorage from a PREVIOUS account (localStorage is
@@ -812,9 +808,14 @@ async function handleCreate(){
     options: { data: { whatsapp, referral } }
   });
 
-  createBtn.disabled = false;
-
   if(error){
+    // Only re-enable here — the button stays disabled/"Creating..." for
+    // the whole success path below (profile sync + wallet sync +
+    // redirect) so an impatient second tap during that wait can never
+    // fire a second signUp() for the same email (which is what was
+    // producing "User already registered").
+    createBtn.disabled = false;
+    createBtn.textContent = 'Create account';
     showToast(error.message);
     return;
   }
