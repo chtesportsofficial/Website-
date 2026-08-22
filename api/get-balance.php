@@ -3,17 +3,17 @@ header('Content-Type: application/json');
 
 require_once "../db.php";
 
-$email = isset($_GET['email']) ? trim($_GET['email']) : '';
+$uid = isset($_GET['uid']) ? trim($_GET['uid']) : '';
 
-if ($email === '') {
+if ($uid === '') {
     echo json_encode([
         "success" => false,
-        "message" => "Email required"
+        "message" => "UID required"
     ]);
     exit;
 }
 
-$stmt = $conn->prepare("SELECT id, balance FROM wallet_users WHERE email = ? LIMIT 1");
+$stmt = $conn->prepare("SELECT id, balance FROM wallet_users WHERE supabase_uid = ? LIMIT 1");
 
 if (!$stmt) {
     echo json_encode([
@@ -23,7 +23,7 @@ if (!$stmt) {
     exit;
 }
 
-$stmt->bind_param("s", $email);
+$stmt->bind_param("s", $uid);
 $stmt->execute();
 $stmt->bind_result($user_id, $balance);
 
