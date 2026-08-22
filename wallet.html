@@ -403,6 +403,7 @@ function updateNumberLabel(){
 // load already succeeded) doesn't re-fetch unnecessarily.
 let _walletLastFetchedUid = null;
 const WALLET_CACHE_KEY = 'cached_balance';
+const WALLET_CACHE_UID_KEY = 'cached_balance_uid';
 
 function loadWalletBalance(){
   const profile = getProfile();
@@ -415,9 +416,17 @@ function loadWalletBalance(){
   if(!uid || !balanceEl) return;
 
   // Instant paint: show last-known balance from localStorage immediately,
-  // with zero network wait, instead of the hardcoded '৳0'.
+  // with zero network wait — but ONLY if it was cached for THIS uid.
+  // localStorage is per-device, not per-account, so on a different
+  // account (or a fresh signup with no wallet row yet) the previous
+  // user's cached balance must never be shown.
+  const cachedUid = localStorage.getItem(WALLET_CACHE_UID_KEY);
   const cached = localStorage.getItem(WALLET_CACHE_KEY);
-  if(cached !== null) balanceEl.textContent = '৳' + cached;
+  if(cached !== null && cachedUid === uid){
+    balanceEl.textContent = '৳' + cached;
+  } else {
+    balanceEl.textContent = '...';
+  }
 
   if(uid === _walletLastFetchedUid) return;
 
@@ -426,10 +435,17 @@ function loadWalletBalance(){
   fetch('https://chteo-api.onrender.com/api/get-balance.php?uid=' + encodeURIComponent(uid))
     .then(res => res.json())
     .then(data => {
+      _walletLastFetchedUid = uid;
       if(data.success){
         balanceEl.textContent = '৳' + data.balance;
-        _walletLastFetchedUid = uid;
         localStorage.setItem(WALLET_CACHE_KEY, data.balance);
+        localStorage.setItem(WALLET_CACHE_UID_KEY, uid);
+      } else {
+        // No wallet row yet (e.g. brand-new signup, sync not done) —
+        // show 0 rather than leaving a stale/wrong number on screen.
+        balanceEl.textContent = '৳0';
+        localStorage.removeItem(WALLET_CACHE_KEY);
+        localStorage.removeItem(WALLET_CACHE_UID_KEY);
       }
     })
     .catch(err => console.warn('Wallet balance load failed:', err));

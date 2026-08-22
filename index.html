@@ -773,6 +773,7 @@ window.addEventListener('pageshow', function(event){
   // auth+profile round trip before showing a number.
   let lastFetchedUid = null;
   const CACHE_KEY = 'cached_balance';
+  const CACHE_UID_KEY = 'cached_balance_uid';
 
   function loadTopBalance(){
     let profile = {};
@@ -782,9 +783,17 @@ window.addEventListener('pageshow', function(event){
     if(!uid || !el) return;
 
     // Instant paint: show last-known balance from localStorage immediately,
-    // with zero network wait, so the chip never sits on a stale '৳ 0'.
+    // with zero network wait — but ONLY if it was cached for THIS uid.
+    // localStorage is per-device, not per-account, so a different
+    // account (or a fresh signup with no wallet row yet) must never
+    // show the previous user's cached balance.
+    const cachedUid = localStorage.getItem(CACHE_UID_KEY);
     const cached = localStorage.getItem(CACHE_KEY);
-    if(cached !== null) el.textContent = '৳ ' + cached;
+    if(cached !== null && cachedUid === uid){
+      el.textContent = '৳ ' + cached;
+    } else {
+      el.textContent = '৳ ...';
+    }
 
     if(uid === lastFetchedUid) return;
 
@@ -793,10 +802,17 @@ window.addEventListener('pageshow', function(event){
     fetch('https://chteo-api.onrender.com/api/get-balance.php?uid=' + encodeURIComponent(uid))
       .then(res => res.json())
       .then(data => {
+        lastFetchedUid = uid;
         if(data.success){
           el.textContent = '৳ ' + data.balance;
-          lastFetchedUid = uid;
           localStorage.setItem(CACHE_KEY, data.balance);
+          localStorage.setItem(CACHE_UID_KEY, uid);
+        } else {
+          // No wallet row yet (e.g. brand-new signup, sync not done) —
+          // show 0 rather than leaving a stale/wrong number on screen.
+          el.textContent = '৳ 0';
+          localStorage.removeItem(CACHE_KEY);
+          localStorage.removeItem(CACHE_UID_KEY);
         }
       })
       .catch(err => console.warn('Top balance load failed:', err));
