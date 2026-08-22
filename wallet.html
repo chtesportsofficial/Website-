@@ -298,7 +298,7 @@
   <div class="card balance-card">
     <div>
       <div class="balance-label" data-i18n="wallet.currentBalance">CURRENT BALANCE</div>
-      <div class="balance-amount">৳0</div>
+      <div class="balance-amount" id="balanceAmount">৳0</div>
     </div>
     <svg class="wallet-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M3 7a2 2 0 0 1 2-2h13a1 1 0 0 1 1 1v2H5" stroke="#8a93a6" stroke-width="1.5"/>
@@ -397,6 +397,24 @@ function updateNumberLabel(){
   input.value = '';
   input.placeholder = method ? ('Enter your ' + method + ' number') : 'Enter your number';
 }
+
+function loadWalletBalance(){
+  const profile = getProfile();
+  const uid = profile.supabase_uid;
+  const balanceEl = document.getElementById('balanceAmount');
+  if(!uid || !balanceEl) return;
+
+  fetch('https://chteo-api.onrender.com/api/get-balance.php?uid=' + encodeURIComponent(uid))
+    .then(res => res.json())
+    .then(data => {
+      if(data.success){
+        balanceEl.textContent = '৳' + data.balance;
+      }
+    })
+    .catch(err => console.warn('Wallet balance load failed:', err));
+}
+loadWalletBalance();
+document.addEventListener('chteo:profile-synced', loadWalletBalance);
 </script>
 
 </body>
