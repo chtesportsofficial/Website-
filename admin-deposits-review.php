@@ -2,7 +2,7 @@
 // admin-deposits-review.php
 // Called by admin.html when an admin clicks Approve/Decline on a request.
 // Approve: atomically credits wallet_users.balance + logs wallet_transactions.
-// Decline: just marks the request declined with the admin's note.
+// Decline: just marks the request rejected with the admin's note.
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
@@ -56,7 +56,7 @@ try {
         throw new Exception('This request was already reviewed');
     }
 
-    $new_status = $action === 'approve' ? 'approved' : 'declined';
+    $new_status = $action === 'approve' ? 'approved' : 'rejected';
 
     if ($action === 'approve') {
         // Lock the user's wallet row too, then credit the balance.

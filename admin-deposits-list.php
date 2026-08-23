@@ -19,7 +19,7 @@ $input = json_decode(file_get_contents('php://input'), true) ?: [];
 $access_token = $input['access_token'] ?? '';
 $status = $input['status'] ?? 'pending';
 
-if (!in_array($status, ['pending', 'approved', 'declined'])) {
+if (!in_array($status, ['pending', 'approved', 'rejected'])) {
     echo json_encode(['success' => false, 'message' => 'Invalid status']);
     exit();
 }

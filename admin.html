@@ -168,7 +168,7 @@
     border-radius:6px;
   }
   .status-approved{background:rgba(34,197,94,0.12);color:var(--green);}
-  .status-declined{background:rgba(239,68,68,0.12);color:var(--red);}
+  .status-rejected{background:rgba(239,68,68,0.12);color:var(--red);}
   .status-pending{background:rgba(255,122,26,0.12);color:var(--orange);}
 </style>
 </head>
@@ -183,7 +183,7 @@
   <div class="tabs">
     <button class="tab-btn active" data-status="pending" onclick="switchTab('pending')">Pending</button>
     <button class="tab-btn" data-status="approved" onclick="switchTab('approved')">Approved</button>
-    <button class="tab-btn" data-status="declined" onclick="switchTab('declined')">Declined</button>
+    <button class="tab-btn" data-status="rejected" onclick="switchTab('rejected')">Declined</button>
   </div>
 
   <div id="listArea">
