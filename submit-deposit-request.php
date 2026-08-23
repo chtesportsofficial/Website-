@@ -2,6 +2,10 @@
 // submit-deposit-request.php
 // User submits a manual bKash/Nagad deposit claim (sender number + trx_id + amount).
 // Row goes into wallet_deposit_requests as 'pending' for admin to manually approve.
+//
+// NOTE: the frontend only has the Supabase auth UID in localStorage
+// (`supabase_uid`), not the internal numeric wallet_users.id — so this
+// endpoint takes supabase_uid and looks up the numeric id itself.
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
@@ -25,16 +29,15 @@ if (!$input) {
     $input = $_POST; // fallback if sent as form-data instead of JSON
 }
 
-$user_id       = isset($input['user_id']) ? (int)$input['user_id'] : 0;
-$email         = isset($input['email']) ? trim($input['email']) : '';
+$supabase_uid  = isset($input['supabase_uid']) ? trim($input['supabase_uid']) : '';
 $method        = isset($input['method']) ? strtolower(trim($input['method'])) : ''; // 'bkash' or 'nagad'
 $sender_number = isset($input['sender_number']) ? trim($input['sender_number']) : '';
 $trx_id        = isset($input['trx_id']) ? trim($input['trx_id']) : '';
 $amount        = isset($input['amount']) ? floatval($input['amount']) : 0;
 
 // --- Basic validation ---
-if ($user_id <= 0) {
-    respond(false, ['message' => 'Missing or invalid user_id']);
+if ($supabase_uid === '') {
+    respond(false, ['message' => 'Missing supabase_uid']);
 }
 if (!in_array($method, ['bkash', 'nagad'])) {
     respond(false, ['message' => 'method must be bkash or nagad']);
@@ -48,6 +51,20 @@ if ($trx_id === '' || strlen($trx_id) < 6) {
 if ($amount <= 0) {
     respond(false, ['message' => 'Amount must be greater than 0']);
 }
+
+// --- Resolve supabase_uid -> internal numeric wallet_users.id ---
+$lookup = $conn->prepare("SELECT id, email FROM wallet_users WHERE supabase_uid = ? LIMIT 1");
+$lookup->bind_param('s', $supabase_uid);
+$lookup->execute();
+$walletUser = $lookup->get_result()->fetch_assoc();
+$lookup->close();
+
+if (!$walletUser) {
+    respond(false, ['message' => 'Wallet user not found for this account']);
+}
+
+$user_id = (int)$walletUser['id'];
+$email   = $walletUser['email'];
 
 // --- Prevent duplicate submission of the same trx_id ---
 $check = $conn->prepare("SELECT id, status FROM wallet_deposit_requests WHERE trx_id = ? LIMIT 1");
