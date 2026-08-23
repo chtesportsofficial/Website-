@@ -1,154 +1,110 @@
 <?php
-// create-charge.php
-// Deposit শুরু করার endpoint — user amount পাঠালে PipraPay-তে একটা charge তৈরি করে
-// এবং checkout URL ফেরত দেয়। wallet_transactions টেবিলে একটা 'pending' row রাখে।
+/**
+ * create-charge.php
+ *
+ * CHTEO Wallet — starts a deposit.
+ * Called from the frontend deposit form via POST with:
+ *   - user_id        (the wallet_users.id for the logged-in Supabase user)
+ *   - full_name       (from Supabase profile)
+ *   - email_mobile    (email or phone used for the deposit)
+ *   - amount          (deposit amount, e.g. "100")
+ *
+ * ASSUMPTION: adjust the field names above to match whatever your
+ * deposit form on index.html actually POSTs — these are placeholders
+ * following the same pattern as get-balance.php / sync-wallet.php.
+ */
 
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *'); // চাইলে নির্দিষ্ট domain দিয়ে সীমিত করে দিন
-header('Access-Control-Allow-Headers: Content-Type');
-header('Access-Control-Allow-Methods: POST');
 
-// ব্রাউজার আসল request পাঠানোর আগে একটা OPTIONS "preflight" request পাঠায়।
-// সেটাকে সাথে সাথে 200/204 দিয়ে শেষ করে দিতে হবে, নাহলে "Failed to fetch" আসে।
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(204);
-    exit;
-}
+require_once __DIR__ . '/db.php';            // wallet DB connection ($conn)
+require_once __DIR__ . '/piprapay-keys.php'; // PIPRAPAY_API_KEY, PIPRAPAY_BASE_URL
 
-require 'db.php'; // $conn এখান থেকে আসবে
+// ---- 1. Read + validate input ----
+$user_id       = $_POST['user_id']       ?? '';
+$full_name     = $_POST['full_name']     ?? 'Demo';
+$email_mobile  = $_POST['email_mobile']  ?? '';
+$amount        = $_POST['amount']        ?? '';
 
-// ---- 1. Input নিন ----
-$data = json_decode(file_get_contents('php://input'), true);
-
-$supabase_uid = $data['supabase_uid'] ?? null; // frontend থেকে logged-in user এর supabase uid পাঠাতে হবে
-$amount       = $data['amount'] ?? null;
-
-if (!$supabase_uid || !$amount || !is_numeric($amount) || $amount <= 0) {
+if (empty($user_id) || empty($amount) || !is_numeric($amount) || floatval($amount) <= 0) {
     http_response_code(400);
-    echo json_encode(['error' => 'supabase_uid এবং valid amount দিতে হবে']);
+    echo json_encode(["status" => false, "message" => "user_id and a valid amount are required."]);
     exit;
 }
 
-// ---- 2. wallet_users থেকে ইউজার খুঁজুন (balance সহ) ----
-$stmt = $conn->prepare("SELECT id, email, name, balance FROM wallet_users WHERE supabase_uid = ?");
-$stmt->bind_param("s", $supabase_uid);
-$stmt->execute();
-$result = $stmt->get_result();
-$user = $result->fetch_assoc();
-$stmt->close();
+// ---- 2. Build the URLs PipraPay needs ----
+// These should point at pages/files that actually exist in your Website- repo.
+$webhook_url  = "https://chteo-api.onrender.com/piprapay-webhook.php";
+$redirect_url = "https://chtesportsofficial.github.io/Website-/deposit-success.html";
+$cancel_url   = "https://chtesportsofficial.github.io/Website-/deposit-cancelled.html";
 
-if (!$user) {
-    http_response_code(404);
-    echo json_encode(['error' => 'এই supabase_uid এর কোনো wallet user পাওয়া যায়নি']);
-    exit;
-}
-
-$current_balance = $user['balance'] ?? 0;
-
-// ---- 3. একটা unique order id বানান ----
-$order_id = 'DEP-' . time() . '-' . $user['id'];
-
-// ---- 4. PipraPay কে charge create request পাঠান ----
-$piprapay_api_key = getenv('PIPRAPAY_API_KEY');
-
-// ⚠️ DEBUG ONLY — test করার পর এই লাইনটা মুছে দিন
-if (!$piprapay_api_key) {
-    http_response_code(500);
-    echo json_encode(['error' => 'PIPRAPAY_API_KEY সেট করা নেই', 'env_check' => getenv('PIPRAPAY_API_KEY') === false ? 'not found' : 'empty string']);
-    exit;
-}
-
+// ---- 3. Call PipraPay's create-charge endpoint ----
 $payload = [
-    "full_name"    => $user['name'] ?: 'CHTEO User',
-    "email_mobile" => $user['email'],
-    "amount"       => (string)$amount,
-    "metadata"     => ["order_id" => $order_id, "user_id" => $user['id']],
-    "redirect_url" => "https://chtesportsofficial.github.io/Website-/deposit-success.html",
-    "cancel_url"   => "https://chtesportsofficial.github.io/Website-/deposit-cancel.html",
-    "webhook_url"  => "https://chteo-api.onrender.com/piprapay-webhook.php", // Step 6 এ বানাবেন (db.php-এর পাশেই, root এ)
-    "return_type"  => "POST",
-    "currency"     => "BDT"
+    "full_name"    => $full_name,
+    "email_mobile" => $email_mobile,
+    "amount"       => (string) $amount,
+    "metadata"     => ["wallet_user_id" => (string) $user_id],
+    "redirect_url" => $redirect_url,
+    "return_type"  => "GET",
+    "cancel_url"   => $cancel_url,
+    "webhook_url"  => $webhook_url,
+    "currency"     => "BDT",
 ];
 
-// আপনার নিজস্ব self-hosted PipraPay ইনস্টলেশন (sandbox.piprapay.com বলে কিছু নেই — PipraPay self-hosted)
-$piprapay_endpoint = "https://chteo-wallet-piprapay-1.onrender.com/api/create-charge";
-
-$ch = curl_init($piprapay_endpoint);
-curl_setopt_array($ch, [
-    CURLOPT_POST => true,
-    CURLOPT_HTTPHEADER => [
-        "accept: application/json",
-        "content-type: application/json",
-        "mh-piprapay-api-key: " . $piprapay_api_key
-    ],
-    CURLOPT_POSTFIELDS => json_encode($payload),
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_TIMEOUT => 20,
+$ch = curl_init(rtrim(PIPRAPAY_BASE_URL, '/') . '/create-charge');
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    'accept: application/json',
+    'content-type: application/json',
+    'mh-piprapay-api-key: ' . PIPRAPAY_API_KEY,
 ]);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_TIMEOUT, 15);
 
 $response  = curl_exec($ch);
-$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-$curl_err  = curl_error($ch);
+$httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$curlError = curl_error($ch);
 curl_close($ch);
 
-if ($response === false) {
+if ($curlError || $httpCode !== 200) {
+    error_log("[create-charge] PipraPay call failed. HTTP $httpCode, curl_error: $curlError, body: $response");
     http_response_code(502);
-    echo json_encode(['error' => 'PipraPay এ request পাঠানো যায়নি', 'details' => $curl_err]);
+    echo json_encode(["status" => false, "message" => "Could not start payment, please try again."]);
     exit;
 }
 
-$pp_response = json_decode($response, true);
+$result = json_decode($response, true);
 
-// ⚠️ চেক করুন: PipraPay-এর আসল response এ checkout URL এর key exactly কী নামে আসে
-$checkout_url = $pp_response['checkout_url']
-    ?? $pp_response['payment_url']
-    ?? $pp_response['pp_url']
-    ?? null;
-
-$pp_id = $pp_response['pp_id'] ?? $pp_response['id'] ?? null;
-
-if ($http_code !== 200 || !$checkout_url || !$pp_id) {
+if (!$result) {
     http_response_code(502);
-    echo json_encode([
-        'error' => 'PipraPay charge তৈরি ব্যর্থ হয়েছে',
-        'http_code' => $http_code,
-        'raw_response' => $pp_response
-    ]);
+    echo json_encode(["status" => false, "message" => "Unexpected response from payment gateway."]);
     exit;
 }
 
-// ---- 5. wallet_transactions এ pending row রাখুন ----
-// user_id, type, amount, balance_before, balance_after, reference (=pp_id), description (=order_id), status
-// balance এখনো বদলায়নি তাই balance_before = balance_after = current_balance;
-// webhook (Step 6) confirm হলে এই row আপডেট হয়ে balance_after বদলাবে ও balance যোগ হবে।
-$type = 'deposit';
-$status = 'pending';
+// NOTE: confirm the exact key names once you see a real response —
+// common possibilities are pp_id / payment_url, or nested under "data".
+$pp_id       = $result['pp_id']        ?? ($result['data']['pp_id'] ?? null);
+$payment_url = $result['payment_url']  ?? ($result['data']['payment_url'] ?? ($result['url'] ?? null));
 
-$stmt2 = $conn->prepare(
-    "INSERT INTO wallet_transactions
-        (user_id, type, amount, balance_before, balance_after, reference, description, status, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())"
-);
-$stmt2->bind_param(
-    "isdddsss",
-    $user['id'],
-    $type,
-    $amount,
-    $current_balance,
-    $current_balance,
-    $pp_id,
-    $order_id,
-    $status
-);
-$stmt2->execute();
-$stmt2->close();
+if (!$pp_id || !$payment_url) {
+    error_log("[create-charge] Missing pp_id/payment_url in response: " . $response);
+    http_response_code(502);
+    echo json_encode(["status" => false, "message" => "Payment gateway response was incomplete.", "raw" => $result]);
+    exit;
+}
 
-// ---- 6. Frontend কে checkout URL ফেরত দিন ----
+// ---- 4. Save a pending transaction row so the webhook can match it later ----
+$stmt = $conn->prepare(
+    "INSERT INTO wallet_transactions (user_id, pp_id, amount, status, created_at) VALUES (?, ?, ?, 'pending', NOW())"
+);
+$stmt->bind_param("isd", $user_id, $pp_id, $amount);
+$stmt->execute();
+$stmt->close();
+
+// ---- 5. Send the payment URL back to the frontend to redirect the user ----
+http_response_code(200);
 echo json_encode([
-    'success'      => true,
-    'checkout_url' => $checkout_url,
-    'pp_id'        => $pp_id,
-    'order_id'     => $order_id
+    "status"      => true,
+    "pp_id"       => $pp_id,
+    "payment_url" => $payment_url,
 ]);
-
-$conn->close();
