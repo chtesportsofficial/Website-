@@ -69,8 +69,8 @@ $payload = [
     "currency"     => "BDT"
 ];
 
-// প্রথমে TEST করুন sandbox দিয়ে, পরে production URL এ বদলাবেন
-$piprapay_endpoint = "https://sandbox.piprapay.com/api/create-charge";
+// আপনার নিজস্ব self-hosted PipraPay ইনস্টলেশন (sandbox.piprapay.com বলে কিছু নেই — PipraPay self-hosted)
+$piprapay_endpoint = "https://chteo-wallet-piprapay-1.onrender.com/api/create-charge";
 
 $ch = curl_init($piprapay_endpoint);
 curl_setopt_array($ch, [
