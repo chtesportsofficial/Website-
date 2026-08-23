@@ -15,6 +15,15 @@
  */
 
 header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+
+// Browsers send a preflight OPTIONS request before the real POST — answer it and stop.
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
 
 require_once __DIR__ . '/db.php';            // wallet DB connection ($conn)
 require_once __DIR__ . '/piprapay-keys.php'; // PIPRAPAY_API_KEY, PIPRAPAY_BASE_URL
