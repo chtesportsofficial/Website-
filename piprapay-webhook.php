@@ -71,8 +71,8 @@ $verifiedTotal  = $verifyResult['total']  ?? ($data['total']  ?? $verifiedAmount
 
 $isPaid = in_array($verifiedStatus, ['completed', 'paid', 'success', 'successful']);
 
-// ---- 5. Find the matching transaction row in our own DB ----
-$stmt = $conn->prepare("SELECT id, user_id, status FROM wallet_transactions WHERE pp_id = ? LIMIT 1");
+// ---- 5. Find the matching transaction row in our own DB (matched via 'reference') ----
+$stmt = $conn->prepare("SELECT id, user_id, status FROM wallet_transactions WHERE reference = ? LIMIT 1");
 $stmt->bind_param("s", $pp_id);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -109,13 +109,25 @@ if (!$isPaid) {
 // ---- 6. Payment verified as completed — credit balance atomically ----
 $conn->begin_transaction();
 try {
-    $stmt = $conn->prepare("UPDATE wallet_users SET balance = balance + ? WHERE id = ?");
-    $stmt->bind_param("di", $verifiedTotal, $txn['user_id']);
+    // Lock and read the current balance so we can record balance_before/after
+    $stmt = $conn->prepare("SELECT balance FROM wallet_users WHERE id = ? FOR UPDATE");
+    $stmt->bind_param("i", $txn['user_id']);
+    $stmt->execute();
+    $balRow = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    $balanceBefore = $balRow['balance'] ?? 0;
+    $balanceAfter  = $balanceBefore + $verifiedTotal;
+
+    $stmt = $conn->prepare("UPDATE wallet_users SET balance = ? WHERE id = ?");
+    $stmt->bind_param("di", $balanceAfter, $txn['user_id']);
     $stmt->execute();
     $stmt->close();
 
-    $stmt = $conn->prepare("UPDATE wallet_transactions SET status = 'completed', amount = ? WHERE id = ?");
-    $stmt->bind_param("di", $verifiedTotal, $txn['id']);
+    $stmt = $conn->prepare(
+        "UPDATE wallet_transactions SET status = 'completed', amount = ?, balance_before = ?, balance_after = ? WHERE id = ?"
+    );
+    $stmt->bind_param("dddi", $verifiedTotal, $balanceBefore, $balanceAfter, $txn['id']);
     $stmt->execute();
     $stmt->close();
 

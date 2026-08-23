@@ -103,10 +103,14 @@ if (!$pp_id || !$payment_url) {
 }
 
 // ---- 4. Save a pending transaction row so the webhook can match it later ----
+// Uses the existing wallet_transactions schema: reference holds the PipraPay pp_id.
+$type        = 'deposit';
+$description = 'PipraPay deposit';
+$status      = 'pending';
 $stmt = $conn->prepare(
-    "INSERT INTO wallet_transactions (user_id, pp_id, amount, status, created_at) VALUES (?, ?, ?, 'pending', NOW())"
+    "INSERT INTO wallet_transactions (user_id, type, amount, reference, description, status, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())"
 );
-$stmt->bind_param("isd", $user_id, $pp_id, $amount);
+$stmt->bind_param("isdsss", $user_id, $type, $amount, $pp_id, $description, $status);
 $stmt->execute();
 $stmt->close();
 
