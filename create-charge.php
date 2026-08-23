@@ -92,8 +92,8 @@ if (!$result) {
 
 // NOTE: confirm the exact key names once you see a real response —
 // common possibilities are pp_id / payment_url, or nested under "data".
-$pp_id       = $result['pp_id']        ?? ($result['data']['pp_id'] ?? null);
-$payment_url = $result['payment_url']  ?? ($result['data']['payment_url'] ?? ($result['url'] ?? null));
+$pp_id       = $result['pp_id']  ?? ($result['data']['pp_id'] ?? null);
+$payment_url = $result['pp_url'] ?? ($result['data']['pp_url'] ?? null);
 
 if (!$pp_id || !$payment_url) {
     error_log("[create-charge] Missing pp_id/payment_url in response: " . $response);
