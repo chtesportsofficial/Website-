@@ -58,8 +58,36 @@ if (!$piprapay_api_key) {
     exit;
 }
 
-// DEBUG: key এর length আর শুরু/শেষ দেখুন (test শেষে মুছবেন)
-echo json_encode(['debug_key_preview' => substr($piprapay_api_key, 0, 6) . '...' . substr($piprapay_api_key, -4), 'key_length' => strlen($piprapay_api_key)]); exit;
+// DEBUG debug লাইন সরানো হয়েছে
+// সব possible header format try করছি
+$headers_to_try = [
+    ["accept: application/json", "content-type: application/json", "mh-piprapay-api-key: " . $piprapay_api_key],
+    ["accept: application/json", "content-type: application/json", "Authorization: Bearer " . $piprapay_api_key],
+    ["accept: application/json", "content-type: application/json", "X-API-KEY: " . $piprapay_api_key],
+    ["accept: application/json", "content-type: application/json", "api-key: " . $piprapay_api_key],
+];
+
+$debug_results = [];
+foreach ($headers_to_try as $headers) {
+    $ch = curl_init("https://chteo-wallet-piprapay-1.onrender.com/api/create-charge");
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => $headers,
+        CURLOPT_POSTFIELDS => json_encode(["full_name" => "Test", "email_mobile" => "test@test.com", "amount" => "10", "redirect_url" => "https://example.com", "cancel_url" => "https://example.com", "webhook_url" => "https://example.com", "currency" => "BDT", "return_type" => "POST"]),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 10,
+    ]);
+    $resp = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    // header name টা বের করি (শেষ header টা দেখি)
+    $last_header = end($headers);
+    $header_name = explode(':', $last_header)[0];
+    $debug_results[$header_name] = ['http_code' => $code, 'response' => json_decode($resp, true)];
+}
+
+echo json_encode($debug_results, JSON_PRETTY_PRINT);
+exit;
 
 $payload = [
     "full_name"    => $user['name'] ?: 'CHTEO User',
