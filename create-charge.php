@@ -58,19 +58,6 @@ if (!$piprapay_api_key) {
     exit;
 }
 
-$ch = curl_init("https://chteo-wallet-piprapay-1.onrender.com/api/create-charge");
-curl_setopt_array($ch, [
-    CURLOPT_POST => true,
-    CURLOPT_HTTPHEADER => [
-        "accept: application/json",
-        "content-type: application/json",
-        "mh-piprapay-api-key: " . $piprapay_api_key
-    ],
-    CURLOPT_POSTFIELDS => json_encode($payload),
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_TIMEOUT => 20,
-]);
-
 $payload = [
     "full_name"    => $user['name'] ?: 'CHTEO User',
     "email_mobile" => $user['email'],
