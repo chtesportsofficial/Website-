@@ -8,6 +8,13 @@ header('Access-Control-Allow-Origin: *'); // চাইলে নির্দি�
 header('Access-Control-Allow-Headers: Content-Type');
 header('Access-Control-Allow-Methods: POST');
 
+// ব্রাউজার আসল request পাঠানোর আগে একটা OPTIONS "preflight" request পাঠায়।
+// সেটাকে সাথে সাথে 200/204 দিয়ে শেষ করে দিতে হবে, নাহলে "Failed to fetch" আসে।
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
 require 'db.php'; // $conn এখান থেকে আসবে
 
 // ---- 1. Input নিন ----
