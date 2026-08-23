@@ -242,7 +242,7 @@ function loadRequests(){
   if (!currentSession){ return; }
   renderState('Loading...');
 
-  fetch('https://cht.gamer.gd/api/admin-deposits-list.php', {
+  fetch('https://chteo-api.onrender.com/admin-deposits-list.php', {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({ access_token: currentSession.access_token, status: currentTab })
@@ -312,7 +312,7 @@ function buildCard(req){
       approveBtn.textContent = action === 'approve' ? 'Approving...' : 'Approve';
       declineBtn.textContent = action === 'decline' ? 'Declining...' : 'Decline';
 
-      fetch('https://cht.gamer.gd/api/admin-deposits-review.php', {
+      fetch('https://chteo-api.onrender.com/admin-deposits-review.php', {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify({

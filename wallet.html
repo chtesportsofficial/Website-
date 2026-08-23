@@ -327,8 +327,16 @@
   <!-- ADD MONEY PANEL -->
   <div id="panelAdd" class="panel active">
     <div class="card">
-      <input type="number" placeholder="Enter the Amount" data-i18n-placeholder="wallet.enterAmount">
-      <button class="btn btn-deposit" data-i18n="wallet.deposit">Deposit</button>
+      <select id="depositMethod">
+        <option value="" disabled selected data-i18n="wallet.selectMethod">Select Payment Method</option>
+        <option value="bkash">Bkash</option>
+        <option value="nagad">Nagad</option>
+      </select>
+      <input type="number" id="depositAmount" placeholder="Enter the Amount" data-i18n-placeholder="wallet.enterAmount">
+      <input type="text" id="depositSenderNumber" placeholder="Your bKash/Nagad number (sent from)" data-i18n-placeholder="wallet.senderNumber">
+      <input type="text" id="depositTrxId" placeholder="Transaction ID" data-i18n-placeholder="wallet.trxId">
+      <div id="depositMsg" style="font-size:13px;margin-bottom:10px;"></div>
+      <button class="btn btn-deposit" id="depositSubmitBtn" data-i18n="wallet.deposit">Deposit</button>
     </div>
   </div>
 
@@ -452,6 +460,80 @@ function loadWalletBalance(){
 }
 loadWalletBalance();
 document.addEventListener('chteo:profile-synced', loadWalletBalance);
+
+/* ============ Deposit submission (manual bKash/Nagad review) ============ */
+function showDepositMsg(text, isError){
+  const el = document.getElementById('depositMsg');
+  if(!el) return;
+  el.textContent = text;
+  el.style.color = isError ? '#ef4444' : '#22c55e';
+}
+
+document.getElementById('depositSubmitBtn').addEventListener('click', function(){
+  const btn = document.getElementById('depositSubmitBtn');
+  const method = document.getElementById('depositMethod').value;
+  const amount = document.getElementById('depositAmount').value;
+  const senderNumber = document.getElementById('depositSenderNumber').value.trim();
+  const trxId = document.getElementById('depositTrxId').value.trim();
+  const supabaseUid = localStorage.getItem('supabase_uid');
+
+  showDepositMsg('', false);
+
+  if(!supabaseUid){
+    showDepositMsg('Please sign in first.', true);
+    return;
+  }
+  if(!method){
+    showDepositMsg('Select a payment method.', true);
+    return;
+  }
+  if(!amount || Number(amount) <= 0){
+    showDepositMsg('Enter a valid amount.', true);
+    return;
+  }
+  if(!/^01[0-9]{9}$/.test(senderNumber)){
+    showDepositMsg('Enter a valid 11-digit number (01XXXXXXXXX).', true);
+    return;
+  }
+  if(!trxId || trxId.length < 6){
+    showDepositMsg('Enter a valid Transaction ID.', true);
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+
+  fetch('https://chteo-api.onrender.com/submit-deposit-request.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      supabase_uid: supabaseUid,
+      method: method,
+      amount: amount,
+      sender_number: senderNumber,
+      trx_id: trxId
+    })
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      btn.disabled = false;
+      btn.textContent = 'Deposit';
+      if(res && res.status){
+        showDepositMsg(res.message || 'Submitted! Waiting for admin approval.', false);
+        document.getElementById('depositAmount').value = '';
+        document.getElementById('depositSenderNumber').value = '';
+        document.getElementById('depositTrxId').value = '';
+        document.getElementById('depositMethod').selectedIndex = 0;
+      } else {
+        showDepositMsg((res && res.message) || 'Submission failed.', true);
+      }
+    })
+    .catch(function(err){
+      btn.disabled = false;
+      btn.textContent = 'Deposit';
+      showDepositMsg('Could not connect: ' + err.message, true);
+    });
+});
 </script>
 
 </body>
