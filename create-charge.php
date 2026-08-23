@@ -30,7 +30,7 @@ if (!$supabase_uid || !$amount || !is_numeric($amount) || $amount <= 0) {
 }
 
 // ---- 2. wallet_users থেকে ইউজার খুঁজুন (balance সহ) ----
-$stmt = $conn->prepare("SELECT id, email, full_name, balance FROM wallet_users WHERE supabase_uid = ?");
+$stmt = $conn->prepare("SELECT id, email, name, balance FROM wallet_users WHERE supabase_uid = ?");
 $stmt->bind_param("s", $supabase_uid);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -58,7 +58,7 @@ if (!$piprapay_api_key) {
 }
 
 $payload = [
-    "full_name"    => $user['full_name'] ?: 'CHTEO User',
+    "full_name"    => $user['name'] ?: 'CHTEO User',
     "email_mobile" => $user['email'],
     "amount"       => (string)$amount,
     "metadata"     => ["order_id" => $order_id, "user_id" => $user['id']],
