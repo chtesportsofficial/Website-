@@ -49,13 +49,17 @@ $current_balance = $user['balance'] ?? 0;
 $order_id = 'DEP-' . time() . '-' . $user['id'];
 
 // ---- 4. PipraPay কে charge create request পাঠান ----
-$piprapay_api_key = getenv('PIPRAPAY_API_KEY'); // Render env var থেকে আসবে
+$piprapay_api_key = getenv('PIPRAPAY_API_KEY');
 
+// ⚠️ DEBUG ONLY — test করার পর এই লাইনটা মুছে দিন
 if (!$piprapay_api_key) {
     http_response_code(500);
-    echo json_encode(['error' => 'PIPRAPAY_API_KEY সেট করা নেই (Render env var চেক করুন)']);
+    echo json_encode(['error' => 'PIPRAPAY_API_KEY সেট করা নেই', 'env_check' => getenv('PIPRAPAY_API_KEY') === false ? 'not found' : 'empty string']);
     exit;
 }
+
+// DEBUG: key এর length আর শুরু/শেষ দেখুন (test শেষে মুছবেন)
+echo json_encode(['debug_key_preview' => substr($piprapay_api_key, 0, 6) . '...' . substr($piprapay_api_key, -4), 'key_length' => strlen($piprapay_api_key)]); exit;
 
 $payload = [
     "full_name"    => $user['name'] ?: 'CHTEO User',
