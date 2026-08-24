@@ -672,9 +672,8 @@ function renderTarget(){
     banBtn.textContent = p.is_banned ? 'Unblock User' : 'Block User';
   }
 
-  // Show Adjust Balance button + load balance
+  // Show Adjust Balance button
   document.getElementById('adjOpenBtn').style.display = 'block';
-  loadBalance();
 }
 
 async function toggleField(field, currentVal, btnEl){
@@ -710,15 +709,36 @@ document.getElementById('banToggleBtn').addEventListener('click',function(){cons
 let _adjType = 'add';
 
 function adjOpen(){
-  const bal = document.getElementById('balanceVal').textContent;
-  document.getElementById('adjModalBalance').textContent = bal || '৳—';
   document.getElementById('adj-amount').value = '';
   document.getElementById('adj-reason').value = '';
   document.getElementById('adj-msg').textContent = '';
   document.getElementById('adj-msg').style.color = '';
+  document.getElementById('adjModalBalance').textContent = 'Loading...';
   adjSetType('add');
-  const ov = document.getElementById('adjOverlay');
-  ov.style.display = 'flex';
+  document.getElementById('adjOverlay').style.display = 'flex';
+
+  // Fetch balance fresh when modal opens
+  supabaseClient.auth.getSession().then(function(r){
+    const session = r.data && r.data.session;
+    if(!session) return;
+    fetch('https://chteo-api.onrender.com/api/admin-user-detail.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ access_token: session.access_token, user_id: targetUid })
+    })
+    .then(function(res){ return res.json(); })
+    .then(function(data){
+      if(data && data.success && data.user){
+        const bal = data.user.balance !== null ? '৳' + data.user.balance : '৳0';
+        document.getElementById('adjModalBalance').textContent = bal;
+        document.getElementById('balanceVal').textContent = bal;
+        document.getElementById('balanceRow').style.display = 'flex';
+      } else {
+        document.getElementById('adjModalBalance').textContent = '৳—';
+      }
+    })
+    .catch(function(){ document.getElementById('adjModalBalance').textContent = '৳—'; });
+  });
 }
 
 function adjClose(){
