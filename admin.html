@@ -238,8 +238,12 @@ function statusChip(status){
   return '<span class="status-chip status-' + status + '">' + status.toUpperCase() + '</span>';
 }
 
+let _loadInFlight = false;
+
 function loadRequests(){
   if (!currentSession){ return; }
+  if (_loadInFlight) return;
+  _loadInFlight = true;
   renderState('Loading...');
 
   fetch('https://chteo-api.onrender.com/admin-deposits-list.php', {
@@ -249,6 +253,7 @@ function loadRequests(){
   })
     .then(function(r){ return r.json(); })
     .then(function(res){
+      _loadInFlight = false;
       if (!res || !res.success){
         renderState(escapeHtml((res && res.message) || 'Failed to load requests.'));
         return;
@@ -264,9 +269,19 @@ function loadRequests(){
       });
     })
     .catch(function(err){
+      _loadInFlight = false;
       renderState('Could not connect: ' + escapeHtml(err.message));
     });
 }
+
+// Auto-refresh so a newly submitted request (or one another admin just
+// reviewed) shows up without a manual reload. Skips while the tab is in
+// the background; loadRequests() itself skips if a fetch is already in
+// flight so this never overlaps an in-progress approve/decline click.
+setInterval(function(){
+  if (document.hidden) return;
+  loadRequests();
+}, 10000);
 
 function buildCard(req){
   const card = document.createElement('div');

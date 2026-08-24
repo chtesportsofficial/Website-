@@ -13,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/db.php';       // exposes $conn (mysqli)
+$conn->set_charset('utf8mb4');
 require_once __DIR__ . '/admin-auth.php';
 
 $input = json_decode(file_get_contents('php://input'), true) ?: [];

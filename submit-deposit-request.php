@@ -24,6 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/db.php'; // must expose $conn (mysqli)
+$conn->set_charset('utf8mb4');
 
 function respond($status, $data = []) {
     echo json_encode(array_merge(['status' => $status], $data));
