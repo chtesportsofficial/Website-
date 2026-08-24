@@ -377,6 +377,17 @@
 
         <div class="slogan-box" id="sloganBox" style="display:none;"></div>
 
+        <!-- Wallet balance row -->
+        <div class="info-row" id="balanceRow" style="display:none;">
+          <div class="icon-chip" style="background:rgba(53,87,255,0.1);color:var(--accent);">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8L2 7h20l-6-4Z"/><path d="M12 12v4"/><path d="M10 14h4"/></svg>
+          </div>
+          <div class="info-text">
+            <div class="info-label">WALLET BALANCE</div>
+            <div class="info-value" id="balanceVal">Loading...</div>
+          </div>
+        </div>
+
         <div class="info-list" id="detailsList"></div>
 
       </div>
@@ -386,26 +397,40 @@
         <div class="other-grid" id="otherList"></div>
       </div>
 
-      <!-- ── Adjust Balance ── -->
-      <div class="adj-card" id="adjCard" style="display:none;">
-        <div class="adj-heading"><span class="adj-heading-bar"></span><span>ADJUST BALANCE</span></div>
-        <div class="adj-toggle">
-          <button id="adj-btn-add" class="active-add" onclick="adjSetType('add')">+ Add</button>
-          <button id="adj-btn-remove" onclick="adjSetType('remove')">− Remove</button>
-        </div>
-        <input id="adj-amount" class="adj-input" type="number" min="1" placeholder="Amount (৳)" />
-        <input id="adj-reason" class="adj-input" type="text" maxlength="255" placeholder="Reason (e.g. Refund, Bonus)" />
-        <button class="adj-submit" id="adj-submit-btn" onclick="adjSubmit()">Apply Adjustment</button>
-        <div class="adj-msg" id="adj-msg"></div>
-      </div>
-      <!-- ── end Adjust Balance ── -->
-
       <div class="actions-row">
         <button class="action-btn make-admin" id="adminToggleBtn">Make Admin</button>
         <button class="action-btn block" id="banToggleBtn">Block User</button>
       </div>
+      <div style="margin-top:10px;">
+        <button class="action-btn" id="adjOpenBtn" onclick="adjOpen()" style="width:100%;color:var(--accent);border-color:rgba(53,87,255,0.35);display:none;">
+          💰 Adjust Balance
+        </button>
+      </div>
     </div>
   </div>
+
+  <!-- ── Adjust Balance Modal ── -->
+  <div id="adjOverlay" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(8,12,25,.65);backdrop-filter:blur(5px);align-items:flex-end;justify-content:center;">
+    <div id="adjModal" style="width:100%;max-width:480px;background:#fff;border-radius:24px 24px 0 0;padding:22px 20px 36px;box-shadow:0 -20px 60px rgba(0,0,0,.28);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-size:15px;font-weight:900;color:var(--ink);">Adjust Balance</div>
+        <button onclick="adjClose()" style="width:32px;height:32px;border-radius:8px;border:none;background:#f0f1f7;color:var(--muted);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
+      </div>
+      <div style="background:#f6f7fb;border-radius:12px;padding:10px 14px;margin-bottom:14px;text-align:center;">
+        <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);">Current Balance</div>
+        <div style="font-size:22px;font-weight:900;color:var(--accent);margin-top:2px;" id="adjModalBalance">৳—</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button id="adj-btn-add" onclick="adjSetType('add')" style="flex:1;padding:10px 0;border-radius:10px;border:1px solid rgba(28,124,77,0.35);background:rgba(28,124,77,0.12);color:var(--success);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">+ Add</button>
+        <button id="adj-btn-remove" onclick="adjSetType('remove')" style="flex:1;padding:10px 0;border-radius:10px;border:1px solid var(--line);background:#f6f7fb;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">− Remove</button>
+      </div>
+      <input id="adj-amount" type="number" min="1" placeholder="Amount (৳)" style="width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--line);background:#f6f7fb;color:var(--ink);font-size:14px;font-family:inherit;margin-bottom:8px;" />
+      <input id="adj-reason" type="text" maxlength="255" placeholder="Reason (e.g. Refund, Bonus, Correction)" style="width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--line);background:#f6f7fb;color:var(--ink);font-size:14px;font-family:inherit;margin-bottom:12px;" />
+      <button id="adj-submit-btn" onclick="adjSubmit()" style="width:100%;padding:13px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Apply Adjustment</button>
+      <div id="adj-msg" style="font-size:13px;font-weight:600;text-align:center;padding:8px 0 0;min-height:22px;"></div>
+    </div>
+  </div>
+  <!-- ── end Adjust Balance Modal ── -->
 
   <div class="toast" id="toast"></div>
 
@@ -647,8 +672,9 @@ function renderTarget(){
     banBtn.textContent = p.is_banned ? 'Unblock User' : 'Block User';
   }
 
-  // Show Adjust Balance card (hidden until user loads)
-  document.getElementById('adjCard').style.display = 'block';
+  // Show Adjust Balance button + load balance
+  document.getElementById('adjOpenBtn').style.display = 'block';
+  loadBalance();
 }
 
 async function toggleField(field, currentVal, btnEl){
@@ -683,10 +709,63 @@ document.getElementById('banToggleBtn').addEventListener('click',function(){cons
 /* ── Adjust Balance logic ── */
 let _adjType = 'add';
 
+function adjOpen(){
+  const bal = document.getElementById('balanceVal').textContent;
+  document.getElementById('adjModalBalance').textContent = bal || '৳—';
+  document.getElementById('adj-amount').value = '';
+  document.getElementById('adj-reason').value = '';
+  document.getElementById('adj-msg').textContent = '';
+  document.getElementById('adj-msg').style.color = '';
+  adjSetType('add');
+  const ov = document.getElementById('adjOverlay');
+  ov.style.display = 'flex';
+}
+
+function adjClose(){
+  document.getElementById('adjOverlay').style.display = 'none';
+}
+
+document.getElementById('adjOverlay').addEventListener('click', function(e){
+  if(e.target === this) adjClose();
+});
+
 function adjSetType(type){
   _adjType = type;
-  document.getElementById('adj-btn-add').className    = type === 'add'    ? 'active-add'    : '';
-  document.getElementById('adj-btn-remove').className = type === 'remove' ? 'active-remove' : '';
+  const addBtn = document.getElementById('adj-btn-add');
+  const remBtn = document.getElementById('adj-btn-remove');
+  if(type === 'add'){
+    addBtn.style.background = 'rgba(28,124,77,0.12)';
+    addBtn.style.color = 'var(--success)';
+    addBtn.style.borderColor = 'rgba(28,124,77,0.35)';
+    remBtn.style.background = '#f6f7fb';
+    remBtn.style.color = 'var(--muted)';
+    remBtn.style.borderColor = 'var(--line)';
+  } else {
+    remBtn.style.background = 'rgba(229,72,77,0.12)';
+    remBtn.style.color = 'var(--error)';
+    remBtn.style.borderColor = 'rgba(229,72,77,0.35)';
+    addBtn.style.background = '#f6f7fb';
+    addBtn.style.color = 'var(--muted)';
+    addBtn.style.borderColor = 'var(--line)';
+  }
+}
+
+async function loadBalance(){
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session) return;
+  try {
+    const res = await fetch('https://cht.gamer.gd/api/admin-user-detail.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ access_token: session.access_token, user_id: targetUid })
+    });
+    const data = await res.json();
+    if(data && data.success && data.user){
+      const bal = data.user.balance !== null ? '৳' + data.user.balance : '৳0';
+      document.getElementById('balanceVal').textContent = bal;
+      document.getElementById('balanceRow').style.display = 'flex';
+    }
+  } catch(e){ /* silent fail */ }
 }
 
 async function adjSubmit(){
@@ -698,11 +777,11 @@ async function adjSubmit(){
   const msgEl  = document.getElementById('adj-msg');
   const btnEl  = document.getElementById('adj-submit-btn');
 
-  msgEl.className = 'adj-msg';
   msgEl.textContent = '';
+  msgEl.style.color = '';
 
-  if(!amount || amount <= 0){ msgEl.className='adj-msg err'; msgEl.textContent='Valid amount required.'; return; }
-  if(!reason){ msgEl.className='adj-msg err'; msgEl.textContent='Reason is required.'; return; }
+  if(!amount || amount <= 0){ msgEl.style.color='var(--error)'; msgEl.textContent='Valid amount required.'; return; }
+  if(!reason){ msgEl.style.color='var(--error)'; msgEl.textContent='Reason is required.'; return; }
 
   btnEl.disabled = true;
   btnEl.textContent = 'Processing...';
@@ -724,18 +803,21 @@ async function adjSubmit(){
     btnEl.disabled = false;
     btnEl.textContent = 'Apply Adjustment';
     if(data && data.success){
-      msgEl.className = 'adj-msg ok';
-      msgEl.textContent = 'Done! New balance: ৳' + data.new_balance;
+      const newBal = '৳' + data.new_balance;
+      msgEl.style.color = 'var(--success)';
+      msgEl.textContent = 'Done! New balance: ' + newBal;
+      document.getElementById('balanceVal').textContent = newBal;
+      document.getElementById('adjModalBalance').textContent = newBal;
       document.getElementById('adj-amount').value = '';
       document.getElementById('adj-reason').value = '';
     } else {
-      msgEl.className = 'adj-msg err';
+      msgEl.style.color = 'var(--error)';
       msgEl.textContent = (data && data.message) || 'Something went wrong.';
     }
   } catch(err){
     btnEl.disabled = false;
     btnEl.textContent = 'Apply Adjustment';
-    msgEl.className = 'adj-msg err';
+    msgEl.style.color = 'var(--error)';
     msgEl.textContent = 'Network error: ' + err.message;
   }
 }
