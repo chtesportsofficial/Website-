@@ -110,25 +110,127 @@ if (!$isAdmin) {
     exit;
 }
 
-// ---- Query wallet_users, highest balance first ----
+// ---- Parse filter / sort / pagination params ----
+// min_balance / max_balance: numeric range filter on balance
+// uid: partial match search on supabase_uid (this is what admins search by,
+// since it's the one identifier that's always present and unique)
+// sort: 'desc' (default, highest first) or 'asc'
+// page / limit: pagination, so we never pull thousands of rows into PHP/browser at once
+
+$minBalance = isset($data['min_balance']) && $data['min_balance'] !== '' ? (float)$data['min_balance'] : null;
+$maxBalance = isset($data['max_balance']) && $data['max_balance'] !== '' ? (float)$data['max_balance'] : null;
+$uidSearch = isset($data['uid']) ? trim((string)$data['uid']) : '';
+$sort = (isset($data['sort']) && strtolower((string)$data['sort']) === 'asc') ? 'asc' : 'desc';
+
+$page = isset($data['page']) ? (int)$data['page'] : 1;
+if ($page < 1) { $page = 1; }
+
+$limit = isset($data['limit']) ? (int)$data['limit'] : 50;
+if ($limit < 1) { $limit = 50; }
+if ($limit > 200) { $limit = 200; } // hard cap so a bad request can't force-load everything
+$offset = ($page - 1) * $limit;
+
 $conn->set_charset('utf8mb4');
 
-$rows = [];
-$result = $conn->query("SELECT supabase_uid, email, balance FROM wallet_users ORDER BY balance DESC");
+// ---- Build WHERE clause + bound params (shared by the count query and the page query) ----
+$whereParts = [];
+$paramTypes = '';
+$paramValues = [];
 
-if ($result === false) {
+if ($minBalance !== null) {
+    $whereParts[] = 'balance >= ?';
+    $paramTypes .= 'd';
+    $paramValues[] = $minBalance;
+}
+if ($maxBalance !== null) {
+    $whereParts[] = 'balance <= ?';
+    $paramTypes .= 'd';
+    $paramValues[] = $maxBalance;
+}
+if ($uidSearch !== '') {
+    $whereParts[] = 'supabase_uid LIKE ?';
+    $paramTypes .= 's';
+    $paramValues[] = '%' . $conn->real_escape_string($uidSearch) . '%';
+}
+
+$whereSql = count($whereParts) > 0 ? ('WHERE ' . implode(' AND ', $whereParts)) : '';
+
+// ---- Overall stats (always unfiltered, so the summary card stays a true total) ----
+$totalWallets = 0;
+$totalBalanceAll = 0.0;
+$overallResult = $conn->query("SELECT COUNT(*) AS cnt, COALESCE(SUM(balance),0) AS total FROM wallet_users");
+if ($overallResult !== false) {
+    $overallRow = $overallResult->fetch_assoc();
+    $totalWallets = (int)$overallRow['cnt'];
+    $totalBalanceAll = (float)$overallRow['total'];
+}
+
+// ---- Count of rows matching the current filter (for pagination / "load more") ----
+$totalMatching = 0;
+$countSql = "SELECT COUNT(*) AS cnt FROM wallet_users $whereSql";
+$countStmt = $conn->prepare($countSql);
+if ($countStmt === false) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Database query failed', 'error' => $conn->error]);
+    exit;
+}
+if ($paramTypes !== '') {
+    $countStmt->bind_param($paramTypes, ...$paramValues);
+}
+$countStmt->execute();
+$countRes = $countStmt->get_result();
+if ($countRes) {
+    $totalMatching = (int)$countRes->fetch_assoc()['cnt'];
+}
+$countStmt->close();
+
+// ---- Page of results, each with its rank against the FULL unfiltered leaderboard ----
+// (rank is computed with a correlated subquery scoped to just this page's rows, not
+// the whole table, so it stays cheap even with thousands of wallet_users rows)
+$orderDir = $sort === 'asc' ? 'ASC' : 'DESC';
+$rankCompare = $sort === 'asc' ? '<' : '>';
+
+$pageSql = "
+    SELECT w1.supabase_uid, w1.email, w1.balance,
+        (SELECT COUNT(*) FROM wallet_users w2 WHERE w2.balance $rankCompare w1.balance) + 1 AS rnk
+    FROM wallet_users w1
+    $whereSql
+    ORDER BY w1.balance $orderDir
+    LIMIT ? OFFSET ?
+";
+
+$pageTypes = $paramTypes . 'ii';
+$pageValues = $paramValues;
+$pageValues[] = $limit;
+$pageValues[] = $offset;
+
+$pageStmt = $conn->prepare($pageSql);
+if ($pageStmt === false) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Database query failed', 'error' => $conn->error]);
+    exit;
+}
+$pageStmt->bind_param($pageTypes, ...$pageValues);
+$pageStmt->execute();
+$pageResult = $pageStmt->get_result();
+
+if ($pageResult === false) {
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Database query failed', 'error' => $conn->error]);
     exit;
 }
 
-while ($row = $result->fetch_assoc()) {
+$rows = [];
+$rankByUid = [];
+while ($row = $pageResult->fetch_assoc()) {
     $rows[] = [
         'uid' => $row['supabase_uid'],
         'email' => $row['email'],
         'balance' => (float)$row['balance']
     ];
+    $rankByUid[$row['supabase_uid']] = (int)$row['rnk'];
 }
+$pageStmt->close();
 
 // ---- Look up full_name for every row from Supabase profiles, in one batched call ----
 // (Fetching one row at a time here would mean one extra Supabase call per leaderboard
@@ -180,23 +282,27 @@ foreach ($chunks as $chunk) {
     // the leaderboard still returns instead of failing outright.
 }
 
-// ---- Assemble final ranked list ----
+// ---- Assemble final list, using each row's true leaderboard rank ----
 $users = [];
-$rank = 0;
 foreach ($rows as $r) {
-    $rank++;
     $users[] = [
         'uid' => $r['uid'],
         'email' => $r['email'],
         'full_name' => $namesByEmail[$r['email']] ?? null,
         'balance' => $r['balance'],
-        'rank' => $rank
+        'rank' => $rankByUid[$r['uid']] ?? null
     ];
 }
 
 echo json_encode([
     'success' => true,
-    'users' => $users
+    'users' => $users,
+    'page' => $page,
+    'limit' => $limit,
+    'total_matching' => $totalMatching,
+    'has_more' => ($offset + count($rows)) < $totalMatching,
+    'total_wallets' => $totalWallets,
+    'total_balance' => $totalBalanceAll
 ]);
 
 exit;
