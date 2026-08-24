@@ -48,5 +48,53 @@ while ($row = $result->fetch_assoc()) {
 }
 $stmt->close();
 
+// The admin panel should show the same "UID" the user sees in the app
+// (profiles.user_number in Supabase), not the internal wallet_users.id.
+// Resolve wallet_users.id -> supabase_uid -> profiles.user_number.
+if (!empty($requests)) {
+    $walletToSupabase = [];
+    $lookupStmt = $conn->prepare("SELECT supabase_uid FROM wallet_users WHERE id = ? LIMIT 1");
+    foreach (array_unique(array_column($requests, 'user_id')) as $uid) {
+        $lookupStmt->bind_param('i', $uid);
+        $lookupStmt->execute();
+        $row = $lookupStmt->get_result()->fetch_assoc();
+        if ($row) {
+            $walletToSupabase[$uid] = $row['supabase_uid'];
+        }
+    }
+    $lookupStmt->close();
+
+    $supabaseToUserNumber = [];
+    $supabaseUids = array_values(array_filter($walletToSupabase));
+    if (!empty($supabaseUids)) {
+        $idListForUrl = implode(',', $supabaseUids);
+        list($code, $rows) = supabase_curl(
+            SUPABASE_URL . '/rest/v1/profiles?id=in.(' . $idListForUrl . ')&select=id,user_number',
+            [
+                'apikey: ' . SUPABASE_SERVICE_KEY,
+                'Authorization: Bearer ' . SUPABASE_SERVICE_KEY
+            ]
+        );
+        if ($code === 200 && is_array($rows)) {
+            foreach ($rows as $r) {
+                $supabaseToUserNumber[$r['id']] = $r['user_number'];
+            }
+        }
+    }
+
+    foreach ($requests as &$r) {
+        $sUid = $walletToSupabase[$r['user_id']] ?? null;
+        // Fall back to the internal id if the Supabase lookup fails for
+        // any reason, so the panel still shows something usable.
+        $r['display_uid'] = ($sUid && isset($supabaseToUserNumber[$sUid]))
+            ? $supabaseToUserNumber[$sUid]
+            : $r['user_id'];
+        // user-detail.html looks up profiles by the raw Supabase UUID
+        // (?uid=<uuid>), not the display user_number — expose it too.
+        $r['supabase_uid'] = $sUid;
+    }
+    unset($r);
+}
+
 echo json_encode(['success' => true, 'requests' => $requests]);
 $conn->close();
