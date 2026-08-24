@@ -234,6 +234,22 @@ function escapeHtml(str){
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// MySQL's NOW() on the server stores created_at/reviewed_at in UTC (the
+// server's timezone). Displayed raw, that's ~6 hours behind Bangladesh
+// time. Parse it explicitly as UTC, then format in Asia/Dhaka.
+function formatDhakaTime(mysqlDatetime){
+  if (!mysqlDatetime) return '';
+  const isoUtc = mysqlDatetime.replace(' ', 'T') + 'Z';
+  const d = new Date(isoUtc);
+  if (isNaN(d.getTime())) return mysqlDatetime; // fallback if format is unexpected
+  return d.toLocaleString('en-GB', {
+    timeZone: 'Asia/Dhaka',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false
+  }).replace(',', '');
+}
+
 function statusChip(status){
   return '<span class="status-chip status-' + status + '">' + status.toUpperCase() + '</span>';
 }
@@ -300,7 +316,7 @@ function buildCard(req){
     '<div class="req-row"><span class="lbl">User ID</span><span class="val"><a href="user-detail.html?uid=' + encodeURIComponent(req.supabase_uid || '') + '" style="color:inherit;text-decoration:underline;">#' + escapeHtml(req.display_uid) + '</a></span></div>' +
     '<div class="req-row"><span class="lbl">Sender Number</span><span class="val">' + escapeHtml(req.sender_number) + '</span></div>' +
     '<div class="req-row"><span class="lbl">TrxID</span><span class="val">' + escapeHtml(req.trx_id) + '</span></div>' +
-    '<div class="req-row"><span class="lbl">Submitted</span><span class="val">' + escapeHtml(req.created_at) + '</span></div>' +
+    '<div class="req-row"><span class="lbl">Submitted</span><span class="val">' + escapeHtml(formatDhakaTime(req.created_at)) + '</span></div>' +
     (req.admin_note ? '<div class="req-row"><span class="lbl">Note</span><span class="val">' + escapeHtml(req.admin_note) + '</span></div>' : '');
 
   if (isPending){

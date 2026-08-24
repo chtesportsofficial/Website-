@@ -302,18 +302,29 @@
   .modal-text{
     font-size:14px;
     color:var(--muted);
-    margin-bottom:20px;
+    margin-bottom:18px;
     line-height:1.5;
   }
+  .modal-help{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:16px;
+    margin-bottom:6px;
+  }
   .btn-whatsapp{
-    display:flex;
+    display:inline-flex;
     align-items:center;
     justify-content:center;
-    gap:8px;
-    background:#25D366;
-    color:#06210f;
+    gap:6px;
+    background:transparent;
+    color:#25D366;
     text-decoration:none;
-    margin-bottom:10px;
+    font-size:13px;
+    font-weight:700;
+    padding:8px 14px;
+    border:1px solid #1f4d3a;
+    border-radius:999px;
+    width:auto;
   }
   .btn-modal-close{
     background:var(--card-2);
@@ -424,10 +435,11 @@
     <div id="depositModalIcon" class="modal-icon"></div>
     <div id="depositModalTitle" class="modal-title"></div>
     <div id="depositModalText" class="modal-text"></div>
-    <a id="depositModalWhatsapp" class="btn btn-whatsapp" href="https://wa.me/8801989242505" target="_blank" rel="noopener">
-      <span>&#128222;</span> <span data-i18n="wallet.contactWhatsapp">Contact us on WhatsApp</span>
-    </a>
     <button id="depositModalClose" class="btn btn-modal-close" data-i18n="wallet.ok">OK</button>
+    <div class="modal-help" data-i18n="wallet.whatsappHelp">Facing an issue or need faster approval?</div>
+    <a id="depositModalWhatsapp" class="btn-whatsapp" href="https://wa.me/8801989242505" target="_blank" rel="noopener">
+      <span>&#128222;</span> <span data-i18n="wallet.contactWhatsapp">Contact Admin on WhatsApp</span>
+    </a>
   </div>
 </div>
 
