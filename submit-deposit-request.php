@@ -88,6 +88,10 @@ if (!$walletUser) {
 $user_id = (int)$walletUser['id'];
 $email   = $walletUser['email'];
 
+// DB enum is ('Bkash','Nagad') — capitalized — but the frontend sends
+// lowercase 'bkash'/'nagad', so convert before inserting.
+$method_db = ucfirst($method);
+
 // --- Prevent duplicate submission of the same trx_id ---
 $check = $conn->prepare("SELECT id, status FROM wallet_deposit_requests WHERE trx_id = ? LIMIT 1");
 $check->bind_param('s', $trx_id);
@@ -107,7 +111,7 @@ $stmt = $conn->prepare(
         (user_id, email, method, sender_number, trx_id, amount, status, created_at)
      VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW())"
 );
-$stmt->bind_param('isssd', $user_id, $email, $method, $sender_number, $trx_id, $amount);
+$stmt->bind_param('issssd', $user_id, $email, $method_db, $sender_number, $trx_id, $amount);
 
 if ($stmt->execute()) {
     respond(true, [
