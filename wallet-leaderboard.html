@@ -163,6 +163,48 @@
     border-radius:50%;
     animation:spin .8s linear infinite;
   }
+
+  .filter-card{
+    background:var(--white);
+    border-radius:18px;
+    padding:14px 16px 16px;
+    box-shadow:0 14px 30px -20px rgba(0,0,0,.28);
+    margin-bottom:14px;
+  }
+  .filter-row{
+    display:flex; gap:8px; margin-bottom:8px;
+  }
+  .filter-row:last-child{ margin-bottom:0; }
+  .filter-field{ flex:1; min-width:0; }
+  .filter-field label{
+    display:block; font-size:10.5px; font-weight:800; text-transform:uppercase;
+    letter-spacing:.3px; color:var(--muted); margin-bottom:4px;
+  }
+  .filter-field input{
+    width:100%; padding:9px 10px; border-radius:9px;
+    border:1px solid var(--line); font-size:13.5px; font-family:inherit;
+    color:var(--ink); background:#fafafe;
+  }
+  .filter-field input:focus{ outline:none; border-color:var(--accent); }
+  .sort-btn{
+    display:flex; align-items:center; gap:6px;
+    padding:9px 12px; border-radius:9px; border:1px solid var(--line);
+    background:#fafafe; color:var(--ink); font-size:12.5px; font-weight:700;
+    font-family:inherit; cursor:pointer; white-space:nowrap;
+  }
+  .sort-btn:hover{ border-color:var(--accent); }
+  .filter-meta{
+    font-size:11.5px; color:var(--muted); margin-top:10px; text-align:center;
+  }
+
+  .load-more-btn{
+    display:block; width:100%; margin-top:14px;
+    padding:12px; border-radius:12px; border:none;
+    background:rgba(255,255,255,0.1); color:#fff;
+    font-size:13.5px; font-weight:700; font-family:inherit; cursor:pointer;
+  }
+  .load-more-btn:hover{ background:rgba(255,255,255,0.18); }
+  .load-more-btn:disabled{ opacity:0.5; cursor:default; }
 </style>
 </head>
 <body>
@@ -207,9 +249,33 @@
         </div>
       </div>
 
+      <div class="filter-card">
+        <div class="filter-row">
+          <div class="filter-field">
+            <label for="uidFilter">Search by UID</label>
+            <input type="text" id="uidFilter" placeholder="Paste or type a UID...">
+          </div>
+        </div>
+        <div class="filter-row">
+          <div class="filter-field">
+            <label for="minBalanceFilter">Min balance</label>
+            <input type="number" id="minBalanceFilter" placeholder="0" inputmode="decimal">
+          </div>
+          <div class="filter-field">
+            <label for="maxBalanceFilter">Max balance</label>
+            <input type="number" id="maxBalanceFilter" placeholder="No limit" inputmode="decimal">
+          </div>
+          <button class="sort-btn" id="sortToggleBtn" type="button" onclick="toggleSort()">
+            <span id="sortToggleLabel">High → Low</span>
+          </button>
+        </div>
+        <div class="filter-meta" id="filterMeta"></div>
+      </div>
+
       <div id="listSpinner" class="list-spinner"></div>
       <div class="lb-list" id="lbList"></div>
       <div class="empty-state" id="emptyState" style="display:none;">No wallet users found.</div>
+      <button class="load-more-btn" id="loadMoreBtn" type="button" onclick="loadMore()" style="display:none;">Load more</button>
     </div>
   </div>
 
@@ -249,6 +315,15 @@ function formatTaka(n){
   return '৳' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+const PAGE_LIMIT = 50;
+
+let accessTokenCache = null;
+let currentPage = 1;
+let currentSort = 'desc';
+let hasMore = false;
+let isFetching = false;
+let debounceTimer = null;
+
 async function checkAccessAndLoad(){
   showGate('checking');
 
@@ -269,15 +344,71 @@ async function checkAccessAndLoad(){
     return;
   }
 
-  await loadLeaderboard(session.access_token);
+  accessTokenCache = session.access_token;
+  showGate('app');
+  attachFilterListeners();
+  await loadLeaderboard({ reset: true });
 }
 
-async function loadLeaderboard(accessToken){
+function currentFilters(){
+  return {
+    uid: document.getElementById('uidFilter').value.trim(),
+    min_balance: document.getElementById('minBalanceFilter').value.trim(),
+    max_balance: document.getElementById('maxBalanceFilter').value.trim(),
+    sort: currentSort
+  };
+}
+
+function attachFilterListeners(){
+  ['uidFilter', 'minBalanceFilter', 'maxBalanceFilter'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => loadLeaderboard({ reset: true }), 400);
+    });
+  });
+}
+
+function toggleSort(){
+  currentSort = currentSort === 'desc' ? 'asc' : 'desc';
+  document.getElementById('sortToggleLabel').textContent =
+    currentSort === 'desc' ? 'High → Low' : 'Low → High';
+  loadLeaderboard({ reset: true });
+}
+
+function loadMore(){
+  if(isFetching || !hasMore) return;
+  currentPage += 1;
+  loadLeaderboard({ reset: false });
+}
+
+async function loadLeaderboard({ reset }){
+  if(isFetching) return;
+  isFetching = true;
+
+  if(reset){
+    currentPage = 1;
+    document.getElementById('lbList').innerHTML = '';
+    document.getElementById('listSpinner').style.display = 'block';
+  }
+
+  const loadMoreBtn = document.getElementById('loadMoreBtn');
+  loadMoreBtn.disabled = true;
+  loadMoreBtn.textContent = 'Loading...';
+
   try {
+    const filters = currentFilters();
     const res = await fetch(API_BASE + '/api/admin-wallet-leaderboard.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ access_token: accessToken })
+      body: JSON.stringify({
+        access_token: accessTokenCache,
+        uid: filters.uid,
+        min_balance: filters.min_balance,
+        max_balance: filters.max_balance,
+        sort: filters.sort,
+        page: currentPage,
+        limit: PAGE_LIMIT
+      })
     });
 
     const data = await res.json();
@@ -288,37 +419,47 @@ async function loadLeaderboard(accessToken){
       return;
     }
 
-    renderLeaderboard(data.users || []);
-    showGate('app');
+    renderLeaderboard(data, reset);
   } catch(e){
     document.getElementById('errorText').textContent = 'Network error: ' + e.message;
     showGate('error');
+  } finally {
+    isFetching = false;
+    document.getElementById('listSpinner').style.display = 'none';
+    loadMoreBtn.textContent = 'Load more';
   }
 }
 
-function renderLeaderboard(users){
-  document.getElementById('listSpinner').style.display = 'none';
+function renderLeaderboard(data, reset){
+  const users = data.users || [];
 
-  document.getElementById('totalCount').textContent = users.length;
-  const totalBalance = users.reduce((sum, u) => sum + (Number(u.balance) || 0), 0);
-  document.getElementById('totalBalance').textContent = formatTaka(totalBalance);
+  // Summary card always reflects the overall (unfiltered) totals.
+  document.getElementById('totalCount').textContent = data.total_wallets ?? 0;
+  document.getElementById('totalBalance').textContent = formatTaka(data.total_balance || 0);
 
   const listEl = document.getElementById('lbList');
+  const emptyEl = document.getElementById('emptyState');
+  const loadMoreBtn = document.getElementById('loadMoreBtn');
+  const metaEl = document.getElementById('filterMeta');
 
-  if(users.length === 0){
-    document.getElementById('emptyState').style.display = 'block';
+  hasMore = !!data.has_more;
+
+  if(reset && users.length === 0){
+    emptyEl.style.display = 'block';
     listEl.innerHTML = '';
+    loadMoreBtn.style.display = 'none';
+    metaEl.textContent = 'No matching wallets.';
     return;
   }
 
-  document.getElementById('emptyState').style.display = 'none';
+  emptyEl.style.display = 'none';
 
-  listEl.innerHTML = users.map(u => {
+  const rowsHtml = users.map(u => {
     const name = u.full_name || u.email || 'Unknown';
     const rankClass = u.rank === 1 ? 'r1' : (u.rank === 2 ? 'r2' : (u.rank === 3 ? 'r3' : ''));
     return `
       <div class="lb-row" onclick="window.location.href='user-detail.html?uid=${encodeURIComponent(u.uid)}'">
-        <div class="rank-chip ${rankClass}">${u.rank}</div>
+        <div class="rank-chip ${rankClass}">${u.rank ?? '-'}</div>
         <div class="avatar-sm">${escapeHtml(initials(name))}</div>
         <div class="lb-text">
           <div class="lb-name">${escapeHtml(name)}</div>
@@ -333,6 +474,19 @@ function renderLeaderboard(users){
       </div>
     `;
   }).join('');
+
+  if(reset){
+    listEl.innerHTML = rowsHtml;
+  } else {
+    listEl.insertAdjacentHTML('beforeend', rowsHtml);
+  }
+
+  loadMoreBtn.style.display = hasMore ? 'block' : 'none';
+  loadMoreBtn.disabled = false;
+
+  const matching = data.total_matching ?? users.length;
+  const shownCount = listEl.querySelectorAll('.lb-row').length;
+  metaEl.textContent = `Showing ${shownCount} of ${matching} matching wallet${matching === 1 ? '' : 's'}`;
 }
 
 checkAccessAndLoad();
