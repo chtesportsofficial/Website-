@@ -278,6 +278,55 @@
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
 .confirm-overlay{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(8,12,25,.62);backdrop-filter:blur(5px)}.confirm-overlay.show{display:flex}.confirm-box{width:min(360px,100%);background:#fff;border-radius:22px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.28);text-align:center}.confirm-icon{width:54px;height:54px;border-radius:16px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;background:#eef2ff;color:#315edb;font-size:24px;font-weight:800}.confirm-title{margin:0;color:#17203a;font-size:19px;font-weight:800}.confirm-text{margin:8px 0 18px;color:#70798d;font-size:14px;line-height:1.45}.confirm-actions{display:flex;gap:10px}.confirm-actions button{flex:1;border:0;border-radius:13px;padding:12px 10px;font-size:14px;font-weight:800;cursor:pointer}.confirm-cancel{background:#eef1f7;color:#536078}.confirm-ok{background:#315edb;color:#fff}.confirm-ok.danger{background:#d85a5a}
+
+  /* ── Adjust Balance card ── */
+  .adj-card{
+    background:var(--white);
+    border-radius:18px;
+    padding:14px;
+    box-shadow:0 14px 30px -20px rgba(0,0,0,.28);
+    margin-top:14px;
+  }
+  .adj-heading{
+    display:flex;align-items:center;gap:7px;
+    font-size:10px;font-weight:900;
+    text-transform:uppercase;letter-spacing:.5px;
+    color:var(--ink);margin:0 2px 12px;
+  }
+  .adj-heading-bar{width:4px;height:15px;border-radius:999px;background:var(--accent);}
+  .adj-toggle{display:flex;gap:8px;margin-bottom:10px;}
+  .adj-toggle button{
+    flex:1;padding:9px 0;border-radius:10px;
+    border:1px solid var(--line);
+    background:#f6f7fb;color:var(--muted);
+    font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;
+    transition:background .15s,color .15s,border-color .15s;
+  }
+  .adj-toggle button.active-add{
+    background:rgba(28,124,77,0.12);color:var(--success);
+    border-color:rgba(28,124,77,0.35);
+  }
+  .adj-toggle button.active-remove{
+    background:rgba(229,72,77,0.12);color:var(--error);
+    border-color:rgba(229,72,77,0.35);
+  }
+  .adj-input{
+    width:100%;padding:10px 12px;border-radius:10px;
+    border:1px solid var(--line);background:#f6f7fb;
+    color:var(--ink);font-size:14px;font-family:inherit;
+    margin-bottom:8px;
+  }
+  .adj-input:focus{outline:none;border-color:var(--accent);}
+  .adj-submit{
+    width:100%;padding:12px;border-radius:10px;border:none;
+    background:var(--accent);color:#fff;
+    font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;
+  }
+  .adj-submit:disabled{opacity:0.5;cursor:not-allowed;}
+  .adj-msg{font-size:13px;text-align:center;padding:7px 0 2px;min-height:22px;font-weight:600;}
+  .adj-msg.ok{color:var(--success);}
+  .adj-msg.err{color:var(--error);}
+  /* ── end Adjust Balance ── */
 </style>
 </head>
 <body>
@@ -336,6 +385,20 @@
         <div class="other-heading"><span class="other-heading-bar"></span><span>OTHER DETAILS</span></div>
         <div class="other-grid" id="otherList"></div>
       </div>
+
+      <!-- ── Adjust Balance ── -->
+      <div class="adj-card" id="adjCard" style="display:none;">
+        <div class="adj-heading"><span class="adj-heading-bar"></span><span>ADJUST BALANCE</span></div>
+        <div class="adj-toggle">
+          <button id="adj-btn-add" class="active-add" onclick="adjSetType('add')">+ Add</button>
+          <button id="adj-btn-remove" onclick="adjSetType('remove')">− Remove</button>
+        </div>
+        <input id="adj-amount" class="adj-input" type="number" min="1" placeholder="Amount (৳)" />
+        <input id="adj-reason" class="adj-input" type="text" maxlength="255" placeholder="Reason (e.g. Refund, Bonus)" />
+        <button class="adj-submit" id="adj-submit-btn" onclick="adjSubmit()">Apply Adjustment</button>
+        <div class="adj-msg" id="adj-msg"></div>
+      </div>
+      <!-- ── end Adjust Balance ── -->
 
       <div class="actions-row">
         <button class="action-btn make-admin" id="adminToggleBtn">Make Admin</button>
@@ -583,6 +646,9 @@ function renderTarget(){
     banBtn.style.display = '';
     banBtn.textContent = p.is_banned ? 'Unblock User' : 'Block User';
   }
+
+  // Show Adjust Balance card (hidden until user loads)
+  document.getElementById('adjCard').style.display = 'block';
 }
 
 async function toggleField(field, currentVal, btnEl){
@@ -613,6 +679,67 @@ function closeConfirmation(){confirmOverlay.classList.remove('show');confirmOver
 confirmCancel.addEventListener('click',closeConfirmation);confirmOverlay.addEventListener('click',e=>{if(e.target===confirmOverlay)closeConfirmation()});confirmOk.addEventListener('click',async()=>{const action=confirmAction;closeConfirmation();if(action)await action()});
 document.getElementById('adminToggleBtn').addEventListener('click',function(){const makeAdmin=!targetProfile.is_admin;askConfirmation(makeAdmin?'Make Admin?':'Remove Admin?',makeAdmin?'Are you sure you want to make this user an admin?':'Are you sure you want to remove admin access from this user?',()=>toggleField('is_admin',!!targetProfile.is_admin,document.getElementById('adminToggleBtn')),false)});
 document.getElementById('banToggleBtn').addEventListener('click',function(){const blockUser=!targetProfile.is_banned;askConfirmation(blockUser?'Block User?':'Unblock User?',blockUser?'Are you sure you want to block this user?':'Are you sure you want to unblock this user?',()=>toggleField('is_banned',!!targetProfile.is_banned,document.getElementById('banToggleBtn')),blockUser)});
+
+/* ── Adjust Balance logic ── */
+let _adjType = 'add';
+
+function adjSetType(type){
+  _adjType = type;
+  document.getElementById('adj-btn-add').className    = type === 'add'    ? 'active-add'    : '';
+  document.getElementById('adj-btn-remove').className = type === 'remove' ? 'active-remove' : '';
+}
+
+async function adjSubmit(){
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session){ showToast('Session expired. Please log in again.'); return; }
+
+  const amount = parseFloat(document.getElementById('adj-amount').value);
+  const reason = document.getElementById('adj-reason').value.trim();
+  const msgEl  = document.getElementById('adj-msg');
+  const btnEl  = document.getElementById('adj-submit-btn');
+
+  msgEl.className = 'adj-msg';
+  msgEl.textContent = '';
+
+  if(!amount || amount <= 0){ msgEl.className='adj-msg err'; msgEl.textContent='Valid amount required.'; return; }
+  if(!reason){ msgEl.className='adj-msg err'; msgEl.textContent='Reason is required.'; return; }
+
+  btnEl.disabled = true;
+  btnEl.textContent = 'Processing...';
+
+  try {
+    const res = await fetch('https://cht.gamer.gd/api/admin-adjust-balance.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        access_token: session.access_token,
+        user_id: targetUid,
+        email:   targetProfile.email,
+        amount:  amount,
+        type:    _adjType,
+        reason:  reason
+      })
+    });
+    const data = await res.json();
+    btnEl.disabled = false;
+    btnEl.textContent = 'Apply Adjustment';
+    if(data && data.success){
+      msgEl.className = 'adj-msg ok';
+      msgEl.textContent = 'Done! New balance: ৳' + data.new_balance;
+      document.getElementById('adj-amount').value = '';
+      document.getElementById('adj-reason').value = '';
+    } else {
+      msgEl.className = 'adj-msg err';
+      msgEl.textContent = (data && data.message) || 'Something went wrong.';
+    }
+  } catch(err){
+    btnEl.disabled = false;
+    btnEl.textContent = 'Apply Adjustment';
+    msgEl.className = 'adj-msg err';
+    msgEl.textContent = 'Network error: ' + err.message;
+  }
+}
+/* ── end Adjust Balance ── */
 
 checkAccess();
 </script>
