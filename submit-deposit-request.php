@@ -7,6 +7,12 @@
 // (`supabase_uid`), not the internal numeric wallet_users.id — so this
 // endpoint takes supabase_uid and looks up the numeric id itself.
 
+// Never print PHP warnings/errors into the response body — that breaks
+// JSON parsing on the frontend. Log them instead (visible in Render logs).
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
+ini_set('log_errors', '1');
+
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
@@ -23,6 +29,18 @@ function respond($status, $data = []) {
     echo json_encode(array_merge(['status' => $status], $data));
     exit();
 }
+
+// Catch any fatal error (e.g. calling a method on a failed prepare()) and
+// still return valid JSON instead of an HTML error page.
+register_shutdown_function(function () {
+    $err = error_get_last();
+    if ($err && in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        if (!headers_sent()) {
+            header('Content-Type: application/json');
+        }
+        echo json_encode(['status' => false, 'message' => 'Server error, please try again.']);
+    }
+});
 
 $input = json_decode(file_get_contents('php://input'), true);
 if (!$input) {
@@ -54,6 +72,10 @@ if ($amount <= 0) {
 
 // --- Resolve supabase_uid -> internal numeric wallet_users.id ---
 $lookup = $conn->prepare("SELECT id, email FROM wallet_users WHERE supabase_uid = ? LIMIT 1");
+if (!$lookup) {
+    error_log('submit-deposit-request.php prepare failed: ' . $conn->error);
+    respond(false, ['message' => 'Server error (lookup query failed). Contact admin.']);
+}
 $lookup->bind_param('s', $supabase_uid);
 $lookup->execute();
 $walletUser = $lookup->get_result()->fetch_assoc();
