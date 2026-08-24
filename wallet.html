@@ -265,6 +265,37 @@
     color:var(--muted);
     font-size:14px;
   }
+  .history-entry{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:14px 16px;
+    margin-bottom:10px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+  }
+  .history-entry .he-left .he-amount{
+    font-size:16px;
+    font-weight:700;
+    color:var(--text);
+  }
+  .history-entry .he-left .he-sub{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:2px;
+  }
+  .he-status{
+    font-size:11px;
+    font-weight:700;
+    padding:4px 10px;
+    border-radius:8px;
+    white-space:nowrap;
+  }
+  .he-status.pending{background:rgba(255,122,26,0.12);color:var(--orange);}
+  .he-status.approved{background:rgba(34,197,94,0.12);color:var(--green);}
+  .he-status.rejected{background:rgba(239,68,68,0.12);color:var(--red);}
 
   .modal-overlay{
     display:none;
@@ -425,7 +456,7 @@
   </div>
 
   <div class="history-title">&#8635; <span data-i18n="wallet.recentTx">RECENT TRANSACTIONS</span></div>
-  <div class="history-card" data-i18n="wallet.noTx">No transactions yet.</div>
+  <div id="historyArea"><div class="history-card" data-i18n="wallet.noTx">No transactions yet.</div></div>
 
 </div>
 
@@ -494,6 +525,43 @@ let _walletLastFetchedUid = null;
 const WALLET_CACHE_KEY = 'cached_balance';
 const WALLET_CACHE_UID_KEY = 'cached_balance_uid';
 
+// Bangladeshi/Indian digit grouping: last 3 digits together, then every
+// 2 digits after that — e.g. 10000000 -> "1,00,00,000" (1 crore).
+function formatBDT(amount){
+  const num = Number(amount);
+  if (isNaN(num)) return String(amount);
+  const isNegative = num < 0;
+  const parts = Math.abs(num).toString().split('.');
+  let intPart = parts[0];
+  const decPart = parts[1];
+
+  let formatted;
+  if (intPart.length <= 3) {
+    formatted = intPart;
+  } else {
+    const lastThree = intPart.slice(-3);
+    const rest = intPart.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ',');
+    formatted = rest + ',' + lastThree;
+  }
+  if (decPart) formatted += '.' + decPart;
+  return (isNegative ? '-' : '') + formatted;
+}
+
+// wallet_deposit_requests.created_at is stored in the server's UTC time;
+// convert explicitly to Asia/Dhaka for display.
+function formatDhakaTime(mysqlDatetime){
+  if (!mysqlDatetime) return '';
+  const isoUtc = mysqlDatetime.replace(' ', 'T') + 'Z';
+  const d = new Date(isoUtc);
+  if (isNaN(d.getTime())) return mysqlDatetime;
+  return d.toLocaleString('en-GB', {
+    timeZone: 'Asia/Dhaka',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit',
+    hour12: false
+  }).replace(',', '');
+}
+
 function loadWalletBalance(){
   const profile = getProfile();
   // Read straight from the plain 'supabase_uid' key first — global.js
@@ -512,7 +580,7 @@ function loadWalletBalance(){
   const cachedUid = localStorage.getItem(WALLET_CACHE_UID_KEY);
   const cached = localStorage.getItem(WALLET_CACHE_KEY);
   if(cached !== null && cachedUid === uid){
-    balanceEl.textContent = '৳' + cached;
+    balanceEl.textContent = '৳' + formatBDT(cached);
   } else {
     balanceEl.textContent = '...';
   }
@@ -526,7 +594,7 @@ function loadWalletBalance(){
     .then(data => {
       _walletLastFetchedUid = uid;
       if(data.success){
-        balanceEl.textContent = '৳' + data.balance;
+        balanceEl.textContent = '৳' + formatBDT(data.balance);
         localStorage.setItem(WALLET_CACHE_KEY, data.balance);
         localStorage.setItem(WALLET_CACHE_UID_KEY, uid);
       } else {
@@ -541,6 +609,52 @@ function loadWalletBalance(){
 }
 loadWalletBalance();
 document.addEventListener('chteo:profile-synced', loadWalletBalance);
+
+/* ============ Recent Transactions (deposit request history) ============ */
+function escapeHtmlWallet(str){
+  return String(str == null ? '' : str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderHistory(entries){
+  const area = document.getElementById('historyArea');
+  if (!area) return;
+  if (!entries || !entries.length){
+    area.innerHTML = '<div class="history-card">No transactions yet.</div>';
+    return;
+  }
+  area.innerHTML = entries.map(function(e){
+    return '<div class="history-entry">' +
+      '<div class="he-left">' +
+        '<div class="he-amount">৳' + formatBDT(e.amount) + '</div>' +
+        '<div class="he-sub">' + escapeHtmlWallet(e.method) + ' &middot; ' + escapeHtmlWallet(formatDhakaTime(e.created_at)) + '</div>' +
+      '</div>' +
+      '<div class="he-status ' + escapeHtmlWallet(e.status) + '">' + escapeHtmlWallet(e.status).toUpperCase() + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function loadWalletHistory(){
+  const uid = localStorage.getItem('supabase_uid') || getProfile().supabase_uid;
+  if (!uid) return;
+
+  fetch('https://chteo-api.onrender.com/get-deposit-history.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ supabase_uid: uid })
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if (res && res.success){
+        renderHistory(res.history);
+      }
+    })
+    .catch(function(err){
+      console.warn('Wallet history load failed:', err);
+    });
+}
+loadWalletHistory();
+document.addEventListener('chteo:profile-synced', loadWalletHistory);
 
 /* ============ Deposit submission (manual bKash/Nagad review) ============ */
 function showDepositMsg(text, isError){

@@ -254,6 +254,28 @@ function statusChip(status){
   return '<span class="status-chip status-' + status + '">' + status.toUpperCase() + '</span>';
 }
 
+// Bangladeshi/Indian digit grouping: last 3 digits together, then every
+// 2 digits after that — e.g. 10000000 -> "1,00,00,000" (1 crore).
+function formatBDT(amount){
+  const num = Number(amount);
+  if (isNaN(num)) return String(amount);
+  const isNegative = num < 0;
+  const parts = Math.abs(num).toString().split('.');
+  let intPart = parts[0];
+  const decPart = parts[1];
+
+  let formatted;
+  if (intPart.length <= 3) {
+    formatted = intPart;
+  } else {
+    const lastThree = intPart.slice(-3);
+    const rest = intPart.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ',');
+    formatted = rest + ',' + lastThree;
+  }
+  if (decPart) formatted += '.' + decPart;
+  return (isNegative ? '-' : '') + formatted;
+}
+
 let _loadInFlight = false;
 
 function loadRequests(){
@@ -307,7 +329,7 @@ function buildCard(req){
 
   card.innerHTML =
     '<div class="req-top">' +
-      '<div class="req-amount">৳' + escapeHtml(req.amount) + '</div>' +
+      '<div class="req-amount">৳' + formatBDT(req.amount) + '</div>' +
       '<div style="display:flex;gap:8px;align-items:center;">' +
         '<div class="req-method">' + escapeHtml(req.method) + '</div>' +
         (isPending ? '' : statusChip(req.status)) +
