@@ -265,6 +265,61 @@
     color:var(--muted);
     font-size:14px;
   }
+
+  .modal-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.6);
+    z-index:1000;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .modal-overlay.active{
+    display:flex;
+  }
+  .modal-box{
+    width:100%;
+    max-width:360px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:26px 20px 20px;
+    text-align:center;
+  }
+  .modal-icon{
+    font-size:40px;
+    line-height:1;
+    margin-bottom:12px;
+  }
+  .modal-title{
+    font-size:18px;
+    font-weight:800;
+    margin-bottom:8px;
+    color:var(--text);
+  }
+  .modal-text{
+    font-size:14px;
+    color:var(--muted);
+    margin-bottom:20px;
+    line-height:1.5;
+  }
+  .btn-whatsapp{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    background:#25D366;
+    color:#06210f;
+    text-decoration:none;
+    margin-bottom:10px;
+  }
+  .btn-modal-close{
+    background:var(--card-2);
+    color:var(--text);
+    border:1px solid var(--border);
+  }
 </style>
 <style>
 :root{
@@ -362,6 +417,20 @@
   <div class="history-card" data-i18n="wallet.noTx">No transactions yet.</div>
 
 </div>
+
+<!-- DEPOSIT RESULT MODAL -->
+<div id="depositModalOverlay" class="modal-overlay">
+  <div class="modal-box">
+    <div id="depositModalIcon" class="modal-icon"></div>
+    <div id="depositModalTitle" class="modal-title"></div>
+    <div id="depositModalText" class="modal-text"></div>
+    <a id="depositModalWhatsapp" class="btn btn-whatsapp" href="https://wa.me/8801989242505" target="_blank" rel="noopener">
+      <span>&#128222;</span> <span data-i18n="wallet.contactWhatsapp">Contact us on WhatsApp</span>
+    </a>
+    <button id="depositModalClose" class="btn btn-modal-close" data-i18n="wallet.ok">OK</button>
+  </div>
+</div>
+
 
 <script>
 function getProfile(){
@@ -469,6 +538,17 @@ function showDepositMsg(text, isError){
   el.style.color = isError ? '#ef4444' : '#22c55e';
 }
 
+function showDepositModal(isSuccess, title, text){
+  document.getElementById('depositModalIcon').textContent = isSuccess ? '\u2705' : '\u26A0\uFE0F';
+  document.getElementById('depositModalTitle').textContent = title;
+  document.getElementById('depositModalText').textContent = text;
+  document.getElementById('depositModalOverlay').classList.add('active');
+}
+
+document.getElementById('depositModalClose').addEventListener('click', function(){
+  document.getElementById('depositModalOverlay').classList.remove('active');
+});
+
 document.getElementById('depositSubmitBtn').addEventListener('click', function(){
   const btn = document.getElementById('depositSubmitBtn');
   const method = document.getElementById('depositMethod').value;
@@ -519,19 +599,31 @@ document.getElementById('depositSubmitBtn').addEventListener('click', function()
       btn.disabled = false;
       btn.textContent = 'Deposit';
       if(res && res.status){
-        showDepositMsg(res.message || 'Submitted! Waiting for admin approval.', false);
+        showDepositModal(
+          true,
+          'Request Submitted',
+          res.message || 'Your deposit request was submitted and will be reviewed by an admin shortly. Need it faster or have an issue? Message us on WhatsApp.'
+        );
         document.getElementById('depositAmount').value = '';
         document.getElementById('depositSenderNumber').value = '';
         document.getElementById('depositTrxId').value = '';
         document.getElementById('depositMethod').selectedIndex = 0;
       } else {
-        showDepositMsg((res && res.message) || 'Submission failed.', true);
+        showDepositModal(
+          false,
+          'Submission Failed',
+          (res && res.message) || 'Something went wrong submitting your deposit request. Please try again, or contact us on WhatsApp.'
+        );
       }
     })
     .catch(function(err){
       btn.disabled = false;
       btn.textContent = 'Deposit';
-      showDepositMsg('Could not connect: ' + err.message, true);
+      showDepositModal(
+        false,
+        'Connection Error',
+        'Could not reach the server: ' + err.message + '. Please try again, or contact us on WhatsApp.'
+      );
     });
 });
 </script>
