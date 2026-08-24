@@ -54,14 +54,23 @@ $stmt->close();
 // Resolve wallet_users.id -> supabase_uid -> profiles.user_number.
 if (!empty($requests)) {
     $walletToSupabase = [];
-    $lookupStmt = $conn->prepare("SELECT supabase_uid FROM wallet_users WHERE id = ? LIMIT 1");
-    foreach (array_unique(array_column($requests, 'user_id')) as $uid) {
-        $lookupStmt->bind_param('i', $uid);
-        $lookupStmt->execute();
-        $row = $lookupStmt->get_result()->fetch_assoc();
-        if ($row) {
-            $walletToSupabase[$uid] = $row['supabase_uid'];
-        }
+    $uniqueIds = array_values(array_unique(array_column($requests, 'user_id')));
+
+    // Single batched query instead of one query per unique user_id — the
+    // earlier per-row loop was the main reason the list felt slow.
+    $placeholders = implode(',', array_fill(0, count($uniqueIds), '?'));
+    $types = str_repeat('i', count($uniqueIds));
+    $lookupStmt = $conn->prepare("SELECT id, supabase_uid FROM wallet_users WHERE id IN ($placeholders)");
+    $bindArgs = [];
+    $bindArgs[] = &$types;
+    foreach ($uniqueIds as $k => $v) {
+        $bindArgs[] = &$uniqueIds[$k];
+    }
+    call_user_func_array([$lookupStmt, 'bind_param'], $bindArgs);
+    $lookupStmt->execute();
+    $lookupResult = $lookupStmt->get_result();
+    while ($row = $lookupResult->fetch_assoc()) {
+        $walletToSupabase[(int)$row['id']] = $row['supabase_uid'];
     }
     $lookupStmt->close();
 

@@ -226,6 +226,9 @@ function switchTab(status){
   document.querySelectorAll('.tab-btn').forEach(function(b){
     b.classList.toggle('active', b.getAttribute('data-status') === status);
   });
+  // A background poll may still be "in flight" for the previous tab —
+  // don't let that silently block this manual switch from loading.
+  _loadInFlight = false;
   loadRequests();
 }
 
@@ -392,6 +395,7 @@ function buildCard(req){
         .then(function(r){ return r.json(); })
         .then(function(res){
           if (res && res.success){
+            _loadInFlight = false;
             loadRequests();
           } else {
             alert((res && res.message) || 'Action failed.');
