@@ -32,18 +32,27 @@
 .section-index,.t-index{width:27px;height:27px;display:grid;place-items:center;flex:0 0 27px;border-radius:8px;background:#101725;border:1px solid #2b3852;color:#9eabc0;font-size:10px;font-weight:900}
 .section-name-wrap,.t-title-row{display:flex;align-items:center;gap:8px;min-width:0}
 .drag{width:34px;height:32px;display:grid;place-items:center;border:1px solid #293650;border-radius:9px;background:#111827;letter-spacing:-4px}
-.tournament-item{grid-template-columns:1fr;gap:9px;padding:11px}
-.tournament-top{display:grid;grid-template-columns:27px 72px minmax(0,1fr);align-items:center;gap:9px;min-width:0}
-.tournament-top .thumb{width:72px;height:72px;aspect-ratio:1/1;flex:0 0 72px}
-.tournament-top .thumb img{object-fit:contain;background:#0d1320}
-.t-main{padding-right:0;min-width:0;flex:1}
-.t-title-row .t-title{flex:1;min-width:0}
+.tournament-item{display:grid;grid-template-columns:1fr;gap:10px;padding:14px;border-radius:18px;background:linear-gradient(145deg,#182237,#141d30);border:1px solid #2b3852;box-shadow:0 8px 22px #0002}
+.tournament-top{display:grid;grid-template-columns:38px 108px minmax(0,1fr);align-items:center;gap:12px;min-width:0}
+.tournament-top .thumb{width:108px;height:108px;aspect-ratio:1/1;flex:0 0 108px;border-radius:13px;border:1px solid #33425f;background:#0c1320;box-shadow:0 5px 16px #0004}
+.tournament-top .thumb img{width:100%;height:100%;object-fit:contain;background:#0d1320;display:block}
+.t-main{padding-right:0;min-width:0;align-self:center}
+.t-title-row{display:block;min-width:0}
+.t-title-row .t-title{display:block;min-width:0;font-size:16px;font-weight:950;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .t-title .status{display:none}
-.t-actions{margin-top:9px}
-.t-edit{position:static;margin-left:0}.t-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;width:100%}.t-actions .switch{flex:0 0 60px}.t-actions .drag{margin-left:auto}
-.t-edit .mini{padding:7px 10px}
+.t-meta{font-size:9px;color:#8e98ab;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t-edit{display:none}
+.t-actions{display:flex;align-items:center;gap:9px;flex-wrap:nowrap;width:100%;margin-top:0;padding-left:50px}
+.t-actions .mini{min-height:38px;padding:9px 16px;font-size:10px}
+.t-actions .switch{width:68px;height:34px;flex:0 0 68px}
+.t-actions .switch .knob{width:26px;height:26px;top:4px;left:4px}
+.t-actions .switch.on .knob{left:38px}
+.t-actions .switch-label{top:10px;left:10px;font-size:9px}
+.t-actions .switch:not(.on) .switch-label{right:10px;left:auto}
+.t-actions .drag{margin-left:auto;flex:0 0 42px;width:42px;height:38px;border-radius:11px}
 
-@media(max-width:520px){.wrap{padding-left:12px;padding-right:12px}.grid,.modal-actions{grid-template-columns:1fr}.tournament-top{grid-template-columns:27px 72px minmax(0,1fr)}.tournament-top .thumb{width:72px;height:72px}.t-actions{gap:6px}.t-actions .mini{padding:7px 10px}.t-actions .drag{margin-left:auto}}
+@media(max-width:520px){.wrap{padding-left:12px;padding-right:12px}.grid,.modal-actions{grid-template-columns:1fr}.tournament-item{padding:12px}.tournament-top{grid-template-columns:32px 88px minmax(0,1fr);gap:10px}.tournament-top .thumb{width:88px;height:88px}.t-title-row .t-title{font-size:13px}.t-meta{font-size:8px;margin-top:6px}.t-actions{padding-left:42px;gap:6px;overflow:hidden}.t-actions .mini{padding:8px 11px;font-size:9px}.t-actions .switch{width:60px;height:31px;flex-basis:60px}.t-actions .switch .knob{width:23px;height:23px}.t-actions .switch.on .knob{left:33px}.t-actions .switch-label{top:9px;font-size:8px}.t-actions .drag{flex-basis:38px;width:38px;height:34px}}
+
 </style>
 </head>
 <body>
@@ -159,14 +168,15 @@ function renderTournaments(){
      <span class="t-index">${i+1}</span>
      <div class="thumb">${t.banner_url?`<img src="${esc(t.banner_url)}" alt="">`:''}</div>
      <div class="t-main">
-       <div class="t-title-row"><div class="t-title">${esc(t.title)}</div><div class="t-edit"><button class="mini green" onclick="editTournament('${t.id}')">Edit</button></div></div>
+       <div class="t-title-row"><div class="t-title">${esc(t.title)}</div></div>
        <div class="t-meta">Entry ৳${t.entry_fee||0} · Prize ৳${t.prize_pool||0} · Slots ${t.total_slots||0}</div>
      </div>
    </div>
    <div class="t-actions">
-     <button class="switch t-toggle ${t.status==='published'?'on':''}" onclick="toggleTournament('${t.id}',${t.status!=='published'})"><span class="switch-label">${t.status==='published'?'ON':'OFF'}</span><span class="knob"></span></button>
+     <button class="mini green" onclick="editTournament('${t.id}')">Edit</button>
      <button class="mini archive-btn" onclick="archive('${t.id}')">Archive</button>
      <button class="mini t-delete" onclick="deleteTournament('${t.id}')">Delete</button>
+     <button class="switch t-toggle ${t.status==='published'?'on':''}" onclick="toggleTournament('${t.id}',${t.status!=='published'})"><span class="switch-label">${t.status==='published'?'ON':'OFF'}</span><span class="knob"></span></button>
      <span class="drag tournament-drag" title="Drag to reorder">⠿</span>
    </div>
  </div>`).join(''):'<div class="empty">No tournaments created yet.</div>';
