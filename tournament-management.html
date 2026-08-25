@@ -5,46 +5,29 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Tournament Management — CHT ESP ORG</title>
 <style>
-body{margin:0;background:#0a0d13;color:#f2f3f7;font-family:Inter,system-ui,sans-serif}
-.wrap{max-width:760px;margin:auto;padding:18px 15px 120px}
-.head{display:flex;gap:12px;align-items:center;margin-bottom:16px}.back{color:#fff;text-decoration:none;font-size:26px}
-h1{font-size:20px;margin:0}.sub{font-size:11px;color:#8992a6;margin-top:3px}
-.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
-button{position:relative;z-index:100;pointer-events:auto;touch-action:manipulation;cursor:pointer;border:1px solid #263047;background:#141a29;color:#fff;border-radius:12px;padding:11px;font-weight:800;font-size:11px}
-.primary{background:#22c55e;color:#07100a;border-color:#22c55e}
-.panel{background:#141a29;border:1px solid #263047;border-radius:17px;padding:13px;margin-bottom:13px}
-.ph{display:flex;justify-content:space-between;align-items:center}.ph b{font-size:13px}.count{color:#8c96aa;font-size:10px}
-.item{background:#181f30;border:1px solid #29344c;border-radius:14px;padding:10px;margin-top:8px}
-.item-head{display:flex;align-items:center;gap:10px;min-width:0}.item-main{flex:1;min-width:0}.name{font-weight:800;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.meta{font-size:10px;color:#929caf;line-height:1.5;margin-top:4px}
-.edit-top{padding:7px 10px;font-size:9px;color:#62e58a;flex-shrink:0}.drag-handle{width:30px;height:32px;padding:0;border:0;background:transparent;color:#8992a6;font-size:19px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;flex-shrink:0}.drag-handle:active{cursor:grabbing}
-.t-card{display:grid;grid-template-columns:82px 1fr;gap:10px;align-items:stretch}.t-thumb{width:82px;height:62px;border-radius:9px;object-fit:cover;background:#101522;border:1px solid #29344c}.t-content{min-width:0}.t-actions{display:flex;align-items:center;gap:7px;margin-top:9px}.danger{color:#ff7777}.archive-btn{color:#f3c86b}
-.badge{font-size:8px;border-radius:99px;padding:4px 7px;background:#222b40;color:#c5cede;vertical-align:middle}.badge.on{color:#62e58a}.badge.off{color:#ff9aa5}
-.switch{width:58px;height:30px;padding:0;border-radius:99px;border:1px solid #34405a;background:#273044;position:relative;flex-shrink:0}.switch .knob{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#eef2f7;transition:.18s;box-shadow:0 1px 5px #0008}.switch.on{background:#18cf65;border-color:#18cf65}.switch.on .knob{left:31px}.switch-label{font-size:8px;font-weight:900;position:absolute;left:9px;top:8px;color:#0b2b19}.switch:not(.on) .switch-label{left:30px;color:#c9d0dd}
-.section-item{position:relative;transition:.15s}.section-item.dragging{opacity:.45;transform:scale(.99)}.section-item.drop-target{border-color:#22c55e;box-shadow:0 0 0 1px #22c55e33}.section-meta{display:none}.section-controls{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:8px}.section-edit{color:#62e58a;padding:6px 9px;font-size:9px}.section-delete{color:#ff7777;padding:6px 9px;font-size:9px}.drag-note{font-size:9px;color:#6f7a8f;margin-top:7px}
-.empty,.loading{text-align:center;color:#8992a6;font-size:11px;padding:18px}
-.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:9999;align-items:flex-end;justify-content:center}.modal.open{display:flex}.box{width:100%;max-height:92vh;overflow:auto;background:#0b0f17;border:1px solid #263047;border-radius:20px 20px 0 0;padding:16px}.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.confirm-modal{align-items:center;padding:18px}.confirm-box{width:min(360px,100%);background:#171d2b;border:1px solid #313d56;border-radius:22px;padding:20px;box-shadow:0 20px 60px #000b}.confirm-icon{width:46px;height:46px;border-radius:14px;background:#3a1f28;color:#ff6f7e;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:12px}.confirm-title{font-size:16px;font-weight:900}.confirm-text{font-size:11px;line-height:1.6;color:#929caf;margin-top:6px}.confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}.confirm-cancel{background:#222b3c}.confirm-delete{background:#ef4b5b;border-color:#ef4b5b;color:white}
-label{display:block;color:#8992a6;font-size:10px;font-weight:800;margin:9px 0 5px}input,select,textarea{width:100%;box-sizing:border-box;background:#141a29;border:1px solid #29344c;color:#fff;border-radius:10px;padding:10px;font-size:11px}textarea{min-height:80px;resize:vertical}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}
-@media(max-width:520px){.actions{grid-template-columns:1fr}.grid,.modal-actions{grid-template-columns:1fr}.t-card{grid-template-columns:76px 1fr}.t-thumb{width:76px;height:58px}}
-
-/* ===== Custom success/error message ===== */
-.app-msg{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.62);backdrop-filter:blur(4px);opacity:0;visibility:hidden;transition:.18s ease}
-.app-msg.show{opacity:1;visibility:visible}
-.app-msg-box{width:min(390px,100%);background:#171c2c;border:1px solid #29324a;border-radius:22px;padding:25px 22px 18px;box-shadow:0 24px 70px rgba(0,0,0,.55);transform:translateY(10px) scale(.98);transition:.18s ease}
-.app-msg.show .app-msg-box{transform:none}
-.app-msg-icon{width:48px;height:48px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;background:rgba(34,224,138,.13);border:1px solid rgba(34,224,138,.35);color:#22e08a;font-size:25px;font-weight:900}
-.app-msg-title{text-align:center;font-size:18px;font-weight:900;color:#f3f5fb;margin-bottom:8px}
-.app-msg-text{text-align:center;color:#aab2c5;font-size:14px;line-height:1.5;white-space:pre-line}
-.app-msg-btn{display:block;width:100%;margin-top:20px;border:0;border-radius:13px;padding:12px;background:linear-gradient(135deg,#22e08a,#69f2b2);color:#061b14;font-weight:900;font-size:14px;cursor:pointer}
+:root{--bg:#080b12;--surface:#121827;--surface2:#171f31;--line:#26324a;--muted:#8b96aa;--green:#25d366;--green2:#39e77b;--red:#ff5d6c;--gold:#f6c453}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#080b12,#0b0f18 55%,#080b12);color:#f4f6fb;font-family:Inter,system-ui,-apple-system,sans-serif}
+.wrap{max-width:760px;margin:auto;padding:20px 14px 110px}.head{display:flex;gap:12px;align-items:center;margin-bottom:18px}.back{width:34px;height:34px;display:grid;place-items:center;color:#fff;text-decoration:none;font-size:27px;border:1px solid #202a40;border-radius:11px;background:#101625}.head h1{font-size:21px;margin:0;font-weight:900}.sub{font-size:10px;color:var(--muted);margin-top:4px}
+.topbar{display:flex;justify-content:flex-end;margin:-2px 0 12px}.archive-link{display:inline-flex;align-items:center;gap:7px;padding:10px 13px;border:1px solid #293650;background:#141b2b;color:#e9edf5;border-radius:12px;text-decoration:none;font-size:10px;font-weight:900;box-shadow:0 6px 20px #0003}
+.panel{background:linear-gradient(180deg,#141b2b,#111827);border:1px solid #27334c;border-radius:19px;padding:12px;margin-bottom:12px;box-shadow:0 12px 30px #0003}.ph{display:flex;justify-content:space-between;align-items:center;padding:2px 4px 9px}.ph b{font-size:14px}.count{color:#7e899d;font-size:10px;font-weight:800}
+.section-item{position:relative;background:#171f31;border:1px solid #293650;border-radius:16px;padding:12px 12px 11px;margin-top:8px}.section-top{display:flex;align-items:center;justify-content:space-between;gap:10px}.section-name{font-size:12px;font-weight:900;min-width:0}.status{font-size:8px;font-weight:900;padding:4px 7px;border-radius:999px;background:#203329;color:#5ee98b;margin-left:5px}.status.off{background:#282c36;color:#9299a6}.section-tools{display:flex;align-items:center;gap:7px}.drag{font-size:17px;line-height:1;color:#8994a8;letter-spacing:-3px;cursor:grab;padding:5px}.drag:active{cursor:grabbing}.mini{border:1px solid #293650;background:#111827;color:#e8ebf2;border-radius:999px;padding:7px 11px;font-size:9px;font-weight:900}.mini.green{color:#62eb91}.mini.red{color:#ff6f7c}.section-bottom{display:flex;align-items:center;justify-content:flex-end;margin-top:10px}.switch{width:60px;height:30px;border:0;border-radius:999px;background:#343a45;position:relative;padding:0;box-shadow:inset 0 0 0 1px #4a5260}.switch .knob{position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:50%;background:#e9edf2;box-shadow:0 2px 5px #0006;transition:.18s}.switch.on{background:#18c866;box-shadow:none}.switch.on .knob{left:34px}.switch-label{position:absolute;left:9px;top:8px;font-size:8px;font-weight:900;color:#fff}.switch:not(.on) .switch-label{left:auto;right:9px;color:#aeb5c0}
+.add-section{width:100%;margin:0 0 12px}.add-section button,.create-bottom{width:100%;border:1px solid #293650;background:#141b2b;color:#fff;border-radius:13px;padding:12px;font-size:10px;font-weight:900}.create-bottom{background:linear-gradient(135deg,#20ca5f,#25d56b);color:#06120a;border-color:#20ca5f;margin-top:9px}
+.tournament-item{display:grid;grid-template-columns:70px 1fr;gap:11px;position:relative;background:#171f31;border:1px solid #293650;border-radius:16px;padding:10px;margin-top:8px}.thumb{width:70px;height:52px;border-radius:9px;overflow:hidden;background:#0d1320;border:1px solid #293650;align-self:start}.thumb img{width:100%;height:100%;object-fit:cover;display:block}.t-main{min-width:0;padding-right:54px}.t-title{font-size:11px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.t-meta{font-size:8px;color:#8e98ab;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.t-actions{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}.t-edit{position:absolute;right:10px;top:10px}.t-edit .mini{padding:7px 10px}.archive-btn{color:#e9c96a}.t-delete{color:#ff6977}.t-toggle{margin-left:0}.empty,.loading{text-align:center;color:var(--muted);font-size:11px;padding:22px}
+.modal{display:none;position:fixed;inset:0;background:#000b;z-index:9999;align-items:flex-end;backdrop-filter:blur(4px)}.modal.open{display:flex}.box{width:100%;max-height:92vh;overflow:auto;background:#0c111b;border:1px solid #293650;border-radius:22px 22px 0 0;padding:17px}.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}.mh b{font-size:14px}.mh button{width:34px;height:34px;border-radius:10px;border:1px solid #293650;background:#151d2c;color:#fff;font-size:20px}label{display:block;color:#8d98ab;font-size:9px;font-weight:900;margin:9px 0 5px}input,select,textarea{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-radius:11px;padding:10px;font-size:11px}textarea{min-height:80px;resize:vertical}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}.modal-actions button{border:1px solid #293650;background:#151d2c;color:#fff;border-radius:11px;padding:11px;font-weight:900}.modal-actions .primary{background:#22c55e;color:#06120a;border-color:#22c55e}
+.confirm{display:none;position:fixed;inset:0;z-index:10000;background:#000a;align-items:center;justify-content:center;padding:20px}.confirm.open{display:flex}.confirm-card{width:min(360px,100%);background:#141a29;border:1px solid #2c3851;border-radius:20px;padding:20px;box-shadow:0 25px 70px #0008}.confirm-icon{width:44px;height:44px;border-radius:14px;background:#2b1720;color:#ff6575;display:grid;place-items:center;font-size:20px;margin-bottom:12px}.confirm-title{font-size:15px;font-weight:900}.confirm-text{font-size:10px;color:#929caf;line-height:1.5;margin-top:6px}.confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}.confirm-actions button{border:1px solid #293650;background:#111827;color:#fff;border-radius:11px;padding:11px;font-weight:900}.confirm-actions .danger{background:#e5485a;border-color:#e5485a}
+.dragging{opacity:.45}.drag-over{outline:1px dashed #36df7a;outline-offset:2px}
+@media(max-width:520px){.wrap{padding-left:12px;padding-right:12px}.grid,.modal-actions{grid-template-columns:1fr}.tournament-item{grid-template-columns:62px 1fr}.thumb{width:62px;height:48px}}
 </style>
 </head>
 <body>
 <main class="wrap">
   <div class="head"><a class="back" href="admin-panel.html">‹</a><div><h1>Tournament Management</h1><div class="sub">Create, edit and publish Homepage tournaments</div></div></div>
-  <div class="actions"><button type="button" class="primary" id="createTournamentBtn">＋ Create Tournament</button><button type="button" id="addSectionBtn">＋ Add New Section</button><button type="button" id="archivePageBtn">🗄 Archived Tournaments</button></div>
+  <div class="topbar"><a class="archive-link" href="archive-tournaments.html">▣ Archived Tournaments</a></div>
 
   <section class="panel"><div class="ph"><b>Homepage Sections</b><span class="count" id="scount">0</span></div><div id="sections"><div class="loading">Loading...</div></div></section>
+  <div class="add-section"><button type="button" id="addSectionBtn">＋ Add New Section</button></div>
   <section class="panel"><div class="ph"><b>Tournaments</b><span class="count" id="tcount">0</span></div><div id="tournaments"><div class="loading">Loading...</div></div></section>
+  <button type="button" class="create-bottom" id="createTournamentBtn">＋ Create Tournament</button>
 </main>
 
 <div class="modal" id="tm"><div class="box">
@@ -78,24 +61,13 @@ label{display:block;color:#8992a6;font-size:10px;font-weight:800;margin:9px 0 5p
   <div class="mh"><b id="smTitle">Add New Section</b><button type="button" id="closeSmBtn">×</button></div>
   <input type="hidden" id="sid">
   <label>Section Name *</label><input id="sname" placeholder="Today's Scrims Tournaments">
-  <div style="font-size:10px;color:#6f7a8f;margin-top:4px">Use the switch on the card to enable or disable this section.</div>
+  <label>Description</label><textarea id="sdesc"></textarea>
+  <label>Display Order</label><input id="sorder" type="number" min="0" value="1">
+  <label>Active</label><select id="sactive"><option value="true">Active</option><option value="false">Inactive</option></select>
   <div class="modal-actions"><button type="button" id="cancelSmBtn">Cancel</button><button type="button" class="primary" id="saveSectionBtn">Save Section</button></div>
 </div></div>
 
-<div class="modal confirm-modal" id="confirmDelete"><div class="confirm-box">
-  <div class="confirm-icon">🗑</div><div class="confirm-title" id="confirmTitle">Delete tournament?</div>
-  <div class="confirm-text" id="confirmText">This action cannot be undone.</div>
-  <div class="confirm-actions"><button type="button" class="confirm-cancel" id="confirmCancel">Cancel</button><button type="button" class="confirm-delete" id="confirmOk">Delete</button></div>
-</div></div>
-
-<div class="app-msg" id="appMsg" onclick="if(event.target===this)closeMsg()">
- <div class="app-msg-box">
-  <div class="app-msg-icon">✓</div>
-  <div class="app-msg-title">Success</div>
-  <div class="app-msg-text" id="appMsgText"></div>
-  <button class="app-msg-btn" type="button" onclick="closeMsg()">OK</button>
- </div>
-</div>
+<div class="confirm" id="confirm"><div class="confirm-card"><div class="confirm-icon">!</div><div class="confirm-title" id="confirmTitle">Are you sure?</div><div class="confirm-text" id="confirmText"></div><div class="confirm-actions"><button type="button" onclick="closeConfirm()">Cancel</button><button type="button" class="danger" id="confirmOk">Continue</button></div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -107,13 +79,12 @@ let sections=[], tournaments=[];
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 function openM(id){$(id).classList.add('open')} function closeM(id){$(id).classList.remove('open')}
-function msg(x){
- const m=document.getElementById('appMsg');
- if(!m){alert(x);return;}
- document.getElementById('appMsgText').textContent=x;
- m.classList.add('show');
+function msg(x){alert(x)}
+function askConfirm(title,text,action,danger=true){
+  $('confirmTitle').textContent=title;$('confirmText').textContent=text;$('confirm').classList.add('open');
+  $('confirmOk').onclick=async()=>{closeConfirm();await action()};
 }
-function closeMsg(){document.getElementById('appMsg')?.classList.remove('show')}
+function closeConfirm(){$('confirm').classList.remove('open')}
 
 async function admin(){
  const {data:{session}}=await sb.auth.getSession();
@@ -133,45 +104,31 @@ async function load(){
 
 function renderSections(){
  $('scount').textContent=sections.length;
- $('sections').innerHTML=sections.length?sections.map((s,i)=>`<div class="item section-item" draggable="true" data-id="${s.id}">
-   <div class="item-head"><div class="item-main"><div class="name">${esc(s.name)} <span class="badge ${s.is_active?'on':'off'}">${s.is_active?'ON':'OFF'}</span></div></div>
-   <button class="section-edit" onclick="editSection('${s.id}')">Edit</button><button class="drag-handle" title="Drag to reorder" aria-label="Drag to reorder">⋮⋮</button></div>
-   <div class="section-controls"><button class="switch ${s.is_active?'on':''}" onclick="toggleSection('${s.id}',${!s.is_active})"><span class="switch-label">${s.is_active?'ON':'OFF'}</span><span class="knob"></span></button><button class="section-delete" onclick="askDelete('section','${s.id}')">Delete</button></div>
- </div>`).join(''):'<div class="empty">No sections.</div>';
+ $('sections').innerHTML=sections.length?sections.map((s,i)=>`<div class="section-item" draggable="true" data-id="${s.id}"><div class="section-top"><div class="section-name">${esc(s.name)} <span class="status ${s.is_active?'':'off'}">${s.is_active?'ON':'OFF'}</span></div><div class="section-tools"><button class="mini green" onclick="editSection('${s.id}')">Edit</button><span class="drag" title="Drag to reorder">⠿</span></div></div><div class="section-bottom"><button class="switch ${s.is_active?'on':''}" onclick="toggleSection('${s.id}',${!s.is_active})" aria-label="Enable or disable"><span class="switch-label">${s.is_active?'ON':'OFF'}</span><span class="knob"></span></button><button class="mini red" style="margin-left:8px" onclick="deleteSection('${s.id}')">Delete</button></div></div>`).join(''):'<div class="empty">No sections.</div>';
  bindSectionDrag();
 }
 function renderTournaments(){
- const active=tournaments.filter(t=>t.status!=='archived');
- $('tcount').textContent=active.length;
- $('tournaments').innerHTML=active.length?active.map(t=>`<div class="item t-card">
-   ${t.banner_url?`<img class="t-thumb" src="${esc(t.banner_url)}" alt="">`:'<div class="t-thumb"></div>'}
-   <div class="t-content"><div class="item-head"><div class="item-main"><div class="name">${esc(t.title)} <span class="badge ${t.status==='published'?'on':'off'}">${t.status==='published'?'ON':'OFF'}</span></div><div class="meta">Entry ৳${t.entry_fee||0} · Prize ৳${t.prize_pool||0} · Slots ${t.total_slots||0}</div></div><button class="edit-top" onclick="editTournament('${t.id}')">Edit</button></div>
-   <div class="t-actions"><button class="switch ${t.status==='published'?'on':''}" onclick="toggleTournament('${t.id}','${t.status}')"><span class="switch-label">${t.status==='published'?'ON':'OFF'}</span><span class="knob"></span></button><button class="archive-btn mini" onclick="archive('${t.id}')">Archive</button><button class="danger mini" onclick="askDelete('tournament','${t.id}')">Delete</button></div></div>
- </div>`).join(''):'<div class="empty">No active tournaments. Archived tournaments are in Archived Tournaments.</div>';
+ $('tcount').textContent=tournaments.filter(t=>t.status!=='archived').length;
+ const list=tournaments.filter(t=>t.status!=='archived');
+ $('tournaments').innerHTML=list.length?list.map(t=>`<div class="tournament-item"><div class="thumb">${t.banner_url?`<img src="${esc(t.banner_url)}" alt="">`:''}</div><div class="t-main"><div class="t-title">${esc(t.title)} <span class="status ${t.status==='published'?'':'off'}">${t.status==='published'?'ON':'OFF'}</span></div><div class="t-meta">Entry ৳${t.entry_fee||0} · Prize ৳${t.prize_pool||0} · Slots ${t.total_slots||0}</div><div class="t-actions"><button class="switch t-toggle ${t.status==='published'?'on':''}" onclick="toggleTournament('${t.id}',${t.status!=='published'})"><span class="switch-label">${t.status==='published'?'ON':'OFF'}</span><span class="knob"></span></button><button class="mini archive-btn" onclick="archive('${t.id}')">Archive</button><button class="mini t-delete" onclick="deleteTournament('${t.id}')">Delete</button></div></div><div class="t-edit"><button class="mini green" onclick="editTournament('${t.id}')">Edit</button></div></div>`).join(''):'<div class="empty">No tournaments created yet.</div>';
 }
 function fillSections(selected=''){
- const a=sections.filter(x=>x.is_active || x.id===selected);
+ const a=sections.filter(x=>x.is_active);
  $('section').innerHTML=a.length?a.map(x=>`<option value="${x.id}" ${x.id===selected?'selected':''}>${esc(x.name)}</option>`).join(''):'<option value="">No active section</option>';
 }
-function bindSectionDrag(){
- const els=[...document.querySelectorAll('.section-item')]; let dragged=null;
- els.forEach(el=>{el.addEventListener('dragstart',e=>{dragged=el;el.classList.add('dragging');e.dataTransfer.effectAllowed='move'});el.addEventListener('dragend',async()=>{el.classList.remove('dragging');await saveSectionOrder()});el.addEventListener('dragover',e=>{e.preventDefault();if(dragged&&dragged!==el){el.classList.add('drop-target')}});el.addEventListener('dragleave',()=>el.classList.remove('drop-target'));el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('drop-target');if(!dragged||dragged===el)return;const box=el.getBoundingClientRect();const before=e.clientY<box.top+box.height/2;el.parentNode.insertBefore(dragged,before?el:el.nextSibling)});});
-}
-async function saveSectionOrder(){
- const ids=[...document.querySelectorAll('.section-item')].map(x=>x.dataset.id);
- const updates=ids.map((id,i)=>sb.from('tournament_sections').update({display_order:i+1}).eq('id',id));
- await Promise.all(updates); await load();
-}
-function newSection(){ $('sid').value='';$('smTitle').textContent='Add New Section';$('sname').value='';openM('sm') }
+function bindSectionDrag(){const box=$('sections');let dragged=null;box.querySelectorAll('.section-item').forEach(el=>{el.addEventListener('dragstart',()=>{dragged=el;el.classList.add('dragging')});el.addEventListener('dragend',async()=>{el.classList.remove('dragging');box.querySelectorAll('.drag-over').forEach(x=>x.classList.remove('drag-over'));await saveSectionOrder()});el.addEventListener('dragover',e=>{e.preventDefault();if(el!==dragged)el.classList.add('drag-over')});el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('drag-over');if(!dragged||dragged===el)return;const items=[...box.querySelectorAll('.section-item')];const di=items.indexOf(dragged),ti=items.indexOf(el);if(di<ti)el.after(dragged);else el.before(dragged)})})}
+async function saveSectionOrder(){const ids=[...$('sections').querySelectorAll('.section-item')].map(x=>x.dataset.id);for(let i=0;i<ids.length;i++){await sb.from('tournament_sections').update({display_order:i+1}).eq('id',ids[i])}await load()}
+
+function newSection(){ $('sid').value='';$('smTitle').textContent='Add New Section';$('sname').value='';$('sdesc').value='';$('sorder').value=sections.length+1;$('sactive').value='true';openM('sm') }
 async function saveSection(){
- const id=$('sid').value,p={name:$('sname').value.trim(),is_active:true};
+ const id=$('sid').value,p={name:$('sname').value.trim(),description:$('sdesc').value.trim()||null,display_order:+$('sorder').value||0,is_active:$('sactive').value==='true'};
  if(!p.name)return msg('Section name required.');
- let q=id?sb.from('tournament_sections').update({name:p.name}).eq('id',id):sb.from('tournament_sections').insert({name:p.name,display_order:sections.length+1,is_active:true});
+ const q=id?sb.from('tournament_sections').update(p).eq('id',id):sb.from('tournament_sections').insert(p);
  const {error}=await q;if(error)return msg(error.message);closeM('sm');await load();
 }
-function editSection(id){let s=sections.find(x=>x.id===id);if(!s)return;$('sid').value=s.id;$('sname').value=s.name||'';$('smTitle').textContent='Edit Section';openM('sm')}
-async function toggleSection(id,v){const {error}=await sb.from('tournament_sections').update({is_active:v}).eq('id',id);if(error)return msg(error.message);await load()}
-async function deleteSection(id){askDelete('section',id)}
+function editSection(id){let s=sections.find(x=>x.id===id);if(!s)return;$('sid').value=s.id;$('sname').value=s.name;$('sdesc').value=s.description||'';$('sorder').value=s.display_order;$('sactive').value=String(s.is_active);$('smTitle').textContent='Edit Section';openM('sm')}
+async function toggleSection(id,v){const {error}=await sb.from('tournament_sections').update({is_active:v}).eq('id',id);if(error)return msg(error.message);load()}
+async function deleteSection(id){if(tournaments.some(t=>t.section_id===id&&t.status!=='archived'))return msg('This section has active tournaments. Move or archive them first.');askConfirm('Delete section?','This section will be permanently deleted.',async()=>{const {error}=await sb.from('tournament_sections').delete().eq('id',id);if(error)return msg(error.message);load()})}
 
 function newTournament(){
  $('tid').value='';$('tmTitle').textContent='Create Tournament';$('title').value='';$('short').value='';$('entry').value=0;$('prize').value=0;$('slots').value=0;$('date').value='';$('start').value='';$('end').value='';$('game').value='';$('mode').value='';$('map').value='';$('distribution').value='';$('details').value='';$('rules').value='';$('notes').value='';$('status').value='draft';$('home').value='false';$('banner').value='';fillSections();openM('tm');
@@ -181,117 +138,32 @@ function editTournament(id){
  $('tid').value=t.id;$('tmTitle').textContent='Edit Tournament';fillSections(t.section_id);$('title').value=t.title||'';$('short').value=t.short_description||'';$('entry').value=t.entry_fee||0;$('prize').value=t.prize_pool||0;$('slots').value=t.total_slots||0;$('date').value=t.tournament_date||'';$('start').value=t.start_time||'';$('end').value=t.end_time||'';$('game').value=t.game||'';$('mode').value=t.mode||'';$('map').value=t.map||'';$('distribution').value=t.prize_distribution||'';$('details').value=t.full_details||'';$('rules').value=t.rules||'';$('notes').value=t.important_notes||'';$('status').value=t.status||'draft';$('home').value=String(!!t.show_on_homepage);$('banner').value='';openM('tm');
 }
 async function saveTournament(){
- const btn=$('saveTournamentBtn');
- if(btn.dataset.saving==='1') return;
- const id=$('tid').value;
- const old=tournaments.find(x=>x.id===id);
- const file=$('banner').files && $('banner').files[0] ? $('banner').files[0] : null;
- const title=$('title').value.trim();
- const sectionId=$('section').value;
- if(!title)return msg('Tournament name required.');
- if(!sectionId)return msg('No active homepage section available. Please enable/create a section first.');
- btn.dataset.saving='1';
- const originalText=btn.textContent;
- btn.disabled=true; btn.textContent='Saving...';
+ let id=$('tid').value,old=tournaments.find(x=>x.id===id),banner=old?.banner_url||null,file=$('banner').files[0];
+ if(!$('title').value.trim())return msg('Tournament name required.');
+ if(!$('section').value)return msg('Select a section.');
  try{
-  let banner=old?.banner_url||null;
-  if(file){
-   const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
-   if(!['jpg','jpeg','png','webp'].includes(ext)) throw new Error('Only JPG, JPEG, PNG or WEBP banners are allowed.');
-   const path=Date.now()+'-'+Math.random().toString(36).slice(2,10)+'.'+ext;
-   const upload=await sb.storage.from('tournament-banners').upload(path,file,{upsert:false,contentType:file.type||'image/jpeg',cacheControl:'3600'});
-   if(upload.error) throw new Error('Banner upload failed: '+upload.error.message);
-   banner=sb.storage.from('tournament-banners').getPublicUrl(path).data.publicUrl;
-  }
-  const p={
-   section_id:sectionId,
-   title:title,
-   banner_url:banner,
-   short_description:$('short').value.trim()||null,
-   entry_fee:Number($('entry').value)||0,
-   prize_pool:Number($('prize').value)||0,
-   total_slots:Number($('slots').value)||0,
-   tournament_date:$('date').value||null,
-   start_time:$('start').value||null,
-   end_time:$('end').value||null,
-   game:$('game').value.trim()||null,
-   mode:$('mode').value.trim()||null,
-   map:$('map').value.trim()||null,
-   prize_distribution:$('distribution').value.trim()||null,
-   full_details:$('details').value.trim()||null,
-   rules:$('rules').value.trim()||null,
-   important_notes:$('notes').value.trim()||null,
-   status:$('status').value||'draft',
-   show_on_homepage:$('home').value==='true'
-  };
-  let result;
-  if(id){
-   result=await sb.from('tournaments').update(p).eq('id',id).select().single();
-  }else{
-   result=await sb.from('tournaments').insert(p).select().single();
-  }
-  if(result.error){
-   const e=result.error;
-   throw new Error((e.message||'Database save failed')+(e.details?'\n\nDetails: '+e.details:'')+(e.hint?'\n\nHint: '+e.hint:''));
-  }
-  closeM('tm');
-  // Show success immediately after the database operation. Refresh the list in background.
-  msg(id?'Tournament updated successfully.':'Tournament created successfully.');
-  load().catch(err=>console.error('Background tournament refresh failed:',err));
- }catch(e){
-  console.error('Tournament save error:',e);
-  msg(e?.message||'Save failed. Please try again.');
- }finally{
-  btn.dataset.saving='0'; btn.disabled=false; btn.textContent=originalText;
- }
+  if(file){let ext=(file.name.split('.').pop()||'jpg').toLowerCase();if(!['jpg','jpeg','png','webp'].includes(ext))ext='jpg';let path=crypto.randomUUID()+'.'+ext;let u=await sb.storage.from('tournament-banners').upload(path,file,{upsert:false,contentType:file.type});if(u.error)throw u.error;banner=sb.storage.from('tournament-banners').getPublicUrl(path).data.publicUrl}
+  let p={section_id:$('section').value,title:$('title').value.trim(),banner_url:banner,short_description:$('short').value.trim()||null,entry_fee:+$('entry').value||0,prize_pool:+$('prize').value||0,total_slots:+$('slots').value||0,tournament_date:$('date').value||null,start_time:$('start').value||null,end_time:$('end').value||null,game:$('game').value.trim()||null,mode:$('mode').value.trim()||null,map:$('map').value.trim()||null,prize_distribution:$('distribution').value.trim()||null,full_details:$('details').value.trim()||null,rules:$('rules').value.trim()||null,important_notes:$('notes').value.trim()||null,status:$('status').value,show_on_homepage:$('home').value==='true'};
+  let q=id?sb.from('tournaments').update(p).eq('id',id):sb.from('tournaments').insert(p);let r=await q;if(r.error)throw r.error;closeM('tm');await load();
+ }catch(e){console.error(e);msg(e.message||'Save failed')}
 }
-async function toggleTournament(id,status){
- const enabled=status==='published';
- const {error}=await sb.from('tournaments').update({status:enabled?'unpublished':'published',show_on_homepage:!enabled}).eq('id',id);
- if(error)return msg(error.message);await load();
-}
-async function archive(id){
- if(!confirm('Archive this tournament?'))return;
- const {error}=await sb.from('tournaments').update({status:'archived',show_on_homepage:false}).eq('id',id);
- if(error)return msg(error.message);await load();
-}
-let pendingDelete=null;
-function askDelete(type,id){
- pendingDelete={type,id};
- $('confirmTitle').textContent=type==='section'?'Delete section?':'Delete tournament?';
- $('confirmText').textContent=type==='section'?'This section will be permanently removed. This cannot be undone.':'This tournament will be permanently deleted. This cannot be undone.';
- $('confirmDelete').classList.add('open');
-}
-async function confirmDeleteNow(){
- if(!pendingDelete)return;
- const {type,id}=pendingDelete; $('confirmDelete').classList.remove('open');
- const table=type==='section'?'tournament_sections':'tournaments';
- if(type==='section' && tournaments.some(t=>t.section_id===id))return msg('This section has tournaments. Archive or move them first.');
- const {error}=await sb.from(table).delete().eq('id',id);
- if(error)return msg(error.message); pendingDelete=null; await load();
-}
+async function toggleTournament(id,on){let {error}=await sb.from('tournaments').update({status:on?'published':'unpublished',show_on_homepage:on}).eq('id',id);if(error)return msg(error.message);load()}
+async function deleteTournament(id){askConfirm('Delete tournament?','This will permanently remove this tournament. This action cannot be undone.',async()=>{let {error}=await sb.from('tournaments').delete().eq('id',id);if(error)return msg(error.message);load()})}
+async function archive(id){askConfirm('Archive tournament?','The tournament will disappear from the active list and move to Archived Tournaments.',async()=>{let {error}=await sb.from('tournaments').update({status:'archived',show_on_homepage:false}).eq('id',id);if(error)return msg(error.message);load()})}
+
 
 document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('createTournamentBtn').addEventListener('click', newTournament);
   document.getElementById('addSectionBtn').addEventListener('click', newSection);
-  document.getElementById('archivePageBtn').addEventListener('click', function(){location.href='archive-tournaments.html'});
   document.getElementById('closeTmBtn').addEventListener('click', function(){closeM('tm')});
   document.getElementById('cancelTmBtn').addEventListener('click', function(){closeM('tm')});
   document.getElementById('closeSmBtn').addEventListener('click', function(){closeM('sm')});
   document.getElementById('cancelSmBtn').addEventListener('click', function(){closeM('sm')});
   document.getElementById('saveTournamentBtn').addEventListener('click', saveTournament);
   document.getElementById('saveSectionBtn').addEventListener('click', saveSection);
-  document.getElementById('confirmCancel').addEventListener('click', function(){pendingDelete=null;closeM('confirmDelete')});
-  document.getElementById('confirmOk').addEventListener('click', confirmDeleteNow);
 });
 
-(async()=>{
-  if(await admin()){
-    await load();
-    const editId=new URLSearchParams(location.search).get('edit');
-    if(editId) editTournament(editId);
-  }
-})();
+(async()=>{if(await admin())await load()})();
 </script>
 
 </body>
