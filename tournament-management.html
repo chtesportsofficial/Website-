@@ -26,6 +26,16 @@ button{position:relative;z-index:100;pointer-events:auto;touch-action:manipulati
 .confirm-modal{align-items:center;padding:18px}.confirm-box{width:min(360px,100%);background:#171d2b;border:1px solid #313d56;border-radius:22px;padding:20px;box-shadow:0 20px 60px #000b}.confirm-icon{width:46px;height:46px;border-radius:14px;background:#3a1f28;color:#ff6f7e;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:12px}.confirm-title{font-size:16px;font-weight:900}.confirm-text{font-size:11px;line-height:1.6;color:#929caf;margin-top:6px}.confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}.confirm-cancel{background:#222b3c}.confirm-delete{background:#ef4b5b;border-color:#ef4b5b;color:white}
 label{display:block;color:#8992a6;font-size:10px;font-weight:800;margin:9px 0 5px}input,select,textarea{width:100%;box-sizing:border-box;background:#141a29;border:1px solid #29344c;color:#fff;border-radius:10px;padding:10px;font-size:11px}textarea{min-height:80px;resize:vertical}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}
 @media(max-width:520px){.actions{grid-template-columns:1fr}.grid,.modal-actions{grid-template-columns:1fr}.t-card{grid-template-columns:76px 1fr}.t-thumb{width:76px;height:58px}}
+
+/* ===== Custom success/error message ===== */
+.app-msg{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.62);backdrop-filter:blur(4px);opacity:0;visibility:hidden;transition:.18s ease}
+.app-msg.show{opacity:1;visibility:visible}
+.app-msg-box{width:min(390px,100%);background:#171c2c;border:1px solid #29324a;border-radius:22px;padding:25px 22px 18px;box-shadow:0 24px 70px rgba(0,0,0,.55);transform:translateY(10px) scale(.98);transition:.18s ease}
+.app-msg.show .app-msg-box{transform:none}
+.app-msg-icon{width:48px;height:48px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;background:rgba(34,224,138,.13);border:1px solid rgba(34,224,138,.35);color:#22e08a;font-size:25px;font-weight:900}
+.app-msg-title{text-align:center;font-size:18px;font-weight:900;color:#f3f5fb;margin-bottom:8px}
+.app-msg-text{text-align:center;color:#aab2c5;font-size:14px;line-height:1.5;white-space:pre-line}
+.app-msg-btn{display:block;width:100%;margin-top:20px;border:0;border-radius:13px;padding:12px;background:linear-gradient(135deg,#22e08a,#69f2b2);color:#061b14;font-weight:900;font-size:14px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -77,6 +87,16 @@ label{display:block;color:#8992a6;font-size:10px;font-weight:800;margin:9px 0 5p
   <div class="confirm-text" id="confirmText">This action cannot be undone.</div>
   <div class="confirm-actions"><button type="button" class="confirm-cancel" id="confirmCancel">Cancel</button><button type="button" class="confirm-delete" id="confirmOk">Delete</button></div>
 </div></div>
+
+<div class="app-msg" id="appMsg" onclick="if(event.target===this)closeMsg()">
+ <div class="app-msg-box">
+  <div class="app-msg-icon">✓</div>
+  <div class="app-msg-title">Success</div>
+  <div class="app-msg-text" id="appMsgText"></div>
+  <button class="app-msg-btn" type="button" onclick="closeMsg()">OK</button>
+ </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
@@ -87,7 +107,13 @@ let sections=[], tournaments=[];
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 function openM(id){$(id).classList.add('open')} function closeM(id){$(id).classList.remove('open')}
-function msg(x){alert(x)}
+function msg(x){
+ const m=document.getElementById('appMsg');
+ if(!m){alert(x);return;}
+ document.getElementById('appMsgText').textContent=x;
+ m.classList.add('show');
+}
+function closeMsg(){document.getElementById('appMsg')?.classList.remove('show')}
 
 async function admin(){
  const {data:{session}}=await sb.auth.getSession();
@@ -209,8 +235,9 @@ async function saveTournament(){
    throw new Error((e.message||'Database save failed')+(e.details?'\n\nDetails: '+e.details:'')+(e.hint?'\n\nHint: '+e.hint:''));
   }
   closeM('tm');
-  await load();
+  // Show success immediately after the database operation. Refresh the list in background.
   msg(id?'Tournament updated successfully.':'Tournament created successfully.');
+  load().catch(err=>console.error('Background tournament refresh failed:',err));
  }catch(e){
   console.error('Tournament save error:',e);
   msg(e?.message||'Save failed. Please try again.');
