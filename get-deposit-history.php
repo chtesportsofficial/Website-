@@ -15,6 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/db.php'; // must expose $conn (mysqli)
+require_once __DIR__ . '/admin-auth.php'; // for verify_user_token()
 $conn->set_charset('utf8mb4');
 
 function respond($success, $data = []) {
@@ -22,11 +23,16 @@ function respond($success, $data = []) {
     exit();
 }
 
+// SECURITY: supabase_uid must NEVER be taken from the client — that would
+// let anyone read another user's deposit history just by editing the
+// request body. Instead we verify the Supabase access_token server-side
+// and use the uid Supabase itself returns for that token.
 $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-$supabase_uid = isset($input['supabase_uid']) ? trim($input['supabase_uid']) : '';
+$access_token = isset($input['access_token']) ? trim($input['access_token']) : '';
 
-if ($supabase_uid === '') {
-    respond(false, ['message' => 'Missing supabase_uid']);
+$supabase_uid = verify_user_token($access_token);
+if (!$supabase_uid) {
+    respond(false, ['message' => 'Not logged in or session expired. Please sign in again.']);
 }
 
 $lookup = $conn->prepare("SELECT id FROM wallet_users WHERE supabase_uid = ? LIMIT 1");

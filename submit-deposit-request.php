@@ -24,6 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/db.php'; // must expose $conn (mysqli)
+require_once __DIR__ . '/admin-auth.php'; // for verify_user_token()
 $conn->set_charset('utf8mb4');
 
 function respond($status, $data = []) {
@@ -48,15 +49,19 @@ if (!$input) {
     $input = $_POST; // fallback if sent as form-data instead of JSON
 }
 
-$supabase_uid  = isset($input['supabase_uid']) ? trim($input['supabase_uid']) : '';
+// SECURITY: supabase_uid must NEVER be taken from the client — that would
+// let anyone submit a deposit request under someone else's account just by
+// editing the request body. Instead we verify the Supabase access_token
+// server-side and use the uid Supabase itself returns for that token.
+$access_token  = isset($input['access_token']) ? trim($input['access_token']) : '';
 $method        = isset($input['method']) ? strtolower(trim($input['method'])) : ''; // 'bkash' or 'nagad'
 $sender_number = isset($input['sender_number']) ? trim($input['sender_number']) : '';
 $trx_id        = isset($input['trx_id']) ? trim($input['trx_id']) : '';
 $amount        = isset($input['amount']) ? floatval($input['amount']) : 0;
 
-// --- Basic validation ---
-if ($supabase_uid === '') {
-    respond(false, ['message' => 'Missing supabase_uid']);
+$supabase_uid = verify_user_token($access_token);
+if (!$supabase_uid) {
+    respond(false, ['message' => 'Not logged in or session expired. Please sign in again.']);
 }
 if (!in_array($method, ['bkash', 'nagad'])) {
     respond(false, ['message' => 'method must be bkash or nagad']);

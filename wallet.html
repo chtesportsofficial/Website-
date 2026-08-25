@@ -562,6 +562,48 @@ function formatDhakaTime(mysqlDatetime){
   }).replace(',', '');
 }
 
+/* ============ Get Supabase access_token (for endpoints that verify it) ============
+   SECURITY NOTE: never send the raw `supabase_uid` to the backend as proof
+   of identity — anyone can edit localStorage and claim to be any uid. The
+   backend now verifies the real Supabase access_token instead, so this
+   page must send that token, not the uid.
+   Tries, in order:
+     1. A Supabase client already exposed by global.js (window.supabaseClient
+        or window.supabase, if it has .auth.getSession()).
+     2. The Supabase JS SDK's own default localStorage session key
+        (sb-<project-ref>-auth-token), which the SDK writes automatically
+        when persistSession is on (the default).
+   Returns a Promise<string|null>. */
+async function getSupabaseAccessToken(){
+  try {
+    const client = window.supabaseClient || window.supabase;
+    if (client && client.auth && typeof client.auth.getSession === 'function'){
+      const { data } = await client.auth.getSession();
+      if (data && data.session && data.session.access_token){
+        return data.session.access_token;
+      }
+    }
+  } catch (e){
+    console.warn('getSupabaseAccessToken: SDK getSession failed', e);
+  }
+
+  // Fallback: read the SDK's own persisted session directly.
+  try {
+    const key = Object.keys(localStorage).find(function(k){
+      return k.indexOf('-auth-token') !== -1 && k.indexOf('sb-') === 0;
+    });
+    if (key){
+      const raw = JSON.parse(localStorage.getItem(key));
+      const token = (raw && raw.access_token) || (raw && raw.currentSession && raw.currentSession.access_token);
+      if (token) return token;
+    }
+  } catch (e){
+    console.warn('getSupabaseAccessToken: localStorage fallback failed', e);
+  }
+
+  return null;
+}
+
 function loadWalletBalance(){
   const profile = getProfile();
   // Read straight from the plain 'supabase_uid' key first — global.js
@@ -634,14 +676,14 @@ function renderHistory(entries){
   }).join('');
 }
 
-function loadWalletHistory(){
-  const uid = localStorage.getItem('supabase_uid') || getProfile().supabase_uid;
-  if (!uid) return;
+async function loadWalletHistory(){
+  const token = await getSupabaseAccessToken();
+  if (!token) return;
 
   fetch('https://chteo-api.onrender.com/get-deposit-history.php', {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ supabase_uid: uid })
+    body: JSON.stringify({ access_token: token })
   })
     .then(function(r){ return r.json(); })
     .then(function(res){
@@ -675,17 +717,17 @@ document.getElementById('depositModalClose').addEventListener('click', function(
   document.getElementById('depositModalOverlay').classList.remove('active');
 });
 
-document.getElementById('depositSubmitBtn').addEventListener('click', function(){
+document.getElementById('depositSubmitBtn').addEventListener('click', async function(){
   const btn = document.getElementById('depositSubmitBtn');
   const method = document.getElementById('depositMethod').value;
   const amount = document.getElementById('depositAmount').value;
   const senderNumber = document.getElementById('depositSenderNumber').value.trim();
   const trxId = document.getElementById('depositTrxId').value.trim();
-  const supabaseUid = localStorage.getItem('supabase_uid');
 
   showDepositMsg('', false);
 
-  if(!supabaseUid){
+  const accessToken = await getSupabaseAccessToken();
+  if(!accessToken){
     showDepositMsg('Please sign in first.', true);
     return;
   }
@@ -713,7 +755,7 @@ document.getElementById('depositSubmitBtn').addEventListener('click', function()
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({
-      supabase_uid: supabaseUid,
+      access_token: accessToken,
       method: method,
       amount: amount,
       sender_number: senderNumber,

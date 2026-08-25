@@ -54,3 +54,26 @@ function verify_admin_token($access_token) {
 
     return $uid;
 }
+
+/**
+ * Returns the Supabase user's UUID if the access_token is valid — for ANY
+ * logged-in user (no admin/owner check). Use this on endpoints where a
+ * regular user acts on their own data (e.g. submitting their own deposit
+ * request, reading their own history). Never trust a client-supplied
+ * supabase_uid/user_id field instead of this — that lets one user act as
+ * another simply by editing the request body.
+ */
+function verify_user_token($access_token) {
+    if (!$access_token) return null;
+
+    list($code, $user) = supabase_curl(
+        SUPABASE_URL . '/auth/v1/user',
+        [
+            'apikey: ' . SUPABASE_ANON_KEY,
+            'Authorization: Bearer ' . $access_token
+        ]
+    );
+    if ($code !== 200 || !isset($user['id'])) return null;
+
+    return $user['id'];
+}
