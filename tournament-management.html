@@ -125,15 +125,15 @@ function fillSections(selected=''){
  $('section').innerHTML=a.length?a.map(x=>`<option value="${x.id}" ${x.id===selected?'selected':''}>${esc(x.name)}</option>`).join(''):'<option value="">No active section</option>';
 }
 window.newSection=function(){ $('sid').value='';$('smTitle').textContent='Add New Section';$('sname').value='';$('sdesc').value='';$('sorder').value=sections.length+1;$('sactive').value='true';openM('sm') }
-async window.saveSection=function(){
+window.saveSection=async function(){
  const id=$('sid').value,p={name:$('sname').value.trim(),description:$('sdesc').value.trim()||null,display_order:+$('sorder').value||0,is_active:$('sactive').value==='true'};
  if(!p.name)return msg('Section name required.');
  const q=id?sb.from('tournament_sections').update(p).eq('id',id):sb.from('tournament_sections').insert(p);
  const {error}=await q;if(error)return msg(error.message);closeM('sm');await load();
 }
 window.editSection=function(id){let s=sections.find(x=>x.id===id);if(!s)return;$('sid').value=s.id;$('sname').value=s.name;$('sdesc').value=s.description||'';$('sorder').value=s.display_order;$('sactive').value=String(s.is_active);$('smTitle').textContent='Edit Section';openM('sm')}
-async window.toggleSection=function(id,v){const {error}=await sb.from('tournament_sections').update({is_active:v}).eq('id',id);if(error)return msg(error.message);load()}
-async window.deleteSection=function(id){if(tournaments.some(t=>t.section_id===id))return msg('This section has tournaments. Move/archive them first.');if(!confirm('Delete section?'))return;const {error}=await sb.from('tournament_sections').delete().eq('id',id);if(error)return msg(error.message);load()}
+window.toggleSection=async function(id,v){const {error}=await sb.from('tournament_sections').update({is_active:v}).eq('id',id);if(error)return msg(error.message);load()}
+window.deleteSection=async function(id){if(tournaments.some(t=>t.section_id===id))return msg('This section has tournaments. Move/archive them first.');if(!confirm('Delete section?'))return;const {error}=await sb.from('tournament_sections').delete().eq('id',id);if(error)return msg(error.message);load()}
 
 window.newTournament=function(){
  $('tid').value='';$('tmTitle').textContent='Create Tournament';$('title').value='';$('short').value='';$('entry').value=0;$('prize').value=0;$('slots').value=0;$('date').value='';$('start').value='';$('end').value='';$('game').value='';$('mode').value='';$('map').value='';$('distribution').value='';$('details').value='';$('rules').value='';$('notes').value='';$('status').value='draft';$('home').value='false';$('banner').value='';fillSections();openM('tm');
@@ -142,7 +142,7 @@ window.editTournament=function(id){
  let t=tournaments.find(x=>x.id===id);if(!t)return;
  $('tid').value=t.id;$('tmTitle').textContent='Edit Tournament';fillSections(t.section_id);$('title').value=t.title||'';$('short').value=t.short_description||'';$('entry').value=t.entry_fee||0;$('prize').value=t.prize_pool||0;$('slots').value=t.total_slots||0;$('date').value=t.tournament_date||'';$('start').value=t.start_time||'';$('end').value=t.end_time||'';$('game').value=t.game||'';$('mode').value=t.mode||'';$('map').value=t.map||'';$('distribution').value=t.prize_distribution||'';$('details').value=t.full_details||'';$('rules').value=t.rules||'';$('notes').value=t.important_notes||'';$('status').value=t.status||'draft';$('home').value=String(!!t.show_on_homepage);$('banner').value='';openM('tm');
 }
-async window.saveTournament=function(){
+window.saveTournament=async function(){
  let id=$('tid').value,old=tournaments.find(x=>x.id===id),banner=old?.banner_url||null,file=$('banner').files[0];
  if(!$('title').value.trim())return msg('Tournament name required.');
  if(!$('section').value)return msg('Select a section.');
@@ -152,9 +152,9 @@ async window.saveTournament=function(){
   let q=id?sb.from('tournaments').update(p).eq('id',id):sb.from('tournaments').insert(p);let r=await q;if(r.error)throw r.error;closeM('tm');await load();
  }catch(e){console.error(e);msg(e.message||'Save failed')}
 }
-async window.publish=function(id,status){let v=status==='published'?'unpublished':'published';let {error}=await sb.from('tournaments').update({status:v,show_on_homepage:v==='published'}).eq('id',id);if(error)return msg(error.message);load()}
-async window.home=function(id,v){let {error}=await sb.from('tournaments').update({show_on_homepage:v}).eq('id',id);if(error)return msg(error.message);load()}
-async window.archive=function(id){if(!confirm('Archive tournament?'))return;let {error}=await sb.from('tournaments').update({status:'archived',show_on_homepage:false}).eq('id',id);if(error)return msg(error.message);load()}
+window.publish=async function(id,status){let v=status==='published'?'unpublished':'published';let {error}=await sb.from('tournaments').update({status:v,show_on_homepage:v==='published'}).eq('id',id);if(error)return msg(error.message);load()}
+window.home=async function(id,v){let {error}=await sb.from('tournaments').update({show_on_homepage:v}).eq('id',id);if(error)return msg(error.message);load()}
+window.archive=async function(id){if(!confirm('Archive tournament?'))return;let {error}=await sb.from('tournaments').update({status:'archived',show_on_homepage:false}).eq('id',id);if(error)return msg(error.message);load()}
 
 (async()=>{if(await admin())await load()})();
 </script>
