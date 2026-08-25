@@ -323,6 +323,7 @@ let currentSort = 'desc';
 let hasMore = false;
 let isFetching = false;
 let debounceTimer = null;
+let needsReload = false;
 
 async function checkAccessAndLoad(){
   showGate('checking');
@@ -382,7 +383,12 @@ function loadMore(){
 }
 
 async function loadLeaderboard({ reset }){
-  if(isFetching) return;
+  if(isFetching){
+    // A filter/sort change arrived while a request was already in flight.
+    // Don't drop it - remember to reload as soon as the current one finishes.
+    needsReload = true;
+    return;
+  }
   isFetching = true;
 
   if(reset){
@@ -427,6 +433,10 @@ async function loadLeaderboard({ reset }){
     isFetching = false;
     document.getElementById('listSpinner').style.display = 'none';
     loadMoreBtn.textContent = 'Load more';
+    if(needsReload){
+      needsReload = false;
+      loadLeaderboard({ reset: true });
+    }
   }
 }
 
