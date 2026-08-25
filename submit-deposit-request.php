@@ -26,43 +26,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . '/db.php'; // must expose $conn (mysqli)
 require_once __DIR__ . '/admin-auth.php'; // for verify_user_token()
-require_once __DIR__ . '/supabase-config.php'; // SUPABASE_URL, SUPABASE_SERVICE_KEY
 $conn->set_charset('utf8mb4');
 
 function respond($status, $data = []) {
     echo json_encode(array_merge(['status' => $status], $data));
     exit();
-}
-
-// ---- Fetch the Supabase profiles.user_numt for a given auth uid ----
-// This is the number shown in Supabase's Table Editor (profiles.user_numt),
-// which is what the admin actually recognizes users by — NOT the same as
-// wallet_users.id (a separate MySQL auto-increment used internally for
-// wallet balance operations). Falls back to null if the lookup fails, so a
-// Supabase hiccup never blocks a real deposit submission.
-function fetchSupabaseUserNumt($supabase_uid) {
-    $url = SUPABASE_URL . '/rest/v1/profiles?id=eq.' . urlencode($supabase_uid) . '&select=user_numt';
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'apikey: ' . SUPABASE_SERVICE_KEY,
-        'Authorization: Bearer ' . SUPABASE_SERVICE_KEY
-    ]);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-    $result = curl_exec($ch);
-    if (curl_errno($ch)) {
-        error_log('fetchSupabaseUserNumt: curl error: ' . curl_error($ch));
-        curl_close($ch);
-        return null;
-    }
-    curl_close($ch);
-
-    $rows = json_decode($result, true);
-    if (!is_array($rows) || empty($rows) || !isset($rows[0]['user_numt'])) {
-        error_log('fetchSupabaseUserNumt: no user_numt found for uid ' . $supabase_uid);
-        return null;
-    }
-    return $rows[0]['user_numt'];
 }
 
 // ---- Telegram notification helper ----
@@ -191,13 +159,9 @@ if ($stmt->execute()) {
     // hiccup can never block or falsely fail a real submission.
     // Server time (Asia/Dhaka) is used for the timestamp, not client time.
     $dhaka_time = new DateTime('now', new DateTimeZone('Asia/Dhaka'));
-    $display_uid = fetchSupabaseUserNumt($supabase_uid);
-    if ($display_uid === null) {
-        $display_uid = $user_id; // fallback: wallet_users.id, if Supabase lookup fails
-    }
     notifyTelegram(
         "🟡 <b>New Deposit Request</b>\n"
-        . "UID: <code>#" . $display_uid . "</code>\n"
+        . "Email: <code>" . htmlspecialchars($email) . "</code>\n"
         . "Method: " . htmlspecialchars($method_db) . "\n"
         . "Sender: " . htmlspecialchars($sender_number) . "\n"
         . "Amount: ৳" . number_format($amount, 2) . "\n"
