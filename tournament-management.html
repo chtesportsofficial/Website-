@@ -57,6 +57,21 @@
 /* ===== Final requested layout ===== */
 .homepage-panel,.tournaments-panel{padding:14px 12px 12px}.homepage-panel-head{padding:0 3px 11px}.head-controls{display:flex;align-items:center;gap:9px}.collapse-switch{width:43px;height:24px;border:1px solid #2b3852;border-radius:999px;background:#242d3e;position:relative;padding:0;cursor:pointer}.collapse-switch span{position:absolute;width:18px;height:18px;border-radius:50%;background:#e9edf2;top:2px;left:3px;transition:.18s}.collapse-switch.on{background:#18c866;border-color:#18c866}.collapse-switch.on span{left:20px}.homepage-panel.collapsed #homepageContent{display:none}.homepage-panel.collapsed{padding-bottom:10px}.section-item{display:grid;grid-template-columns:minmax(0,1fr);gap:11px;padding:13px 12px;margin-top:9px;border-radius:18px;background:linear-gradient(145deg,#182237,#141d30);border:1px solid #2b3852;box-shadow:0 8px 22px #0002}.section-top{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px}.section-name-wrap{min-width:0}.section-name{font-size:14px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.section-index{width:36px;height:36px;border-radius:10px}.section-tools{display:flex;align-items:center;gap:7px}.section-tools .mini{min-height:38px;padding:9px 14px}.section-bottom{display:flex;align-items:center;gap:8px;margin-top:0;flex-wrap:wrap}.section-bottom .switch{width:68px;height:34px}.section-bottom .switch .knob{width:26px;height:26px}.section-bottom .switch.on .knob{left:38px}.section-bottom .switch-label{top:10px;font-size:9px}.section-bottom .switch:not(.on) .switch-label{right:10px;left:auto}.section-bottom .mini{min-height:38px;padding:9px 15px}.section-item>.section-top>.section-tools>.drag{width:42px;height:38px;flex:0 0 42px}.section-item .section-index{margin-right:8px}.section-name-wrap{display:flex;align-items:center}.inline-add{margin-top:11px;padding-top:11px}.tournaments-panel .ph{padding-top:1px}.tournament-group{margin-top:12px}.tournament-group-head{display:flex;align-items:center;justify-content:space-between;padding:4px 5px 7px}.tournament-group-name{font-size:11px;font-weight:950;color:#dfe5f0}.tournament-group-count{font-size:9px;color:#7f8ba0;font-weight:900}.tournament-item{grid-template-columns:1fr;gap:11px}.tournament-top{grid-template-columns:38px 108px minmax(0,1fr)}.t-meta{font-size:9px;line-height:1.45;white-space:normal}.t-meta span{display:inline-block}.t-actions{padding-left:50px;align-items:center}.t-actions .drag{cursor:grab}.t-actions .drag:active{cursor:grabbing}.tournament-group+.tournament-group{border-top:1px solid #253047;padding-top:4px}.tournament-item.dragging{opacity:.45}.tournament-item.drag-over{outline:1px dashed #36df7a;outline-offset:2px}
 @media(max-width:520px){.section-top{grid-template-columns:minmax(0,1fr) auto}.section-tools .mini{padding:8px 10px}.section-item>.section-top>.section-tools>.drag{width:38px;height:34px;flex-basis:38px}.section-bottom .mini{padding:8px 12px}.tournament-top{grid-template-columns:32px 88px minmax(0,1fr)}.tournament-top .thumb{width:88px;height:88px}.t-actions{padding-left:42px;gap:6px;overflow:visible}.t-actions .mini{padding:8px 10px}.t-actions .switch{width:60px;height:31px;flex-basis:60px}.t-actions .switch .knob{width:23px;height:23px}.t-actions .switch.on .knob{left:33px}.t-actions .drag{width:38px;height:34px;flex-basis:38px}}
+
+/* ===== Reference-style section controls ===== */
+.section-item{display:grid;grid-template-columns:1fr;gap:10px;padding:13px 12px}
+.section-top{display:block}
+.section-name-wrap{display:flex;align-items:center;gap:10px;min-width:0}
+.section-name{font-size:14px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.section-actions{display:flex;align-items:center;gap:8px;width:100%;flex-wrap:wrap}
+.section-actions .mini{min-height:38px;padding:9px 15px}
+.section-actions .switch{width:68px;height:34px;flex:0 0 68px}
+.section-actions .switch .knob{width:26px;height:26px;top:4px;left:4px}
+.section-actions .switch.on .knob{left:38px}
+.section-actions .switch-label{top:10px;left:10px;font-size:9px}
+.section-actions .switch:not(.on) .switch-label{left:auto;right:10px}
+.section-actions .drag{margin-left:auto;flex:0 0 42px;width:42px;height:38px;border-radius:11px;padding:0}
+@media(max-width:520px){.section-actions{gap:6px}.section-actions .mini{padding:8px 12px}.section-actions .switch{width:60px;height:31px;flex-basis:60px}.section-actions .switch .knob{width:23px;height:23px}.section-actions .switch.on .knob{left:33px}.section-actions .switch-label{top:9px;font-size:8px}.section-actions .drag{width:38px;height:34px;flex-basis:38px}}
 </style>
 </head>
 <body>
@@ -160,11 +175,12 @@ function renderSections(){
  $('sections').innerHTML=sections.length?sections.map((s,i)=>`<div class="section-item" draggable="true" data-id="${s.id}">
    <div class="section-top">
      <div class="section-name-wrap"><span class="section-index">${i+1}</span><div class="section-name">${esc(s.name)}</div></div>
-     <div class="section-tools"><button class="mini green" onclick="editSection('${s.id}')">Edit</button><span class="drag" title="Drag to reorder">⠿</span></div>
    </div>
-   <div class="section-bottom">
-     <button class="switch ${s.is_active?'on':''}" onclick="toggleSection('${s.id}',${!s.is_active})" aria-label="Enable or disable"><span class="switch-label">${s.is_active?'ON':'OFF'}</span><span class="knob"></span></button>
+   <div class="section-actions">
+     <button class="mini green" onclick="editSection('${s.id}')">Edit</button>
      <button class="mini red" onclick="deleteSection('${s.id}')">Delete</button>
+     <button class="switch ${s.is_active?'on':''}" onclick="toggleSection('${s.id}',${!s.is_active})" aria-label="Enable or disable"><span class="switch-label">${s.is_active?'ON':'OFF'}</span><span class="knob"></span></button>
+     <span class="drag section-drag" title="Drag to reorder" role="button" aria-label="Drag to reorder">⠿</span>
    </div>
  </div>`).join(''):'<div class="empty">No sections.</div>';
  bindSectionDrag();

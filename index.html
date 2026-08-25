@@ -454,7 +454,7 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
     <div class="brand-name">CHT ESP ORG</div>
   </div>
   <div class="balance-chip">
-    <div class="coin">৳</div><div class="amt" id="topBalanceAmount">৳ 0</div>
+    <div class="coin">৳</div><div class="amt" id="topBalanceAmount">0</div>
   </div>
 </div>
 
@@ -513,8 +513,24 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
         .select('id,name,display_order,is_active,tournaments(id,title,banner_url,short_description,entry_fee,prize_pool,total_slots,status,show_on_homepage,created_at)')
         .eq('is_active',true).order('display_order',{ascending:true});
       if(error){console.warn(error);root.innerHTML='';return}
-      const groups=(data||[]).map(s=>({s,ts:(s.tournaments||[]).filter(t=>t.status==='published'&&t.show_on_homepage===true)})).filter(x=>x.ts.length);
-      root.innerHTML=groups.map(x=>'<section class="dyn-section"><div class="dyn-head"><div class="dyn-title"><span class="bar"></span>'+esc(x.s.name)+'</div></div><div class="dyn-scroll">'+x.ts.map(t=>'<article class="dyn-card">'+(t.banner_url?'<img class="dyn-banner" src="'+esc(t.banner_url)+'" alt="">':'')+'<div class="dyn-body"><a class="dyn-cta" aria-label="Open tournament" href="tournament-details.html?id='+encodeURIComponent(t.id)+'"><span>VIEW DETAILS</span><span class="arrow">›</span></a></div></article>').join('')+'</div></section>').join('');
+      // Keep homepage tournament order exactly the same as the Tournament Management
+      // order. Management stores a separate order for every section, so each
+      // section keeps its own 1,2,3... sequence.
+      let savedOrders={};
+      try { savedOrders=JSON.parse(localStorage.getItem('chteo_tournament_orders_by_section')||'{}')||{}; } catch(e) { savedOrders={}; }
+      function orderForSection(sectionId,items){
+        const saved=Array.isArray(savedOrders[sectionId])?savedOrders[sectionId]:[];
+        const rank=new Map(saved.map((id,i)=>[String(id),i]));
+        return [...items].sort((a,b)=>{
+          const ar=rank.get(String(a.id)), br=rank.get(String(b.id));
+          if(ar===undefined&&br===undefined) return new Date(a.created_at||0)-new Date(b.created_at||0);
+          if(ar===undefined) return 1;
+          if(br===undefined) return -1;
+          return ar-br;
+        });
+      }
+      const groups=(data||[]).map(s=>({s,ts:orderForSection(s.id,(s.tournaments||[]).filter(t=>t.status==='published'&&t.show_on_homepage===true))})).filter(x=>x.ts.length);
+      root.innerHTML=groups.map(x=>'<section class="dyn-section"><div class="dyn-head"><div class="dyn-title"><span class="bar"></span>'+esc(x.s.name)+'</div></div><div class="dyn-scroll">'+x.ts.map((t,i)=>'<article class="dyn-card" data-index="'+(i+1)+'">'+(t.banner_url?'<img class="dyn-banner" src="'+esc(t.banner_url)+'" alt="">':'')+'<div class="dyn-body"><a class="dyn-cta" aria-label="Open tournament" href="tournament-details.html?id='+encodeURIComponent(t.id)+'"><span>VIEW DETAILS</span><span class="arrow">›</span></a></div></article>').join('')+'</div></section>').join('');
     }
     load();
   }
@@ -781,9 +797,9 @@ window.addEventListener('pageshow', function(event){
     const cachedUid = localStorage.getItem(CACHE_UID_KEY);
     const cached = localStorage.getItem(CACHE_KEY);
     if(cached !== null && cachedUid === uid){
-      el.textContent = '৳ ' + cached;
+      el.textContent = cached;
     } else {
-      el.textContent = '৳ ...';
+      el.textContent = '...';
     }
 
     if(uid === lastFetchedUid) return;
@@ -795,13 +811,13 @@ window.addEventListener('pageshow', function(event){
       .then(data => {
         lastFetchedUid = uid;
         if(data.success){
-          el.textContent = '৳ ' + data.balance;
+          el.textContent = data.balance;
           localStorage.setItem(CACHE_KEY, data.balance);
           localStorage.setItem(CACHE_UID_KEY, uid);
         } else {
           // No wallet row yet (e.g. brand-new signup, sync not done) —
           // show 0 rather than leaving a stale/wrong number on screen.
-          el.textContent = '৳ 0';
+          el.textContent = '0';
           localStorage.removeItem(CACHE_KEY);
           localStorage.removeItem(CACHE_UID_KEY);
         }
