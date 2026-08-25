@@ -157,14 +157,17 @@ if ($stmt->execute()) {
 
     // Notify only after the insert has actually succeeded, so a Telegram
     // hiccup can never block or falsely fail a real submission.
+    // Server time (Asia/Dhaka) is used for the timestamp, not client time.
+    $dhaka_time = new DateTime('now', new DateTimeZone('Asia/Dhaka'));
     notifyTelegram(
         "🟡 <b>New Deposit Request</b>\n"
         . "User: " . htmlspecialchars($email) . "\n"
+        . "UID: <code>" . htmlspecialchars($supabase_uid) . "</code>\n"
         . "Method: " . htmlspecialchars($method_db) . "\n"
         . "Sender: " . htmlspecialchars($sender_number) . "\n"
         . "Amount: ৳" . number_format($amount, 2) . "\n"
-        . "Trx ID: " . htmlspecialchars($trx_id) . "\n"
-        . "Request ID: #" . $request_id
+        . "Trx ID: <code>" . htmlspecialchars($trx_id) . "</code>\n"
+        . "Time: " . $dhaka_time->format('d M Y, h:i A')
     );
 
     respond(true, [
