@@ -120,7 +120,48 @@ if (!$isAdmin) {
 $minBalance = isset($data['min_balance']) && $data['min_balance'] !== '' ? (float)$data['min_balance'] : null;
 $maxBalance = isset($data['max_balance']) && $data['max_balance'] !== '' ? (float)$data['max_balance'] : null;
 $uidSearch = isset($data['uid']) ? trim((string)$data['uid']) : '';
+$uidSearch = ltrim($uidSearch, '#'); // admins see/type ids like "#33", strip the "#" before matching
 $sort = (isset($data['sort']) && strtolower((string)$data['sort']) === 'asc') ? 'asc' : 'desc';
+
+// ---- Resolve a "#33"-style user_number search into the real supabase_uid ----
+// wallet_users.supabase_uid is the Supabase Auth UUID, NOT the same value as the
+// short sequential id (profiles.user_number) admins see elsewhere in the panel.
+// So a search has to go: user_number -> profiles.id (UUID) -> wallet_users.supabase_uid.
+$uidSearchActive = false;
+$matchingSupabaseUids = [];
+
+if ($uidSearch !== '') {
+    $uidSearchActive = true;
+    if (is_numeric($uidSearch)) {
+        $ch = curl_init(rtrim($supabaseUrl, '/') . '/rest/v1/profiles?user_number=eq.' . urlencode($uidSearch) . '&select=id');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 20,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_HTTPHEADER => [
+                'apikey: ' . $supabaseAnonKey,
+                'Authorization: Bearer ' . $accessToken,
+                'Accept: application/json'
+            ]
+        ]);
+        $matchResponse = curl_exec($ch);
+        $matchHttpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($matchResponse !== false && $matchHttpCode >= 200 && $matchHttpCode < 300) {
+            $matchRows = json_decode($matchResponse, true);
+            if (is_array($matchRows)) {
+                foreach ($matchRows as $mr) {
+                    if (!empty($mr['id'])) {
+                        $matchingSupabaseUids[] = $mr['id'];
+                    }
+                }
+            }
+        }
+    }
+    // Non-numeric input (or nothing found above) simply means no matches -
+    // handled below by the "1 = 0" fallback, so the query still runs safely.
+}
 
 $page = isset($data['page']) ? (int)$data['page'] : 1;
 if ($page < 1) { $page = 1; }
@@ -147,10 +188,19 @@ if ($maxBalance !== null) {
     $paramTypes .= 'd';
     $paramValues[] = $maxBalance;
 }
-if ($uidSearch !== '') {
-    $whereParts[] = 'supabase_uid LIKE ?';
-    $paramTypes .= 's';
-    $paramValues[] = '%' . $conn->real_escape_string($uidSearch) . '%';
+if ($uidSearchActive) {
+    if (!empty($matchingSupabaseUids)) {
+        $placeholders = implode(',', array_fill(0, count($matchingSupabaseUids), '?'));
+        $whereParts[] = "supabase_uid IN ($placeholders)";
+        foreach ($matchingSupabaseUids as $sid) {
+            $paramTypes .= 's';
+            $paramValues[] = $sid;
+        }
+    } else {
+        // No profile with that user_number -> no possible match, return empty results
+        // instead of accidentally matching everything.
+        $whereParts[] = '1 = 0';
+    }
 }
 
 $whereSql = count($whereParts) > 0 ? ('WHERE ' . implode(' AND ', $whereParts)) : '';
