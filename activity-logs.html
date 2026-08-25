@@ -19,7 +19,31 @@ const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';const KEY='sb_publ
 const $=id=>document.getElementById(id);const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 async function guard(){const {data:{session}}=await sb.auth.getSession();if(!session){location.href='login.html';return false}const {data:p,error}=await sb.from('profiles').select('is_admin').eq('id',session.user.id).single();if(error||!p?.is_admin){alert('Admin access required.');location.href='index.html';return false}return true}
 function fmt(v){const d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleString('en-BD',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true})}
-function render(){let q=$('search').value.trim().toLowerCase(),cat=$('category').value,period=$('period').value,now=Date.now();let rows=allLogs.filter(x=>{if(status!=='all'&&(x.status||'success')!==status)return false;if(cat!=='all'&&x.category!==cat)return false;if(period==='today'){let d=new Date();d.setHours(0,0,0,0);if(new Date(x.created_at)<d)return false}else if(period!=='all'&&now-new Date(x.created_at).getTime()>Number(period)*86400000)return false;if(q){let s=[x.admin_name,x.action,x.category,x.target_type,x.target_id,x.target_name,x.details,JSON.stringify(x.before_data),JSON.stringify(x.after_data)].join(' ').toLowerCase();if(!s.includes(q))return false}return true});$('count').textContent=rows.length+' log'+(rows.length===1?'':'s');$('logs').innerHTML=rows.length?rows.map(x=>`<div class="log"><div class="time">${esc(new Date(x.created_at).toLocaleTimeString('en-BD',{hour:'2-digit',minute:'2-digit',hour12:true}))}</div><div><div class="title"><span class="dot ${x.status==='failed'?'fail':''}"></span>${esc(x.action||'Activity')}</div><div class="meta">${esc(x.admin_name||'Admin')} · ${esc(x.category||'system')}${x.target_name?' · '+esc(x.target_name):''}</div>${x.details?`<div class="details">${esc(x.details)}</div>`:''}</div><span class="badge ${x.status==='failed'?'fail':''}">${esc(x.status||'success').toUpperCase()}</span></div>`).join(''):'<div class="empty">No activity found.</div>'}
+function detailText(value){
+  if(value===null || value===undefined || value==='') return '';
+  if(typeof value==='string'){
+    try { const parsed=JSON.parse(value); if(parsed && typeof parsed==='object') value=parsed; else return value; }
+    catch(e){ return value; }
+  }
+  if(typeof value!=='object') return String(value);
+  const pretty={
+    tournament_name:'Tournament', target_name:'Tournament',
+    section_name:'Section', old_section_name:'Previous section', new_section_name:'New section',
+    enabled:'Status', old_index:'Previous index', new_index:'New index',
+    from_index:'From index', to_index:'To index', index:'Index',
+    title:'Title', entry_fee:'Entry fee', prize_pool:'Prize pool', total_slots:'Slots',
+    action:'Action', reason:'Reason'
+  };
+  return Object.entries(value).map(([k,v])=>{
+    const label=pretty[k] || k.replace(/_/g,' ').replace(/\b\w/g,m=>m.toUpperCase());
+    let val;
+    if(typeof v==='boolean') val=v?'ON':'OFF';
+    else if(v && typeof v==='object') val=JSON.stringify(v,null,2);
+    else val=String(v ?? '—');
+    return label+': '+val;
+  }).join('\n');
+}
+function render(){let q=$('search').value.trim().toLowerCase(),cat=$('category').value,period=$('period').value,now=Date.now();let rows=allLogs.filter(x=>{if(status!=='all'&&(x.status||'success')!==status)return false;if(cat!=='all'&&x.category!==cat)return false;if(period==='today'){let d=new Date();d.setHours(0,0,0,0);if(new Date(x.created_at)<d)return false}else if(period!=='all'&&now-new Date(x.created_at).getTime()>Number(period)*86400000)return false;if(q){let s=[x.admin_name,x.action,x.category,x.target_type,x.target_id,x.target_name,x.details,JSON.stringify(x.before_data),JSON.stringify(x.after_data)].join(' ').toLowerCase();if(!s.includes(q))return false}return true});$('count').textContent=rows.length+' log'+(rows.length===1?'':'s');$('logs').innerHTML=rows.length?rows.map(x=>`<div class="log"><div class="time">${esc(new Date(x.created_at).toLocaleTimeString('en-BD',{hour:'2-digit',minute:'2-digit',hour12:true}))}</div><div><div class="title"><span class="dot ${x.status==='failed'?'fail':''}"></span>${esc(x.action||'Activity')}</div><div class="meta">${esc(x.admin_name||'Admin')} · ${esc(x.category||'system')}${x.target_name?' · '+esc(x.target_name):''}</div>${x.details?`<div class="details">${esc(detailText(x.details))}</div>`:''}</div><span class="badge ${x.status==='failed'?'fail':''}">${esc(x.status||'success').toUpperCase()}</span></div>`).join(''):'<div class="empty">No activity found.</div>'}
 async function load(){ $('logs').classList.add('loading');const {data,error}=await sb.from('activity_logs').select('*').order('created_at',{ascending:false}).limit(1000);if(error){$('logs').innerHTML='<div class="empty">Could not load logs. Run activity-logs.sql in Supabase SQL Editor first.</div>';console.error(error);return}allLogs=data||[];render();$('logs').classList.remove('loading')}
 $('refresh').onclick=load;$('search').oninput=render;$('category').onchange=render;$('period').onchange=render;document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));b.classList.add('active');status=b.dataset.status;render()});(async()=>{if(await guard())load()})();
 </script></body></html>
