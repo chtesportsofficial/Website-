@@ -7,11 +7,11 @@
 <link rel="stylesheet" href="theme.css">
 <style>
 body{margin:0;background:#0a0d13;color:#f2f3f7;font-family:Inter,system-ui,sans-serif}
-.wrap{max-width:760px;margin:auto;padding:18px 15px 120px}
+.wrap{position:relative;z-index:10;max-width:760px;margin:auto;padding:18px 15px 120px;pointer-events:auto}
 .head{display:flex;gap:12px;align-items:center;margin-bottom:16px}.back{color:#fff;text-decoration:none;font-size:26px}
 h1{font-size:20px;margin:0}.sub{font-size:11px;color:#8992a6;margin-top:3px}
 .actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
-button{border:1px solid #263047;background:#141a29;color:#fff;border-radius:12px;padding:11px;font-weight:800;font-size:11px}
+button{position:relative;z-index:20;pointer-events:auto;cursor:pointer;border:1px solid #263047;background:#141a29;color:#fff;border-radius:12px;padding:11px;font-weight:800;font-size:11px}
 .primary{background:#22c55e;color:#07100a;border-color:#22c55e}
 .panel{background:#141a29;border:1px solid #263047;border-radius:17px;padding:13px;margin-bottom:13px}
 .ph{display:flex;justify-content:space-between;align-items:center}.ph b{font-size:13px}.count{color:#8c96aa;font-size:10px}
@@ -21,7 +21,7 @@ button{border:1px solid #263047;background:#141a29;color:#fff;border-radius:12px
 .mini{padding:7px 9px;font-size:9px}.green{color:#62e58a}.red{color:#ff7777}
 .badge{font-size:8px;border-radius:99px;padding:4px 7px;background:#222b40;color:#c5cede}
 .empty,.loading{text-align:center;color:#8992a6;font-size:11px;padding:18px}
-.modal{display:none;position:fixed;inset:0;background:#000b;z-index:99;align-items:flex-end}
+.modal{display:none;position:fixed;inset:0;z-index:99999;background:#000b;z-index:99;align-items:flex-end}
 .modal.open{display:flex}.box{width:100%;max-height:92vh;overflow:auto;background:#0b0f17;border:1px solid #263047;border-radius:20px 20px 0 0;padding:16px}
 .mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 label{display:block;color:#8992a6;font-size:10px;font-weight:800;margin:9px 0 5px}
@@ -39,6 +39,7 @@ textarea{min-height:80px;resize:vertical}.grid{display:grid;grid-template-column
   <section class="panel"><div class="ph"><b>Homepage Sections</b><span class="count" id="scount">0</span></div><div id="sections"><div class="loading">Loading...</div></div></section>
   <section class="panel"><div class="ph"><b>Tournaments</b><span class="count" id="tcount">0</span></div><div id="tournaments"><div class="loading">Loading...</div></div></section>
 </main>
+<div style="text-align:center;color:#687287;font-size:10px;padding:18px 0 35px">©CHT ESP ORG. All Rights Reserved</div>
 
 <div class="modal" id="tm"><div class="box">
   <div class="mh"><b id="tmTitle">Create Tournament</b><button onclick="closeM('tm')">×</button></div>
@@ -79,6 +80,12 @@ textarea{min-height:80px;resize:vertical}.grid{display:grid;grid-template-column
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+document.addEventListener('click', function(e){
+  const b=e.target.closest('button');
+  if(!b) return;
+  if(b.textContent.includes('Create Tournament')) window.newTournament && window.newTournament();
+  if(b.textContent.includes('Add New Section')) window.newSection && window.newSection();
+});
 const URL='https://myfficbwcbgbxbdqjexv.supabase.co';
 const KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
 const sb=window.supabase.createClient(URL,KEY);
@@ -86,7 +93,7 @@ let sections=[], tournaments=[];
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
-function openM(id){$(id).classList.add('open')} function closeM(id){$(id).classList.remove('open')}
+window.openM=function(id){$(id).classList.add('open')} window.closeM=function(id){$(id).classList.remove('open')}
 function msg(x){alert(x)}
 
 async function admin(){
@@ -117,25 +124,25 @@ function fillSections(selected=''){
  const a=sections.filter(x=>x.is_active);
  $('section').innerHTML=a.length?a.map(x=>`<option value="${x.id}" ${x.id===selected?'selected':''}>${esc(x.name)}</option>`).join(''):'<option value="">No active section</option>';
 }
-function newSection(){ $('sid').value='';$('smTitle').textContent='Add New Section';$('sname').value='';$('sdesc').value='';$('sorder').value=sections.length+1;$('sactive').value='true';openM('sm') }
-async function saveSection(){
+window.newSection=function(){ $('sid').value='';$('smTitle').textContent='Add New Section';$('sname').value='';$('sdesc').value='';$('sorder').value=sections.length+1;$('sactive').value='true';openM('sm') }
+async window.saveSection=function(){
  const id=$('sid').value,p={name:$('sname').value.trim(),description:$('sdesc').value.trim()||null,display_order:+$('sorder').value||0,is_active:$('sactive').value==='true'};
  if(!p.name)return msg('Section name required.');
  const q=id?sb.from('tournament_sections').update(p).eq('id',id):sb.from('tournament_sections').insert(p);
  const {error}=await q;if(error)return msg(error.message);closeM('sm');await load();
 }
-function editSection(id){let s=sections.find(x=>x.id===id);if(!s)return;$('sid').value=s.id;$('sname').value=s.name;$('sdesc').value=s.description||'';$('sorder').value=s.display_order;$('sactive').value=String(s.is_active);$('smTitle').textContent='Edit Section';openM('sm')}
-async function toggleSection(id,v){const {error}=await sb.from('tournament_sections').update({is_active:v}).eq('id',id);if(error)return msg(error.message);load()}
-async function deleteSection(id){if(tournaments.some(t=>t.section_id===id))return msg('This section has tournaments. Move/archive them first.');if(!confirm('Delete section?'))return;const {error}=await sb.from('tournament_sections').delete().eq('id',id);if(error)return msg(error.message);load()}
+window.editSection=function(id){let s=sections.find(x=>x.id===id);if(!s)return;$('sid').value=s.id;$('sname').value=s.name;$('sdesc').value=s.description||'';$('sorder').value=s.display_order;$('sactive').value=String(s.is_active);$('smTitle').textContent='Edit Section';openM('sm')}
+async window.toggleSection=function(id,v){const {error}=await sb.from('tournament_sections').update({is_active:v}).eq('id',id);if(error)return msg(error.message);load()}
+async window.deleteSection=function(id){if(tournaments.some(t=>t.section_id===id))return msg('This section has tournaments. Move/archive them first.');if(!confirm('Delete section?'))return;const {error}=await sb.from('tournament_sections').delete().eq('id',id);if(error)return msg(error.message);load()}
 
-function newTournament(){
+window.newTournament=function(){
  $('tid').value='';$('tmTitle').textContent='Create Tournament';$('title').value='';$('short').value='';$('entry').value=0;$('prize').value=0;$('slots').value=0;$('date').value='';$('start').value='';$('end').value='';$('game').value='';$('mode').value='';$('map').value='';$('distribution').value='';$('details').value='';$('rules').value='';$('notes').value='';$('status').value='draft';$('home').value='false';$('banner').value='';fillSections();openM('tm');
 }
-function editTournament(id){
+window.editTournament=function(id){
  let t=tournaments.find(x=>x.id===id);if(!t)return;
  $('tid').value=t.id;$('tmTitle').textContent='Edit Tournament';fillSections(t.section_id);$('title').value=t.title||'';$('short').value=t.short_description||'';$('entry').value=t.entry_fee||0;$('prize').value=t.prize_pool||0;$('slots').value=t.total_slots||0;$('date').value=t.tournament_date||'';$('start').value=t.start_time||'';$('end').value=t.end_time||'';$('game').value=t.game||'';$('mode').value=t.mode||'';$('map').value=t.map||'';$('distribution').value=t.prize_distribution||'';$('details').value=t.full_details||'';$('rules').value=t.rules||'';$('notes').value=t.important_notes||'';$('status').value=t.status||'draft';$('home').value=String(!!t.show_on_homepage);$('banner').value='';openM('tm');
 }
-async function saveTournament(){
+async window.saveTournament=function(){
  let id=$('tid').value,old=tournaments.find(x=>x.id===id),banner=old?.banner_url||null,file=$('banner').files[0];
  if(!$('title').value.trim())return msg('Tournament name required.');
  if(!$('section').value)return msg('Select a section.');
@@ -145,12 +152,11 @@ async function saveTournament(){
   let q=id?sb.from('tournaments').update(p).eq('id',id):sb.from('tournaments').insert(p);let r=await q;if(r.error)throw r.error;closeM('tm');await load();
  }catch(e){console.error(e);msg(e.message||'Save failed')}
 }
-async function publish(id,status){let v=status==='published'?'unpublished':'published';let {error}=await sb.from('tournaments').update({status:v,show_on_homepage:v==='published'}).eq('id',id);if(error)return msg(error.message);load()}
-async function home(id,v){let {error}=await sb.from('tournaments').update({show_on_homepage:v}).eq('id',id);if(error)return msg(error.message);load()}
-async function archive(id){if(!confirm('Archive tournament?'))return;let {error}=await sb.from('tournaments').update({status:'archived',show_on_homepage:false}).eq('id',id);if(error)return msg(error.message);load()}
+async window.publish=function(id,status){let v=status==='published'?'unpublished':'published';let {error}=await sb.from('tournaments').update({status:v,show_on_homepage:v==='published'}).eq('id',id);if(error)return msg(error.message);load()}
+async window.home=function(id,v){let {error}=await sb.from('tournaments').update({show_on_homepage:v}).eq('id',id);if(error)return msg(error.message);load()}
+async window.archive=function(id){if(!confirm('Archive tournament?'))return;let {error}=await sb.from('tournaments').update({status:'archived',show_on_homepage:false}).eq('id',id);if(error)return msg(error.message);load()}
 
 (async()=>{if(await admin())await load()})();
 </script>
-<script src="global.js" defer></script>
 </body>
 </html>
