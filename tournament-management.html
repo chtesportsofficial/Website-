@@ -155,14 +155,68 @@ function editTournament(id){
  $('tid').value=t.id;$('tmTitle').textContent='Edit Tournament';fillSections(t.section_id);$('title').value=t.title||'';$('short').value=t.short_description||'';$('entry').value=t.entry_fee||0;$('prize').value=t.prize_pool||0;$('slots').value=t.total_slots||0;$('date').value=t.tournament_date||'';$('start').value=t.start_time||'';$('end').value=t.end_time||'';$('game').value=t.game||'';$('mode').value=t.mode||'';$('map').value=t.map||'';$('distribution').value=t.prize_distribution||'';$('details').value=t.full_details||'';$('rules').value=t.rules||'';$('notes').value=t.important_notes||'';$('status').value=t.status||'draft';$('home').value=String(!!t.show_on_homepage);$('banner').value='';openM('tm');
 }
 async function saveTournament(){
- let id=$('tid').value,old=tournaments.find(x=>x.id===id),banner=old?.banner_url||null,file=$('banner').files[0];
- if(!$('title').value.trim())return msg('Tournament name required.');
- if(!$('section').value)return msg('Select a section.');
+ const btn=$('saveTournamentBtn');
+ if(btn.dataset.saving==='1') return;
+ const id=$('tid').value;
+ const old=tournaments.find(x=>x.id===id);
+ const file=$('banner').files && $('banner').files[0] ? $('banner').files[0] : null;
+ const title=$('title').value.trim();
+ const sectionId=$('section').value;
+ if(!title)return msg('Tournament name required.');
+ if(!sectionId)return msg('No active homepage section available. Please enable/create a section first.');
+ btn.dataset.saving='1';
+ const originalText=btn.textContent;
+ btn.disabled=true; btn.textContent='Saving...';
  try{
-  if(file){let ext=(file.name.split('.').pop()||'jpg').toLowerCase();if(!['jpg','jpeg','png','webp'].includes(ext))ext='jpg';let path=crypto.randomUUID()+'.'+ext;let u=await sb.storage.from('tournament-banners').upload(path,file,{upsert:false,contentType:file.type});if(u.error)throw u.error;banner=sb.storage.from('tournament-banners').getPublicUrl(path).data.publicUrl}
-  let p={section_id:$('section').value,title:$('title').value.trim(),banner_url:banner,short_description:$('short').value.trim()||null,entry_fee:+$('entry').value||0,prize_pool:+$('prize').value||0,total_slots:+$('slots').value||0,tournament_date:$('date').value||null,start_time:$('start').value||null,end_time:$('end').value||null,game:$('game').value.trim()||null,mode:$('mode').value.trim()||null,map:$('map').value.trim()||null,prize_distribution:$('distribution').value.trim()||null,full_details:$('details').value.trim()||null,rules:$('rules').value.trim()||null,important_notes:$('notes').value.trim()||null,status:$('status').value,show_on_homepage:$('home').value==='true'};
-  let q=id?sb.from('tournaments').update(p).eq('id',id):sb.from('tournaments').insert(p);let r=await q;if(r.error)throw r.error;closeM('tm');await load();
- }catch(e){console.error(e);msg(e.message||'Save failed')}
+  let banner=old?.banner_url||null;
+  if(file){
+   const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
+   if(!['jpg','jpeg','png','webp'].includes(ext)) throw new Error('Only JPG, JPEG, PNG or WEBP banners are allowed.');
+   const path=Date.now()+'-'+Math.random().toString(36).slice(2,10)+'.'+ext;
+   const upload=await sb.storage.from('tournament-banners').upload(path,file,{upsert:false,contentType:file.type||'image/jpeg',cacheControl:'3600'});
+   if(upload.error) throw new Error('Banner upload failed: '+upload.error.message);
+   banner=sb.storage.from('tournament-banners').getPublicUrl(path).data.publicUrl;
+  }
+  const p={
+   section_id:sectionId,
+   title:title,
+   banner_url:banner,
+   short_description:$('short').value.trim()||null,
+   entry_fee:Number($('entry').value)||0,
+   prize_pool:Number($('prize').value)||0,
+   total_slots:Number($('slots').value)||0,
+   tournament_date:$('date').value||null,
+   start_time:$('start').value||null,
+   end_time:$('end').value||null,
+   game:$('game').value.trim()||null,
+   mode:$('mode').value.trim()||null,
+   map:$('map').value.trim()||null,
+   prize_distribution:$('distribution').value.trim()||null,
+   full_details:$('details').value.trim()||null,
+   rules:$('rules').value.trim()||null,
+   important_notes:$('notes').value.trim()||null,
+   status:$('status').value||'draft',
+   show_on_homepage:$('home').value==='true'
+  };
+  let result;
+  if(id){
+   result=await sb.from('tournaments').update(p).eq('id',id).select().single();
+  }else{
+   result=await sb.from('tournaments').insert(p).select().single();
+  }
+  if(result.error){
+   const e=result.error;
+   throw new Error((e.message||'Database save failed')+(e.details?'\n\nDetails: '+e.details:'')+(e.hint?'\n\nHint: '+e.hint:''));
+  }
+  closeM('tm');
+  await load();
+  msg(id?'Tournament updated successfully.':'Tournament created successfully.');
+ }catch(e){
+  console.error('Tournament save error:',e);
+  msg(e?.message||'Save failed. Please try again.');
+ }finally{
+  btn.dataset.saving='0'; btn.disabled=false; btn.textContent=originalText;
+ }
 }
 async function toggleTournament(id,status){
  const enabled=status==='published';
