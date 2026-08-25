@@ -666,6 +666,11 @@
         <label for="notice-message">Notice message</label>
         <textarea id="notice-message" placeholder="Write the notice that should appear on the homepage..."></textarea>
       </div>
+      <div class="field">
+        <label for="notice-image">Notice image (optional)</label>
+        <input type="file" id="notice-image" accept="image/png,image/jpeg,image/webp">
+        <div id="notice-image-preview" style="display:none;margin-top:10px"></div>
+      </div>
 
       <div class="notice-actions">
         <button id="send-notice-btn" type="button">Send Notice</button>
@@ -676,6 +681,7 @@
       <div class="notice-current">
         <div class="nc-label">Current Notice</div>
         <div class="nc-text" id="current-notice-text">Loading...</div>
+        <img id="current-notice-image" alt="Current notice image" style="display:none;width:100%;max-height:220px;object-fit:contain;border-radius:12px;margin-top:10px;border:1px solid var(--line);background:#111722">
         <div class="nc-meta" id="current-notice-meta"></div>
       </div>
     </div>
@@ -750,14 +756,14 @@ function formatNoticeDate(value){
 // needed; plain-text notices saved before this change still work fine,
 // they just render with no title.
 function parseNoticeMessage(raw){
-  if(!raw) return {title:'', body:''};
+  if(!raw) return {title:'', body:'', image:''};
   try{
     const obj=JSON.parse(raw);
     if(obj && typeof obj==='object' && ('title' in obj || 'body' in obj)){
-      return {title:obj.title||'', body:obj.body||''};
+      return {title:obj.title||'', body:obj.body||'', image:obj.image||''};
     }
   }catch(e){ /* not JSON — legacy plain-text notice */ }
-  return {title:'', body:raw};
+  return {title:'', body:raw, image:''};
 }
 
 function noticePreviewText(title,body){
@@ -770,6 +776,7 @@ async function getCurrentNotice(){
   const textEl=document.getElementById('current-notice-text');
   const metaEl=document.getElementById('current-notice-meta');
   const subEl=document.getElementById('notice-menu-sub');
+  const imageEl=document.getElementById('current-notice-image');
   try{
     const {data,error}=await supabaseClient.from('site_notices')
       .select('id,message,created_at,admin_name,is_active')
@@ -781,8 +788,9 @@ async function getCurrentNotice(){
       if(subEl) subEl.textContent='No active notice';
       return null;
     }
-    const {title,body}=parseNoticeMessage(data.message);
+    const {title,body,image}=parseNoticeMessage(data.message);
     textEl.innerHTML='';
+    if(imageEl){ if(image){ imageEl.src=image; imageEl.style.display='block'; } else { imageEl.removeAttribute('src'); imageEl.style.display='none'; } }
     if(title){
       const titleEl=document.createElement('div');
       titleEl.className='nc-title';
@@ -815,6 +823,7 @@ async function getAdminName(){
 async function sendNotice(){
   const titleInput=document.getElementById('notice-title');
   const input=document.getElementById('notice-message');
+  const imageInput=document.getElementById('notice-image');
   const btn=document.getElementById('send-notice-btn');
   const title=titleInput.value.trim();
   const message=input.value.trim();
@@ -822,13 +831,15 @@ async function sendNotice(){
   btn.disabled=true;
   try{
     const adminName=await getAdminName();
-    const payload=title ? JSON.stringify({title,body:message}) : message;
+    let image=''; const file=imageInput && imageInput.files ? imageInput.files[0] : null;
+    if(file){ const ext=(file.name.split('.').pop()||'jpg').toLowerCase(); const safe=['jpg','jpeg','png','webp'].includes(ext)?ext:'jpg'; const path='notice-'+crypto.randomUUID()+'.'+safe; const up=await supabaseClient.storage.from('tournament-banners').upload(path,file,{upsert:false,contentType:file.type}); if(up.error) throw up.error; image=supabaseClient.storage.from('tournament-banners').getPublicUrl(path).data.publicUrl; }
+    const payload=(title||image) ? JSON.stringify({title,body:message,image}) : message;
     const {error:offError}=await supabaseClient.from('site_notices').update({is_active:false}).eq('is_active',true);
     if(offError) throw offError;
     const {error}=await supabaseClient.from('site_notices').insert({message:payload,is_active:true,admin_name:adminName});
     if(error) throw error;
     titleInput.value='';
-    input.value='';
+    input.value=''; if(imageInput) imageInput.value=''; const pp=document.getElementById('notice-image-preview'); if(pp){pp.innerHTML='';pp.style.display='none';}
     showToast('Notice sent successfully.');
     await getCurrentNotice();
   }catch(e){
@@ -869,6 +880,7 @@ function setupNoticeUI(){
   document.addEventListener('keydown',(e)=>{
     if(e.key==='Escape') closeNoticeModal();
   });
+  const imageInput=document.getElementById('notice-image'); if(imageInput){ imageInput.addEventListener('change',()=>{const f=imageInput.files&&imageInput.files[0],p=document.getElementById('notice-image-preview');if(!p)return;if(!f){p.innerHTML='';p.style.display='none';return;}const u=URL.createObjectURL(f);p.innerHTML='<img src="'+u+'" style="width:100%;max-height:180px;object-fit:contain;border-radius:12px;border:1px solid var(--line)">';p.style.display='block';});}
   document.getElementById('send-notice-btn').addEventListener('click',sendNotice);
   document.getElementById('clear-notice-btn').addEventListener('click',()=>{
     document.getElementById('notice-title').value='';
