@@ -53,6 +53,10 @@
 
 @media(max-width:520px){.wrap{padding-left:12px;padding-right:12px}.grid,.modal-actions{grid-template-columns:1fr}.tournament-item{padding:12px}.tournament-top{grid-template-columns:32px 88px minmax(0,1fr);gap:10px}.tournament-top .thumb{width:88px;height:88px}.t-title-row .t-title{font-size:13px}.t-meta{font-size:8px;margin-top:6px}.t-actions{padding-left:42px;gap:6px;overflow:hidden}.t-actions .mini{padding:8px 11px;font-size:9px}.t-actions .switch{width:60px;height:31px;flex-basis:60px}.t-actions .switch .knob{width:23px;height:23px}.t-actions .switch.on .knob{left:33px}.t-actions .switch-label{top:9px;font-size:8px}.t-actions .drag{flex-basis:38px;width:38px;height:34px}}
 
+
+/* ===== Final requested layout ===== */
+.homepage-panel,.tournaments-panel{padding:14px 12px 12px}.homepage-panel-head{padding:0 3px 11px}.head-controls{display:flex;align-items:center;gap:9px}.collapse-switch{width:43px;height:24px;border:1px solid #2b3852;border-radius:999px;background:#242d3e;position:relative;padding:0;cursor:pointer}.collapse-switch span{position:absolute;width:18px;height:18px;border-radius:50%;background:#e9edf2;top:2px;left:3px;transition:.18s}.collapse-switch.on{background:#18c866;border-color:#18c866}.collapse-switch.on span{left:20px}.homepage-panel.collapsed #homepageContent{display:none}.homepage-panel.collapsed{padding-bottom:10px}.section-item{display:grid;grid-template-columns:minmax(0,1fr);gap:11px;padding:13px 12px;margin-top:9px;border-radius:18px;background:linear-gradient(145deg,#182237,#141d30);border:1px solid #2b3852;box-shadow:0 8px 22px #0002}.section-top{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px}.section-name-wrap{min-width:0}.section-name{font-size:14px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.section-index{width:36px;height:36px;border-radius:10px}.section-tools{display:flex;align-items:center;gap:7px}.section-tools .mini{min-height:38px;padding:9px 14px}.section-bottom{display:flex;align-items:center;gap:8px;margin-top:0;flex-wrap:wrap}.section-bottom .switch{width:68px;height:34px}.section-bottom .switch .knob{width:26px;height:26px}.section-bottom .switch.on .knob{left:38px}.section-bottom .switch-label{top:10px;font-size:9px}.section-bottom .switch:not(.on) .switch-label{right:10px;left:auto}.section-bottom .mini{min-height:38px;padding:9px 15px}.section-item>.section-top>.section-tools>.drag{width:42px;height:38px;flex:0 0 42px}.section-item .section-index{margin-right:8px}.section-name-wrap{display:flex;align-items:center}.inline-add{margin-top:11px;padding-top:11px}.tournaments-panel .ph{padding-top:1px}.tournament-group{margin-top:12px}.tournament-group-head{display:flex;align-items:center;justify-content:space-between;padding:4px 5px 7px}.tournament-group-name{font-size:11px;font-weight:950;color:#dfe5f0}.tournament-group-count{font-size:9px;color:#7f8ba0;font-weight:900}.tournament-item{grid-template-columns:1fr;gap:11px}.tournament-top{grid-template-columns:38px 108px minmax(0,1fr)}.t-meta{font-size:9px;line-height:1.45;white-space:normal}.t-meta span{display:inline-block}.t-actions{padding-left:50px;align-items:center}.t-actions .drag{cursor:grab}.t-actions .drag:active{cursor:grabbing}.tournament-group+.tournament-group{border-top:1px solid #253047;padding-top:4px}.tournament-item.dragging{opacity:.45}.tournament-item.drag-over{outline:1px dashed #36df7a;outline-offset:2px}
+@media(max-width:520px){.section-top{grid-template-columns:minmax(0,1fr) auto}.section-tools .mini{padding:8px 10px}.section-item>.section-top>.section-tools>.drag{width:38px;height:34px;flex-basis:38px}.section-bottom .mini{padding:8px 12px}.tournament-top{grid-template-columns:32px 88px minmax(0,1fr)}.tournament-top .thumb{width:88px;height:88px}.t-actions{padding-left:42px;gap:6px;overflow:visible}.t-actions .mini{padding:8px 10px}.t-actions .switch{width:60px;height:31px;flex-basis:60px}.t-actions .switch .knob{width:23px;height:23px}.t-actions .switch.on .knob{left:33px}.t-actions .drag{width:38px;height:34px;flex-basis:38px}}
 </style>
 </head>
 <body>
@@ -60,11 +64,16 @@
   <div class="head"><a class="back" href="admin-panel.html">‹</a><div><h1>Tournament Management</h1><div class="sub">Create, edit and publish Homepage tournaments</div></div></div>
   <div class="topbar"><a class="archive-link" href="archive-tournaments.html">Archived Tournaments</a></div>
 
-  <section class="panel management-panel">
-    <div class="ph"><b>Homepage Sections</b><span class="count" id="scount">0</span></div>
-    <div id="sections"><div class="loading">Loading...</div></div>
-    <div class="inline-add"><button type="button" id="addSectionBtn">＋ Add New Section</button></div>
-    <div class="sub-panel-head"><b>Tournaments</b><span class="count" id="tcount">0</span></div>
+  <section class="panel management-panel homepage-panel" id="homepagePanel">
+    <div class="ph homepage-panel-head"><b>Homepage Sections</b><div class="head-controls"><span class="count" id="scount">0</span><button type="button" class="collapse-switch on" id="homepageCollapse" aria-label="Expand or collapse Homepage Sections"><span></span></button></div></div>
+    <div id="homepageContent">
+      <div id="sections"><div class="loading">Loading...</div></div>
+      <div class="inline-add"><button type="button" id="addSectionBtn">＋ Add New Section</button></div>
+    </div>
+  </section>
+
+  <section class="panel management-panel tournaments-panel">
+    <div class="ph"><b>Tournaments</b><span class="count" id="tcount">0</span></div>
     <div id="tournaments"><div class="loading">Loading...</div></div>
     <button type="button" class="create-bottom" id="createTournamentBtn">＋ Create Tournament</button>
   </section>
@@ -100,10 +109,10 @@
 <div class="modal" id="sm"><div class="box">
   <div class="mh"><b id="smTitle">Add New Section</b><button type="button" id="closeSmBtn">×</button></div>
   <input type="hidden" id="sid">
-  <label>Section Name *</label><input id="sname" placeholder="Today's Scrims Tournaments">
-  <label>Description</label><textarea id="sdesc"></textarea>
-  <label>Display Order</label><input id="sorder" type="number" min="0" value="1">
-  <label>Active</label><select id="sactive"><option value="true">Active</option><option value="false">Inactive</option></select>
+  <label>Section Name *</label><input id="sname" placeholder="Today's Scrim Tournaments">
+  <input type="hidden" id="sdesc" value="">
+  <input type="hidden" id="sorder" value="1">
+  <input type="hidden" id="sactive" value="true"></select>
   <div class="modal-actions"><button type="button" id="cancelSmBtn">Cancel</button><button type="button" class="primary" id="saveSectionBtn">Save Section</button></div>
 </div></div>
 
@@ -160,26 +169,29 @@ function renderSections(){
  </div>`).join(''):'<div class="empty">No sections.</div>';
  bindSectionDrag();
 }
+function getTournamentOrder(sectionId){
+ try{const all=JSON.parse(localStorage.getItem('chteo_tournament_orders_by_section')||'{}');return Array.isArray(all[sectionId])?all[sectionId]:[];}catch(e){return [];}
+}
+function setTournamentOrder(sectionId,ids){
+ try{const all=JSON.parse(localStorage.getItem('chteo_tournament_orders_by_section')||'{}');all[sectionId]=ids;localStorage.setItem('chteo_tournament_orders_by_section',JSON.stringify(all));}catch(e){}
+}
+function orderedSectionTournaments(sectionId,items){
+ const saved=getTournamentOrder(sectionId);const rank=new Map(saved.map((id,i)=>[id,i]));
+ return [...items].sort((a,b)=>{const ar=rank.get(a.id),br=rank.get(b.id);if(ar===undefined&&br===undefined)return new Date(a.created_at||0)-new Date(b.created_at||0);if(ar===undefined)return 1;if(br===undefined)return -1;return ar-br;});
+}
 function renderTournaments(){
- $('tcount').textContent=tournaments.filter(t=>t.status!=='archived').length;
- const list=tournaments.filter(t=>t.status!=='archived');
- $('tournaments').innerHTML=list.length?list.map((t,i)=>`<div class="tournament-item" draggable="true" data-id="${t.id}">
-   <div class="tournament-top">
-     <span class="t-index">${i+1}</span>
-     <div class="thumb">${t.banner_url?`<img src="${esc(t.banner_url)}" alt="">`:''}</div>
-     <div class="t-main">
-       <div class="t-title-row"><div class="t-title">${esc(t.title)}</div></div>
-       <div class="t-meta">Entry ৳${t.entry_fee||0} · Prize ৳${t.prize_pool||0} · Slots ${t.total_slots||0}</div>
-     </div>
-   </div>
-   <div class="t-actions">
-     <button class="mini green" onclick="editTournament('${t.id}')">Edit</button>
-     <button class="mini archive-btn" onclick="archive('${t.id}')">Archive</button>
-     <button class="mini t-delete" onclick="deleteTournament('${t.id}')">Delete</button>
-     <button class="switch t-toggle ${t.status==='published'?'on':''}" onclick="toggleTournament('${t.id}',${t.status!=='published'})"><span class="switch-label">${t.status==='published'?'ON':'OFF'}</span><span class="knob"></span></button>
-     <span class="drag tournament-drag" title="Drag to reorder">⠿</span>
-   </div>
- </div>`).join(''):'<div class="empty">No tournaments created yet.</div>';
+ const active=tournaments.filter(t=>t.status!=='archived');
+ $('tcount').textContent=active.length;
+ if(!active.length){$('tournaments').innerHTML='<div class="empty">No tournaments created yet.</div>';return;}
+ const groups=sections.map(s=>({s,items:orderedSectionTournaments(s.id,active.filter(t=>t.section_id===s.id))})).filter(g=>g.items.length);
+ const ungrouped=active.filter(t=>!sections.some(s=>s.id===t.section_id));
+ if(ungrouped.length)groups.push({s:{id:'__ungrouped',name:'Unassigned'},items:orderedSectionTournaments('__ungrouped',ungrouped)});
+ $('tournaments').innerHTML=groups.map(g=>`<div class="tournament-group" data-section-id="${g.s.id}">
+   <div class="tournament-group-head"><div class="tournament-group-name">${esc(g.s.name)}</div><div class="tournament-group-count">${g.items.length} tournament${g.items.length===1?'':'s'}</div></div>
+   <div class="tournament-group-list">${g.items.map((t,i)=>`<div class="tournament-item" draggable="true" data-id="${t.id}" data-section-id="${g.s.id}">
+     <div class="tournament-top"><span class="t-index">${i+1}</span><div class="thumb">${t.banner_url?`<img src="${esc(t.banner_url)}" alt="">`:''}</div><div class="t-main"><div class="t-title-row"><div class="t-title">${esc(t.title)}</div></div><div class="t-meta"><span>Entry ৳${t.entry_fee||0}</span> · <span>Prize ৳${t.prize_pool||0}</span> · <span>Slots ${t.total_slots||0}</span></div></div></div>
+     <div class="t-actions"><button class="mini green" onclick="editTournament('${t.id}')">Edit</button><button class="mini archive-btn" onclick="archive('${t.id}')">Archive</button><button class="mini t-delete" onclick="deleteTournament('${t.id}')">Delete</button><button class="switch t-toggle ${t.status==='published'?'on':''}" onclick="toggleTournament('${t.id}',${t.status!=='published'})"><span class="switch-label">${t.status==='published'?'ON':'OFF'}</span><span class="knob"></span></button><span class="drag tournament-drag" title="Drag to reorder">⠿</span></div>
+   </div>`).join('')}</div></div>`).join('');
  bindTournamentDrag();
 }
 function fillSections(selected=''){
@@ -189,20 +201,25 @@ function fillSections(selected=''){
 function bindSectionDrag(){const box=$('sections');let dragged=null;box.querySelectorAll('.section-item').forEach(el=>{el.addEventListener('dragstart',()=>{dragged=el;el.classList.add('dragging')});el.addEventListener('dragend',async()=>{el.classList.remove('dragging');box.querySelectorAll('.drag-over').forEach(x=>x.classList.remove('drag-over'));await saveSectionOrder()});el.addEventListener('dragover',e=>{e.preventDefault();if(el!==dragged)el.classList.add('drag-over')});el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('drag-over');if(!dragged||dragged===el)return;const items=[...box.querySelectorAll('.section-item')];const di=items.indexOf(dragged),ti=items.indexOf(el);if(di<ti)el.after(dragged);else el.before(dragged)})})}
 async function saveSectionOrder(){const ids=[...$('sections').querySelectorAll('.section-item')].map(x=>x.dataset.id);for(let i=0;i<ids.length;i++){await sb.from('tournament_sections').update({display_order:i+1}).eq('id',ids[i])}await load()}
 function bindTournamentDrag(){
- const box=$('tournaments');let dragged=null;
- box.querySelectorAll('.tournament-item').forEach(el=>{
+ document.querySelectorAll('.tournament-group-list').forEach(box=>{
+  let dragged=null;
+  box.querySelectorAll('.tournament-item').forEach(el=>{
    el.addEventListener('dragstart',()=>{dragged=el;el.classList.add('dragging')});
-   el.addEventListener('dragend',async()=>{el.classList.remove('dragging');box.querySelectorAll('.drag-over').forEach(x=>x.classList.remove('drag-over'));saveTournamentOrder()});
+   el.addEventListener('dragend',()=>{el.classList.remove('dragging');box.querySelectorAll('.drag-over').forEach(x=>x.classList.remove('drag-over'));saveTournamentGroupOrder(box)});
    el.addEventListener('dragover',e=>{e.preventDefault();if(el!==dragged)el.classList.add('drag-over')});
    el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
    el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('drag-over');if(!dragged||dragged===el)return;const items=[...box.querySelectorAll('.tournament-item')];const di=items.indexOf(dragged),ti=items.indexOf(el);if(di<ti)el.after(dragged);else el.before(dragged)});
+  });
  });
 }
-function saveTournamentOrder(){
- const ids=[...$('tournaments').querySelectorAll('.tournament-item')].map(x=>x.dataset.id);
- localStorage.setItem('chteo_tournament_admin_order',JSON.stringify(ids));
- const rank=new Map(ids.map((id,i)=>[id,i]));
- tournaments.sort((a,b)=>(rank.get(a.id)??999999)-(rank.get(b.id)??999999));
+async function saveTournamentGroupOrder(box){
+ const sectionId=box.closest('.tournament-group')?.dataset.sectionId;
+ if(!sectionId)return;
+ // Save the exact order for THIS section. The order is kept separately per section,
+ // so moving item #4 to #1 immediately makes the visible indexes 1,2,3,4.
+ const ids=[...box.querySelectorAll('.tournament-item')].map(x=>x.dataset.id);
+ setTournamentOrder(sectionId,ids);
+ // Re-render from the saved order so the index badges are recalculated immediately.
  renderTournaments();
 }
 
@@ -213,7 +230,7 @@ async function saveSection(){
  const q=id?sb.from('tournament_sections').update(p).eq('id',id):sb.from('tournament_sections').insert(p);
  const {error}=await q;if(error)return msg(error.message);closeM('sm');await load();
 }
-function editSection(id){let s=sections.find(x=>x.id===id);if(!s)return;$('sid').value=s.id;$('sname').value=s.name;$('sdesc').value=s.description||'';$('sorder').value=s.display_order;$('sactive').value=String(s.is_active);$('smTitle').textContent='Edit Section';openM('sm')}
+function editSection(id){let s=sections.find(x=>x.id===id);if(!s)return;$('sid').value=s.id;$('sname').value=s.name;$('sdesc').value='';$('sorder').value=s.display_order;$('sactive').value=String(s.is_active);$('smTitle').textContent='Edit Section';openM('sm')}
 async function toggleSection(id,v){const {error}=await sb.from('tournament_sections').update({is_active:v}).eq('id',id);if(error)return msg(error.message);load()}
 async function deleteSection(id){if(tournaments.some(t=>t.section_id===id&&t.status!=='archived'))return msg('This section has active tournaments. Move or archive them first.');askConfirm('Delete section?','This section will be permanently deleted.',async()=>{const {error}=await sb.from('tournament_sections').delete().eq('id',id);if(error)return msg(error.message);load()})}
 
@@ -240,6 +257,8 @@ async function archive(id){askConfirm('Archive tournament?','The tournament will
 
 
 document.addEventListener('DOMContentLoaded', function(){
+  const hc=$('homepageCollapse');
+  hc.addEventListener('click',()=>{const panel=$('homepagePanel');panel.classList.toggle('collapsed');hc.classList.toggle('on',!panel.classList.contains('collapsed'));});
   document.getElementById('createTournamentBtn').addEventListener('click', newTournament);
   document.getElementById('addSectionBtn').addEventListener('click', newSection);
   document.getElementById('closeTmBtn').addEventListener('click', function(){closeM('tm')});
