@@ -161,8 +161,7 @@ if ($stmt->execute()) {
     $dhaka_time = new DateTime('now', new DateTimeZone('Asia/Dhaka'));
     notifyTelegram(
         "🟡 <b>New Deposit Request</b>\n"
-        . "User: " . htmlspecialchars($email) . "\n"
-        . "UID: <code>" . htmlspecialchars($supabase_uid) . "</code>\n"
+        . "UID: <code>#" . $user_id . "</code>\n"
         . "Method: " . htmlspecialchars($method_db) . "\n"
         . "Sender: " . htmlspecialchars($sender_number) . "\n"
         . "Amount: ৳" . number_format($amount, 2) . "\n"
