@@ -33,7 +33,7 @@ textarea{min-height:80px;resize:vertical}.grid{display:grid;grid-template-column
 <body>
 <main class="wrap">
   <div class="head"><a class="back" href="admin-panel.html">‹</a><div><h1>Tournament Management</h1><div class="sub">Create, edit and publish Homepage tournaments</div></div></div>
-  <div class="actions"><button type="button" class="primary" id="createTournamentBtn">＋ Create Tournament</button><button type="button" id="addSectionBtn">＋ Add New Section</button></div>
+  <div class="actions"><button type="button" class="primary" id="createTournamentBtn">＋ Create Tournament</button><button type="button" id="addSectionBtn">＋ Add New Section</button><button type="button" id="archivePageBtn">🗄 Archived Tournaments</button></div>
 
   <section class="panel"><div class="ph"><b>Homepage Sections</b><span class="count" id="scount">0</span></div><div id="sections"><div class="loading">Loading...</div></div></section>
   <section class="panel"><div class="ph"><b>Tournaments</b><span class="count" id="tcount">0</span></div><div id="tournaments"><div class="loading">Loading...</div></div></section>
@@ -109,8 +109,9 @@ function renderSections(){
  $('sections').innerHTML=sections.length?sections.map(s=>`<div class="item"><div class="name">${esc(s.name)} <span class="badge">${s.is_active?'ACTIVE':'INACTIVE'}</span></div><div class="meta">${esc(s.description||'')} · Order ${s.display_order}</div><div class="row"><button class="mini green" onclick="editSection('${s.id}')">Edit</button><button class="mini" onclick="toggleSection('${s.id}',${!s.is_active})">${s.is_active?'Disable':'Enable'}</button><button class="mini red" onclick="deleteSection('${s.id}')">Delete</button></div></div>`).join(''):'<div class="empty">No sections.</div>';
 }
 function renderTournaments(){
- $('tcount').textContent=tournaments.length;
- $('tournaments').innerHTML=tournaments.length?tournaments.map(t=>`<div class="item"><div class="name">${esc(t.title)} <span class="badge">${esc(t.status)}</span></div><div class="meta">${esc(t.tournament_sections?.name||'No section')} · Entry ৳${t.entry_fee||0} · Prize ৳${t.prize_pool||0} · Slots ${t.total_slots||0}</div><div class="row"><button class="mini green" onclick="editTournament('${t.id}')">Edit</button><button class="mini" onclick="publish('${t.id}','${t.status}')">${t.status==='published'?'Unpublish':'Publish'}</button><button class="mini" onclick="home('${t.id}',${!t.show_on_homepage})">${t.show_on_homepage?'Hide Homepage':'Show Homepage'}</button><button class="mini red" onclick="archive('${t.id}')">Archive</button></div></div>`).join(''):'<div class="empty">No tournaments created yet.</div>';
+ const active=tournaments.filter(t=>t.status!=='archived');
+ $('tcount').textContent=active.length;
+ $('tournaments').innerHTML=active.length?active.map(t=>`<div class="item"><div class="name">${esc(t.title)} <span class="badge">${esc(t.status)}</span></div><div class="meta">${esc(t.tournament_sections?.name||'No section')} · Entry ৳${t.entry_fee||0} · Prize ৳${t.prize_pool||0} · Slots ${t.total_slots||0}</div><div class="row"><button class="mini green" onclick="editTournament('${t.id}')">Edit</button><button class="mini" onclick="toggleTournament('${t.id}','${t.status}')">${t.status==='published'?'Disable':'Enable'}</button><button class="mini" onclick="home('${t.id}',${!t.show_on_homepage})">${t.show_on_homepage?'Hide Homepage':'Show Homepage'}</button><button class="mini" onclick="archive('${t.id}')">Archive</button><button class="mini red" onclick="deleteTournament('${t.id}')">Delete</button></div></div>`).join(''):'<div class="empty">No active tournaments. Archived tournaments are in Archived Tournaments.</div>';
 }
 function fillSections(selected=''){
  const a=sections.filter(x=>x.is_active);
@@ -144,14 +145,31 @@ async function saveTournament(){
   let q=id?sb.from('tournaments').update(p).eq('id',id):sb.from('tournaments').insert(p);let r=await q;if(r.error)throw r.error;closeM('tm');await load();
  }catch(e){console.error(e);msg(e.message||'Save failed')}
 }
-async function publish(id,status){let v=status==='published'?'unpublished':'published';let {error}=await sb.from('tournaments').update({status:v,show_on_homepage:v==='published'}).eq('id',id);if(error)return msg(error.message);load()}
-async function home(id,v){let {error}=await sb.from('tournaments').update({show_on_homepage:v}).eq('id',id);if(error)return msg(error.message);load()}
-async function archive(id){if(!confirm('Archive tournament?'))return;let {error}=await sb.from('tournaments').update({status:'archived',show_on_homepage:false}).eq('id',id);if(error)return msg(error.message);load()}
+async function toggleTournament(id,status){
+ let v=status==='published'?'unpublished':'published';
+ let {error}=await sb.from('tournaments').update({status:v,show_on_homepage:v==='published'}).eq('id',id);
+ if(error)return msg(error.message);load();
+}
+async function home(id,v){
+ let {error}=await sb.from('tournaments').update({show_on_homepage:v}).eq('id',id);
+ if(error)return msg(error.message);load();
+}
+async function archive(id){
+ if(!confirm('Archive this tournament? It will disappear from the Homepage and Active list.'))return;
+ let {error}=await sb.from('tournaments').update({status:'archived',show_on_homepage:false}).eq('id',id);
+ if(error)return msg(error.message);load();
+}
+async function deleteTournament(id){
+ if(!confirm('Permanently delete this tournament? This cannot be undone.'))return;
+ let {error}=await sb.from('tournaments').delete().eq('id',id);
+ if(error)return msg(error.message);load();
+}
 
 
 document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('createTournamentBtn').addEventListener('click', newTournament);
   document.getElementById('addSectionBtn').addEventListener('click', newSection);
+  document.getElementById('archivePageBtn').addEventListener('click', function(){location.href='archive-tournaments.html'});
   document.getElementById('closeTmBtn').addEventListener('click', function(){closeM('tm')});
   document.getElementById('cancelTmBtn').addEventListener('click', function(){closeM('tm')});
   document.getElementById('closeSmBtn').addEventListener('click', function(){closeM('sm')});
@@ -160,7 +178,13 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('saveSectionBtn').addEventListener('click', saveSection);
 });
 
-(async()=>{if(await admin())await load()})();
+(async()=>{
+  if(await admin()){
+    await load();
+    const editId=new URLSearchParams(location.search).get('edit');
+    if(editId) editTournament(editId);
+  }
+})();
 </script>
 
 </body>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Archived Tournaments — CHT ESP ORG</title>
+<style>
+body{margin:0;background:#0a0d13;color:#f2f3f7;font-family:Inter,system-ui,sans-serif}
+.wrap{max-width:760px;margin:auto;padding:18px 15px 80px}
+.head{display:flex;gap:12px;align-items:center;margin-bottom:16px}.back{color:#fff;text-decoration:none;font-size:26px}
+h1{font-size:20px;margin:0}.sub{font-size:11px;color:#8992a6;margin-top:3px}
+.panel{background:#141a29;border:1px solid #263047;border-radius:17px;padding:13px;margin-bottom:13px}
+.ph{display:flex;justify-content:space-between;align-items:center}.ph b{font-size:13px}.count{color:#8c96aa;font-size:10px}
+.item{background:#181f30;border:1px solid #29344c;border-radius:13px;padding:11px;margin-top:8px}
+.name{font-weight:800;font-size:12px}.meta{font-size:10px;color:#929caf;line-height:1.5;margin-top:4px}
+.row{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+button{position:relative;z-index:100;pointer-events:auto;touch-action:manipulation;cursor:pointer;border:1px solid #263047;background:#141a29;color:#fff;border-radius:12px;padding:8px 10px;font-weight:800;font-size:9px}
+.green{color:#62e58a}.red{color:#ff7777}.empty{text-align:center;color:#8992a6;font-size:11px;padding:25px 10px}
+.badge{font-size:8px;border-radius:99px;padding:4px 7px;background:#39272c;color:#ff9aa5}
+@media(max-width:520px){.row{display:grid;grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="head">
+    <a class="back" href="tournament-management.html">‹</a>
+    <div><h1>Archived Tournaments</h1><div class="sub">Archived tournaments are hidden from the Homepage.</div></div>
+  </div>
+  <section class="panel">
+    <div class="ph"><b>Archive</b><span class="count" id="count">0</span></div>
+    <div id="list"><div class="empty">Loading...</div></div>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
+const KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+const sb=window.supabase.createClient(SUPABASE_URL,KEY);
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+function msg(x){alert(x)}
+async function admin(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){location.href='login.html';return false}
+  const {data:p,error}=await sb.from('profiles').select('is_admin').eq('id',session.user.id).single();
+  if(error||!p?.is_admin){msg('Admin access required.');location.href='index.html';return false}
+  return true;
+}
+async function load(){
+  const {data,error}=await sb.from('tournaments').select('*,tournament_sections(name)').eq('status','archived').order('created_at',{ascending:false});
+  if(error){console.error(error);$('list').innerHTML='<div class="empty">Could not load archived tournaments.</div>';return}
+  const rows=data||[];
+  $('count').textContent=rows.length;
+  $('list').innerHTML=rows.length?rows.map(t=>`<div class="item">
+    <div class="name">${esc(t.title)} <span class="badge">ARCHIVED</span></div>
+    <div class="meta">${esc(t.tournament_sections?.name||'No section')} · Entry ৳${t.entry_fee||0} · Prize ৳${t.prize_pool||0} · Slots ${t.total_slots||0}</div>
+    <div class="row">
+      <button class="green" onclick="restore('${t.id}')">Restore</button>
+      <button onclick="edit('${t.id}')">Edit</button>
+      <button class="red" onclick="removeItem('${t.id}')">Delete</button>
+    </div>
+  </div>`).join(''):'<div class="empty">No archived tournaments.</div>';
+}
+async function restore(id){
+  if(!confirm('Restore this tournament to the active list?'))return;
+  const {error}=await sb.from('tournaments').update({status:'unpublished',show_on_homepage:false}).eq('id',id);
+  if(error)return msg(error.message);
+  await load();
+}
+function edit(id){location.href='tournament-management.html?edit='+encodeURIComponent(id)}
+async function removeItem(id){
+  if(!confirm('Permanently delete this archived tournament? This cannot be undone.'))return;
+  const {error}=await sb.from('tournaments').delete().eq('id',id);
+  if(error)return msg(error.message);
+  await load();
+}
+(async()=>{if(await admin())await load()})();
+</script>
+</body>
+</html>
