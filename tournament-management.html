@@ -86,9 +86,9 @@ document.addEventListener('click', function(e){
   if(b.textContent.includes('Create Tournament')) window.newTournament && window.newTournament();
   if(b.textContent.includes('Add New Section')) window.newSection && window.newSection();
 });
-const URL='https://myfficbwcbgbxbdqjexv.supabase.co';
+const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
 const KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
-const sb=window.supabase.createClient(URL,KEY);
+const sb=window.supabase.createClient(SUPABASE_URL,KEY);
 let sections=[], tournaments=[];
 
 const $=id=>document.getElementById(id);
