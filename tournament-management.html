@@ -33,17 +33,17 @@
 .section-name-wrap,.t-title-row{display:flex;align-items:center;gap:8px;min-width:0}
 .drag{width:34px;height:32px;display:grid;place-items:center;border:1px solid #293650;border-radius:9px;background:#111827;letter-spacing:-4px}
 .tournament-item{grid-template-columns:1fr;gap:9px;padding:11px}
-.tournament-top{display:flex;align-items:center;gap:9px;min-width:0}
+.tournament-top{display:grid;grid-template-columns:27px 72px minmax(0,1fr);align-items:center;gap:9px;min-width:0}
 .tournament-top .thumb{width:72px;height:72px;aspect-ratio:1/1;flex:0 0 72px}
 .tournament-top .thumb img{object-fit:contain;background:#0d1320}
 .t-main{padding-right:0;min-width:0;flex:1}
 .t-title-row .t-title{flex:1;min-width:0}
 .t-title .status{display:none}
 .t-actions{margin-top:9px}
-.t-edit{position:static;margin-left:auto}
+.t-edit{position:static;margin-left:0}.t-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;width:100%}.t-actions .switch{flex:0 0 60px}.t-actions .drag{margin-left:auto}
 .t-edit .mini{padding:7px 10px}
 
-@media(max-width:520px){.wrap{padding-left:12px;padding-right:12px}.grid,.modal-actions{grid-template-columns:1fr}.tournament-item{grid-template-columns:62px 1fr}.thumb{width:62px;height:48px}}
+@media(max-width:520px){.wrap{padding-left:12px;padding-right:12px}.grid,.modal-actions{grid-template-columns:1fr}.tournament-top{grid-template-columns:27px 72px minmax(0,1fr)}.tournament-top .thumb{width:72px;height:72px}.t-actions{gap:6px}.t-actions .mini{padding:7px 10px}.t-actions .drag{margin-left:auto}}
 </style>
 </head>
 <body>
