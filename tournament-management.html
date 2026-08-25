@@ -14,20 +14,18 @@ button{position:relative;z-index:100;pointer-events:auto;touch-action:manipulati
 .primary{background:#22c55e;color:#07100a;border-color:#22c55e}
 .panel{background:#141a29;border:1px solid #263047;border-radius:17px;padding:13px;margin-bottom:13px}
 .ph{display:flex;justify-content:space-between;align-items:center}.ph b{font-size:13px}.count{color:#8c96aa;font-size:10px}
-.item{background:#181f30;border:1px solid #29344c;border-radius:13px;padding:11px;margin-top:8px}
-.name{font-weight:800;font-size:12px}.meta{font-size:10px;color:#929caf;line-height:1.5;margin-top:4px}
-.row{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
-.mini{padding:7px 9px;font-size:9px}.green{color:#62e58a}.red{color:#ff7777}
-.badge{font-size:8px;border-radius:99px;padding:4px 7px;background:#222b40;color:#c5cede}
+.item{background:#181f30;border:1px solid #29344c;border-radius:14px;padding:10px;margin-top:8px}
+.item-head{display:flex;align-items:center;gap:10px;min-width:0}.item-main{flex:1;min-width:0}.name{font-weight:800;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.meta{font-size:10px;color:#929caf;line-height:1.5;margin-top:4px}
+.edit-top{padding:7px 10px;font-size:9px;color:#62e58a;flex-shrink:0}.drag-handle{width:30px;height:32px;padding:0;border:0;background:transparent;color:#8992a6;font-size:19px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;flex-shrink:0}.drag-handle:active{cursor:grabbing}
+.t-card{display:grid;grid-template-columns:82px 1fr;gap:10px;align-items:stretch}.t-thumb{width:82px;height:62px;border-radius:9px;object-fit:cover;background:#101522;border:1px solid #29344c}.t-content{min-width:0}.t-actions{display:flex;align-items:center;gap:7px;margin-top:9px}.danger{color:#ff7777}.archive-btn{color:#f3c86b}
+.badge{font-size:8px;border-radius:99px;padding:4px 7px;background:#222b40;color:#c5cede;vertical-align:middle}.badge.on{color:#62e58a}.badge.off{color:#ff9aa5}
+.switch{width:58px;height:30px;padding:0;border-radius:99px;border:1px solid #34405a;background:#273044;position:relative;flex-shrink:0}.switch .knob{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#eef2f7;transition:.18s;box-shadow:0 1px 5px #0008}.switch.on{background:#18cf65;border-color:#18cf65}.switch.on .knob{left:31px}.switch-label{font-size:8px;font-weight:900;position:absolute;left:9px;top:8px;color:#0b2b19}.switch:not(.on) .switch-label{left:30px;color:#c9d0dd}
+.section-item{position:relative;transition:.15s}.section-item.dragging{opacity:.45;transform:scale(.99)}.section-item.drop-target{border-color:#22c55e;box-shadow:0 0 0 1px #22c55e33}.section-meta{display:none}.section-controls{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:8px}.section-edit{color:#62e58a;padding:6px 9px;font-size:9px}.section-delete{color:#ff7777;padding:6px 9px;font-size:9px}.drag-note{font-size:9px;color:#6f7a8f;margin-top:7px}
 .empty,.loading{text-align:center;color:#8992a6;font-size:11px;padding:18px}
-.modal{display:none;position:fixed;inset:0;background:#000b;z-index:9999;align-items:flex-end}
-.modal.open{display:flex}.box{width:100%;max-height:92vh;overflow:auto;background:#0b0f17;border:1px solid #263047;border-radius:20px 20px 0 0;padding:16px}
-.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-label{display:block;color:#8992a6;font-size:10px;font-weight:800;margin:9px 0 5px}
-input,select,textarea{width:100%;box-sizing:border-box;background:#141a29;border:1px solid #29344c;color:#fff;border-radius:10px;padding:10px;font-size:11px}
-textarea{min-height:80px;resize:vertical}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}
-@media(max-width:520px){.actions,.grid,.modal-actions{grid-template-columns:1fr}}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:9999;align-items:flex-end;justify-content:center}.modal.open{display:flex}.box{width:100%;max-height:92vh;overflow:auto;background:#0b0f17;border:1px solid #263047;border-radius:20px 20px 0 0;padding:16px}.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.confirm-modal{align-items:center;padding:18px}.confirm-box{width:min(360px,100%);background:#171d2b;border:1px solid #313d56;border-radius:22px;padding:20px;box-shadow:0 20px 60px #000b}.confirm-icon{width:46px;height:46px;border-radius:14px;background:#3a1f28;color:#ff6f7e;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:12px}.confirm-title{font-size:16px;font-weight:900}.confirm-text{font-size:11px;line-height:1.6;color:#929caf;margin-top:6px}.confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}.confirm-cancel{background:#222b3c}.confirm-delete{background:#ef4b5b;border-color:#ef4b5b;color:white}
+label{display:block;color:#8992a6;font-size:10px;font-weight:800;margin:9px 0 5px}input,select,textarea{width:100%;box-sizing:border-box;background:#141a29;border:1px solid #29344c;color:#fff;border-radius:10px;padding:10px;font-size:11px}textarea{min-height:80px;resize:vertical}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}
+@media(max-width:520px){.actions{grid-template-columns:1fr}.grid,.modal-actions{grid-template-columns:1fr}.t-card{grid-template-columns:76px 1fr}.t-thumb{width:76px;height:58px}}
 </style>
 </head>
 <body>
@@ -70,12 +68,15 @@ textarea{min-height:80px;resize:vertical}.grid{display:grid;grid-template-column
   <div class="mh"><b id="smTitle">Add New Section</b><button type="button" id="closeSmBtn">×</button></div>
   <input type="hidden" id="sid">
   <label>Section Name *</label><input id="sname" placeholder="Today's Scrims Tournaments">
-  <label>Description</label><textarea id="sdesc"></textarea>
-  <label>Display Order</label><input id="sorder" type="number" min="0" value="1">
-  <label>Active</label><select id="sactive"><option value="true">Active</option><option value="false">Inactive</option></select>
+  <div style="font-size:10px;color:#6f7a8f;margin-top:4px">Use the switch on the card to enable or disable this section.</div>
   <div class="modal-actions"><button type="button" id="cancelSmBtn">Cancel</button><button type="button" class="primary" id="saveSectionBtn">Save Section</button></div>
 </div></div>
 
+<div class="modal confirm-modal" id="confirmDelete"><div class="confirm-box">
+  <div class="confirm-icon">🗑</div><div class="confirm-title" id="confirmTitle">Delete tournament?</div>
+  <div class="confirm-text" id="confirmText">This action cannot be undone.</div>
+  <div class="confirm-actions"><button type="button" class="confirm-cancel" id="confirmCancel">Cancel</button><button type="button" class="confirm-delete" id="confirmOk">Delete</button></div>
+</div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
@@ -106,27 +107,45 @@ async function load(){
 
 function renderSections(){
  $('scount').textContent=sections.length;
- $('sections').innerHTML=sections.length?sections.map(s=>`<div class="item"><div class="name">${esc(s.name)} <span class="badge">${s.is_active?'ACTIVE':'INACTIVE'}</span></div><div class="meta">${esc(s.description||'')} · Order ${s.display_order}</div><div class="row"><button class="mini green" onclick="editSection('${s.id}')">Edit</button><button class="mini" onclick="toggleSection('${s.id}',${!s.is_active})">${s.is_active?'Disable':'Enable'}</button><button class="mini red" onclick="deleteSection('${s.id}')">Delete</button></div></div>`).join(''):'<div class="empty">No sections.</div>';
+ $('sections').innerHTML=sections.length?sections.map((s,i)=>`<div class="item section-item" draggable="true" data-id="${s.id}">
+   <div class="item-head"><div class="item-main"><div class="name">${esc(s.name)} <span class="badge ${s.is_active?'on':'off'}">${s.is_active?'ON':'OFF'}</span></div></div>
+   <button class="section-edit" onclick="editSection('${s.id}')">Edit</button><button class="drag-handle" title="Drag to reorder" aria-label="Drag to reorder">⋮⋮</button></div>
+   <div class="section-controls"><button class="switch ${s.is_active?'on':''}" onclick="toggleSection('${s.id}',${!s.is_active})"><span class="switch-label">${s.is_active?'ON':'OFF'}</span><span class="knob"></span></button><button class="section-delete" onclick="askDelete('section','${s.id}')">Delete</button></div>
+ </div>`).join(''):'<div class="empty">No sections.</div>';
+ bindSectionDrag();
 }
 function renderTournaments(){
  const active=tournaments.filter(t=>t.status!=='archived');
  $('tcount').textContent=active.length;
- $('tournaments').innerHTML=active.length?active.map(t=>`<div class="item"><div class="name">${esc(t.title)} <span class="badge">${esc(t.status)}</span></div><div class="meta">${esc(t.tournament_sections?.name||'No section')} · Entry ৳${t.entry_fee||0} · Prize ৳${t.prize_pool||0} · Slots ${t.total_slots||0}</div><div class="row"><button class="mini green" onclick="editTournament('${t.id}')">Edit</button><button class="mini" onclick="toggleTournament('${t.id}','${t.status}')">${t.status==='published'?'Disable':'Enable'}</button><button class="mini" onclick="home('${t.id}',${!t.show_on_homepage})">${t.show_on_homepage?'Hide Homepage':'Show Homepage'}</button><button class="mini" onclick="archive('${t.id}')">Archive</button><button class="mini red" onclick="deleteTournament('${t.id}')">Delete</button></div></div>`).join(''):'<div class="empty">No active tournaments. Archived tournaments are in Archived Tournaments.</div>';
+ $('tournaments').innerHTML=active.length?active.map(t=>`<div class="item t-card">
+   ${t.banner_url?`<img class="t-thumb" src="${esc(t.banner_url)}" alt="">`:'<div class="t-thumb"></div>'}
+   <div class="t-content"><div class="item-head"><div class="item-main"><div class="name">${esc(t.title)} <span class="badge ${t.status==='published'?'on':'off'}">${t.status==='published'?'ON':'OFF'}</span></div><div class="meta">Entry ৳${t.entry_fee||0} · Prize ৳${t.prize_pool||0} · Slots ${t.total_slots||0}</div></div><button class="edit-top" onclick="editTournament('${t.id}')">Edit</button></div>
+   <div class="t-actions"><button class="switch ${t.status==='published'?'on':''}" onclick="toggleTournament('${t.id}','${t.status}')"><span class="switch-label">${t.status==='published'?'ON':'OFF'}</span><span class="knob"></span></button><button class="archive-btn mini" onclick="archive('${t.id}')">Archive</button><button class="danger mini" onclick="askDelete('tournament','${t.id}')">Delete</button></div></div>
+ </div>`).join(''):'<div class="empty">No active tournaments. Archived tournaments are in Archived Tournaments.</div>';
 }
 function fillSections(selected=''){
- const a=sections.filter(x=>x.is_active);
+ const a=sections.filter(x=>x.is_active || x.id===selected);
  $('section').innerHTML=a.length?a.map(x=>`<option value="${x.id}" ${x.id===selected?'selected':''}>${esc(x.name)}</option>`).join(''):'<option value="">No active section</option>';
 }
-function newSection(){ $('sid').value='';$('smTitle').textContent='Add New Section';$('sname').value='';$('sdesc').value='';$('sorder').value=sections.length+1;$('sactive').value='true';openM('sm') }
+function bindSectionDrag(){
+ const els=[...document.querySelectorAll('.section-item')]; let dragged=null;
+ els.forEach(el=>{el.addEventListener('dragstart',e=>{dragged=el;el.classList.add('dragging');e.dataTransfer.effectAllowed='move'});el.addEventListener('dragend',async()=>{el.classList.remove('dragging');await saveSectionOrder()});el.addEventListener('dragover',e=>{e.preventDefault();if(dragged&&dragged!==el){el.classList.add('drop-target')}});el.addEventListener('dragleave',()=>el.classList.remove('drop-target'));el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('drop-target');if(!dragged||dragged===el)return;const box=el.getBoundingClientRect();const before=e.clientY<box.top+box.height/2;el.parentNode.insertBefore(dragged,before?el:el.nextSibling)});});
+}
+async function saveSectionOrder(){
+ const ids=[...document.querySelectorAll('.section-item')].map(x=>x.dataset.id);
+ const updates=ids.map((id,i)=>sb.from('tournament_sections').update({display_order:i+1}).eq('id',id));
+ await Promise.all(updates); await load();
+}
+function newSection(){ $('sid').value='';$('smTitle').textContent='Add New Section';$('sname').value='';openM('sm') }
 async function saveSection(){
- const id=$('sid').value,p={name:$('sname').value.trim(),description:$('sdesc').value.trim()||null,display_order:+$('sorder').value||0,is_active:$('sactive').value==='true'};
+ const id=$('sid').value,p={name:$('sname').value.trim(),is_active:true};
  if(!p.name)return msg('Section name required.');
- const q=id?sb.from('tournament_sections').update(p).eq('id',id):sb.from('tournament_sections').insert(p);
+ let q=id?sb.from('tournament_sections').update({name:p.name}).eq('id',id):sb.from('tournament_sections').insert({name:p.name,display_order:sections.length+1,is_active:true});
  const {error}=await q;if(error)return msg(error.message);closeM('sm');await load();
 }
-function editSection(id){let s=sections.find(x=>x.id===id);if(!s)return;$('sid').value=s.id;$('sname').value=s.name;$('sdesc').value=s.description||'';$('sorder').value=s.display_order;$('sactive').value=String(s.is_active);$('smTitle').textContent='Edit Section';openM('sm')}
-async function toggleSection(id,v){const {error}=await sb.from('tournament_sections').update({is_active:v}).eq('id',id);if(error)return msg(error.message);load()}
-async function deleteSection(id){if(tournaments.some(t=>t.section_id===id))return msg('This section has tournaments. Move/archive them first.');if(!confirm('Delete section?'))return;const {error}=await sb.from('tournament_sections').delete().eq('id',id);if(error)return msg(error.message);load()}
+function editSection(id){let s=sections.find(x=>x.id===id);if(!s)return;$('sid').value=s.id;$('sname').value=s.name||'';$('smTitle').textContent='Edit Section';openM('sm')}
+async function toggleSection(id,v){const {error}=await sb.from('tournament_sections').update({is_active:v}).eq('id',id);if(error)return msg(error.message);await load()}
+async function deleteSection(id){askDelete('section',id)}
 
 function newTournament(){
  $('tid').value='';$('tmTitle').textContent='Create Tournament';$('title').value='';$('short').value='';$('entry').value=0;$('prize').value=0;$('slots').value=0;$('date').value='';$('start').value='';$('end').value='';$('game').value='';$('mode').value='';$('map').value='';$('distribution').value='';$('details').value='';$('rules').value='';$('notes').value='';$('status').value='draft';$('home').value='false';$('banner').value='';fillSections();openM('tm');
@@ -146,25 +165,30 @@ async function saveTournament(){
  }catch(e){console.error(e);msg(e.message||'Save failed')}
 }
 async function toggleTournament(id,status){
- let v=status==='published'?'unpublished':'published';
- let {error}=await sb.from('tournaments').update({status:v,show_on_homepage:v==='published'}).eq('id',id);
- if(error)return msg(error.message);load();
-}
-async function home(id,v){
- let {error}=await sb.from('tournaments').update({show_on_homepage:v}).eq('id',id);
- if(error)return msg(error.message);load();
+ const enabled=status==='published';
+ const {error}=await sb.from('tournaments').update({status:enabled?'unpublished':'published',show_on_homepage:!enabled}).eq('id',id);
+ if(error)return msg(error.message);await load();
 }
 async function archive(id){
- if(!confirm('Archive this tournament? It will disappear from the Homepage and Active list.'))return;
- let {error}=await sb.from('tournaments').update({status:'archived',show_on_homepage:false}).eq('id',id);
- if(error)return msg(error.message);load();
+ if(!confirm('Archive this tournament?'))return;
+ const {error}=await sb.from('tournaments').update({status:'archived',show_on_homepage:false}).eq('id',id);
+ if(error)return msg(error.message);await load();
 }
-async function deleteTournament(id){
- if(!confirm('Permanently delete this tournament? This cannot be undone.'))return;
- let {error}=await sb.from('tournaments').delete().eq('id',id);
- if(error)return msg(error.message);load();
+let pendingDelete=null;
+function askDelete(type,id){
+ pendingDelete={type,id};
+ $('confirmTitle').textContent=type==='section'?'Delete section?':'Delete tournament?';
+ $('confirmText').textContent=type==='section'?'This section will be permanently removed. This cannot be undone.':'This tournament will be permanently deleted. This cannot be undone.';
+ $('confirmDelete').classList.add('open');
 }
-
+async function confirmDeleteNow(){
+ if(!pendingDelete)return;
+ const {type,id}=pendingDelete; $('confirmDelete').classList.remove('open');
+ const table=type==='section'?'tournament_sections':'tournaments';
+ if(type==='section' && tournaments.some(t=>t.section_id===id))return msg('This section has tournaments. Archive or move them first.');
+ const {error}=await sb.from(table).delete().eq('id',id);
+ if(error)return msg(error.message); pendingDelete=null; await load();
+}
 
 document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('createTournamentBtn').addEventListener('click', newTournament);
@@ -176,6 +200,8 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('cancelSmBtn').addEventListener('click', function(){closeM('sm')});
   document.getElementById('saveTournamentBtn').addEventListener('click', saveTournament);
   document.getElementById('saveSectionBtn').addEventListener('click', saveSection);
+  document.getElementById('confirmCancel').addEventListener('click', function(){pendingDelete=null;closeM('confirmDelete')});
+  document.getElementById('confirmOk').addEventListener('click', confirmDeleteNow);
 });
 
 (async()=>{
