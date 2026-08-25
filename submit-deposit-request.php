@@ -2,6 +2,7 @@
 // submit-deposit-request.php
 // User submits a manual bKash/Nagad deposit claim (sender number + trx_id + amount).
 // Row goes into wallet_deposit_requests as 'pending' for admin to manually approve.
+// A Telegram notification is sent right after the insert succeeds.
 //
 // NOTE: the frontend only has the Supabase auth UID in localStorage
 // (`supabase_uid`), not the internal numeric wallet_users.id — so this
@@ -30,6 +31,38 @@ $conn->set_charset('utf8mb4');
 function respond($status, $data = []) {
     echo json_encode(array_merge(['status' => $status], $data));
     exit();
+}
+
+// ---- Telegram notification helper ----
+// TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID must be set as Render
+// Environment Variables (Render dashboard -> your service -> Environment).
+// Never hardcode the bot token in this file.
+function notifyTelegram($message) {
+    $botToken = getenv('TELEGRAM_BOT_TOKEN');
+    $chatId   = getenv('TELEGRAM_CHAT_ID');
+
+    if (!$botToken || !$chatId) {
+        error_log('notifyTelegram: TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not set — skipping notification');
+        return;
+    }
+
+    $url = "https://api.telegram.org/bot{$botToken}/sendMessage";
+    $data = [
+        'chat_id'    => $chatId,
+        'text'       => $message,
+        'parse_mode' => 'HTML'
+    ];
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 5); // don't let a slow Telegram API stall the submission
+    $result = curl_exec($ch);
+    if (curl_errno($ch)) {
+        error_log('notifyTelegram: curl error: ' . curl_error($ch));
+    }
+    curl_close($ch);
 }
 
 // Catch any fatal error (e.g. calling a method on a failed prepare()) and
@@ -120,9 +153,23 @@ $stmt = $conn->prepare(
 $stmt->bind_param('issssd', $user_id, $email, $method_db, $sender_number, $trx_id, $amount);
 
 if ($stmt->execute()) {
+    $request_id = $stmt->insert_id;
+
+    // Notify only after the insert has actually succeeded, so a Telegram
+    // hiccup can never block or falsely fail a real submission.
+    notifyTelegram(
+        "🟡 <b>New Deposit Request</b>\n"
+        . "User: " . htmlspecialchars($email) . "\n"
+        . "Method: " . htmlspecialchars($method_db) . "\n"
+        . "Sender: " . htmlspecialchars($sender_number) . "\n"
+        . "Amount: ৳" . number_format($amount, 2) . "\n"
+        . "Trx ID: " . htmlspecialchars($trx_id) . "\n"
+        . "Request ID: #" . $request_id
+    );
+
     respond(true, [
         'message'    => 'Deposit request submitted. It will be reviewed by an admin shortly.',
-        'request_id' => $stmt->insert_id
+        'request_id' => $request_id
     ]);
 } else {
     respond(false, ['message' => 'Database error: ' . $stmt->error]);
