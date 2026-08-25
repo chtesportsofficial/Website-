@@ -534,22 +534,145 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
   </div>
 </div>
 
-<div class="section">
-  <div class="tile-grid">
-    <div class="tile hero">
-      <div class="hero-vip-header">
-        <div class="hero-vip-only" data-i18n="index.vipOnly">ONLY FOR</div>
-        <div class="hero-vip-members" data-i18n="index.vipMembers">VIP MEMBERS</div>
-      </div>
-      <div class="hero-vip-content">
-        <h2 class="hero-vip-title">CHTEO<br>CHAMPIONSHIP<br><span>SSN - 1</span></h2>
-      </div>
-      <button class="hero-vip-button" onclick="openVipModal()"><span data-i18n="index.vipButton">BE A VIP MEMBER</span><span>›</span></button>
-    </div>
-    <div class="tile"><div class="placeholder-icon">🎧</div><div class="scrim"></div><div class="tile-label"><div><div class="t">GADGET ZONE</div></div></div></div>
-    <div class="tile"><div class="placeholder-icon">💎</div><div class="scrim"></div><div class="tile-label"><div><div class="t">DIAMOND TOP UP</div></div></div></div>
+
+<div class="section" id="dynamicTournamentSection">
+  <div id="dynamicTournamentSections">
+    <div class="tournament-empty">Loading tournaments...</div>
   </div>
 </div>
+
+<style>
+  #dynamicTournamentSections .tournament-section-block{margin-bottom:22px}
+  #dynamicTournamentSections .tournament-section-title{
+    font-size:15px;font-weight:800;margin:0 0 10px;
+  }
+  #dynamicTournamentSections .tournament-cards{
+    display:grid;grid-template-columns:1fr;gap:12px;
+  }
+  #dynamicTournamentSections .tournament-card{
+    overflow:hidden;border-radius:16px;border:1px solid rgba(255,255,255,.08);
+    background:#141a29;
+  }
+  #dynamicTournamentSections .tournament-banner{
+    display:block;width:100%;aspect-ratio:16/7;object-fit:cover;background:#0c111b;
+  }
+  #dynamicTournamentSections .tournament-content{padding:12px}
+  #dynamicTournamentSections .tournament-name{font-size:14px;font-weight:800}
+  #dynamicTournamentSections .tournament-desc{
+    margin-top:5px;color:#8d96a8;font-size:10px;line-height:1.5
+  }
+  #dynamicTournamentSections .tournament-meta{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px
+  }
+  #dynamicTournamentSections .tm-box{
+    padding:8px;border-radius:10px;background:#0e1420;text-align:center
+  }
+  #dynamicTournamentSections .tm-label{
+    display:block;color:#7f899d;font-size:8px;text-transform:uppercase
+  }
+  #dynamicTournamentSections .tm-value{display:block;margin-top:3px;font-size:10px;font-weight:800}
+  #dynamicTournamentSections .tournament-btn{
+    display:block;width:100%;margin-top:10px;padding:11px;border-radius:10px;
+    background:#22c55e;color:#07100a;text-align:center;text-decoration:none;
+    font-size:10px;font-weight:900;
+  }
+  #dynamicTournamentSections .tournament-empty{
+    padding:22px 12px;text-align:center;color:#8791a4;font-size:11px
+  }
+</style>
+
+<script>
+(function(){
+  const SUPABASE_URL = 'https://myfficbwcbgbxbdqjexv.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+
+  function loadSupabase(){
+    return new Promise(function(resolve){
+      if(window.supabase) return resolve(window.supabase);
+      const s=document.createElement('script');
+      s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+      s.onload=function(){resolve(window.supabase)};
+      s.onerror=function(){resolve(null)};
+      document.head.appendChild(s);
+    });
+  }
+
+  function esc(v){
+    return String(v ?? '').replace(/[&<>"']/g,function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c];
+    });
+  }
+
+  async function init(){
+    const root=document.getElementById('dynamicTournamentSections');
+    if(!root) return;
+
+    const lib=await loadSupabase();
+    if(!lib){
+      root.innerHTML='<div class="tournament-empty">Tournaments are unavailable right now.</div>';
+      return;
+    }
+
+    const db=lib.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+    const result=await db
+      .from('tournaments')
+      .select('*, tournament_sections(name, display_order, is_active)')
+      .eq('status','published')
+      .eq('show_on_homepage',true)
+      .order('created_at',{ascending:false});
+
+    if(result.error){
+      console.error('Homepage tournaments:',result.error);
+      root.innerHTML='<div class="tournament-empty">No tournaments available right now.</div>';
+      return;
+    }
+
+    const tournaments=(result.data||[]).filter(function(t){
+      return t.tournament_sections && t.tournament_sections.is_active !== false;
+    });
+
+    if(!tournaments.length){
+      root.innerHTML='<div class="tournament-empty">No tournaments available right now.</div>';
+      return;
+    }
+
+    const grouped={};
+    tournaments.forEach(function(t){
+      const s=t.tournament_sections.name;
+      if(!grouped[s]) grouped[s]=[];
+      grouped[s].push(t);
+    });
+
+    root.innerHTML=Object.keys(grouped).map(function(sectionName){
+      const cards=grouped[sectionName].map(function(t){
+        const button=(t.button_text||'VIEW DETAILS').toUpperCase();
+        return `
+          <article class="tournament-card">
+            ${t.banner_url ? `<img class="tournament-banner" src="${esc(t.banner_url)}" alt="${esc(t.title)}">` : ''}
+            <div class="tournament-content">
+              <div class="tournament-name">${esc(t.title)}</div>
+              ${t.short_description ? `<div class="tournament-desc">${esc(t.short_description)}</div>` : ''}
+              <div class="tournament-meta">
+                <div class="tm-box"><span class="tm-label">Entry</span><span class="tm-value">৳${Number(t.entry_fee||0).toFixed(0)}</span></div>
+                <div class="tm-box"><span class="tm-label">Prize</span><span class="tm-value">৳${Number(t.prize_pool||0).toFixed(0)}</span></div>
+                <div class="tm-box"><span class="tm-label">Slots</span><span class="tm-value">${Number(t.total_slots||0)}</span></div>
+              </div>
+              <a class="tournament-btn" href="tournament-details.html?id=${encodeURIComponent(t.id)}">${esc(button)}</a>
+            </div>
+          </article>`;
+      }).join('');
+
+      return `<section class="tournament-section-block">
+        <h2 class="tournament-section-title">${esc(sectionName)}</h2>
+        <div class="tournament-cards">${cards}</div>
+      </section>`;
+    }).join('');
+  }
+
+  init();
+})();
+</script>
 
 <div class="app-footer">©CHT ESP ORG. All Rights Reserved</div>
 

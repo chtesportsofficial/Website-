@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Tournament Details — CHT ESP ORG</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+body{margin:0;background:#0a0d13;color:#f2f3f7;font-family:Inter,system-ui,sans-serif}
+.wrap{max-width:760px;margin:auto;padding:16px 15px 100px}
+.head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.back{color:#fff;text-decoration:none;font-size:27px}
+h1{font-size:19px;margin:0}.muted{color:#8992a6;font-size:10px;margin-top:3px}
+.card{background:#141a29;border:1px solid #263047;border-radius:17px;overflow:hidden;margin-bottom:12px}
+.banner{width:100%;aspect-ratio:16/7;object-fit:cover;display:block;background:#0d121c}
+.pad{padding:14px}.name{font-size:18px;font-weight:900}
+.desc{color:#929caf;font-size:11px;line-height:1.5;margin-top:6px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px}
+.box{background:#0e1420;border-radius:10px;padding:9px;text-align:center}
+.label{display:block;color:#7f899d;font-size:8px;text-transform:uppercase}.value{display:block;margin-top:3px;font-size:11px;font-weight:800}
+.block{padding:13px;border-top:1px solid #263047}.block h2{font-size:12px;margin:0 0 6px}.text{font-size:11px;color:#b6bdca;line-height:1.7;white-space:pre-wrap}
+.cta{display:block;text-align:center;text-decoration:none;background:#22c55e;color:#07100a;padding:12px;border-radius:11px;font-size:11px;font-weight:900;margin-top:13px}
+.empty{text-align:center;color:#8992a6;padding:40px 10px;font-size:12px}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="head"><a class="back" href="index.html">‹</a><div><h1>Tournament Details</h1><div class="muted">CHT ESP ORG</div></div></div>
+  <div id="content"><div class="empty">Loading...</div></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(async function(){
+ const root=document.getElementById('content');
+ const id=new URLSearchParams(location.search).get('id');
+ if(!id){root.innerHTML='<div class="empty">Tournament not found.</div>';return}
+ const db=window.supabase.createClient(
+   'https://myfficbwcbgbxbdqjexv.supabase.co',
+   'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5'
+ );
+ const {data:t,error}=await db.from('tournaments').select('*, tournament_sections(name)').eq('id',id).single();
+ if(error||!t){root.innerHTML='<div class="empty">Tournament not found.</div>';return}
+ if(t.status!=='published' && new URLSearchParams(location.search).get('preview')!=='1'){
+   root.innerHTML='<div class="empty">This tournament is not available right now.</div>';return
+ }
+ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+ const block=(title,text)=>text?`<div class="block"><h2>${title}</h2><div class="text">${esc(text)}</div></div>`:'';
+ root.innerHTML=`
+ <article class="card">
+   ${t.banner_url?`<img class="banner" src="${esc(t.banner_url)}" alt="${esc(t.title)}">`:''}
+   <div class="pad">
+     <div class="name">${esc(t.title)}</div>
+     <div class="muted">${esc(t.tournament_sections?.name||'')}</div>
+     ${t.short_description?`<div class="desc">${esc(t.short_description)}</div>`:''}
+     <div class="grid">
+       <div class="box"><span class="label">Entry</span><span class="value">৳${Number(t.entry_fee||0).toFixed(0)}</span></div>
+       <div class="box"><span class="label">Prize</span><span class="value">৳${Number(t.prize_pool||0).toFixed(0)}</span></div>
+       <div class="box"><span class="label">Slots</span><span class="value">${Number(t.total_slots||0)}</span></div>
+     </div>
+     <div class="grid">
+       <div class="box"><span class="label">Date</span><span class="value">${esc(t.tournament_date||'—')}</span></div>
+       <div class="box"><span class="label">Start</span><span class="value">${esc(t.start_time||'—')}</span></div>
+       <div class="box"><span class="label">Game</span><span class="value">${esc(t.game||'—')}</span></div>
+     </div>
+     ${block('Prize Distribution',t.prize_distribution)}
+     ${block('Tournament Details',t.full_details)}
+     ${block('Rules',t.rules)}
+     ${block('Important Notes',t.important_notes)}
+     <a class="cta" href="javascript:history.back()">${esc(t.button_text||'BOOK YOUR SLOTS NOW')}</a>
+   </div>
+ </article>`;
+})();
+</script>
+<script src="global.js" defer></script>
+</body>
+</html>
