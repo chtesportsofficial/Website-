@@ -410,10 +410,10 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
 @media(min-width:480px){.drawer{width:340px}}
 
 /* Notice box overrides the old scrolling ticker */
-.ticker.notice-ticker{display:flex;align-items:flex-start;gap:10px;margin:10px 14px 0;padding:12px 13px;background:linear-gradient(135deg,rgba(34,224,138,.06),var(--surface));border:1px solid var(--line);border-radius:14px;white-space:normal;overflow:hidden;cursor:pointer}
-.ticker.notice-ticker .ticker-track{white-space:normal;overflow:hidden}
-.ticker.notice-ticker .ticker-track-inner{display:block;width:auto;animation:none;white-space:normal;line-height:1.45}
-.ticker.notice-ticker .ticker-track span{display:inline;padding-right:0}
+.ticker.notice-ticker{display:flex;align-items:center;gap:10px;margin:10px 14px 0;padding:12px 13px;background:linear-gradient(135deg,rgba(34,224,138,.06),var(--surface));border:1px solid var(--line);border-radius:14px;white-space:nowrap;overflow:hidden;cursor:pointer}
+.ticker.notice-ticker .ticker-track{white-space:nowrap;overflow:hidden;flex:1;min-width:0}
+.ticker.notice-ticker .ticker-track-inner{display:flex;width:max-content;animation:tickerMove 16s linear infinite;white-space:nowrap;line-height:1.45}
+.ticker.notice-ticker .ticker-track span{display:block;flex:0 0 auto;padding-right:40px}
 .ticker.notice-ticker #noticeTickerTextClone{display:none}
 </style>
 <style>
@@ -454,7 +454,7 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
     <div class="brand-name">CHT ESP ORG</div>
   </div>
   <div class="balance-chip">
-    <div class="coin">▣</div><div class="amt" id="topBalanceAmount">৳ 0</div>
+    <div class="coin">৳</div><div class="amt" id="topBalanceAmount">৳ 0</div>
   </div>
 </div>
 
@@ -493,10 +493,10 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
 #dynamicTournamentSections .dyn-title .bar{width:4px;height:16px;border-radius:2px;background:linear-gradient(var(--fire),var(--green))}
 #dynamicTournamentSections .dyn-scroll{display:flex;gap:12px;overflow-x:auto;padding-bottom:7px;scroll-snap-type:x mandatory;scrollbar-width:none}
 #dynamicTournamentSections .dyn-scroll::-webkit-scrollbar{display:none}
-#dynamicTournamentSections .dyn-card{flex:0 0 72%;max-width:292px;scroll-snap-align:start;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:transparent}
-#dynamicTournamentSections .dyn-banner{display:block;width:100%;height:auto;aspect-ratio:auto;object-fit:contain;background:transparent}
-#dynamicTournamentSections .dyn-body{padding:8px 0 0;background:transparent}
-#dynamicTournamentSections .dyn-cta{display:block;width:100%;padding:9px 0;border-radius:10px;border:none;font-weight:800;font-size:11px;background:linear-gradient(135deg,var(--green),#7dffc0);color:#04141f;text-align:center;text-decoration:none}
+#dynamicTournamentSections .dyn-card{position:relative;flex:0 0 72%;max-width:292px;scroll-snap-align:start;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--surface)}
+#dynamicTournamentSections .dyn-banner{display:block;width:100%;aspect-ratio:1/1;height:auto;object-fit:contain;background:#0d1320}
+#dynamicTournamentSections .dyn-body{padding:8px;background:var(--surface)}
+#dynamicTournamentSections .dyn-cta{display:flex;width:100%;align-items:center;justify-content:center;gap:6px;padding:9px 0;border-radius:10px;border:none;font-weight:800;font-size:11px;background:linear-gradient(135deg,var(--green),#7dffc0);color:#04141f;text-align:center;text-decoration:none}.dyn-cta .arrow{font-size:15px;line-height:1}
 </style>
 <script>
 (function(){
@@ -514,7 +514,7 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
         .eq('is_active',true).order('display_order',{ascending:true});
       if(error){console.warn(error);root.innerHTML='';return}
       const groups=(data||[]).map(s=>({s,ts:(s.tournaments||[]).filter(t=>t.status==='published'&&t.show_on_homepage===true)})).filter(x=>x.ts.length);
-      root.innerHTML=groups.map(x=>'<section class="dyn-section"><div class="dyn-head"><div class="dyn-title"><span class="bar"></span>'+esc(x.s.name)+'</div></div><div class="dyn-scroll">'+x.ts.map(t=>'<article class="dyn-card">'+(t.banner_url?'<img class="dyn-banner" src="'+esc(t.banner_url)+'" alt="">':'')+'<div class="dyn-body"><a class="dyn-cta" href="tournament-details.html?id='+encodeURIComponent(t.id)+'">VIEW DETAILS</a></div></article>').join('')+'</div></section>').join('');
+      root.innerHTML=groups.map(x=>'<section class="dyn-section"><div class="dyn-head"><div class="dyn-title"><span class="bar"></span>'+esc(x.s.name)+'</div></div><div class="dyn-scroll">'+x.ts.map(t=>'<article class="dyn-card">'+(t.banner_url?'<img class="dyn-banner" src="'+esc(t.banner_url)+'" alt="">':'')+'<div class="dyn-body"><a class="dyn-cta" aria-label="Open tournament" href="tournament-details.html?id='+encodeURIComponent(t.id)+'"><span>VIEW DETAILS</span><span class="arrow">›</span></a></div></article>').join('')+'</div></section>').join('');
     }
     load();
   }
@@ -749,7 +749,7 @@ window.addEventListener('pageshow', function(event){
     const meta=document.getElementById('noticeModalMeta'), admin=document.getElementById('noticeModalAdmin'), close=document.getElementById('noticeModalClose'); let current=null;
     function parse(raw){if(!raw)return {title:'',body:'',image:''};try{const o=JSON.parse(raw);if(o&&typeof o==='object')return {title:o.title||'',body:o.body||'',image:o.image||''};}catch(e){}return {title:'',body:raw,image:''};}
     function dt(v){const d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleString('en-BD',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});}
-    function open(){if(!current)return;const n=parse(current.message);text.textContent=n.body||n.title||'No Notice';if(image){if(n.image){image.src=n.image;image.style.display='block';}else{image.removeAttribute('src');image.style.display='none';}}meta.textContent=dt(current.created_at);admin.textContent='Admin — '+(current.admin_name||'Admin');modal.classList.add('show');modal.setAttribute('aria-hidden','false');}
+    function open(){if(!current)return;const n=parse(current.message);const titleEl=document.getElementById('noticeModalTitle');titleEl.textContent=n.title||'Notice';text.textContent=n.body||n.title||'No Notice';if(image){if(n.image){image.src=n.image;image.style.display='block';}else{image.removeAttribute('src');image.style.display='none';}}meta.textContent=dt(current.created_at);admin.textContent='Admin — '+(current.admin_name||'Admin');modal.classList.add('show');modal.setAttribute('aria-hidden','false');}
     function hide(){modal.classList.remove('show');modal.setAttribute('aria-hidden','true');}
     async function load(){const {data,error}=await sb.from('site_notices').select('id,message,created_at,admin_name').eq('is_active',true).order('created_at',{ascending:false}).limit(1).maybeSingle();if(error||!data){current=null;t1.textContent='No Notice';t2.textContent='No Notice';return;}current=data;const n=parse(data.message);const display=[n.title,n.body].filter(Boolean).join(' — ')||'No Notice';t1.textContent=display;t2.textContent=display;}
     ticker.addEventListener('click',open);ticker.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});close.addEventListener('click',hide);modal.addEventListener('click',e=>{if(e.target===modal)hide();});document.addEventListener('keydown',e=>{if(e.key==='Escape')hide();});load();setInterval(load,30000);

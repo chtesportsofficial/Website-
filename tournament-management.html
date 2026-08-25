@@ -16,18 +16,49 @@
 .modal{display:none;position:fixed;inset:0;background:#000b;z-index:9999;align-items:flex-end;backdrop-filter:blur(4px)}.modal.open{display:flex}.box{width:100%;max-height:92vh;overflow:auto;background:#0c111b;border:1px solid #293650;border-radius:22px 22px 0 0;padding:17px}.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}.mh b{font-size:14px}.mh button{width:34px;height:34px;border-radius:10px;border:1px solid #293650;background:#151d2c;color:#fff;font-size:20px}label{display:block;color:#8d98ab;font-size:9px;font-weight:900;margin:9px 0 5px}input,select,textarea{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-radius:11px;padding:10px;font-size:11px}textarea{min-height:80px;resize:vertical}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}.modal-actions button{border:1px solid #293650;background:#151d2c;color:#fff;border-radius:11px;padding:11px;font-weight:900}.modal-actions .primary{background:#22c55e;color:#06120a;border-color:#22c55e}
 .confirm{display:none;position:fixed;inset:0;z-index:10000;background:#000a;align-items:center;justify-content:center;padding:20px}.confirm.open{display:flex}.confirm-card{width:min(360px,100%);background:#141a29;border:1px solid #2c3851;border-radius:20px;padding:20px;box-shadow:0 25px 70px #0008}.confirm-icon{width:44px;height:44px;border-radius:14px;background:#2b1720;color:#ff6575;display:grid;place-items:center;font-size:20px;margin-bottom:12px}.confirm-title{font-size:15px;font-weight:900}.confirm-text{font-size:10px;color:#929caf;line-height:1.5;margin-top:6px}.confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}.confirm-actions button{border:1px solid #293650;background:#111827;color:#fff;border-radius:11px;padding:11px;font-weight:900}.confirm-actions .danger{background:#e5485a;border-color:#e5485a}
 .dragging{opacity:.45}.drag-over{outline:1px dashed #36df7a;outline-offset:2px}
+
+/* ===== Management UI refinements ===== */
+.management-panel{padding:12px}
+.inline-add{margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.inline-add button{width:100%;border:1px solid #293650;background:#141b2b;color:#fff;border-radius:12px;padding:10px;font-size:10px;font-weight:900}
+.sub-panel-head{display:flex;justify-content:space-between;align-items:center;padding:14px 4px 2px;margin-top:4px;border-top:1px solid var(--line)}
+.sub-panel-head b{font-size:14px}
+.management-panel .create-bottom{margin-top:10px}
+.section-item{padding:11px 12px}
+.section-name{display:flex;align-items:center;gap:8px}
+.section-name .status{display:none}
+.section-tools{gap:5px}
+.section-bottom{display:flex;align-items:center;justify-content:flex-start;gap:7px;margin-top:9px}
+.section-index,.t-index{width:27px;height:27px;display:grid;place-items:center;flex:0 0 27px;border-radius:8px;background:#101725;border:1px solid #2b3852;color:#9eabc0;font-size:10px;font-weight:900}
+.section-name-wrap,.t-title-row{display:flex;align-items:center;gap:8px;min-width:0}
+.drag{width:34px;height:32px;display:grid;place-items:center;border:1px solid #293650;border-radius:9px;background:#111827;letter-spacing:-4px}
+.tournament-item{grid-template-columns:1fr;gap:9px;padding:11px}
+.tournament-top{display:flex;align-items:center;gap:9px;min-width:0}
+.tournament-top .thumb{width:72px;height:72px;aspect-ratio:1/1;flex:0 0 72px}
+.tournament-top .thumb img{object-fit:contain;background:#0d1320}
+.t-main{padding-right:0;min-width:0;flex:1}
+.t-title-row .t-title{flex:1;min-width:0}
+.t-title .status{display:none}
+.t-actions{margin-top:9px}
+.t-edit{position:static;margin-left:auto}
+.t-edit .mini{padding:7px 10px}
+
 @media(max-width:520px){.wrap{padding-left:12px;padding-right:12px}.grid,.modal-actions{grid-template-columns:1fr}.tournament-item{grid-template-columns:62px 1fr}.thumb{width:62px;height:48px}}
 </style>
 </head>
 <body>
 <main class="wrap">
   <div class="head"><a class="back" href="admin-panel.html">‹</a><div><h1>Tournament Management</h1><div class="sub">Create, edit and publish Homepage tournaments</div></div></div>
-  <div class="topbar"><a class="archive-link" href="archive-tournaments.html">▣ Archived Tournaments</a></div>
+  <div class="topbar"><a class="archive-link" href="archive-tournaments.html">Archived Tournaments</a></div>
 
-  <section class="panel"><div class="ph"><b>Homepage Sections</b><span class="count" id="scount">0</span></div><div id="sections"><div class="loading">Loading...</div></div></section>
-  <div class="add-section"><button type="button" id="addSectionBtn">＋ Add New Section</button></div>
-  <section class="panel"><div class="ph"><b>Tournaments</b><span class="count" id="tcount">0</span></div><div id="tournaments"><div class="loading">Loading...</div></div></section>
-  <button type="button" class="create-bottom" id="createTournamentBtn">＋ Create Tournament</button>
+  <section class="panel management-panel">
+    <div class="ph"><b>Homepage Sections</b><span class="count" id="scount">0</span></div>
+    <div id="sections"><div class="loading">Loading...</div></div>
+    <div class="inline-add"><button type="button" id="addSectionBtn">＋ Add New Section</button></div>
+    <div class="sub-panel-head"><b>Tournaments</b><span class="count" id="tcount">0</span></div>
+    <div id="tournaments"><div class="loading">Loading...</div></div>
+    <button type="button" class="create-bottom" id="createTournamentBtn">＋ Create Tournament</button>
+  </section>
 </main>
 
 <div class="modal" id="tm"><div class="box">
@@ -98,19 +129,48 @@ async function load(){
  const a=await sb.from('tournament_sections').select('*').order('display_order');
  const b=await sb.from('tournaments').select('*,tournament_sections(name)').order('created_at',{ascending:false});
  if(a.error) {$('sections').innerHTML='<div class="empty">Could not load sections.</div>';console.error(a.error)} else {sections=a.data||[];renderSections()}
- if(b.error) {$('tournaments').innerHTML='<div class="empty">Could not load tournaments.</div>';console.error(b.error)} else {tournaments=b.data||[];renderTournaments()}
+ if(b.error) {$('tournaments').innerHTML='<div class="empty">Could not load tournaments.</div>';console.error(b.error)} else {
+   tournaments=b.data||[];
+   try{const saved=JSON.parse(localStorage.getItem('chteo_tournament_admin_order')||'[]');const rank=new Map(saved.map((id,i)=>[id,i]));tournaments.sort((x,y)=>(rank.get(x.id)??999999)-(rank.get(y.id)??999999));}catch(e){}
+   renderTournaments()
+ }
  fillSections();
 }
 
 function renderSections(){
  $('scount').textContent=sections.length;
- $('sections').innerHTML=sections.length?sections.map((s,i)=>`<div class="section-item" draggable="true" data-id="${s.id}"><div class="section-top"><div class="section-name">${esc(s.name)} <span class="status ${s.is_active?'':'off'}">${s.is_active?'ON':'OFF'}</span></div><div class="section-tools"><button class="mini green" onclick="editSection('${s.id}')">Edit</button><span class="drag" title="Drag to reorder">⠿</span></div></div><div class="section-bottom"><button class="switch ${s.is_active?'on':''}" onclick="toggleSection('${s.id}',${!s.is_active})" aria-label="Enable or disable"><span class="switch-label">${s.is_active?'ON':'OFF'}</span><span class="knob"></span></button><button class="mini red" style="margin-left:8px" onclick="deleteSection('${s.id}')">Delete</button></div></div>`).join(''):'<div class="empty">No sections.</div>';
+ $('sections').innerHTML=sections.length?sections.map((s,i)=>`<div class="section-item" draggable="true" data-id="${s.id}">
+   <div class="section-top">
+     <div class="section-name-wrap"><span class="section-index">${i+1}</span><div class="section-name">${esc(s.name)}</div></div>
+     <div class="section-tools"><button class="mini green" onclick="editSection('${s.id}')">Edit</button><span class="drag" title="Drag to reorder">⠿</span></div>
+   </div>
+   <div class="section-bottom">
+     <button class="switch ${s.is_active?'on':''}" onclick="toggleSection('${s.id}',${!s.is_active})" aria-label="Enable or disable"><span class="switch-label">${s.is_active?'ON':'OFF'}</span><span class="knob"></span></button>
+     <button class="mini red" onclick="deleteSection('${s.id}')">Delete</button>
+   </div>
+ </div>`).join(''):'<div class="empty">No sections.</div>';
  bindSectionDrag();
 }
 function renderTournaments(){
  $('tcount').textContent=tournaments.filter(t=>t.status!=='archived').length;
  const list=tournaments.filter(t=>t.status!=='archived');
- $('tournaments').innerHTML=list.length?list.map(t=>`<div class="tournament-item"><div class="thumb">${t.banner_url?`<img src="${esc(t.banner_url)}" alt="">`:''}</div><div class="t-main"><div class="t-title">${esc(t.title)} <span class="status ${t.status==='published'?'':'off'}">${t.status==='published'?'ON':'OFF'}</span></div><div class="t-meta">Entry ৳${t.entry_fee||0} · Prize ৳${t.prize_pool||0} · Slots ${t.total_slots||0}</div><div class="t-actions"><button class="switch t-toggle ${t.status==='published'?'on':''}" onclick="toggleTournament('${t.id}',${t.status!=='published'})"><span class="switch-label">${t.status==='published'?'ON':'OFF'}</span><span class="knob"></span></button><button class="mini archive-btn" onclick="archive('${t.id}')">Archive</button><button class="mini t-delete" onclick="deleteTournament('${t.id}')">Delete</button></div></div><div class="t-edit"><button class="mini green" onclick="editTournament('${t.id}')">Edit</button></div></div>`).join(''):'<div class="empty">No tournaments created yet.</div>';
+ $('tournaments').innerHTML=list.length?list.map((t,i)=>`<div class="tournament-item" draggable="true" data-id="${t.id}">
+   <div class="tournament-top">
+     <span class="t-index">${i+1}</span>
+     <div class="thumb">${t.banner_url?`<img src="${esc(t.banner_url)}" alt="">`:''}</div>
+     <div class="t-main">
+       <div class="t-title-row"><div class="t-title">${esc(t.title)}</div><div class="t-edit"><button class="mini green" onclick="editTournament('${t.id}')">Edit</button></div></div>
+       <div class="t-meta">Entry ৳${t.entry_fee||0} · Prize ৳${t.prize_pool||0} · Slots ${t.total_slots||0}</div>
+     </div>
+   </div>
+   <div class="t-actions">
+     <button class="switch t-toggle ${t.status==='published'?'on':''}" onclick="toggleTournament('${t.id}',${t.status!=='published'})"><span class="switch-label">${t.status==='published'?'ON':'OFF'}</span><span class="knob"></span></button>
+     <button class="mini archive-btn" onclick="archive('${t.id}')">Archive</button>
+     <button class="mini t-delete" onclick="deleteTournament('${t.id}')">Delete</button>
+     <span class="drag tournament-drag" title="Drag to reorder">⠿</span>
+   </div>
+ </div>`).join(''):'<div class="empty">No tournaments created yet.</div>';
+ bindTournamentDrag();
 }
 function fillSections(selected=''){
  const a=sections.filter(x=>x.is_active);
@@ -118,6 +178,23 @@ function fillSections(selected=''){
 }
 function bindSectionDrag(){const box=$('sections');let dragged=null;box.querySelectorAll('.section-item').forEach(el=>{el.addEventListener('dragstart',()=>{dragged=el;el.classList.add('dragging')});el.addEventListener('dragend',async()=>{el.classList.remove('dragging');box.querySelectorAll('.drag-over').forEach(x=>x.classList.remove('drag-over'));await saveSectionOrder()});el.addEventListener('dragover',e=>{e.preventDefault();if(el!==dragged)el.classList.add('drag-over')});el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('drag-over');if(!dragged||dragged===el)return;const items=[...box.querySelectorAll('.section-item')];const di=items.indexOf(dragged),ti=items.indexOf(el);if(di<ti)el.after(dragged);else el.before(dragged)})})}
 async function saveSectionOrder(){const ids=[...$('sections').querySelectorAll('.section-item')].map(x=>x.dataset.id);for(let i=0;i<ids.length;i++){await sb.from('tournament_sections').update({display_order:i+1}).eq('id',ids[i])}await load()}
+function bindTournamentDrag(){
+ const box=$('tournaments');let dragged=null;
+ box.querySelectorAll('.tournament-item').forEach(el=>{
+   el.addEventListener('dragstart',()=>{dragged=el;el.classList.add('dragging')});
+   el.addEventListener('dragend',async()=>{el.classList.remove('dragging');box.querySelectorAll('.drag-over').forEach(x=>x.classList.remove('drag-over'));saveTournamentOrder()});
+   el.addEventListener('dragover',e=>{e.preventDefault();if(el!==dragged)el.classList.add('drag-over')});
+   el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
+   el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('drag-over');if(!dragged||dragged===el)return;const items=[...box.querySelectorAll('.tournament-item')];const di=items.indexOf(dragged),ti=items.indexOf(el);if(di<ti)el.after(dragged);else el.before(dragged)});
+ });
+}
+function saveTournamentOrder(){
+ const ids=[...$('tournaments').querySelectorAll('.tournament-item')].map(x=>x.dataset.id);
+ localStorage.setItem('chteo_tournament_admin_order',JSON.stringify(ids));
+ const rank=new Map(ids.map((id,i)=>[id,i]));
+ tournaments.sort((a,b)=>(rank.get(a.id)??999999)-(rank.get(b.id)??999999));
+ renderTournaments();
+}
 
 function newSection(){ $('sid').value='';$('smTitle').textContent='Add New Section';$('sname').value='';$('sdesc').value='';$('sorder').value=sections.length+1;$('sactive').value='true';openM('sm') }
 async function saveSection(){
