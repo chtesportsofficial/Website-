@@ -165,8 +165,8 @@ async function logActivity(action, category, targetType=null, targetId=null, tar
       target_name: targetName, details, status:'success',
       user_agent: navigator.userAgent
     });
-    if(error) console.error('Activity log failed:', error);
-  } catch(e) { console.error('Activity log failed:', e); }
+    if(error){console.error('Activity log failed:', error);msg('Saved, but the log entry failed: '+error.message);}
+  } catch(e) { console.error('Activity log failed:', e); msg('Saved, but the log entry failed: '+(e?.message||e)); }
 }
 
 async function admin(){
@@ -294,7 +294,7 @@ async function saveSectionOrder(draggedId,draggedName,oldIndex){
 
   for(let i=0;i<ids.length;i++){
     const {error}=await sb.from('tournament_sections').update({display_order:i+1}).eq('id',ids[i]);
-    if(error){console.error('Section order update failed:',error);return;}
+    if(error){console.error('Section order update failed:',error);msg('Reorder failed to save: '+error.message);return;}
   }
 
   // IMPORTANT: log the section that was actually dragged, not the section

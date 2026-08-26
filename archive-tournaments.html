@@ -71,7 +71,7 @@ async function confirmRestoreNow(){
   const title=t?.title||'this tournament';
   const adminName=(window.__currentAdminName||'Admin');
   const {error:logErr}=await sb.from('activity_logs').insert({admin_id:window.__sessionUserId||null,admin_name:adminName,category:'tournament',action:'tournament_restored',target_type:'tournament',target_id:id,target_name:title,details:{narration:`restored the tournament ${title}.`,highlight_targets:[title]},status:'success',user_agent:navigator.userAgent});
-  if(logErr)console.error('Activity log failed:',logErr);
+  if(logErr){console.error('Activity log failed:',logErr);msg('Restored, but the log entry failed: '+logErr.message);}
   await load();
 }
 let pendingDelete=null;
