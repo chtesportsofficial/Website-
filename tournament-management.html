@@ -145,7 +145,7 @@
 const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
 const KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
 const sb=window.supabase.createClient(SUPABASE_URL,KEY);
-let sections=[], tournaments=[]; let currentAdminId=null;
+let sections=[], tournaments=[]; let currentAdminId=null; let currentAdminName='Admin';
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
@@ -160,7 +160,7 @@ function closeConfirm(){$('confirm').classList.remove('open')}
 async function logActivity(action, category, targetType=null, targetId=null, targetName=null, details={}) {
   try {
     const { error } = await sb.from('activity_logs').insert({
-      admin_id: currentAdminId,
+      admin_id: currentAdminId, admin_name: currentAdminName,
       action, category, target_type: targetType, target_id: targetId,
       target_name: targetName, details, status:'success',
       user_agent: navigator.userAgent
@@ -173,8 +173,9 @@ async function admin(){
  const {data:{session}}=await sb.auth.getSession();
  if(!session){location.href='login.html';return false}
   currentAdminId=session.user.id;
- const {data:p,error}=await sb.from('profiles').select('is_admin').eq('id',session.user.id).single();
+ const {data:p,error}=await sb.from('profiles').select('is_admin,full_name,email').eq('id',session.user.id).single();
  if(error||!p?.is_admin){msg('Admin access required.');location.href='index.html';return false}
+ currentAdminName=p?.full_name||p?.email||'Admin';
  return true;
 }
 
