@@ -86,6 +86,29 @@
 .map-box-edit label,.prize-box-edit label{margin:5px 0 4px}
 .map-box-edit .existing-img{font-size:9px;color:#5ee98b;word-break:break-all;margin-top:3px}
 </style>
+<style>
+.lobby-add-box{background:#0e1420;border:1px solid #293650;border-radius:14px;padding:12px;margin-bottom:10px}
+#lobbyTimes input{margin-top:6px}#lobbyTimes input:first-child{margin-top:0}
+.lobby-item{background:#171f31;border:1px solid #293650;border-radius:14px;padding:11px;margin-top:8px}
+.lobby-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.lobby-date{font-size:12px;font-weight:900}
+.lobby-status{font-size:9px;font-weight:900;padding:4px 8px;border-radius:999px;background:#203329;color:#5ee98b;white-space:nowrap}
+.lobby-status.cancelled{background:#2b1720;color:#ff6575}
+.lobby-status.completed{background:#1c2a3d;color:#7cc2ff}
+.lobby-status.live,.lobby-status.full{background:#2b2410;color:#f6c453}
+.lobby-meta{font-size:10px;color:#8e98ab;margin-top:5px}
+.lobby-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.team-item{background:#171f31;border:1px solid #293650;border-radius:14px;padding:10px;margin-top:8px}
+.team-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.team-status{font-size:9px;font-weight:900;padding:3px 8px;border-radius:999px;background:#203329;color:#5ee98b;text-transform:capitalize}
+.team-status.pending{background:#2b2410;color:#f6c453}
+.team-status.rejected{background:#2b1720;color:#ff6575}
+.team-meta{font-size:9px;color:#8e98ab;margin-top:4px}
+.team-actions{display:flex;gap:6px;margin-top:8px}
+.result-row{display:grid;grid-template-columns:1fr 52px 52px 66px;gap:6px;align-items:center;background:#171f31;border:1px solid #293650;border-radius:12px;padding:8px;margin-top:8px}
+.result-name{font-size:11px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.result-row input{padding:7px;font-size:10px}
+</style>
 </head>
 <body>
 <main class="wrap">
@@ -161,6 +184,36 @@
   <input type="hidden" id="sorder" value="1">
   <input type="hidden" id="sactive" value="true"></select>
   <div class="modal-actions"><button type="button" id="cancelSmBtn">Cancel</button><button type="button" class="primary" id="saveSectionBtn">Save Section</button></div>
+</div></div>
+
+<div class="modal" id="lbm"><div class="box">
+  <div class="mh"><b id="lbmTitle">Lobbies</b><button type="button" onclick="closeM('lbm')">×</button></div>
+
+  <div class="lobby-add-box">
+    <label>Date</label><input type="date" id="lobbyDate">
+    <label>Time / Batch label(s)</label>
+    <div id="lobbyTimes"><input class="lobbyTimeInput" placeholder="9:00 PM"></div>
+    <button type="button" class="mini" style="margin-top:8px;width:100%" onclick="addTimeInput()">＋ Add another time</button>
+    <label>Slots override (optional)</label><input type="number" id="lobbySlotOverride" min="0" placeholder="Uses tournament default">
+    <button type="button" class="create-bottom" onclick="saveLobbies()">Save Lobby(s)</button>
+  </div>
+
+  <div class="sub-panel-head"><b>Active / Upcoming</b></div>
+  <div id="lobbiesActive"><div class="loading">Loading...</div></div>
+
+  <div class="sub-panel-head"><b>History (Completed)</b></div>
+  <div id="lobbiesHistory"></div>
+</div></div>
+
+<div class="modal" id="ltm"><div class="box">
+  <div class="mh"><b id="ltmTitle">Teams</b><button type="button" onclick="closeM('ltm')">×</button></div>
+  <div id="teamsList"><div class="loading">Loading...</div></div>
+</div></div>
+
+<div class="modal" id="lrm"><div class="box">
+  <div class="mh"><b id="lrmTitle">Enter Result</b><button type="button" onclick="closeM('lrm')">×</button></div>
+  <div id="resultsList"><div class="loading">Loading...</div></div>
+  <div class="modal-actions"><button type="button" onclick="saveResults()">Save Results</button><button type="button" class="primary" onclick="saveResultsAndComplete()">Save &amp; Complete</button></div>
 </div></div>
 
 <div class="confirm" id="confirm"><div class="confirm-card"><div class="confirm-icon">!</div><div class="confirm-title" id="confirmTitle">Are you sure?</div><div class="confirm-text" id="confirmText"></div><div class="confirm-actions"><button type="button" onclick="closeConfirm()">Cancel</button><button type="button" class="danger" id="confirmOk">Continue</button></div></div></div>
@@ -252,7 +305,7 @@ function renderTournaments(){
    <div class="tournament-group-head"><div class="tournament-group-name">${esc(g.s.name)}</div><div class="tournament-group-count">${g.items.length} tournament${g.items.length===1?'':'s'}</div></div>
    <div class="tournament-group-list">${g.items.map((t,i)=>`<div class="tournament-item" data-id="${t.id}" data-name="${esc(t.title)}" data-section-id="${g.s.id}">
      <div class="tournament-top"><span class="t-index">${i+1}</span><div class="thumb">${t.banner_url?`<img src="${esc(t.banner_url)}" alt="">`:''}</div><div class="t-main"><div class="t-title-row"><div class="t-title">${esc(t.title)}</div></div><div class="t-meta"><span>Entry ৳${t.entry_fee||0}</span> · <span>Prize ৳${t.prize_pool||0}</span> · <span>Slots ${t.total_slots||0}</span></div></div></div>
-     <div class="t-actions"><button class="mini green" onclick="editTournament('${t.id}')">Edit</button><button class="mini archive-btn" onclick="archive('${t.id}')">Archive</button><button class="mini t-delete" onclick="deleteTournament('${t.id}')">Delete</button><button class="switch t-toggle ${t.status==='published'?'on':''}" onclick="toggleTournament('${t.id}',${t.status!=='published'})"><span class="switch-label">${t.status==='published'?'ON':'OFF'}</span><span class="knob"></span></button><span class="drag tournament-drag" title="Drag to reorder">⠿</span></div>
+     <div class="t-actions"><button class="mini" onclick="openLobbies('${t.id}')">Lobbies</button><button class="mini green" onclick="editTournament('${t.id}')">Edit</button><button class="mini archive-btn" onclick="archive('${t.id}')">Archive</button><button class="mini t-delete" onclick="deleteTournament('${t.id}')">Delete</button><button class="switch t-toggle ${t.status==='published'?'on':''}" onclick="toggleTournament('${t.id}',${t.status!=='published'})"><span class="switch-label">${t.status==='published'?'ON':'OFF'}</span><span class="knob"></span></button><span class="drag tournament-drag" title="Drag to reorder">⠿</span></div>
    </div>`).join('')}</div></div>`).join('');
  bindTournamentDrag();
 }
@@ -553,6 +606,142 @@ async function archive(id){askConfirm('Archive tournament?','The tournament will
   await logActivity('tournament_archived','tournament','tournament',id,t?.title||null,{status:'archived',highlight_targets:[t?.title||null],narration:`archived the tournament ${t?.title||'Tournament'}.`});
   load()})}
 
+
+/* ================= LOBBIES / TEAMS / RESULTS ================= */
+let currentLobbyTournament=null, lobbies=[], lobbyTeamsCache=[], currentLobbyForTeams=null, currentLobbyForResults=null;
+
+function fmtLobbyDate(d){try{return new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short'});}catch(e){return d;}}
+function lobbyDot(s){return {upcoming:'○',live:'●',full:'●',completed:'✔',cancelled:'○'}[s]||'○';}
+
+function openLobbies(tid){
+  currentLobbyTournament=tournaments.find(x=>x.id===tid); if(!currentLobbyTournament)return;
+  $('lbmTitle').textContent=currentLobbyTournament.title+' — Lobbies';
+  $('lobbyDate').value=new Date().toISOString().slice(0,10);
+  $('lobbyTimes').innerHTML='<input class="lobbyTimeInput" placeholder="9:00 PM">';
+  $('lobbySlotOverride').value='';
+  openM('lbm'); loadLobbies(tid);
+}
+async function loadLobbies(tid){
+  $('lobbiesActive').innerHTML='<div class="loading">Loading...</div>'; $('lobbiesHistory').innerHTML='';
+  const {data,error}=await sb.from('tournament_lobbies').select('*').eq('tournament_id',tid).order('lobby_date');
+  if(error){$('lobbiesActive').innerHTML='<div class="empty">Could not load lobbies.</div>';console.error(error);return;}
+  lobbies=data||[]; renderLobbies();
+}
+function renderLobbies(){
+  const active=[...lobbies].filter(l=>l.status!=='completed').sort((a,b)=>(a.lobby_date+a.time_label).localeCompare(b.lobby_date+b.time_label));
+  const history=[...lobbies].filter(l=>l.status==='completed').sort((a,b)=>(b.lobby_date+b.time_label).localeCompare(a.lobby_date+a.time_label));
+  $('lobbiesActive').innerHTML=active.length?active.map(l=>`
+    <div class="lobby-item">
+      <div class="lobby-top"><div class="lobby-date">${fmtLobbyDate(l.lobby_date)} — ${esc(l.time_label)}</div><div class="lobby-status ${l.status}">${lobbyDot(l.status)} ${l.status.toUpperCase()}</div></div>
+      <div class="lobby-meta">${l.joined_count||0}/${l.total_slots||0} joined</div>
+      <div class="lobby-actions">
+        <button class="mini green" onclick="openTeams('${l.id}')">Teams</button>
+        <button class="mini" onclick="openResults('${l.id}')">Enter Result</button>
+        ${l.status==='cancelled'?`<button class="mini green" onclick="setLobbyStatus('${l.id}','upcoming')">On</button><button class="mini t-delete" onclick="deleteLobby('${l.id}')">Delete</button>`:`<button class="mini red" onclick="setLobbyStatus('${l.id}','cancelled')">Off</button>`}
+        <button class="mini" onclick="setLobbyStatus('${l.id}','completed')">✔ Complete</button>
+      </div>
+    </div>`).join(''):'<div class="empty">No active lobbies.</div>';
+  $('lobbiesHistory').innerHTML=history.length?history.map(l=>`
+    <div class="lobby-item">
+      <div class="lobby-top"><div class="lobby-date">${fmtLobbyDate(l.lobby_date)} — ${esc(l.time_label)}</div><div class="lobby-status completed">✔ COMPLETED</div></div>
+      <div class="lobby-meta">${l.joined_count||0}/${l.total_slots||0} joined</div>
+      <div class="lobby-actions"><button class="mini green" onclick="openResults('${l.id}')">View Results</button></div>
+    </div>`).join(''):'<div class="empty">No completed lobbies yet.</div>';
+}
+function addTimeInput(){const el=document.createElement('input');el.className='lobbyTimeInput';el.placeholder='10:00 PM';$('lobbyTimes').appendChild(el);}
+async function saveLobbies(){
+  const tid=currentLobbyTournament?.id; if(!tid)return;
+  const date=$('lobbyDate').value; if(!date)return msg('Pick a date.');
+  const times=[...document.querySelectorAll('.lobbyTimeInput')].map(x=>x.value.trim()).filter(Boolean);
+  if(!times.length)return msg('Add at least one time / batch label.');
+  const override=+$('lobbySlotOverride').value||0;
+  const slots=override>0?override:(currentLobbyTournament.default_slots||currentLobbyTournament.total_slots||0);
+  const rows=times.map(t=>({tournament_id:tid,lobby_date:date,time_label:t,total_slots:slots,status:'upcoming'}));
+  const {data,error}=await sb.from('tournament_lobbies').insert(rows).select();
+  if(error)return msg(error.message);
+  if(!data||data.length===0)return msg('Insert blocked (0 rows) — check the INSERT RLS policy on tournament_lobbies.');
+  await logActivity('lobbies_added','tournament','tournament_lobby',tid,currentLobbyTournament.title,{narration:`added ${rows.length} lobby slot(s) for ${currentLobbyTournament.title} on ${date}.`,highlight_targets:[currentLobbyTournament.title]});
+  $('lobbyTimes').innerHTML='<input class="lobbyTimeInput" placeholder="9:00 PM">'; $('lobbySlotOverride').value='';
+  await loadLobbies(tid);
+}
+async function setLobbyStatus(id,status){
+  const l=lobbies.find(x=>x.id===id);
+  const {data,error}=await sb.from('tournament_lobbies').update({status}).eq('id',id).select();
+  if(error)return msg(error.message);
+  if(!data||data.length===0)return msg('Update blocked (0 rows) — check the UPDATE RLS policy on tournament_lobbies.');
+  await logActivity('lobby_status_changed','tournament','tournament_lobby',id,l?`${fmtLobbyDate(l.lobby_date)} ${l.time_label}`:null,{narration:`set lobby ${l?fmtLobbyDate(l.lobby_date)+' '+l.time_label:''} to ${status}.`});
+  await loadLobbies(currentLobbyTournament.id);
+}
+async function deleteLobby(id){
+  askConfirm('Delete lobby?','This lobby slot will be permanently removed.',async()=>{
+    const {error}=await sb.from('tournament_lobbies').delete().eq('id',id);
+    if(error)return msg(error.message);
+    await loadLobbies(currentLobbyTournament.id);
+  });
+}
+
+async function openTeams(lobbyId){
+  currentLobbyForTeams=lobbies.find(x=>x.id===lobbyId);
+  $('ltmTitle').textContent=currentLobbyForTeams?`Teams — ${fmtLobbyDate(currentLobbyForTeams.lobby_date)} ${currentLobbyForTeams.time_label}`:'Teams';
+  $('teamsList').innerHTML='<div class="loading">Loading...</div>'; openM('ltm');
+  const {data,error}=await sb.from('lobby_teams').select('*').eq('lobby_id',lobbyId).order('joined_at');
+  if(error){$('teamsList').innerHTML='<div class="empty">Could not load teams.</div>';console.error(error);return;}
+  lobbyTeamsCache=data||[]; renderTeamsList();
+}
+function renderTeamsList(){
+  $('teamsList').innerHTML=lobbyTeamsCache.length?lobbyTeamsCache.map(tm=>`
+    <div class="team-item">
+      <div class="team-top"><b>${esc(tm.team_name)}</b><span class="team-status ${tm.confirmation_status}">${tm.confirmation_status}</span></div>
+      <div class="team-meta">${tm.contact_number?'📞 '+esc(tm.contact_number):''}${tm.payment_reference?' · Ref: '+esc(tm.payment_reference):''}</div>
+      ${tm.confirmation_status==='pending'?`<div class="team-actions"><button class="mini green" onclick="setTeamStatus('${tm.id}','confirmed')">Confirm</button><button class="mini red" onclick="setTeamStatus('${tm.id}','rejected')">Reject</button></div>`:`<div class="team-actions"><button class="mini" onclick="setTeamStatus('${tm.id}','pending')">Reset</button></div>`}
+    </div>`).join(''):'<div class="empty">No teams joined yet.</div>';
+}
+async function setTeamStatus(teamId,status){
+  const {data,error}=await sb.from('lobby_teams').update({confirmation_status:status}).eq('id',teamId).select();
+  if(error)return msg(error.message);
+  if(!data||data.length===0)return msg('Update blocked (0 rows) — check the UPDATE RLS policy on lobby_teams.');
+  await openTeams(currentLobbyForTeams.id);
+  await loadLobbies(currentLobbyTournament.id);
+}
+
+async function openResults(lobbyId){
+  currentLobbyForResults=lobbies.find(x=>x.id===lobbyId);
+  $('lrmTitle').textContent=currentLobbyForResults?`Result — ${fmtLobbyDate(currentLobbyForResults.lobby_date)} ${currentLobbyForResults.time_label}`:'Enter Result';
+  $('resultsList').innerHTML='<div class="loading">Loading...</div>'; openM('lrm');
+  const [teamsRes,resultsRes]=await Promise.all([
+    sb.from('lobby_teams').select('*').eq('lobby_id',lobbyId).eq('confirmation_status','confirmed').order('team_name'),
+    sb.from('lobby_results').select('*').eq('lobby_id',lobbyId)
+  ]);
+  if(teamsRes.error||resultsRes.error){$('resultsList').innerHTML='<div class="empty">Could not load result data.</div>';console.error(teamsRes.error||resultsRes.error);return;}
+  const rMap=new Map((resultsRes.data||[]).map(r=>[r.team_id,r]));
+  const teams=teamsRes.data||[];
+  $('resultsList').innerHTML=teams.length?teams.map(tm=>{const r=rMap.get(tm.id)||{};return `<div class="result-row" data-team="${tm.id}">
+      <div class="result-name">${esc(tm.team_name)}</div>
+      <input type="number" class="resRank" placeholder="Rank" min="1" value="${r.rank??''}">
+      <input type="number" class="resKills" placeholder="Kills" min="0" value="${r.kills??0}">
+      <input type="number" class="resPrize" placeholder="৳" min="0" value="${r.prize_won??0}">
+    </div>`;}).join(''):'<div class="empty">No confirmed teams for this lobby.</div>';
+}
+async function saveResults(){
+  const lobbyId=currentLobbyForResults?.id; if(!lobbyId)return;
+  const rows=[...document.querySelectorAll('#resultsList .result-row')].map(row=>({
+    lobby_id:lobbyId, team_id:row.dataset.team,
+    rank:row.querySelector('.resRank').value?+row.querySelector('.resRank').value:null,
+    kills:+row.querySelector('.resKills').value||0,
+    prize_won:+row.querySelector('.resPrize').value||0
+  }));
+  if(!rows.length)return msg('No teams to save.');
+  const {data,error}=await sb.from('lobby_results').upsert(rows,{onConflict:'lobby_id,team_id'}).select();
+  if(error)return msg(error.message);
+  if(!data||data.length===0)return msg('Save blocked (0 rows) — check the INSERT/UPDATE RLS policy on lobby_results.');
+  await logActivity('lobby_results_saved','tournament','tournament_lobby',lobbyId,currentLobbyForResults?`${fmtLobbyDate(currentLobbyForResults.lobby_date)} ${currentLobbyForResults.time_label}`:null,{narration:'saved results for the lobby.'});
+  return true;
+}
+async function saveResultsAndComplete(){
+  const ok=await saveResults(); if(ok===false||ok===undefined)return;
+  await setLobbyStatus(currentLobbyForResults.id,'completed');
+  closeM('lrm');
+}
 
 document.addEventListener('DOMContentLoaded', function(){
   const hc=$('homepageCollapse');
