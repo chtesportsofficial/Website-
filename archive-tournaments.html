@@ -70,7 +70,7 @@ async function confirmRestoreNow(){
   const t=(window.__archivedRows||[]).find(x=>x.id===id);
   const title=t?.title||'this tournament';
   const adminName=(window.__currentAdminName||'Admin');
-  await sb.from('activity_logs').insert({admin_id:window.__sessionUserId||null,admin_name:adminName,category:'tournament',action:'tournament_restored',target_type:'tournament',target_id:id,target_name:title,details:{narration:`${adminName} restored the tournament ${title}.`,highlight_targets:[title]}});
+  await sb.from('activity_logs').insert({admin_id:window.__sessionUserId||null,admin_name:adminName,category:'tournament',action:'tournament_restored',target_type:'tournament',target_id:id,target_name:title,details:{narration:`restored the tournament ${title}.`,highlight_targets:[title]}});
   await load();
 }
 let pendingDelete=null;
