@@ -507,7 +507,8 @@ async function saveTournament(){
    maps:maps,
    status:$('status').value,show_on_homepage:$('home').value==='true'
   };
-  let q=id?sb.from('tournaments').update(p).eq('id',id):sb.from('tournaments').insert(p);let r=await q;if(r.error)throw r.error;
+  let q=id?sb.from('tournaments').update(p).eq('id',id).select():sb.from('tournaments').insert(p).select();let r=await q;if(r.error)throw r.error;
+  if(id&&(!r.data||r.data.length===0))throw new Error('Update blocked (0 rows affected) — check the UPDATE RLS policy on the tournaments table.');
   const savedRow=(r.data&&Array.isArray(r.data)?r.data[0]:null);
   const newId=id||savedRow?.id||null;
   if(id){
