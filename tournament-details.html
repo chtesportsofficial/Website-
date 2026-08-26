@@ -88,6 +88,18 @@
   .popup-head button{width:30px;height:30px;border-radius:9px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:18px;}
   .popup-body{font-size:12px;line-height:1.7;color:#c8cdd6;white-space:pre-wrap;}
   .popup-body img{width:100%;border-radius:10px;margin-top:10px;}
+
+  .jf-label{font-size:9px;font-weight:700;color:var(--text-dim);text-transform:uppercase;margin:10px 0 4px;}
+  .jf-label:first-child{margin-top:0;}
+  .jf-input{width:100%;background:var(--card);border:0.5px solid var(--border);color:var(--text);border-radius:9px;padding:10px;font-size:12px;font-family:inherit;}
+  .jf-player-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;}
+  .jf-note{font-size:9px;color:var(--text-dim);margin-top:8px;line-height:1.5;}
+  .jf-submit{background:var(--orange);border:none;border-bottom:3px solid var(--orange-dark);border-radius:10px;padding:11px;text-align:center;color:#241705;font-size:13px;font-weight:500;width:100%;cursor:pointer;font-family:inherit;margin-top:12px;}
+  .jf-submit:disabled{background:#2a3145;border-bottom-color:#1c2233;color:var(--text-dim);cursor:not-allowed;}
+  .jf-error{font-size:10px;color:#ff6f7c;margin-top:6px;min-height:12px;}
+  .jf-pay-opt{display:flex;align-items:center;gap:8px;background:var(--card);border:0.5px solid var(--border);border-radius:9px;padding:10px;font-size:11px;margin-top:6px;}
+  .jf-pay-opt input{width:auto;}
+  .jf-pay-opt.disabled{opacity:.5;}
 </style>
 </head>
 <body>
@@ -112,24 +124,69 @@
   </div>
 </div>
 
+<div class="popup-overlay" id="joinOverlay">
+  <div class="popup-box">
+    <div class="popup-head"><b>Join lobby</b><button type="button" onclick="closeJoinForm()">×</button></div>
+    <div class="popup-body">
+      <div class="jf-label">Team name *</div>
+      <input class="jf-input" id="jfTeamName" placeholder="Team Alpha">
+
+      <div id="jfPlayers">
+        <div class="jf-label">Player name *</div>
+        <input class="jf-input" id="jfPlayerName" placeholder="In-game name">
+      </div>
+
+      <div class="jf-label">WhatsApp number *</div>
+      <input class="jf-input" id="jfWhatsapp" placeholder="01XXXXXXXXX">
+
+      <div class="jf-label">Payment method *</div>
+      <div id="jfPaymentOptions"></div>
+      <div id="jfPaymentExtra"></div>
+
+      <div class="jf-note">Your slot stays pending until the admin verifies payment and confirms it (instant if paid from balance).</div>
+      <div class="jf-error" id="jfError"></div>
+      <button type="button" class="jf-submit" id="jfSubmitBtn" onclick="submitJoin()">Submit</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
 const KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
 const sb=window.supabase.createClient(SUPABASE_URL,KEY);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+let currentTournament=null, currentJoinLobbyId=null;
+let sessionUser=null, userProfile=null, walletBalance=null;
+
+async function initUser(){
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session)return;
+    sessionUser=session.user;
+    const {data:p}=await sb.from('profiles').select('whatsapp,user_number').eq('id',sessionUser.id).single();
+    userProfile=p||null;
+    try{
+      const res=await fetch('https://chteo-api.onrender.com/get-balance.php?uid='+encodeURIComponent(sessionUser.id));
+      const j=await res.json();
+      walletBalance=(j&&j.success)?Number(j.balance)||0:null;
+    }catch(e){walletBalance=null;}
+  }catch(e){/* not logged in — guest flow still works */}
+}
 
 (async function(){
   const root=document.getElementById('content');
   const id=new URLSearchParams(location.search).get('id');
   const preview=new URLSearchParams(location.search).get('preview')==='1';
   if(!id){root.innerHTML='<div class="empty">Tournament not found.</div>';return}
+  await initUser();
 
   const {data:t,error}=await sb.from('tournaments').select('*, tournament_sections(name)').eq('id',id).single();
   if(error||!t){root.innerHTML='<div class="empty">Tournament not found.</div>';return}
   if(t.status!=='published' && !preview){
     root.innerHTML='<div class="empty">This tournament is not available right now.</div>';return
   }
+  currentTournament=t;
 
   document.getElementById('hTitle').textContent=t.title||'Tournament';
   document.getElementById('hOrg').textContent=t.tournament_sections?.name||'CHT ESP ORG';
@@ -205,7 +262,7 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
       </div>
       <div class="lobby-meta"><span>Joined: ${joined}</span><span>Slots: ${slots}</span></div>
       <div class="lobby-bar"><div class="lobby-bar-fill ${full?'full':''}" style="width:${pct}%"></div></div>
-      <button class="join-btn ${full?'full':''}" type="button" ${full?'disabled':`onclick="joinLobby('${l.id}')"`}>${full?'FULL':'JOIN NOW'}</button>
+      <button class="join-btn ${full?'full':''}" type="button" ${full?'disabled':`onclick="openJoinForm('${l.id}')"`}>${full?'FULL':'JOIN NOW'}</button>
     </div>`;
   }).join('');
 })();
@@ -222,13 +279,113 @@ document.getElementById('popupOverlay').addEventListener('click',function(e){
   if(e.target===this)closePopup();
 });
 
-async function joinLobby(lobbyId){
-  const teamName=prompt('Team name?');
-  if(!teamName)return;
-  const contact=prompt('Contact number (for payment verification)?')||null;
-  const {error}=await sb.from('lobby_teams').insert({lobby_id:lobbyId,team_name:teamName,contact_number:contact,confirmation_status:'pending'});
-  if(error){alert('Could not join: '+error.message);return}
-  alert('Request sent! The admin will confirm your slot after verifying payment.');
+function openJoinForm(lobbyId){
+  currentJoinLobbyId=lobbyId;
+  document.getElementById('jfTeamName').value='';
+  document.getElementById('jfPlayerName').value='';
+  document.getElementById('jfWhatsapp').value=userProfile?.whatsapp||'';
+  document.getElementById('jfError').textContent='';
+  renderPaymentOptions();
+  document.getElementById('jfSubmitBtn').disabled=false;
+  document.getElementById('jfSubmitBtn').textContent='Submit';
+  document.getElementById('joinOverlay').classList.add('open');
+}
+function closeJoinForm(){
+  document.getElementById('joinOverlay').classList.remove('open');
+}
+document.getElementById('joinOverlay').addEventListener('click',function(e){
+  if(e.target===this)closeJoinForm();
+});
+
+function renderPaymentOptions(){
+  const fee=Number(currentTournament?.entry_fee)||0;
+  const canPayBalance=sessionUser && walletBalance!=null;
+  let html='';
+  if(canPayBalance){
+    const enough=walletBalance>=fee;
+    html+=`<label class="jf-pay-opt ${enough?'':'disabled'}"><input type="radio" name="jfPay" value="balance" ${enough?'':'disabled'} onchange="renderPaymentExtra()"> Pay ৳${fee} from wallet balance (Balance: ৳${walletBalance})</label>`;
+    html+=`<label class="jf-pay-opt"><input type="radio" name="jfPay" value="manual" ${enough?'':'checked'} onchange="renderPaymentExtra()"> Pay via bKash/Nagad manually</label>`;
+  }else{
+    html+=`<label class="jf-pay-opt"><input type="radio" name="jfPay" value="manual" checked onchange="renderPaymentExtra()"> Pay via bKash/Nagad manually</label>`;
+    html+=`<div class="jf-note">Log in to pay instantly from your wallet balance.</div>`;
+  }
+  document.getElementById('jfPaymentOptions').innerHTML=html;
+  renderPaymentExtra();
+}
+function renderPaymentExtra(){
+  const sel=document.querySelector('input[name="jfPay"]:checked')?.value;
+  const box=document.getElementById('jfPaymentExtra');
+  if(sel==='manual'){
+    box.innerHTML=`<div class="jf-label">Payment / transaction reference *</div><input class="jf-input" id="jfPaymentRef" placeholder="bKash TrxID">`;
+  }else{
+    const fee=Number(currentTournament?.entry_fee)||0;
+    box.innerHTML=`<div class="jf-note">৳${fee} will be deducted from your wallet balance immediately on submit.</div>`;
+  }
+}
+
+async function submitJoin(){
+  const errBox=document.getElementById('jfError'); errBox.textContent='';
+  const teamName=document.getElementById('jfTeamName').value.trim();
+  const playerName=document.getElementById('jfPlayerName').value.trim();
+  const whatsapp=document.getElementById('jfWhatsapp').value.trim();
+  if(!teamName){errBox.textContent='Team name is required.';return}
+  if(!playerName){errBox.textContent='Player name is required.';return}
+  if(!whatsapp){errBox.textContent='WhatsApp number is required.';return}
+
+  const payMethod=document.querySelector('input[name="jfPay"]:checked')?.value||'manual';
+  let paymentRef=null;
+  if(payMethod==='manual'){
+    paymentRef=document.getElementById('jfPaymentRef')?.value.trim()||'';
+    if(!paymentRef){errBox.textContent='Payment/transaction reference is required.';return}
+  }
+
+  const btn=document.getElementById('jfSubmitBtn');
+  btn.disabled=true; btn.textContent='Submitting...';
+
+  let confirmationStatus='pending';
+  if(payMethod==='balance'){
+    try{
+      const {data:{session}}=await sb.auth.getSession();
+      const fee=Number(currentTournament?.entry_fee)||0;
+      const res=await fetch('https://chteo-api.onrender.com/deduct-balance.php',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+        body:JSON.stringify({amount:fee,reference:'Tournament entry: '+(currentTournament?.title||''),description:'Tournament entry fee'})
+      });
+      const j=await res.json();
+      if(!j.success){
+        errBox.textContent='Payment failed: '+(j.message||'could not deduct balance.');
+        btn.disabled=false; btn.textContent='Submit';
+        return;
+      }
+      walletBalance=j.balance;
+      paymentRef='Wallet balance ✓';
+      confirmationStatus='confirmed';
+    }catch(e){
+      errBox.textContent='Payment failed: could not reach wallet service.';
+      btn.disabled=false; btn.textContent='Submit';
+      return;
+    }
+  }
+
+  const {error}=await sb.from('lobby_teams').insert({
+    lobby_id:currentJoinLobbyId,
+    team_name:teamName,
+    players:[{name:playerName}],
+    contact_number:whatsapp,
+    payment_reference:paymentRef,
+    payment_method:payMethod,
+    submitted_by:sessionUser?.id||null,
+    confirmation_status:confirmationStatus
+  });
+
+  if(error){
+    errBox.textContent='Could not submit: '+error.message;
+    btn.disabled=false; btn.textContent='Submit';
+    return;
+  }
+  closeJoinForm();
+  alert(confirmationStatus==='confirmed'?'Paid and joined! Your slot is confirmed.':'Request sent! The admin will confirm your slot after verifying payment.');
   location.reload();
 }
 </script>

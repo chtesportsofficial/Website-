@@ -104,6 +104,11 @@
 .team-status.pending{background:#2b2410;color:#f6c453}
 .team-status.rejected{background:#2b1720;color:#ff6575}
 .team-meta{font-size:9px;color:#8e98ab;margin-top:4px}
+.team-uid{background:#1c2a3d;color:#7cc2ff;font-weight:900;padding:2px 7px;border-radius:999px;font-size:9px}
+.team-uid.guest{background:#232a3d;color:#8e98ab}
+.team-pay{padding:2px 7px;border-radius:999px;font-size:9px;font-weight:900;margin-left:4px}
+.team-pay.balance{background:#203329;color:#5ee98b}
+.team-pay.manual{background:#2b2410;color:#f6c453}
 .team-actions{display:flex;gap:6px;margin-top:8px}
 .result-row{display:grid;grid-template-columns:1fr 52px 52px 66px;gap:6px;align-items:center;background:#171f31;border:1px solid #293650;border-radius:12px;padding:8px;margin-top:8px}
 .result-name{font-size:11px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -684,17 +689,22 @@ async function openTeams(lobbyId){
   currentLobbyForTeams=lobbies.find(x=>x.id===lobbyId);
   $('ltmTitle').textContent=currentLobbyForTeams?`Teams — ${fmtLobbyDate(currentLobbyForTeams.lobby_date)} ${currentLobbyForTeams.time_label}`:'Teams';
   $('teamsList').innerHTML='<div class="loading">Loading...</div>'; openM('ltm');
-  const {data,error}=await sb.from('lobby_teams').select('*').eq('lobby_id',lobbyId).order('joined_at');
+  const {data,error}=await sb.from('lobby_teams').select('*, profiles(user_number,whatsapp,email)').eq('lobby_id',lobbyId).order('joined_at');
   if(error){$('teamsList').innerHTML='<div class="empty">Could not load teams.</div>';console.error(error);return;}
   lobbyTeamsCache=data||[]; renderTeamsList();
 }
 function renderTeamsList(){
-  $('teamsList').innerHTML=lobbyTeamsCache.length?lobbyTeamsCache.map(tm=>`
-    <div class="team-item">
+  $('teamsList').innerHTML=lobbyTeamsCache.length?lobbyTeamsCache.map(tm=>{
+    const uidBadge=tm.profiles?.user_number ? `<span class="team-uid">UID #${tm.profiles.user_number}</span>` : `<span class="team-uid guest">Guest</span>`;
+    const playerName=Array.isArray(tm.players)&&tm.players[0]?.name ? esc(tm.players[0].name) : '';
+    const payBadge=tm.payment_method==='balance' ? `<span class="team-pay balance">Balance</span>` : `<span class="team-pay manual">Manual</span>`;
+    return `<div class="team-item">
       <div class="team-top"><b>${esc(tm.team_name)}</b><span class="team-status ${tm.confirmation_status}">${tm.confirmation_status}</span></div>
-      <div class="team-meta">${tm.contact_number?'📞 '+esc(tm.contact_number):''}${tm.payment_reference?' · Ref: '+esc(tm.payment_reference):''}</div>
+      <div class="team-meta">${playerName?'👤 '+playerName+' · ':''}${uidBadge} ${payBadge}</div>
+      <div class="team-meta">${tm.contact_number?'📱 '+esc(tm.contact_number):''}${tm.payment_reference?' · Ref: '+esc(tm.payment_reference):''}</div>
       ${tm.confirmation_status==='pending'?`<div class="team-actions"><button class="mini green" onclick="setTeamStatus('${tm.id}','confirmed')">Confirm</button><button class="mini red" onclick="setTeamStatus('${tm.id}','rejected')">Reject</button></div>`:`<div class="team-actions"><button class="mini" onclick="setTeamStatus('${tm.id}','pending')">Reset</button></div>`}
-    </div>`).join(''):'<div class="empty">No teams joined yet.</div>';
+    </div>`;
+  }).join(''):'<div class="empty">No teams joined yet.</div>';
 }
 async function setTeamStatus(teamId,status){
   const {data,error}=await sb.from('lobby_teams').update({confirmation_status:status}).eq('id',teamId).select();
