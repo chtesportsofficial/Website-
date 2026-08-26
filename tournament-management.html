@@ -80,6 +80,12 @@
 .drag{touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .section-item.dragging,.tournament-item.dragging{opacity:.5;box-shadow:0 0 0 2px #25d366}
 </style>
+<style>
+.img-note{font-size:9px;color:#7f899d;margin:4px 0 6px}
+.map-box-edit,.prize-box-edit{background:#0e1420;border:1px solid #293650;border-radius:11px;padding:9px;margin-top:8px}
+.map-box-edit label,.prize-box-edit label{margin:5px 0 4px}
+.map-box-edit .existing-img{font-size:9px;color:#5ee98b;word-break:break-all;margin-top:3px}
+</style>
 </head>
 <body>
 <main class="wrap">
@@ -107,23 +113,42 @@
   <label>Tournament Name *</label><input id="title" placeholder="CHT DAILY SCRIM #01">
   <label>Homepage Section *</label><select id="section"></select>
   <label>Banner</label><input id="banner" type="file" accept="image/png,image/jpeg,image/webp">
-  <label>Short Description</label><textarea id="short"></textarea>
+
   <div class="grid">
     <div><label>Entry Fee</label><input id="entry" type="number" min="0" value="0"></div>
-    <div><label>Prize Pool</label><input id="prize" type="number" min="0" value="0"></div>
-    <div><label>Total Slots</label><input id="slots" type="number" min="0" value="0"></div>
-    <div><label>Date</label><input id="date" type="date"></div>
-    <div><label>Start Time</label><input id="start" type="time"></div>
-    <div><label>End Time</label><input id="end" type="time"></div>
-    <div><label>Game</label><input id="game" placeholder="Free Fire"></div>
-    <div><label>Mode</label><input id="mode" placeholder="Squad"></div>
-    <div><label>Map</label><input id="map" placeholder="Bermuda"></div>
+    <div><label>Slot (default)</label><input id="slots" type="number" min="0" value="0"></div>
+  </div>
+
+  <label>Prize Distribution (Top N)</label>
+  <select id="rankCount" onchange="renderPrizeBoxes()"></select>
+  <div id="prizeBoxes" class="grid"></div>
+
+  <div class="grid">
+    <div><label>Format</label><select id="format"><option value="solo">Solo</option><option value="duo">Duo</option><option value="squad">Squad</option></select></div>
+    <div><label>Type</label><select id="matchType"><option value="full_map">Full map</option><option value="clash_squad">Clash squad</option></select></div>
+    <div><label>Vehicle</label><select id="vehicle"><option value="true">✅ Allowed</option><option value="false">❌ Not allowed</option></select></div>
+    <div><label>Gun Skin</label><select id="gunskin"><option value="false">❌ Not allowed</option><option value="true">✅ Allowed</option></select></div>
     <div><label>Status</label><select id="status"><option>draft</option><option>published</option><option>unpublished</option><option>archived</option></select></div>
   </div>
-  <label>Prize Distribution</label><textarea id="distribution"></textarea>
-  <label>Full Details</label><textarea id="details"></textarea>
-  <label>Rules</label><textarea id="rules"></textarea>
-  <label>Important Notes</label><textarea id="notes"></textarea>
+
+  <label>Tournament Rules</label>
+  <textarea id="rulesText" placeholder="Write the rules here..."></textarea>
+  <label>Rules Images (optional, multiple)</label>
+  <input id="rulesImages" type="file" accept="image/png,image/jpeg,image/webp" multiple>
+  <div class="img-note" id="rulesImagesNote"></div>
+  <input type="hidden" id="rulesImagesOld" value="[]">
+
+  <label>Point System</label>
+  <textarea id="pointText" placeholder="Write the point system here..."></textarea>
+  <label>Point System Images (optional, multiple)</label>
+  <input id="pointImages" type="file" accept="image/png,image/jpeg,image/webp" multiple>
+  <div class="img-note" id="pointImagesNote"></div>
+  <input type="hidden" id="pointImagesOld" value="[]">
+
+  <label>Maps</label>
+  <select id="mapCount" onchange="renderMapBoxes()"></select>
+  <div id="mapBoxes"></div>
+
   <label>Show on Homepage</label><select id="home"><option value="false">No</option><option value="true">Yes</option></select>
   <div class="modal-actions"><button type="button" id="cancelTmBtn">Cancel</button><button type="button" class="primary" id="saveTournamentBtn">Save Tournament</button></div>
 </div></div>
@@ -379,12 +404,72 @@ async function deleteSection(id){if(tournaments.some(t=>t.section_id===id&&t.sta
   await logActivity('section_deleted','homepage_section','tournament_section',id,s?.name||null,{narration:`deleted the homepage section ${s?.name||'Section'}.`,highlight_targets:[s?.name||'Section']});
   load()})}
 
+function fillRankCount(selected){
+ $('rankCount').innerHTML=Array.from({length:12},(_,i)=>i+1).map(n=>`<option value="${n}" ${n===selected?'selected':''}>${n}</option>`).join('');
+}
+function fillMapCount(selected){
+ $('mapCount').innerHTML=Array.from({length:7},(_,i)=>i+1).map(n=>`<option value="${n}" ${n===selected?'selected':''}>${n}</option>`).join('');
+}
+function renderPrizeBoxes(prefill){
+ const n=+$('rankCount').value||1;
+ const old=Array.isArray(prefill)?prefill:[];
+ $('prizeBoxes').innerHTML=Array.from({length:n},(_,i)=>{
+  const rank=i+1,amt=old.find(x=>+x.rank===rank)?.amount??0;
+  return `<div class="prize-box-edit"><label>Rank ${rank}</label><input type="number" min="0" class="prizeAmt" data-rank="${rank}" value="${amt}"></div>`;
+ }).join('');
+}
+function renderMapBoxes(prefill){
+ const n=+$('mapCount').value||1;
+ const old=Array.isArray(prefill)?prefill:[];
+ $('mapBoxes').innerHTML=Array.from({length:n},(_,i)=>{
+  const m=old[i]||{};
+  return `<div class="map-box-edit">
+    <label>Map ${i+1} Name</label><input class="mapName" data-i="${i}" placeholder="Bermuda" value="${esc(m.name||'')}">
+    <label>Map ${i+1} Image</label><input type="file" class="mapImg" data-i="${i}" accept="image/png,image/jpeg,image/webp">
+    <input type="hidden" class="mapImgUrl" data-i="${i}" value="${esc(m.image_url||'')}">
+    ${m.image_url?`<div class="existing-img">Current: ${esc(m.image_url)}</div>`:''}
+  </div>`;
+ }).join('');
+}
+async function uploadMany(files){
+ const urls=[];
+ for(const file of files){
+  let ext=(file.name.split('.').pop()||'jpg').toLowerCase();if(!['jpg','jpeg','png','webp'].includes(ext))ext='jpg';
+  let path=crypto.randomUUID()+'.'+ext;
+  let u=await sb.storage.from('tournament-banners').upload(path,file,{upsert:false,contentType:file.type});
+  if(u.error)throw u.error;
+  urls.push(sb.storage.from('tournament-banners').getPublicUrl(path).data.publicUrl);
+ }
+ return urls;
+}
 function newTournament(){
- $('tid').value='';$('tmTitle').textContent='Create Tournament';$('title').value='';$('short').value='';$('entry').value=0;$('prize').value=0;$('slots').value=0;$('date').value='';$('start').value='';$('end').value='';$('game').value='';$('mode').value='';$('map').value='';$('distribution').value='';$('details').value='';$('rules').value='';$('notes').value='';$('status').value='draft';$('home').value='false';$('banner').value='';fillSections();openM('tm');
+ $('tid').value='';$('tmTitle').textContent='Create Tournament';$('title').value='';$('entry').value=0;$('slots').value=0;
+ $('format').value='squad';$('matchType').value='full_map';$('vehicle').value='true';$('gunskin').value='false';
+ $('rulesText').value='';$('rulesImages').value='';$('rulesImagesOld').value='[]';$('rulesImagesNote').textContent='';
+ $('pointText').value='';$('pointImages').value='';$('pointImagesOld').value='[]';$('pointImagesNote').textContent='';
+ $('status').value='draft';$('home').value='false';$('banner').value='';
+ fillRankCount(4);renderPrizeBoxes([]);
+ fillMapCount(3);renderMapBoxes([]);
+ fillSections();openM('tm');
 }
 function editTournament(id){
  let t=tournaments.find(x=>x.id===id);if(!t)return;
- $('tid').value=t.id;$('tmTitle').textContent='Edit Tournament';fillSections(t.section_id);$('title').value=t.title||'';$('short').value=t.short_description||'';$('entry').value=t.entry_fee||0;$('prize').value=t.prize_pool||0;$('slots').value=t.total_slots||0;$('date').value=t.tournament_date||'';$('start').value=t.start_time||'';$('end').value=t.end_time||'';$('game').value=t.game||'';$('mode').value=t.mode||'';$('map').value=t.map||'';$('distribution').value=t.prize_distribution||'';$('details').value=t.full_details||'';$('rules').value=t.rules||'';$('notes').value=t.important_notes||'';$('status').value=t.status||'draft';$('home').value=String(!!t.show_on_homepage);$('banner').value='';openM('tm');
+ $('tid').value=t.id;$('tmTitle').textContent='Edit Tournament';fillSections(t.section_id);
+ $('title').value=t.title||'';$('entry').value=t.entry_fee||0;$('slots').value=t.default_slots||t.total_slots||0;
+ $('format').value=t.format||'squad';$('matchType').value=t.match_type||'full_map';
+ $('vehicle').value=String(t.vehicle_allowed!==false);$('gunskin').value=String(!!t.gun_skin_allowed);
+ $('rulesText').value=t.rules_text||t.rules||'';$('rulesImages').value='';
+ const rImgs=Array.isArray(t.rules_images)?t.rules_images:[];$('rulesImagesOld').value=JSON.stringify(rImgs);
+ $('rulesImagesNote').textContent=rImgs.length?`${rImgs.length} existing image(s). Choosing new files will replace them.`:'';
+ $('pointText').value=t.point_system_text||'';$('pointImages').value='';
+ const pImgs=Array.isArray(t.point_system_images)?t.point_system_images:[];$('pointImagesOld').value=JSON.stringify(pImgs);
+ $('pointImagesNote').textContent=pImgs.length?`${pImgs.length} existing image(s). Choosing new files will replace them.`:'';
+ $('status').value=t.status||'draft';$('home').value=String(!!t.show_on_homepage);$('banner').value='';
+ const dist=Array.isArray(t.prize_distribution)?t.prize_distribution:[];
+ fillRankCount(dist.length||4);renderPrizeBoxes(dist);
+ const maps=Array.isArray(t.maps)?t.maps:[];
+ fillMapCount(maps.length||3);renderMapBoxes(maps);
+ openM('tm');
 }
 async function saveTournament(){
  let id=$('tid').value,old=tournaments.find(x=>x.id===id),banner=old?.banner_url||null,file=$('banner').files[0];
@@ -392,7 +477,36 @@ async function saveTournament(){
  if(!$('section').value)return msg('Select a section.');
  try{
   if(file){let ext=(file.name.split('.').pop()||'jpg').toLowerCase();if(!['jpg','jpeg','png','webp'].includes(ext))ext='jpg';let path=crypto.randomUUID()+'.'+ext;let u=await sb.storage.from('tournament-banners').upload(path,file,{upsert:false,contentType:file.type});if(u.error)throw u.error;banner=sb.storage.from('tournament-banners').getPublicUrl(path).data.publicUrl}
-  let p={section_id:$('section').value,title:$('title').value.trim(),banner_url:banner,short_description:$('short').value.trim()||null,entry_fee:+$('entry').value||0,prize_pool:+$('prize').value||0,total_slots:+$('slots').value||0,tournament_date:$('date').value||null,start_time:$('start').value||null,end_time:$('end').value||null,game:$('game').value.trim()||null,mode:$('mode').value.trim()||null,map:$('map').value.trim()||null,prize_distribution:$('distribution').value.trim()||null,full_details:$('details').value.trim()||null,rules:$('rules').value.trim()||null,important_notes:$('notes').value.trim()||null,status:$('status').value,show_on_homepage:$('home').value==='true'};
+
+  const prizeDistribution=[...document.querySelectorAll('.prizeAmt')].map(el=>({rank:+el.dataset.rank,amount:+el.value||0}));
+  const prizePool=prizeDistribution.reduce((s,x)=>s+x.amount,0);
+
+  const rulesNewFiles=[...($('rulesImages').files||[])];
+  const rulesImages=rulesNewFiles.length?await uploadMany(rulesNewFiles):JSON.parse($('rulesImagesOld').value||'[]');
+
+  const pointNewFiles=[...($('pointImages').files||[])];
+  const pointSystemImages=pointNewFiles.length?await uploadMany(pointNewFiles):JSON.parse($('pointImagesOld').value||'[]');
+
+  const mapBoxEls=[...document.querySelectorAll('#mapBoxes .map-box-edit')];
+  const maps=[];
+  for(const box of mapBoxEls){
+   const nameEl=box.querySelector('.mapName'),fileEl=box.querySelector('.mapImg'),urlEl=box.querySelector('.mapImgUrl');
+   let imgUrl=urlEl.value||'';
+   if(fileEl.files&&fileEl.files[0]){const up=await uploadMany([fileEl.files[0]]);imgUrl=up[0];}
+   maps.push({name:nameEl.value.trim(),image_url:imgUrl});
+  }
+
+  let p={
+   section_id:$('section').value,title:$('title').value.trim(),banner_url:banner,
+   entry_fee:+$('entry').value||0,default_slots:+$('slots').value||0,total_slots:+$('slots').value||0,
+   prize_distribution:prizeDistribution,prize_pool:prizePool,
+   format:$('format').value,match_type:$('matchType').value,
+   vehicle_allowed:$('vehicle').value==='true',gun_skin_allowed:$('gunskin').value==='true',
+   rules_text:$('rulesText').value.trim()||null,rules_images:rulesImages,
+   point_system_text:$('pointText').value.trim()||null,point_system_images:pointSystemImages,
+   maps:maps,
+   status:$('status').value,show_on_homepage:$('home').value==='true'
+  };
   let q=id?sb.from('tournaments').update(p).eq('id',id):sb.from('tournaments').insert(p);let r=await q;if(r.error)throw r.error;
   const savedRow=(r.data&&Array.isArray(r.data)?r.data[0]:null);
   const newId=id||savedRow?.id||null;
