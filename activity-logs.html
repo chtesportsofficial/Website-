@@ -18,14 +18,188 @@
 <script>
 const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
 const KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
-const sb=window.supabase.createClient(SUPABASE_URL,KEY);let allLogs=[],adminMap={};
-const $=id=>document.getElementById(id);const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
-async function guard(){try{const {data:{session},error:sErr}=await sb.auth.getSession();if(sErr)throw sErr;if(!session){location.href='login.html';return false}const r=await Promise.race([sb.from('profiles').select('is_admin').eq('id',session.user.id).single(),new Promise((_,rej)=>setTimeout(()=>rej(new Error('Profile check timed out')),8000))]);if(r.error||!r.data?.is_admin){alert('Admin access required.');location.href='index.html';return false}return true}catch(e){console.error('Admin guard failed:',e);$('logs').innerHTML='<div class="empty">Could not verify admin access. Please refresh and try again.</div>';return false}}
-function fmt(v){const d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleString('en-BD',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true})}
-function parseDetails(x){let d=x.details;if(typeof d==='string'){try{d=JSON.parse(d)}catch(e){}}return (d&&typeof d==='object')?d:{}}
-function getNarration(x){const d=parseDetails(x);if(d.narration)return d.narration;const n=x.target_name||'item';const a=x.action||'';const map={tournament_created:`created the tournament ${n}.`,tournament_enabled:`turned ON the tournament ${n}.`,tournament_disabled:`turned OFF the tournament ${n}.`,tournament_deleted:`deleted the tournament ${n}.`,tournament_archived:`archived the tournament ${n}.`,section_created:`created the homepage section ${n}.`,section_updated:`updated the homepage section ${n}.`,section_enabled:`turned ON the homepage section ${n}.`,section_disabled:`turned OFF the homepage section ${n}.`,section_deleted:`deleted the homepage section ${n}.`};return map[a]||a.replaceAll('_',' ')}
-function highlightTargets(text,targets=[]){let safe=esc(text);const arr=(Array.isArray(targets)?targets:[]).filter(Boolean).map(String).sort((a,b)=>b.length-a.length);if(!arr.length)return safe;for(const t of arr){const e=esc(t);safe=safe.replaceAll(e,'<span class="target-highlight">'+e+'</span>')}return safe}
-function render(){let q=$('search').value.trim().toLowerCase(),cat=$('category').value,period=$('period').value,now=Date.now();let rows=allLogs.filter(x=>{if(cat!=='all'&&x.category!==cat)return false;if(period==='today'){let d=new Date();d.setHours(0,0,0,0);if(new Date(x.created_at)<d)return false}else if(period!=='all'&&now-new Date(x.created_at).getTime()>Number(period)*86400000)return false;let an=adminMap[x.admin_id]||x.admin_name||'Admin',n=getNarration(x);if(q&&!([an,x.action,x.category,x.target_name,n].join(' ').toLowerCase().includes(q)))return false;return true});$('count').textContent=rows.length+' log'+(rows.length===1?'':'s');$('logs').innerHTML=rows.length?rows.map(x=>{const an=adminMap[x.admin_id]||x.admin_name||'Admin',n=getNarration(x),href=x.admin_id?`admin-profile.html?id=${encodeURIComponent(x.admin_id)}`:'#';return `<article class="log"><div class="narration"><span class="dot"></span><div><div class="sentence"><a class="admin-link" href="${href}">${esc(an)}</a> ${highlightTargets(n,d.highlight_targets)}</div><div class="time">${esc(fmt(x.created_at))}</div></div></div></article>`}).join(''):'<div class="empty">No activity found.</div>'}
-async function load(){$('logs').classList.add('loading');try{const result=await Promise.race([sb.from('activity_logs').select('*').order('created_at',{ascending:false}).limit(1000),new Promise((_,rej)=>setTimeout(()=>rej(new Error('Activity logs request timed out')),10000))]);if(result.error)throw result.error;allLogs=result.data||[];adminMap={};const ids=[...new Set(allLogs.map(x=>x.admin_id).filter(Boolean))];if(ids.length){try{const pr=await sb.from('profiles').select('id,full_name,email').in('id',ids);if(!pr.error)(pr.data||[]).forEach(p=>adminMap[p.id]=p.full_name||p.email||'Admin')}catch(e){console.warn('Could not load admin names:',e)}}render()}catch(e){console.error('Activity logs load failed:',e);$('logs').innerHTML='<div class="empty">Could not load activity logs. Please refresh and try again.</div>'}finally{$('logs').classList.remove('loading')}}
-$('refresh').onclick=load;$('search').oninput=render;$('category').onchange=render;$('period').onchange=render;(async()=>{if(await guard())load()})();
+const sb=window.supabase.createClient(SUPABASE_URL,KEY);
+let allLogs=[],adminMap={};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+
+function fmt(v){
+  const d=new Date(v);
+  return Number.isNaN(d.getTime())?'—':
+    d.toLocaleString('en-BD',{day:'2-digit',month:'short',year:'numeric',
+    hour:'2-digit',minute:'2-digit',hour12:true});
+}
+
+function parseDetails(x){
+  let d=x?.details;
+  if(typeof d==='string'){try{d=JSON.parse(d)}catch(e){d={}}}
+  return d&&typeof d==='object'?d:{};
+}
+
+function getNarration(x){
+  const d=parseDetails(x);
+  if(d.narration) return d.narration;
+
+  const n=x.target_name||'item';
+  const a=x.action||'';
+  const map={
+    tournament_created:`created the tournament ${n}.`,
+    tournament_enabled:`turned ON the tournament ${n}.`,
+    tournament_disabled:`turned OFF the tournament ${n}.`,
+    tournament_deleted:`deleted the tournament ${n}.`,
+    tournament_archived:`archived the tournament ${n}.`,
+    section_created:`created the homepage section ${n}.`,
+    section_enabled:`turned ON the homepage section ${n}.`,
+    section_disabled:`turned OFF the homepage section ${n}.`,
+    section_deleted:`deleted the homepage section ${n}.`
+  };
+  return map[a] || a.replaceAll('_',' ');
+}
+
+function highlightTargets(text, targets){
+  let safe=esc(text);
+  if(!Array.isArray(targets)||!targets.length) return safe;
+
+  // Highlight only the exact target strings, preserving the narration text.
+  const unique=[...new Set(targets.filter(Boolean).map(String))]
+    .sort((a,b)=>b.length-a.length);
+
+  for(const target of unique){
+    const e=esc(target);
+    if(!e) continue;
+    safe=safe.replace(new RegExp(`(${e.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`,'g'),
+      '<span class="target-highlight">$1</span>');
+  }
+  return safe;
+}
+
+function render(){
+  const q=$('search').value.trim().toLowerCase();
+  const cat=$('category').value;
+  const period=$('period').value;
+  const now=Date.now();
+
+  const rows=allLogs.filter(x=>{
+    if(cat!=='all'&&x.category!==cat) return false;
+
+    if(period==='today'){
+      const d=new Date(); d.setHours(0,0,0,0);
+      if(new Date(x.created_at)<d) return false;
+    }else if(period!=='all' &&
+      now-new Date(x.created_at).getTime()>Number(period)*86400000) return false;
+
+    const an=adminMap[x.admin_id]||x.admin_name||'Admin';
+    const n=getNarration(x);
+    if(q && !([an,x.action,x.category,x.target_name,n].join(' ').toLowerCase().includes(q)))
+      return false;
+
+    return true;
+  });
+
+  $('count').textContent=rows.length+' log'+(rows.length===1?'':'s');
+
+  $('logs').innerHTML=rows.length ? rows.map(x=>{
+    const an=adminMap[x.admin_id]||x.admin_name||'Admin';
+    const d=parseDetails(x);
+    const n=getNarration(x);
+    const targets=d.highlight_targets || [];
+
+    const href=x.admin_id
+      ? `user-details.html?id=${encodeURIComponent(x.admin_id)}`
+      : '#';
+
+    return `<article class="log">
+      <div class="narration">
+        <span class="dot"></span>
+        <div>
+          <div class="sentence">
+            <a class="admin-link" href="${href}">${esc(an)}</a>
+            ${highlightTargets(n,targets)}
+          </div>
+          <div class="time">${esc(fmt(x.created_at))}</div>
+        </div>
+      </div>
+    </article>`;
+  }).join('') :
+  '<div class="empty">No activity found.</div>';
+}
+
+async function guard(){
+  try{
+    const {data:{session},error}=await sb.auth.getSession();
+    if(error) throw error;
+    if(!session){location.href='login.html';return false}
+
+    const {data:p,error:pe}=await sb.from('profiles')
+      .select('is_admin').eq('id',session.user.id).single();
+
+    if(pe) throw pe;
+    if(!p?.is_admin){
+      alert('Admin access required.');
+      location.href='index.html';
+      return false;
+    }
+    return true;
+  }catch(e){
+    console.error('Admin check failed:',e);
+    $('logs').innerHTML='<div class="empty">Admin verification failed. Check the browser console for the exact error.</div>';
+    return false;
+  }
+}
+
+async function load(){
+  $('logs').innerHTML='<div class="empty">Loading logs...</div>';
+  $('logs').classList.add('loading');
+
+  try{
+    // This is the only required data query for the logs.
+    // Admin profile lookup is intentionally NOT required to render logs.
+    const {data,error}=await sb.from('activity_logs')
+      .select('*')
+      .order('created_at',{ascending:false})
+      .limit(1000);
+
+    if(error) throw error;
+
+    allLogs=data||[];
+
+    // Best-effort admin names. Failure here must never prevent logs rendering.
+    adminMap={};
+    const ids=[...new Set(allLogs.map(x=>x.admin_id).filter(Boolean))];
+
+    if(ids.length){
+      try{
+        const {data:profiles,error:pe}=await sb.from('profiles')
+          .select('id,full_name,email').in('id',ids);
+
+        if(!pe){
+          (profiles||[]).forEach(p=>{
+            adminMap[p.id]=p.full_name||p.email||'Admin';
+          });
+        }
+      }catch(e){
+        console.warn('Admin names could not be loaded:',e);
+      }
+    }
+
+    render();
+  }catch(e){
+    console.error('ACTIVITY LOGS ERROR:',e);
+    $('logs').innerHTML=
+      '<div class="empty">Activity logs could not be loaded.<br><small>'+
+      esc(e?.message||String(e))+
+      '</small></div>';
+  }finally{
+    $('logs').classList.remove('loading');
+  }
+}
+
+$('refresh').onclick=load;
+$('search').oninput=render;
+$('category').onchange=render;
+$('period').onchange=render;
+
+(async()=>{
+  if(await guard()) await load();
+})();
 </script></body></html>
