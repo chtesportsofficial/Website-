@@ -165,23 +165,117 @@ async function logActivity(action, category, targetType=null, targetId=null, tar
 
 function money(v){return '৳'+(Number(v)||0)}
 function changed(oldVal,newVal){return String(oldVal??'')!==String(newVal??'')}
-function updateNarration(old,p){
-  const name=p.title||old?.title||'this tournament', parts=[];
-  if(changed(old?.title,p.title)) parts.push(`renamed the tournament from "${old?.title||''}" to "${p.title}"`);
-  if(changed(old?.entry_fee,p.entry_fee)) parts.push(`updated the entry fee from ${money(old?.entry_fee)} to ${money(p.entry_fee)}`);
-  if(changed(old?.prize_pool,p.prize_pool)) parts.push(`updated the prize pool from ${money(old?.prize_pool)} to ${money(p.prize_pool)}`);
-  if(changed(old?.total_slots,p.total_slots)){const a=Number(old?.total_slots)||0,b=Number(p.total_slots)||0;parts.push(b>a?`added ${b-a} slots (${b} total)`:`changed the slots from ${a} to ${b}`)}
-  if(changed(old?.section_id,p.section_id)) parts.push('moved the tournament to another section');
-  if(changed(old?.status,p.status)) parts.push(`changed the status from ${old?.status||'—'} to ${p.status}`);
-  if(changed(old?.show_on_homepage,p.show_on_homepage)) parts.push(`turned the homepage display ${p.show_on_homepage?'ON':'OFF'}`);
-  const labels={prize_distribution:'prize distribution',short_description:'short description',full_details:'full details',rules:'rules',important_notes:'important notes',tournament_date:'tournament date',start_time:'start time',end_time:'end time',game:'game',mode:'mode',map:'map'};
-  Object.entries(labels).forEach(([k,label])=>{if(changed(old?.[k],p[k]))parts.push(`updated the ${label}`)});
-  return parts.length?parts.map((x,i)=>i===0?`${x} for ${name}`:`${x} for ${name}`).join('. ')+'.':`updated ${name}.`;
+
+function valueText(key,v){
+  if(key==='entry_fee'||key==='prize_pool') return money(v);
+  if(key==='show_on_homepage') return v?'ON':'OFF';
+  if(key==='status') return String(v||'—');
+  if(key==='total_slots') return String(Number(v)||0);
+  return String(v??'').trim() || 'empty';
 }
+
+function updateNarration(old,p){
+  const name=p.title||old?.title||'this tournament';
+  const parts=[];
+
+  if(changed(old?.title,p.title))
+    parts.push(`renamed the tournament from "${old?.title||'empty'}" to "${p.title}"`);
+
+  if(changed(old?.entry_fee,p.entry_fee))
+    parts.push(`changed the entry fee from ${money(old?.entry_fee)} to ${money(p.entry_fee)}`);
+
+  if(changed(old?.prize_pool,p.prize_pool))
+    parts.push(`changed the prize pool from ${money(old?.prize_pool)} to ${money(p.prize_pool)}`);
+
+  if(changed(old?.total_slots,p.total_slots)){
+    const a=Number(old?.total_slots)||0,b=Number(p.total_slots)||0;
+    if(b>a) parts.push(`added ${b-a} slots (${b} total)`);
+    else if(b<a) parts.push(`removed ${a-b} slots (${b} total)`);
+    else parts.push(`changed the total slots from ${a} to ${b}`);
+  }
+
+  if(changed(old?.section_id,p.section_id)){
+    const oldSection=sections.find(x=>x.id===old?.section_id)?.name || 'Unknown section';
+    const newSection=sections.find(x=>x.id===p.section_id)?.name || 'Unknown section';
+    parts.push(`moved the tournament from the "${oldSection}" section to the "${newSection}" section`);
+  }
+
+  if(changed(old?.status,p.status))
+    parts.push(`changed the status from "${old?.status||'empty'}" to "${p.status}"`);
+
+  if(changed(old?.show_on_homepage,p.show_on_homepage))
+    parts.push(`turned homepage display ${p.show_on_homepage?'ON':'OFF'}`);
+
+  const labels={
+    short_description:'short description',
+    prize_distribution:'prize distribution',
+    full_details:'full details',
+    rules:'rules',
+    important_notes:'important notes',
+    tournament_date:'tournament date',
+    start_time:'start time',
+    end_time:'end time',
+    game:'game',
+    mode:'mode',
+    map:'map',
+    banner_url:'banner'
+  };
+
+  Object.entries(labels).forEach(([k,label])=>{
+    if(changed(old?.[k],p[k])){
+      const before=valueText(k,old?.[k]);
+      const after=valueText(k,p[k]);
+      parts.push(`changed the ${label} from "${before}" to "${after}"`);
+    }
+  });
+
+  if(!parts.length) return `made no changes to "${name}"`;
+
+  if(parts.length===1) return `${parts[0]} for "${name}"`;
+
+  const last=parts.pop();
+  return `updated "${name}" — ${parts.join(', ')}, and ${last}`;
+}
+
 function simpleNarration(action,targetName,details={}){
   const n=targetName||details?.name||'item';
-  const map={tournament_created:`created a tournament named "${n}"`,tournament_enabled:`turned ON ${n}`,tournament_disabled:`turned OFF ${n}`,tournament_deleted:`deleted the tournament "${n}"`,tournament_archived:`archived the tournament "${n}"`,section_created:`created a homepage section named "${n}"`,section_updated:`updated the homepage section "${n}"`,section_enabled:`turned ON the homepage section "${n}"`,section_disabled:`turned OFF the homepage section "${n}"`,section_deleted:`deleted the homepage section "${n}"`,sections_reordered:'reordered the homepage sections',tournaments_reordered:`reordered tournaments inside the "${n}" section`};
-  return map[action]||`${action.replaceAll('_',' ')} ${n}`;
+  const map={
+    tournament_created:`created a tournament named "${n}"`,
+    tournament_enabled:`turned ON the tournament "${n}"`,
+    tournament_disabled:`turned OFF the tournament "${n}"`,
+    tournament_deleted:`deleted the tournament "${n}"`,
+    tournament_archived:`archived the tournament "${n}"`,
+    section_created:`created a homepage section named "${n}"`,
+    section_enabled:`turned ON the homepage section "${n}"`,
+    section_disabled:`turned OFF the homepage section "${n}"`,
+    section_deleted:`deleted the homepage section "${n}"`,
+    sections_reordered:`reordered the homepage sections`,
+    tournaments_reordered:`reordered the tournaments inside the "${n}" section`
+  };
+  return map[action]||`${action.replaceAll('_',' ')} "${n}"`;
+}
+
+function sectionUpdateNarration(old,p){
+  const name=p.name||old?.name||'this homepage section';
+  const parts=[];
+
+  if(changed(old?.name,p.name))
+    parts.push(`renamed the homepage section from "${old?.name||'empty'}" to "${p.name}"`);
+
+  if(changed(old?.display_order,p.display_order))
+    parts.push(`moved the homepage section from position ${old?.display_order||0} to position ${p.display_order||0}`);
+
+  if(changed(old?.is_active,p.is_active))
+    parts.push(`turned the homepage section ${p.is_active?'ON':'OFF'}`);
+
+  if(changed(old?.description,p.description))
+    parts.push(`changed the section description from "${valueText('description',old?.description)}" to "${valueText('description',p.description)}"`);
+
+  if(!parts.length) return `made no changes to the homepage section "${name}"`;
+  if(parts.length===1) return parts[0];
+
+  const last=parts.pop();
+  return `updated the homepage section "${name}" — ${parts.join(', ')}, and ${last}`;
 }
 
 async function admin(){
@@ -282,20 +376,59 @@ async function saveTournamentGroupOrder(box){
 
 function newSection(){ $('sid').value='';$('smTitle').textContent='Add New Section';$('sname').value='';$('sdesc').value='';$('sorder').value=sections.length+1;$('sactive').value='true';openM('sm') }
 async function saveSection(){
- const id=$('sid').value,p={name:$('sname').value.trim(),description:$('sdesc').value.trim()||null,display_order:+$('sorder').value||0,is_active:$('sactive').value==='true'};
+ const id=$('sid').value;
+ const old=id?sections.find(x=>x.id===id):null;
+ const p={
+   name:$('sname').value.trim(),
+   description:$('sdesc').value.trim()||null,
+   display_order:+$('sorder').value||0,
+   is_active:$('sactive').value==='true'
+ };
  if(!p.name)return msg('Section name required.');
- const q=id?sb.from('tournament_sections').update(p).eq('id',id):sb.from('tournament_sections').insert(p);
- const {error}=await q;
-  if(error)return msg(error.message);
-  await logActivity(id?'section_updated':'section_created','homepage_section','tournament_section',id||null,p.name,{display_order:p.display_order,is_active:p.is_active});
-  closeM('sm');await load();
+
+ try{
+   let r;
+   if(id){
+     r=await sb.from('tournament_sections').update(p).eq('id',id);
+   }else{
+     r=await sb.from('tournament_sections').insert(p).select().single();
+   }
+   if(r.error)throw r.error;
+
+   const savedId=id||r.data?.id||null;
+   const narration=id
+     ? sectionUpdateNarration(old,p)
+     : `created a homepage section named "${p.name}"`;
+
+   await logActivity(
+     id?'section_updated':'section_created',
+     'homepage_section',
+     'tournament_section',
+     savedId,
+     p.name,
+     {before:id?{name:old?.name,display_order:old?.display_order,is_active:old?.is_active}:null,
+      after:{name:p.name,display_order:p.display_order,is_active:p.is_active}},
+     narration
+   );
+
+   closeM('sm');
+   await load();
+ }catch(e){console.error(e);msg(e.message||'Save failed')}
 }
 function editSection(id){let s=sections.find(x=>x.id===id);if(!s)return;$('sid').value=s.id;$('sname').value=s.name;$('sdesc').value='';$('sorder').value=s.display_order;$('sactive').value=String(s.is_active);$('smTitle').textContent='Edit Section';openM('sm')}
 async function toggleSection(id,v){
   const s=sections.find(x=>x.id===id);
   const {error}=await sb.from('tournament_sections').update({is_active:v}).eq('id',id);
   if(error)return msg(error.message);
-  await logActivity(v?'section_enabled':'section_disabled','homepage_section','tournament_section',id,s?.name||null,{is_active:v});
+  await logActivity(
+    v?'section_enabled':'section_disabled',
+    'homepage_section',
+    'tournament_section',
+    id,
+    s?.name||null,
+    {is_active:v},
+    `${v?'turned ON':'turned OFF'} the homepage section "${s?.name||'Unknown section'}"`
+  );
   load();
 }
 async function deleteSection(id){if(tournaments.some(t=>t.section_id===id&&t.status!=='archived'))return msg('This section has active tournaments. Move or archive them first.');askConfirm('Delete section?','This section will be permanently deleted.',async()=>{const s=sections.find(x=>x.id===id);
@@ -330,7 +463,7 @@ async function toggleTournament(id,on){
   const t=tournaments.find(x=>x.id===id);
   let {error}=await sb.from('tournaments').update({status:on?'published':'unpublished',show_on_homepage:on}).eq('id',id);
   if(error)return msg(error.message);
-  await logActivity(on?'tournament_enabled':'tournament_disabled','tournament','tournament',id,t?.title||null,{status:on?'published':'unpublished',show_on_homepage:on},simpleNarration(on?'tournament_enabled':'tournament_disabled',t?.title));
+  await logActivity(on?'tournament_enabled':'tournament_disabled','tournament','tournament',id,t?.title||null,{status:on?'published':'unpublished',show_on_homepage:on},`${on?'turned ON':'turned OFF'} the tournament "${t?.title||'Unknown tournament'}"`);
   load();
 }
 async function deleteTournament(id){askConfirm('Delete tournament?','This will permanently remove this tournament. This action cannot be undone.',async()=>{const t=tournaments.find(x=>x.id===id);
