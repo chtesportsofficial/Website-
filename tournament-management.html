@@ -217,7 +217,7 @@ function renderTournaments(){
  if(ungrouped.length)groups.push({s:{id:'__ungrouped',name:'Unassigned'},items:orderedSectionTournaments('__ungrouped',ungrouped)});
  $('tournaments').innerHTML=groups.map(g=>`<div class="tournament-group" data-section-id="${g.s.id}">
    <div class="tournament-group-head"><div class="tournament-group-name">${esc(g.s.name)}</div><div class="tournament-group-count">${g.items.length} tournament${g.items.length===1?'':'s'}</div></div>
-   <div class="tournament-group-list">${g.items.map((t,i)=>`<div class="tournament-item" draggable="true" data-id="${t.id}" data-section-id="${g.s.id}">
+   <div class="tournament-group-list">${g.items.map((t,i)=>`<div class="tournament-item" draggable="true" data-id="${t.id}" data-name="${esc(t.title)}" data-section-id="${g.s.id}">
      <div class="tournament-top"><span class="t-index">${i+1}</span><div class="thumb">${t.banner_url?`<img src="${esc(t.banner_url)}" alt="">`:''}</div><div class="t-main"><div class="t-title-row"><div class="t-title">${esc(t.title)}</div></div><div class="t-meta"><span>Entry ৳${t.entry_fee||0}</span> · <span>Prize ৳${t.prize_pool||0}</span> · <span>Slots ${t.total_slots||0}</span></div></div></div>
      <div class="t-actions"><button class="mini green" onclick="editTournament('${t.id}')">Edit</button><button class="mini archive-btn" onclick="archive('${t.id}')">Archive</button><button class="mini t-delete" onclick="deleteTournament('${t.id}')">Delete</button><button class="switch t-toggle ${t.status==='published'?'on':''}" onclick="toggleTournament('${t.id}',${t.status!=='published'})"><span class="switch-label">${t.status==='published'?'ON':'OFF'}</span><span class="knob"></span></button><span class="drag tournament-drag" title="Drag to reorder">⠿</span></div>
    </div>`).join('')}</div></div>`).join('');
@@ -282,7 +282,7 @@ async function saveSectionOrder(draggedId,draggedName,oldIndex){
       name:draggedName,
       oldPosition:oldIndex,
       newPosition:newIndex,
-      narration:`moved the homepage section ${draggedName}: #${oldIndex} → #${newIndex}.`,
+      narration:`changed the homepage section ${draggedName}'s position: #${oldIndex} → #${newIndex}.`,
       highlight_targets:[draggedName]
     }
   );
@@ -325,7 +325,7 @@ async function saveTournamentGroupOrder(box,move){
    tournament_name:move.oldName,
    old_position:move.oldIndex,
    new_position:newIndex,
-   narration:`changed the tournament ${move.oldName}'s position: #${move.oldIndex} → #${newIndex}`,
+   narration:`moved ${move.oldName}: #${move.oldIndex} → #${newIndex}.`,
    highlight_targets:[move.oldName]
   };
   await logActivity('tournaments_reordered','tournament','tournament',move.oldId,move.oldName,details);
@@ -340,7 +340,18 @@ async function saveSection(){
  const q=id?sb.from('tournament_sections').update(p).eq('id',id):sb.from('tournament_sections').insert(p);
  const {error}=await q;
   if(error)return msg(error.message);
-  await logActivity(id?'section_updated':'section_created','homepage_section','tournament_section',id||null,p.name,{display_order:p.display_order,is_active:p.is_active});
+  if(id){
+    const old=sections.find(x=>x.id===id);
+    const changes=[];
+    if((old?.name||'')!==p.name) changes.push(`name: ${old?.name||''} → ${p.name}`);
+    if(!!old?.is_active!==!!p.is_active) changes.push(`status: ${old?.is_active?'ON':'OFF'} → ${p.is_active?'ON':'OFF'}`);
+    if(Number(old?.display_order||0)!==Number(p.display_order||0)) changes.push(`position: #${old?.display_order||0} → #${p.display_order||0}`);
+    if(changes.length){
+      await logActivity('section_updated','homepage_section','tournament_section',id,old?.name||p.name,{narration:`changed the homepage section — ${changes.join(', ')}.`,highlight_targets:[old?.name||p.name]});
+    }
+  }else{
+    await logActivity('section_created','homepage_section','tournament_section',null,p.name,{narration:`created the homepage section ${p.name}.`,highlight_targets:[p.name]});
+  }
   closeM('sm');await load();
 }
 function editSection(id){let s=sections.find(x=>x.id===id);if(!s)return;$('sid').value=s.id;$('sname').value=s.name;$('sdesc').value='';$('sorder').value=s.display_order;$('sactive').value=String(s.is_active);$('smTitle').textContent='Edit Section';openM('sm')}
@@ -364,6 +375,24 @@ function editTournament(id){
  let t=tournaments.find(x=>x.id===id);if(!t)return;
  $('tid').value=t.id;$('tmTitle').textContent='Edit Tournament';fillSections(t.section_id);$('title').value=t.title||'';$('short').value=t.short_description||'';$('entry').value=t.entry_fee||0;$('prize').value=t.prize_pool||0;$('slots').value=t.total_slots||0;$('date').value=t.tournament_date||'';$('start').value=t.start_time||'';$('end').value=t.end_time||'';$('game').value=t.game||'';$('mode').value=t.mode||'';$('map').value=t.map||'';$('distribution').value=t.prize_distribution||'';$('details').value=t.full_details||'';$('rules').value=t.rules||'';$('notes').value=t.important_notes||'';$('status').value=t.status||'draft';$('home').value=String(!!t.show_on_homepage);$('banner').value='';openM('tm');
 }
+function money(v){return `৳${Number(v||0).toLocaleString('en-US')}`}
+function sectionName(id){return sections.find(s=>s.id===id)?.name||'Unknown Section'}
+function tournamentChanges(old,p){
+  if(!old) return [];
+  const c=[];
+  if((old.title||'')!==p.title)c.push(`renamed ${old.title||'Tournament'} → ${p.title}.`);
+  if(Number(old.entry_fee||0)!==Number(p.entry_fee||0))c.push(`entry fee: ${money(old.entry_fee)} → ${money(p.entry_fee)}`);
+  if(Number(old.prize_pool||0)!==Number(p.prize_pool||0))c.push(`prize pool: ${money(old.prize_pool)} → ${money(p.prize_pool)}`);
+  if(Number(old.total_slots||0)!==Number(p.total_slots||0))c.push(`slots: ${old.total_slots||0} → ${p.total_slots||0}`);
+  if((old.section_id||'')!==(p.section_id||''))c.push(`section: ${sectionName(old.section_id)} → ${sectionName(p.section_id)}`);
+  return c;
+}
+function makeTournamentNarration(old,p){
+  const changes=tournamentChanges(old,p);
+  if(!changes.length)return null;
+  if(changes.length===1 && changes[0].startsWith('renamed ')) return `renamed ${changes[0].slice(8)}`;
+  return `changed ${old?.title||p.title} — ${changes.map(x=>x.endsWith('.')?x.slice(0,-1):x).join(', ')}.`;
+}
 async function saveTournament(){
  let id=$('tid').value,old=tournaments.find(x=>x.id===id),banner=old?.banner_url||null,file=$('banner').files[0];
  if(!$('title').value.trim())return msg('Tournament name required.');
@@ -373,7 +402,14 @@ async function saveTournament(){
   let p={section_id:$('section').value,title:$('title').value.trim(),banner_url:banner,short_description:$('short').value.trim()||null,entry_fee:+$('entry').value||0,prize_pool:+$('prize').value||0,total_slots:+$('slots').value||0,tournament_date:$('date').value||null,start_time:$('start').value||null,end_time:$('end').value||null,game:$('game').value.trim()||null,mode:$('mode').value.trim()||null,map:$('map').value.trim()||null,prize_distribution:$('distribution').value.trim()||null,full_details:$('details').value.trim()||null,rules:$('rules').value.trim()||null,important_notes:$('notes').value.trim()||null,status:$('status').value,show_on_homepage:$('home').value==='true'};
   let q=id?sb.from('tournaments').update(p).eq('id',id):sb.from('tournaments').insert(p);let r=await q;if(r.error)throw r.error;
   const savedRow=(r.data&&Array.isArray(r.data)?r.data[0]:null);
-  await logActivity(id?'tournament_updated':'tournament_created','tournament','tournament',id||savedRow?.id||null,p.title,{section_id:p.section_id,status:p.status,entry_fee:p.entry_fee,prize_pool:p.prize_pool,total_slots:p.total_slots,show_on_homepage:p.show_on_homepage});
+  if(id){
+    const narration=makeTournamentNarration(old,p);
+    if(narration){
+      await logActivity('tournament_updated','tournament','tournament',id,old?.title||p.title,{narration,highlight_targets:[old?.title||p.title]});
+    }
+  }else{
+    await logActivity('tournament_created','tournament','tournament',savedRow?.id||null,p.title,{narration:`created the tournament ${p.title}.`,highlight_targets:[p.title]});
+  }
   closeM('tm');await load();
  }catch(e){console.error(e);msg(e.message||'Save failed')}
 }

@@ -60,6 +60,11 @@ function getNarration(x){
     if(Number.isFinite(from)&&Number.isFinite(to))
       return `changed the tournament ${tn}'s position: #${from} → #${to}`;
   }
+  const d2=parseDetails(x);
+  if(a==='tournaments_reordered' && d2.old_position && d2.new_position) return `moved ${n}: #${d2.old_position} → #${d2.new_position}.`;
+  if(a==='sections_reordered' && d2.oldPosition && d2.newPosition) return `changed the homepage section ${d2.name||n}'s position: #${d2.oldPosition} → #${d2.newPosition}.`;
+  if(a==='tournament_created') return `created the tournament ${n}.`;
+  if(a==='section_created') return `created the homepage section ${n}.`;
   return map[a] || a.replaceAll('_',' ');
 }
 
