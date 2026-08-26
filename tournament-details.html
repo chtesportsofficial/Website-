@@ -78,9 +78,16 @@
   .empty{text-align:center;color:var(--text-dim);font-size:11px;padding:20px 8px;}
   .loading{text-align:center;color:var(--text-dim);font-size:12px;padding:40px 10px;}
 
-  .rich-block{background:var(--card);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:11px;line-height:1.6;color:#c8cdd6;white-space:pre-wrap;display:none;}
-  .rich-block.open{display:block;}
-  .rich-block img{width:100%;border-radius:8px;margin-top:8px;}
+  .lobby-sub{font-size:10px;color:var(--text-dim);margin:-3px 0 8px;}
+
+  .popup-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:999;align-items:flex-end;justify-content:center;}
+  .popup-overlay.open{display:flex;}
+  .popup-box{width:100%;max-width:420px;max-height:80vh;overflow-y:auto;background:var(--card-2);border-radius:18px 18px 0 0;padding:16px;}
+  .popup-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .popup-head b{font-size:14px;}
+  .popup-head button{width:30px;height:30px;border-radius:9px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:18px;}
+  .popup-body{font-size:12px;line-height:1.7;color:#c8cdd6;white-space:pre-wrap;}
+  .popup-body img{width:100%;border-radius:10px;margin-top:10px;}
 </style>
 </head>
 <body>
@@ -96,6 +103,13 @@
 
   <div id="content"><div class="loading">Loading tournament...</div></div>
 
+</div>
+
+<div class="popup-overlay" id="popupOverlay">
+  <div class="popup-box">
+    <div class="popup-head"><b id="popupTitle">Details</b><button type="button" onclick="closePopup()">×</button></div>
+    <div class="popup-body" id="popupBody"></div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -125,13 +139,14 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
   const rulesImages=Array.isArray(t.rules_images)?t.rules_images:[];
   const pointImages=Array.isArray(t.point_system_images)?t.point_system_images:[];
 
+  window.rulesHtml=esc(t.rules_text||'No rules added yet.')+rulesImages.map(u=>`<img src="${esc(u)}">`).join('');
+  window.pointHtml=esc(t.point_system_text||'No point system added yet.')+pointImages.map(u=>`<img src="${esc(u)}">`).join('');
+
   const ordinal=n=>({1:'1st',2:'2nd',3:'3rd'}[n]||`${n}th`);
   const matchTypeLabel=t.match_type==='clash_squad'?'Clash squad':'Full map';
   const formatLabel=t.format?t.format.charAt(0).toUpperCase()+t.format.slice(1):'—';
 
   root.innerHTML=`
-    ${t.banner_url?`<img class="banner" src="${esc(t.banner_url)}" alt="">`:''}
-
     <div class="stat-row">
       <div class="stat-box"><div class="label">Entry fee</div><div class="value">৳${Number(t.entry_fee||0)}</div></div>
       <div class="stat-box"><div class="label">Slot</div><div class="value">${Number(t.default_slots||t.total_slots||0)}</div></div>
@@ -153,12 +168,9 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
     </div>
 
     <div class="link-row">
-      <button class="link-box" type="button" onclick="document.getElementById('rulesBlock').classList.toggle('open')">Tournament rules<span class="chev">›</span></button>
-      <button class="link-box" type="button" onclick="document.getElementById('pointBlock').classList.toggle('open')">Point system<span class="chev">›</span></button>
+      <button class="link-box" type="button" onclick="openPopup('Tournament rules', rulesHtml)">Tournament rules<span class="chev">›</span></button>
+      <button class="link-box" type="button" onclick="openPopup('Point system', pointHtml)">Point system<span class="chev">›</span></button>
     </div>
-
-    <div class="rich-block" id="rulesBlock">${esc(t.rules_text||'No rules added yet.')}${rulesImages.map(u=>`<img src="${esc(u)}">`).join('')}</div>
-    <div class="rich-block" id="pointBlock">${esc(t.point_system_text||'No point system added yet.')}${pointImages.map(u=>`<img src="${esc(u)}">`).join('')}</div>
 
     ${maps.length?`<div class="section-title">Maps</div>
     <div class="maps-row">
@@ -166,6 +178,7 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
     </div>`:''}
 
     <div class="section-title">Hourly lobbies</div>
+    <div class="lobby-sub">Play the tournament at whichever time suits you.</div>
     <div class="lobby-list" id="lobbyList"><div class="empty">Loading lobbies...</div></div>
   `;
 
@@ -196,6 +209,18 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
     </div>`;
   }).join('');
 })();
+
+function openPopup(title,html){
+  document.getElementById('popupTitle').textContent=title;
+  document.getElementById('popupBody').innerHTML=html;
+  document.getElementById('popupOverlay').classList.add('open');
+}
+function closePopup(){
+  document.getElementById('popupOverlay').classList.remove('open');
+}
+document.getElementById('popupOverlay').addEventListener('click',function(e){
+  if(e.target===this)closePopup();
+});
 
 async function joinLobby(lobbyId){
   const teamName=prompt('Team name?');
