@@ -291,33 +291,46 @@ async function saveSectionOrder(draggedId,draggedName,oldIndex){
 }
 function bindTournamentDrag(){
  document.querySelectorAll('.tournament-group-list').forEach(box=>{
-  let dragged=null;
-  let oldIndex=-1, oldId=null, oldTitle='';
+  let dragged=null, oldIndex=-1, oldId=null, oldTitle='';
   box.querySelectorAll('.tournament-item').forEach(el=>{
    el.addEventListener('dragstart',()=>{
-     const items=[...box.querySelectorAll('.tournament-item')];
-     oldIndex=items.indexOf(el)+1;
-     oldId=el.dataset.id;
-     const t=tournaments.find(x=>x.id===oldId);
-     oldTitle=t?.title||el.querySelector('.t-title')?.textContent?.trim()||'Tournament';
-     dragged=el;el.classList.add('dragging');
+    const items=[...box.querySelectorAll('.tournament-item')];
+    oldIndex=items.indexOf(el)+1;
+    oldId=el.dataset.id;
+    const t=tournaments.find(x=>x.id===oldId);
+    oldTitle=t?.title||el.querySelector('.t-title')?.textContent?.trim()||'Tournament';
+    dragged=el;el.classList.add('dragging');
    });
-   el.addEventListener('dragend',()=>{el.classList.remove('dragging');box.querySelectorAll('.drag-over').forEach(x=>x.classList.remove('drag-over'));saveTournamentGroupOrder(box,oldId,oldTitle,oldIndex);dragged=null});
+   el.addEventListener('dragend',async()=>{
+    el.classList.remove('dragging');
+    box.querySelectorAll('.drag-over').forEach(x=>x.classList.remove('drag-over'));
+    await saveTournamentGroupOrder(box,oldId,oldTitle,oldIndex);
+    dragged=null;
+   });
    el.addEventListener('dragover',e=>{e.preventDefault();if(el!==dragged)el.classList.add('drag-over')});
    el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
    el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('drag-over');if(!dragged||dragged===el)return;const items=[...box.querySelectorAll('.tournament-item')];const di=items.indexOf(dragged),ti=items.indexOf(el);if(di<ti)el.after(dragged);else el.before(dragged)});
   });
  });
 }
-async function saveTournamentGroupOrder(box){
+async function saveTournamentGroupOrder(box,draggedId,draggedTitle,oldIndex){
  const sectionId=box.closest('.tournament-group')?.dataset.sectionId;
  if(!sectionId)return;
- // Save the exact order for THIS section. The order is kept separately per section,
- // so moving item #4 to #1 immediately makes the visible indexes 1,2,3,4.
  const ids=[...box.querySelectorAll('.tournament-item')].map(x=>x.dataset.id);
+ const newIndex=ids.indexOf(draggedId)+1;
  setTournamentOrder(sectionId,ids);
-  await logActivity('tournaments_reordered','tournament','tournament',null,null,{section_id:sectionId,order:ids});
- // Re-render from the saved order so the index badges are recalculated immediately.
+ if(draggedId && oldIndex>0 && newIndex>0 && oldIndex!==newIndex){
+  await logActivity(
+   'tournament_reordered',
+   'tournament',
+   'tournament',
+   draggedId,
+   draggedTitle,
+   {section_id:sectionId,oldPosition:oldIndex,newPosition:newIndex,
+    narration:`changed the tournament ${draggedTitle}'s position: #${oldIndex} → #${newIndex}.`,
+    highlight_targets:[draggedTitle]}
+  );
+ }
  renderTournaments();
 }
 
