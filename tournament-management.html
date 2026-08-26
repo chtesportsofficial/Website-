@@ -77,6 +77,8 @@
 .homepage-panel.collapsed #homepageContent{display:none}
 .homepage-panel:not(.collapsed) #homepageCollapse span{transform:rotate(180deg)}
 .section-chevron{width:38px;height:38px;border:1px solid #2b3852;border-radius:11px;background:#111827;color:#dfe6f2;display:grid;place-items:center;cursor:pointer;font-size:20px;font-weight:900}.section-chevron span{display:block;transition:.18s}
+.drag{touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.section-item.dragging,.tournament-item.dragging{opacity:.5;box-shadow:0 0 0 2px #25d366}
 </style>
 </head>
 <body>
@@ -190,7 +192,7 @@ async function load(){
 
 function renderSections(){
  $('scount').textContent=sections.length;
- $('sections').innerHTML=sections.length?sections.map((s,i)=>`<div class="section-item" draggable="true" data-id="${s.id}">
+ $('sections').innerHTML=sections.length?sections.map((s,i)=>`<div class="section-item" data-id="${s.id}">
    <div class="section-top">
      <div class="section-name-wrap"><span class="section-index">${i+1}</span><div class="section-name">${esc(s.name)}</div></div>
    </div>
@@ -222,7 +224,7 @@ function renderTournaments(){
  if(ungrouped.length)groups.push({s:{id:'__ungrouped',name:'Unassigned'},items:orderedSectionTournaments('__ungrouped',ungrouped)});
  $('tournaments').innerHTML=groups.map(g=>`<div class="tournament-group" data-section-id="${g.s.id}">
    <div class="tournament-group-head"><div class="tournament-group-name">${esc(g.s.name)}</div><div class="tournament-group-count">${g.items.length} tournament${g.items.length===1?'':'s'}</div></div>
-   <div class="tournament-group-list">${g.items.map((t,i)=>`<div class="tournament-item" draggable="true" data-id="${t.id}" data-section-id="${g.s.id}">
+   <div class="tournament-group-list">${g.items.map((t,i)=>`<div class="tournament-item" data-id="${t.id}" data-name="${esc(t.title)}" data-section-id="${g.s.id}">
      <div class="tournament-top"><span class="t-index">${i+1}</span><div class="thumb">${t.banner_url?`<img src="${esc(t.banner_url)}" alt="">`:''}</div><div class="t-main"><div class="t-title-row"><div class="t-title">${esc(t.title)}</div></div><div class="t-meta"><span>Entry ৳${t.entry_fee||0}</span> · <span>Prize ৳${t.prize_pool||0}</span> · <span>Slots ${t.total_slots||0}</span></div></div></div>
      <div class="t-actions"><button class="mini green" onclick="editTournament('${t.id}')">Edit</button><button class="mini archive-btn" onclick="archive('${t.id}')">Archive</button><button class="mini t-delete" onclick="deleteTournament('${t.id}')">Delete</button><button class="switch t-toggle ${t.status==='published'?'on':''}" onclick="toggleTournament('${t.id}',${t.status!=='published'})"><span class="switch-label">${t.status==='published'?'ON':'OFF'}</span><span class="knob"></span></button><span class="drag tournament-drag" title="Drag to reorder">⠿</span></div>
    </div>`).join('')}</div></div>`).join('');
@@ -232,35 +234,55 @@ function fillSections(selected=''){
  const a=sections.filter(x=>x.is_active);
  $('section').innerHTML=a.length?a.map(x=>`<option value="${x.id}" ${x.id===selected?'selected':''}>${esc(x.name)}</option>`).join(''):'<option value="">No active section</option>';
 }
-function bindSectionDrag(){
-  const box=$('sections'); let dragged=null, oldIndex=-1, oldId=null, oldName='';
-  box.querySelectorAll('.section-item').forEach(el=>{
-    el.addEventListener('dragstart',()=>{
-      const items=[...box.querySelectorAll('.section-item')];
-      oldIndex=items.indexOf(el)+1;
-      oldId=el.dataset.id;
-      const sec=sections.find(s=>s.id===oldId);
-      oldName=sec?.name||el.querySelector('.section-name')?.textContent?.trim()||'Homepage Section';
-      dragged=el; el.classList.add('dragging');
+function bindPointerReorder(container,itemSel,handleSel,{getId,getName,onDrop}){
+  const items=()=>[...container.querySelectorAll(itemSel)];
+  let dragEl=null,startIndex=-1,startId=null,startName='';
+  function onMove(e){
+    if(!dragEl)return;
+    e.preventDefault();
+    const y=e.clientY;
+    let closest=null,closestDist=Infinity,closestRect=null;
+    items().forEach(el=>{
+      if(el===dragEl)return;
+      const r=el.getBoundingClientRect();
+      const cy=r.top+r.height/2;
+      const dist=Math.abs(y-cy);
+      if(dist<closestDist){closestDist=dist;closest=el;closestRect=r}
     });
-    el.addEventListener('dragend',async()=>{
-      el.classList.remove('dragging');
-      box.querySelectorAll('.drag-over').forEach(x=>x.classList.remove('drag-over'));
-      await saveSectionOrder(oldId,oldName,oldIndex);
-      dragged=null;
-    });
-    el.addEventListener('dragover',e=>{
+    if(closest){
+      const before=y<closestRect.top+closestRect.height/2;
+      if(before)closest.before(dragEl);else closest.after(dragEl);
+    }
+  }
+  function onUp(){
+    if(!dragEl)return;
+    dragEl.classList.remove('dragging');
+    document.removeEventListener('pointermove',onMove);
+    document.removeEventListener('pointerup',onUp);
+    document.removeEventListener('pointercancel',onUp);
+    const newIndex=items().indexOf(dragEl)+1;
+    const el=dragEl;dragEl=null;
+    if(startId&&newIndex!==startIndex)onDrop(el,startId,startName,startIndex,newIndex);
+  }
+  items().forEach(el=>{
+    const handle=el.querySelector(handleSel);
+    if(!handle)return;
+    handle.addEventListener('pointerdown',e=>{
       e.preventDefault();
-      if(el!==dragged)el.classList.add('drag-over');
+      dragEl=el;startIndex=items().indexOf(el)+1;startId=getId(el);startName=getName(el);
+      el.classList.add('dragging');
+      document.addEventListener('pointermove',onMove,{passive:false});
+      document.addEventListener('pointerup',onUp);
+      document.addEventListener('pointercancel',onUp);
     });
-    el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
-    el.addEventListener('drop',e=>{
-      e.preventDefault(); el.classList.remove('drag-over');
-      if(!dragged||dragged===el)return;
-      const items=[...box.querySelectorAll('.section-item')];
-      const di=items.indexOf(dragged),ti=items.indexOf(el);
-      if(di<ti)el.after(dragged);else el.before(dragged);
-    });
+    handle.addEventListener('contextmenu',e=>e.preventDefault());
+  });
+}
+function bindSectionDrag(){
+  bindPointerReorder($('sections'),'.section-item','.section-drag',{
+    getId:el=>el.dataset.id,
+    getName:el=>sections.find(s=>s.id===el.dataset.id)?.name||el.querySelector('.section-name')?.textContent?.trim()||'Homepage Section',
+    onDrop:(el,id,name,oldIndex)=>{saveSectionOrder(id,name,oldIndex)}
   });
 }
 async function saveSectionOrder(draggedId,draggedName,oldIndex){
@@ -296,23 +318,10 @@ async function saveSectionOrder(draggedId,draggedName,oldIndex){
 }
 function bindTournamentDrag(){
  document.querySelectorAll('.tournament-group-list').forEach(box=>{
-  let dragged=null, oldIndex=-1, oldId=null, oldName='';
-  box.querySelectorAll('.tournament-item').forEach(el=>{
-   el.addEventListener('dragstart',()=>{
-    const items=[...box.querySelectorAll('.tournament-item')];
-    oldIndex=items.indexOf(el)+1;
-    oldId=el.dataset.id;
-    oldName=el.dataset.name||el.querySelector('.tournament-name,.title,.name')?.textContent?.trim()||'Tournament';
-    dragged=el; el.classList.add('dragging');
-   });
-   el.addEventListener('dragend',()=>{
-    el.classList.remove('dragging');
-    box.querySelectorAll('.drag-over').forEach(x=>x.classList.remove('drag-over'));
-    saveTournamentGroupOrder(box,{oldIndex,oldId,oldName});
-   });
-   el.addEventListener('dragover',e=>{e.preventDefault();if(el!==dragged)el.classList.add('drag-over')});
-   el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
-   el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('drag-over');if(!dragged||dragged===el)return;const items=[...box.querySelectorAll('.tournament-item')];const di=items.indexOf(dragged),ti=items.indexOf(el);if(di<ti)el.after(dragged);else el.before(dragged)});
+  bindPointerReorder(box,'.tournament-item','.tournament-drag',{
+    getId:el=>el.dataset.id,
+    getName:el=>el.dataset.name||el.querySelector('.t-title')?.textContent?.trim()||'Tournament',
+    onDrop:(el,id,name,oldIndex)=>{saveTournamentGroupOrder(box,{oldIndex,oldId:id,oldName:name})}
   });
  });
 }
