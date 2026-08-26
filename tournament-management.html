@@ -292,9 +292,17 @@ async function saveSectionOrder(draggedId,draggedName,oldIndex){
 function bindTournamentDrag(){
  document.querySelectorAll('.tournament-group-list').forEach(box=>{
   let dragged=null;
+  let oldIndex=-1, oldId=null, oldTitle='';
   box.querySelectorAll('.tournament-item').forEach(el=>{
-   el.addEventListener('dragstart',()=>{dragged=el;el.classList.add('dragging')});
-   el.addEventListener('dragend',()=>{el.classList.remove('dragging');box.querySelectorAll('.drag-over').forEach(x=>x.classList.remove('drag-over'));saveTournamentGroupOrder(box)});
+   el.addEventListener('dragstart',()=>{
+     const items=[...box.querySelectorAll('.tournament-item')];
+     oldIndex=items.indexOf(el)+1;
+     oldId=el.dataset.id;
+     const t=tournaments.find(x=>x.id===oldId);
+     oldTitle=t?.title||el.querySelector('.t-title')?.textContent?.trim()||'Tournament';
+     dragged=el;el.classList.add('dragging');
+   });
+   el.addEventListener('dragend',()=>{el.classList.remove('dragging');box.querySelectorAll('.drag-over').forEach(x=>x.classList.remove('drag-over'));saveTournamentGroupOrder(box,oldId,oldTitle,oldIndex);dragged=null});
    el.addEventListener('dragover',e=>{e.preventDefault();if(el!==dragged)el.classList.add('drag-over')});
    el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
    el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('drag-over');if(!dragged||dragged===el)return;const items=[...box.querySelectorAll('.tournament-item')];const di=items.indexOf(dragged),ti=items.indexOf(el);if(di<ti)el.after(dragged);else el.before(dragged)});
