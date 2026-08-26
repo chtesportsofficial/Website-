@@ -53,6 +53,13 @@ function getNarration(x){
     section_disabled:`turned OFF the homepage section ${n}.`,
     section_deleted:`deleted the homepage section ${n}.`
   };
+  if(a==='tournaments_reordered'){
+    if(d.narration) return d.narration;
+    const tn=d.tournament_name||d.target_name||'tournament';
+    const from=Number(d.old_position), to=Number(d.new_position);
+    if(Number.isFinite(from)&&Number.isFinite(to))
+      return `changed the tournament ${tn}'s position: #${from} → #${to}`;
+  }
   return map[a] || a.replaceAll('_',' ');
 }
 
