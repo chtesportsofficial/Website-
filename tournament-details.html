@@ -277,13 +277,16 @@ async function initUser(){
   }).join('');
 })();
 
-function openPopup(title,html){
+let popupOnClose=null;
+function openPopup(title,html,onClose){
   document.getElementById('popupTitle').textContent=title;
   document.getElementById('popupBody').innerHTML=html;
   document.getElementById('popupOverlay').classList.add('open');
+  popupOnClose=onClose||null;
 }
 function closePopup(){
   document.getElementById('popupOverlay').classList.remove('open');
+  if(popupOnClose){const fn=popupOnClose;popupOnClose=null;fn();}
 }
 document.getElementById('popupOverlay').addEventListener('click',function(e){
   if(e.target===this)closePopup();
@@ -397,8 +400,13 @@ async function submitJoin(){
     return;
   }
   closeJoinForm();
-  alert(confirmationStatus==='confirmed'?'Paid and joined! Your slot is confirmed.':'Request sent! The admin will confirm your slot after verifying payment.');
-  location.reload();
+  openPopup(
+    confirmationStatus==='confirmed' ? '✅ পেমেন্ট সম্পন্ন' : '📝 রিকোয়েস্ট পাঠানো হয়েছে',
+    confirmationStatus==='confirmed'
+      ? 'Paid and joined! Your slot is confirmed.'
+      : 'Request sent! The admin will confirm your slot after verifying payment.',
+    ()=>location.reload()
+  );
 }
 </script>
 </body>
