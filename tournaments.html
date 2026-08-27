@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Tournaments</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg: #0b0d14;
+    --card: #141826;
+    --card-border: #232838;
+    --accent: #7c5cff;
+    --text-primary: #f2f3f7;
+    --text-secondary: #8b8fa3;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  body{
+    background: var(--bg);
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    font-family:'Inter','Hind Siliguri',sans-serif;
+    color:var(--text-primary);
+  }
+
+  .screen{
+    width:100%;
+    max-width:380px;
+    min-height:100vh;
+    background:var(--bg);
+    padding:20px 18px 28px;
+    display:flex;
+    flex-direction:column;
+  }
+
+  .topbar{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-bottom:26px;
+  }
+
+  .back-btn{
+    width:38px; height:38px;
+    border-radius:12px;
+    background:var(--card);
+    border:1px solid var(--card-border);
+    display:flex; align-items:center; justify-content:center;
+    color:var(--text-primary);
+    cursor:pointer;
+    transition: background .2s ease, transform .15s ease;
+  }
+  .back-btn:hover{ background:#1a2032; }
+  .back-btn:active{ transform:scale(0.94); }
+
+  .topbar h1{
+    font-size:18px;
+    font-weight:700;
+    letter-spacing:0.3px;
+  }
+
+  .empty-wrap{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:40px 20px;
+  }
+
+  .empty-icon{
+    width:74px; height:74px;
+    border-radius:20px;
+    background:var(--card);
+    border:1px solid var(--card-border);
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:22px;
+    color:var(--text-secondary);
+  }
+  .empty-icon svg{ width:34px; height:34px; }
+
+  .empty-title{
+    font-size:16.5px;
+    font-weight:700;
+    margin-bottom:8px;
+  }
+  .empty-sub{
+    font-size:13px;
+    color:var(--text-secondary);
+    line-height:1.6;
+    max-width:260px;
+    margin-bottom:26px;
+  }
+
+  .browse-btn{
+    padding:13px 26px;
+    border:none;
+    border-radius:14px;
+    background:var(--accent);
+    color:#fff;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:inherit;
+    transition: filter .2s ease, transform .12s ease;
+  }
+  .browse-btn:hover{ filter:brightness(1.08); }
+  .browse-btn:active{ transform:scale(0.97); }
+
+  .loading-wrap{flex:1;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:13px;padding:60px 20px;}
+
+  .filter-bar{display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding-bottom:2px;-ms-overflow-style:none;scrollbar-width:none;}
+  .filter-bar::-webkit-scrollbar{display:none;}
+  .filter-chip{flex-shrink:0;padding:8px 14px;border-radius:20px;background:var(--card);border:1px solid var(--card-border);color:var(--text-secondary);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;transition:background .15s ease,color .15s ease;}
+  .filter-chip.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .filter-date-wrap{flex-shrink:0;position:relative;}
+  .filter-date-input{flex-shrink:0;height:100%;padding:8px 12px;border-radius:20px;background:var(--card);border:1px solid var(--card-border);color:var(--text-secondary);font-size:12px;font-family:inherit;cursor:pointer;}
+  .filter-date-input.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .filter-date-input::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.6;cursor:pointer;}
+
+  .filter-empty{text-align:center;color:var(--text-secondary);font-size:13px;padding:50px 20px;}
+
+  .t-list{display:flex;flex-direction:column;gap:14px;}
+
+  .t-card{background:var(--card);border:1px solid var(--card-border);border-radius:16px;overflow:hidden;}
+  .t-banner{width:100%;aspect-ratio:16/7;object-fit:cover;display:block;background:#0d1320;}
+  .t-card-body{padding:14px 15px 15px;}
+  .t-title{font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:2px;}
+  .t-org{font-size:10.5px;color:var(--text-secondary);margin-bottom:10px;}
+
+  .t-lobby-row{display:flex;align-items:center;justify-content:space-between;background:rgba(124,92,255,.08);border:1px solid var(--card-border);border-radius:11px;padding:9px 12px;margin-bottom:10px;}
+  .t-lobby-time{font-size:12.5px;font-weight:700;color:var(--text-primary);}
+  .t-lobby-date{font-size:10px;color:var(--text-secondary);margin-top:1px;}
+  .t-status{font-size:9.5px;font-weight:700;padding:4px 9px;border-radius:20px;letter-spacing:.02em;white-space:nowrap;}
+  .t-status.confirmed{background:rgba(46,204,113,.14);color:#3ddc84;}
+  .t-status.pending{background:rgba(255,183,3,.14);color:#ffb703;}
+
+  .t-pending-note{font-size:11px;color:var(--text-secondary);background:rgba(255,183,3,.06);border:1px dashed rgba(255,183,3,.35);border-radius:10px;padding:10px 11px;margin-bottom:2px;line-height:1.55;}
+
+  .t-slots{display:flex;flex-direction:column;gap:12px;}
+  .t-slot{padding-top:12px;}
+  .t-slot:first-child{padding-top:0;}
+  .t-slot:not(:first-child){border-top:1px dashed var(--card-border);}
+
+  .t-cred-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+  .t-cred-box{background:var(--bg);border:1px solid var(--card-border);border-radius:10px;padding:8px 10px;min-width:0;}
+  .t-cred-label{font-size:9px;font-weight:700;letter-spacing:.04em;color:var(--text-secondary);text-transform:uppercase;margin-bottom:3px;}
+  .t-cred-val{display:flex;align-items:center;gap:6px;justify-content:space-between;}
+  .t-cred-val span{font-size:12.5px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .t-cred-val span.muted{color:var(--text-secondary);font-weight:500;font-size:11px;}
+  .t-copy-btn{flex-shrink:0;width:22px;height:22px;border-radius:6px;border:1px solid var(--card-border);background:var(--card);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .t-copy-btn svg{width:12px;height:12px;}
+  .t-copy-btn.copied{color:#3ddc84;border-color:#3ddc84;}
+
+  .t-result-btn{display:block;width:100%;padding:11px;border:none;border-radius:11px;background:var(--accent);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;text-align:center;letter-spacing:.02em;}
+  .t-result-btn:disabled{background:#232838;color:var(--text-secondary);cursor:not-allowed;}
+</style>
+<style>
+:root{
+  --bg: var(--g-bg);
+  --card: var(--g-surface);
+  --card-border: var(--g-border);
+  --text-primary: var(--g-text);
+  --text-secondary: var(--g-muted);
+}
+</style>
+</head>
+<body>
+
+<div class="screen">
+  <div class="topbar">
+    <div class="back-btn" onclick="history.back()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"></polyline>
+      </svg>
+    </div>
+    <h1>My Tournaments</h1>
+  </div>
+
+  <div class="filter-bar" id="filterBar" style="display:none">
+    <button type="button" class="filter-chip" data-filter="today">Today</button>
+    <button type="button" class="filter-chip" data-filter="yesterday">Yesterday</button>
+    <button type="button" class="filter-chip" data-filter="upcoming">Upcoming</button>
+    <div class="filter-date-wrap">
+      <input type="date" class="filter-date-input" id="filterDateInput">
+    </div>
+    <button type="button" class="filter-chip active" data-filter="all">All</button>
+  </div>
+
+  <div class="loading-wrap" id="loadingWrap">Loading your tournaments...</div>
+
+  <div class="empty-wrap" id="emptyWrap" style="display:none">
+    <div class="empty-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 3h12v2h2a3 3 0 0 1-3 3h-.2A6 6 0 0 1 13 12.9V16h3v2H8v-2h3v-3.1A6 6 0 0 1 7.2 8H7a3 3 0 0 1-3-3h2V3z"/>
+      </svg>
+    </div>
+    <div class="empty-title" id="emptyTitle">You haven't joined any tournament</div>
+    <div class="empty-sub" id="emptySub">Tournaments you register for will show up here, along with your slot and match details.</div>
+    <button class="browse-btn" id="emptyBtn" onclick="window.location.href='index.html'">Browse Tournaments</button>
+  </div>
+
+  <div class="t-list" id="listWrap" style="display:none"></div>
+
+  <div class="filter-empty" id="filterEmptyMsg" style="display:none">No tournaments match this filter.</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
+const KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+const sb=window.supabase.createClient(SUPABASE_URL,KEY);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+
+function showEmpty(title,sub,btnText,btnHref){
+  document.getElementById('loadingWrap').style.display='none';
+  document.getElementById('listWrap').style.display='none';
+  const wrap=document.getElementById('emptyWrap');
+  document.getElementById('emptyTitle').textContent=title;
+  document.getElementById('emptySub').textContent=sub;
+  const btn=document.getElementById('emptyBtn');
+  btn.textContent=btnText;
+  btn.onclick=()=>window.location.href=btnHref;
+  wrap.style.display='flex';
+}
+
+function copyCred(btn,val){
+  if(!val)return;
+  navigator.clipboard?.writeText(val).then(()=>{
+    btn.classList.add('copied');
+    setTimeout(()=>btn.classList.remove('copied'),1200);
+  });
+}
+window.copyCred=copyCred;
+
+function credBox(label,val){
+  const has=val&&String(val).trim();
+  return `<div class="t-cred-box">
+    <div class="t-cred-label">${esc(label)}</div>
+    <div class="t-cred-val">
+      <span class="${has?'':'muted'}">${has?esc(val):'Not published yet'}</span>
+      ${has?`<button type="button" class="t-copy-btn" onclick="copyCred(this,'${esc(val).replace(/'/g,"&#39;")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>`:''}
+    </div>
+  </div>`;
+}
+
+let allRows=[];
+let currentFilter='all';
+let currentCustomDate=null;
+
+function parseLobbyDate(row){
+  const ds=row.tournament_lobbies?.lobby_date;
+  if(!ds)return null;
+  const d=new Date(ds+'T00:00:00');
+  return isNaN(d.getTime())?null:d;
+}
+function isSameDate(a,b){
+  return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+}
+function passesFilter(row){
+  if(currentFilter==='all')return true;
+  const d=parseLobbyDate(row);
+  if(!d)return false;
+  const today=new Date(); today.setHours(0,0,0,0);
+  if(currentFilter==='today')return isSameDate(d,today);
+  if(currentFilter==='yesterday'){
+    const y=new Date(today); y.setDate(y.getDate()-1);
+    return isSameDate(d,y);
+  }
+  if(currentFilter==='upcoming')return d.getTime()>today.getTime();
+  if(currentFilter==='date')return currentCustomDate&&isSameDate(d,currentCustomDate);
+  return true;
+}
+function extractHourValue(timeLabel){
+  const s=String(timeLabel||'');
+  const m=s.match(/(\d{1,2})\s*(AM|PM)/i);
+  if(!m)return 9999;
+  let h=parseInt(m[1],10);
+  const ap=m[2].toUpperCase();
+  if(ap==='AM'){ if(h===12)h=0; }
+  else{ if(h!==12)h+=12; }
+  return h*60;
+}
+
+function groupRows(rows){
+  const map=new Map();
+  const order=[];
+  rows.forEach(row=>{
+    const lobby=row.tournament_lobbies||{};
+    const t=lobby.tournaments||{};
+    const key=(t.id||t.title||'unknown')+'::'+(lobby.lobby_date||'');
+    if(!map.has(key)){
+      map.set(key,{title:t.title||'Tournament',lobby_date:lobby.lobby_date||'',slotMap:new Map(),slotOrder:[]});
+      order.push(key);
+    }
+    const g=map.get(key);
+    const lobbyKey=lobby.id||(lobby.time_label+'::'+lobby.room_id+'::'+lobby.room_password);
+    if(!g.slotMap.has(lobbyKey)){
+      g.slotMap.set(lobbyKey,{lobby,rows:[],confirmed:false});
+      g.slotOrder.push(lobbyKey);
+    }
+    const slot=g.slotMap.get(lobbyKey);
+    slot.rows.push(row);
+    if(row.confirmation_status==='confirmed')slot.confirmed=true;
+  });
+  const groups=order.map(k=>{
+    const g=map.get(k);
+    const slots=g.slotOrder.map(lk=>g.slotMap.get(lk));
+    slots.sort((a,b)=>extractHourValue(a.lobby.time_label)-extractHourValue(b.lobby.time_label));
+    return {title:g.title,lobby_date:g.lobby_date,slots};
+  });
+  return groups;
+}
+
+function applyFilter(){
+  const listWrap=document.getElementById('listWrap');
+  const emptyMsg=document.getElementById('filterEmptyMsg');
+  const filtered=allRows.filter(passesFilter);
+  if(!filtered.length){
+    listWrap.style.display='none';
+    emptyMsg.style.display='block';
+    return;
+  }
+  emptyMsg.style.display='none';
+  const groups=groupRows(filtered);
+  listWrap.innerHTML=groups.map(renderCard).join('');
+  listWrap.style.display='flex';
+}
+function setActiveChip(el){
+  document.querySelectorAll('.filter-chip').forEach(b=>b.classList.remove('active'));
+  document.getElementById('filterDateInput').classList.remove('active');
+  el.classList.add('active');
+}
+document.querySelectorAll('.filter-chip[data-filter]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    setActiveChip(btn);
+    currentFilter=btn.dataset.filter;
+    currentCustomDate=null;
+    document.getElementById('filterDateInput').value='';
+    applyFilter();
+  });
+});
+document.getElementById('filterDateInput').addEventListener('change',function(){
+  if(!this.value)return;
+  document.querySelectorAll('.filter-chip').forEach(b=>b.classList.remove('active'));
+  this.classList.add('active');
+  currentFilter='date';
+  currentCustomDate=new Date(this.value+'T00:00:00');
+  applyFilter();
+});
+
+function renderSlot(slot){
+  const lobby=slot.lobby||{};
+  const confirmed=slot.confirmed;
+  const timeLabel=esc(lobby.time_label||'Scrim');
+  const teamLabel=esc(slot.rows.map(r=>r.team_name).filter(Boolean).join(', '));
+
+  const credsOrResult = confirmed ? `
+    <div class="t-cred-grid">
+      ${credBox('Room ID',lobby.room_id)}
+      ${credBox('Password',lobby.room_password)}
+    </div>
+    <button type="button" class="t-result-btn" ${lobby.result_url?`onclick="window.open('${esc(lobby.result_url).replace(/'/g,"&#39;")}','_blank')"`:'disabled'}>${lobby.result_url?'View Result':'Result not published'}</button>
+  ` : `
+    <div class="t-pending-note">📝 Your slot request is being verified. ID, password and result will show here once the admin confirms your payment.</div>
+  `;
+
+  return `<div class="t-slot">
+    <div class="t-lobby-row">
+      <div><div class="t-lobby-time">${timeLabel}</div><div class="t-lobby-date">${teamLabel}</div></div>
+      <div class="t-status ${confirmed?'confirmed':'pending'}">${confirmed?'CONFIRMED':'PENDING'}</div>
+    </div>
+    ${credsOrResult}
+  </div>`;
+}
+
+function renderCard(group){
+  return `<div class="t-card">
+    <div class="t-card-body">
+      <div class="t-title">${esc(group.title)}</div>
+      <div class="t-org">${esc(group.lobby_date)}</div>
+      <div class="t-slots">
+        ${group.slots.map(renderSlot).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+(async function(){
+  let session=null;
+  try{
+    const r=await sb.auth.getSession();
+    session=r?.data?.session||null;
+  }catch(e){}
+
+  if(!session){
+    showEmpty('Please log in','Log in to see the tournaments you have joined and their match details.','Log In','chteo_auth.html');
+    return;
+  }
+
+  const {data,error}=await sb.from('lobby_teams')
+    .select('*, tournament_lobbies(*, tournaments(id,title,banner_url))')
+    .eq('submitted_by',session.user.id)
+    .order('joined_at',{ascending:false});
+
+  if(error){
+    console.error('lobby_teams load error:',error);
+    showEmpty('Could not load',(error.message||'Unknown error')+(error.hint?' — '+error.hint:''),'Retry','tournaments.html');
+    return;
+  }
+
+  if(!data||!data.length){
+    showEmpty('You haven\'t joined any tournament','Tournaments you register for will show up here, along with your slot and match details.','Browse Tournaments','index.html');
+    return;
+  }
+
+  allRows=data;
+  document.getElementById('loadingWrap').style.display='none';
+  document.getElementById('filterBar').style.display='flex';
+  applyFilter();
+})();
+
+window.addEventListener('pageshow', function(event){
+  if (event.persisted) {
+    location.reload();
+  }
+});
+</script>
+
+</body>
+</html>
