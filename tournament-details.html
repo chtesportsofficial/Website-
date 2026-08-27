@@ -78,6 +78,22 @@
   .lobby-bar-fill.full{background:#5f6472;}
   .join-btn{background:var(--orange);border:none;border-bottom:3px solid var(--orange-dark);border-radius:10px;padding:10px;text-align:center;color:#241705;font-size:13px;font-weight:500;width:100%;cursor:pointer;font-family:inherit;}
   .join-btn.full{background:#2a3145;border-bottom-color:#1c2233;color:var(--text-dim);cursor:not-allowed;}
+  .join-btn.selected{background:var(--teal);border-bottom-color:#1f9d8f;color:#04211d;}
+
+  .lobby-card.selected{border-color:var(--fire-2);background:rgba(255,183,3,.05);}
+
+  .select-bar{position:fixed;left:0;right:0;bottom:0;z-index:900;display:none;justify-content:center;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:rgba(11,14,26,0.97);backdrop-filter:blur(6px);border-top:1px solid var(--border);}
+  .select-bar.open{display:flex;}
+  .select-bar-inner{width:100%;max-width:420px;display:flex;align-items:center;gap:8px;}
+  .select-bar-info{flex:1;min-width:0;}
+  .select-bar-info b{display:block;font-size:12.5px;color:var(--text);font-weight:700;}
+  .select-bar-info span{display:block;font-size:10px;color:var(--text-dim);margin-top:1px;}
+  .select-bar-clear{background:none;border:none;color:var(--text-dim);font-size:10px;text-decoration:underline;cursor:pointer;font-family:inherit;padding:6px 4px;flex-shrink:0;}
+  .select-bar-btn{background:var(--fire-grad);border:none;border-radius:11px;padding:11px 16px;color:#241705;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;}
+
+  .jf-lobby-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+  .jf-lobby-chip{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:5px 9px;font-size:10.5px;color:var(--text-mid);}
+  .jf-lobby-chip b{color:var(--text);font-weight:700;}
 
   .empty{text-align:center;color:var(--text-dim);font-size:11px;padding:20px 8px;}
   .loading{text-align:center;color:var(--text-dim);font-size:12px;padding:40px 10px;}
@@ -136,6 +152,17 @@
 
 </div>
 
+<div class="select-bar" id="selectBar">
+  <div class="select-bar-inner">
+    <div class="select-bar-info">
+      <b id="selectBarCount">0 lobby selected</b>
+      <span id="selectBarFee"></span>
+    </div>
+    <button type="button" class="select-bar-clear" onclick="clearSelection()">Clear</button>
+    <button type="button" class="select-bar-btn" onclick="openJoinFormMulti()">Continue</button>
+  </div>
+</div>
+
 <div class="popup-overlay" id="popupOverlay">
   <div class="popup-box">
     <div class="popup-head"><b id="popupTitle">Details</b><button type="button" onclick="closePopup()">×</button></div>
@@ -147,6 +174,7 @@
   <div class="popup-box">
     <div class="popup-head"><b>🎮 Join lobby</b><button type="button" onclick="closeJoinForm()">×</button></div>
     <div class="jf-body">
+      <div class="jf-lobby-chips" id="jfLobbyChips"></div>
       <div class="jf-label">Team name *</div>
       <input class="jf-input" id="jfTeamName" placeholder="Team Alpha">
       <div id="jfPlayers">
@@ -171,8 +199,9 @@ const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
 const KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
 const sb=window.supabase.createClient(SUPABASE_URL,KEY);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
-let currentTournament=null, currentJoinLobbyId=null;
+let currentTournament=null, currentJoinLobbyIds=[];
 let sessionUser=null, userProfile=null, walletBalance=null;
+let selectedLobbies=new Set(), lobbyDataById={};
 
 async function initUser(){
   try{
@@ -266,21 +295,56 @@ async function initUser(){
   if(lerr){lobbyBox.innerHTML='<div class="empty">Could not load lobbies.</div>';return}
   if(!lobbies||!lobbies.length){lobbyBox.innerHTML='<div class="empty">No lobbies open right now.</div>';return}
 
+  lobbies.forEach(l=>{lobbyDataById[l.id]=l;});
+
   lobbyBox.innerHTML=lobbies.map(l=>{
     const slots=l.total_slots||0,joined=l.joined_count||0;
     const full=l.status==='full'||joined>=slots;
     const pct=slots?Math.min(100,Math.round(joined/slots*100)):0;
-    return `<div class="lobby-card">
+    return `<div class="lobby-card" id="lcard-${l.id}">
       <div class="lobby-top">
         <div class="lobby-avatar ${full?'full':''}">${esc((l.time_label||'?')[0])}</div>
         <div><div class="lobby-time">${esc(l.time_label||'')}</div><div class="lobby-date">${esc(l.lobby_date||'')}</div></div>
       </div>
       <div class="lobby-meta"><span>Joined: ${joined}</span><span>Slots: ${slots}</span></div>
       <div class="lobby-bar"><div class="lobby-bar-fill ${full?'full':''}" style="width:${pct}%"></div></div>
-      <button class="join-btn ${full?'full':''}" type="button" ${full?'disabled':`onclick="openJoinForm('${l.id}')"`}>${full?'FULL':'BUY SLOT'}</button>
+      <button class="join-btn ${full?'full':''}" id="jbtn-${l.id}" type="button" ${full?'disabled':`onclick="toggleLobbySelect('${l.id}')"`}>${full?'FULL':'BUY SLOT'}</button>
     </div>`;
   }).join('');
 })();
+
+function toggleLobbySelect(id){
+  if(selectedLobbies.has(id))selectedLobbies.delete(id);
+  else selectedLobbies.add(id);
+  updateLobbyCardsUI();
+  updateSelectBar();
+}
+function updateLobbyCardsUI(){
+  Object.keys(lobbyDataById).forEach(id=>{
+    const card=document.getElementById('lcard-'+id);
+    const btn=document.getElementById('jbtn-'+id);
+    if(!card||!btn||btn.disabled)return;
+    const on=selectedLobbies.has(id);
+    card.classList.toggle('selected',on);
+    btn.classList.toggle('selected',on);
+    btn.textContent=on?'✓ SELECTED':'BUY SLOT';
+  });
+}
+function updateSelectBar(){
+  const bar=document.getElementById('selectBar');
+  const n=selectedLobbies.size;
+  if(!n){bar.classList.remove('open');document.body.style.paddingBottom='';return}
+  bar.classList.add('open');
+  document.body.style.paddingBottom='74px';
+  const fee=(Number(currentTournament?.entry_fee)||0)*n;
+  document.getElementById('selectBarCount').textContent=`${n}টি লবি সিলেক্ট করা হয়েছে`;
+  document.getElementById('selectBarFee').textContent=`মোট এন্ট্রি ফি: ৳${fee}`;
+}
+function clearSelection(){
+  selectedLobbies.clear();
+  updateLobbyCardsUI();
+  updateSelectBar();
+}
 
 let popupOnClose=null;
 function openPopup(title,html,onClose){
@@ -297,16 +361,24 @@ document.getElementById('popupOverlay').addEventListener('click',function(e){
   if(e.target===this)closePopup();
 });
 
-function openJoinForm(lobbyId){
-  currentJoinLobbyId=lobbyId;
+function openJoinFormMulti(){
+  if(!selectedLobbies.size)return;
+  currentJoinLobbyIds=[...selectedLobbies];
   document.getElementById('jfTeamName').value='';
   document.getElementById('jfPlayerName').value='';
   document.getElementById('jfWhatsapp').value=userProfile?.whatsapp||'';
   document.getElementById('jfError').textContent='';
+  renderLobbyChips();
   renderPaymentOptions();
   document.getElementById('jfSubmitBtn').disabled=false;
   document.getElementById('jfSubmitBtn').textContent='Submit';
   document.getElementById('joinOverlay').classList.add('open');
+}
+function renderLobbyChips(){
+  document.getElementById('jfLobbyChips').innerHTML=currentJoinLobbyIds.map(id=>{
+    const l=lobbyDataById[id]||{};
+    return `<span class="jf-lobby-chip"><b>${esc(l.time_label||'')}</b> ${esc(l.lobby_date||'')}</span>`;
+  }).join('');
 }
 function closeJoinForm(){
   document.getElementById('joinOverlay').classList.remove('open');
@@ -316,7 +388,7 @@ document.getElementById('joinOverlay').addEventListener('click',function(e){
 });
 
 function renderPaymentOptions(){
-  const fee=Number(currentTournament?.entry_fee)||0;
+  const fee=(Number(currentTournament?.entry_fee)||0)*(currentJoinLobbyIds.length||1);
   const canPayBalance=sessionUser && walletBalance!=null;
   const enough=canPayBalance && walletBalance>=fee;
   let html='';
@@ -340,8 +412,8 @@ function renderPaymentExtra(){
   const sel=document.querySelector('input[name="jfPay"]:checked')?.value;
   const box=document.getElementById('jfPaymentExtra');
   if(sel==='balance'){
-    const fee=Number(currentTournament?.entry_fee)||0;
-    box.innerHTML=`<div class="jf-note">৳${fee} will be deducted from your wallet balance immediately on submit.</div>`;
+    const fee=(Number(currentTournament?.entry_fee)||0)*(currentJoinLobbyIds.length||1);
+    box.innerHTML=`<div class="jf-note">৳${fee} will be deducted from your wallet balance immediately on submit${currentJoinLobbyIds.length>1?` (${currentJoinLobbyIds.length} lobbies)`:''}.</div>`;
   }else{
     box.innerHTML='';
   }
@@ -363,14 +435,15 @@ async function submitJoin(){
   btn.disabled=true; btn.textContent='Submitting...';
 
   let confirmationStatus='pending', paymentRef=null;
+  const lobbyCount=currentJoinLobbyIds.length||1;
   {
     try{
       const {data:{session}}=await sb.auth.getSession();
-      const fee=Number(currentTournament?.entry_fee)||0;
+      const fee=(Number(currentTournament?.entry_fee)||0)*lobbyCount;
       const res=await fetch('https://chteo-api.onrender.com/api/deduct-balance.php',{
         method:'POST',
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
-        body:JSON.stringify({amount:fee,reference:'Tournament entry: '+(currentTournament?.title||''),description:'Tournament entry fee'})
+        body:JSON.stringify({amount:fee,reference:'Tournament entry: '+(currentTournament?.title||'')+(lobbyCount>1?` (${lobbyCount} lobbies)`:''),description:'Tournament entry fee'})
       });
       const j=await res.json();
       if(!j.success){
@@ -388,8 +461,8 @@ async function submitJoin(){
     }
   }
 
-  const {error}=await sb.from('lobby_teams').insert({
-    lobby_id:currentJoinLobbyId,
+  const rows=currentJoinLobbyIds.map(lobbyId=>({
+    lobby_id:lobbyId,
     team_name:teamName,
     players:[{name:playerName}],
     contact_number:whatsapp,
@@ -397,7 +470,9 @@ async function submitJoin(){
     payment_method:payMethod,
     submitted_by:sessionUser?.id||null,
     confirmation_status:confirmationStatus
-  });
+  }));
+
+  const {error}=await sb.from('lobby_teams').insert(rows);
 
   if(error){
     errBox.textContent='Could not submit: '+error.message;
@@ -405,11 +480,12 @@ async function submitJoin(){
     return;
   }
   closeJoinForm();
+  selectedLobbies.clear();
   const successHtml=`
     <div class="success-body">
       <div class="success-icon">${confirmationStatus==='confirmed'?'✅':'📝'}</div>
       <div class="success-title">${confirmationStatus==='confirmed'?'Paid and joined!':'Request sent!'}</div>
-      <div class="success-text">${confirmationStatus==='confirmed'?'Your slot is confirmed.':'The admin will confirm your slot after verifying payment.'}</div>
+      <div class="success-text">${confirmationStatus==='confirmed'?`Your ${lobbyCount>1?lobbyCount+' slots are':'slot is'} confirmed.`:`The admin will confirm your ${lobbyCount>1?lobbyCount+' slots':'slot'} after verifying payment.`}</div>
       <button type="button" class="success-goto-btn" onclick="window.location.href='tournaments.html'">Go to my tournaments</button>
     </div>`;
   openPopup(
