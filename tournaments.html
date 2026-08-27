@@ -145,6 +145,11 @@
 
   .t-pending-note{font-size:11px;color:var(--text-secondary);background:rgba(255,183,3,.06);border:1px dashed rgba(255,183,3,.35);border-radius:10px;padding:10px 11px;margin-bottom:2px;line-height:1.55;}
 
+  .t-slots{display:flex;flex-direction:column;gap:12px;}
+  .t-slot{padding-top:12px;}
+  .t-slot:first-child{padding-top:0;}
+  .t-slot:not(:first-child){border-top:1px dashed var(--card-border);}
+
   .t-cred-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
   .t-cred-box{background:var(--bg);border:1px solid var(--card-border);border-radius:10px;padding:8px 10px;min-width:0;}
   .t-cred-label{font-size:9px;font-weight:700;letter-spacing:.04em;color:var(--text-secondary);text-transform:uppercase;margin-bottom:3px;}
@@ -275,6 +280,22 @@ function passesFilter(row){
   if(currentFilter==='date')return currentCustomDate&&isSameDate(d,currentCustomDate);
   return true;
 }
+function groupRows(rows){
+  const map=new Map();
+  const order=[];
+  rows.forEach(row=>{
+    const lobby=row.tournament_lobbies||{};
+    const t=lobby.tournaments||{};
+    const key=(t.id||t.title||'unknown')+'::'+(row.team_name||'');
+    if(!map.has(key)){
+      map.set(key,{title:t.title||'Tournament',team_name:row.team_name||'',slots:[]});
+      order.push(key);
+    }
+    map.get(key).slots.push(row);
+  });
+  return order.map(k=>map.get(k));
+}
+
 function applyFilter(){
   const listWrap=document.getElementById('listWrap');
   const emptyMsg=document.getElementById('filterEmptyMsg');
@@ -285,7 +306,8 @@ function applyFilter(){
     return;
   }
   emptyMsg.style.display='none';
-  listWrap.innerHTML=filtered.map(renderCard).join('');
+  const groups=groupRows(filtered);
+  listWrap.innerHTML=groups.map(renderCard).join('');
   listWrap.style.display='flex';
 }
 function setActiveChip(el){
@@ -311,9 +333,8 @@ document.getElementById('filterDateInput').addEventListener('change',function(){
   applyFilter();
 });
 
-function renderCard(row){
+function renderSlot(row){
   const lobby=row.tournament_lobbies||{};
-  const t=lobby.tournaments||{};
   const confirmed=row.confirmation_status==='confirmed';
   const dateLabel=lobby.lobby_date?esc(lobby.lobby_date):'';
   const timeLabel=esc(lobby.time_label||'Scrim');
@@ -328,15 +349,23 @@ function renderCard(row){
     <div class="t-pending-note">📝 Your slot request is being verified. ID, password and result will show here once the admin confirms your payment.</div>
   `;
 
+  return `<div class="t-slot">
+    <div class="t-lobby-row">
+      <div><div class="t-lobby-time">${timeLabel}</div><div class="t-lobby-date">${dateLabel}</div></div>
+      <div class="t-status ${confirmed?'confirmed':'pending'}">${confirmed?'CONFIRMED':'PENDING'}</div>
+    </div>
+    ${credsOrResult}
+  </div>`;
+}
+
+function renderCard(group){
   return `<div class="t-card">
     <div class="t-card-body">
-      <div class="t-title">${esc(t.title||'Tournament')}</div>
-      <div class="t-org">${esc(row.team_name||'')}</div>
-      <div class="t-lobby-row">
-        <div><div class="t-lobby-time">${timeLabel}</div><div class="t-lobby-date">${dateLabel}</div></div>
-        <div class="t-status ${confirmed?'confirmed':'pending'}">${confirmed?'CONFIRMED':'PENDING'}</div>
+      <div class="t-title">${esc(group.title)}</div>
+      <div class="t-org">${esc(group.team_name)}</div>
+      <div class="t-slots">
+        ${group.slots.map(renderSlot).join('')}
       </div>
-      ${credsOrResult}
     </div>
   </div>`;
 }
@@ -354,7 +383,7 @@ function renderCard(row){
   }
 
   const {data,error}=await sb.from('lobby_teams')
-    .select('*, tournament_lobbies(*, tournaments(title,banner_url))')
+    .select('*, tournament_lobbies(*, tournaments(id,title,banner_url))')
     .eq('submitted_by',session.user.id)
     .order('joined_at',{ascending:false});
 
