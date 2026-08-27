@@ -114,6 +114,38 @@
   }
   .browse-btn:hover{ filter:brightness(1.08); }
   .browse-btn:active{ transform:scale(0.97); }
+
+  .loading-wrap{flex:1;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:13px;padding:60px 20px;}
+
+  .t-list{display:flex;flex-direction:column;gap:14px;}
+
+  .t-card{background:var(--card);border:1px solid var(--card-border);border-radius:16px;overflow:hidden;}
+  .t-banner{width:100%;aspect-ratio:16/7;object-fit:cover;display:block;background:#0d1320;}
+  .t-card-body{padding:14px 15px 15px;}
+  .t-title{font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:2px;}
+  .t-org{font-size:10.5px;color:var(--text-secondary);margin-bottom:10px;}
+
+  .t-lobby-row{display:flex;align-items:center;justify-content:space-between;background:rgba(124,92,255,.08);border:1px solid var(--card-border);border-radius:11px;padding:9px 12px;margin-bottom:10px;}
+  .t-lobby-time{font-size:12.5px;font-weight:700;color:var(--text-primary);}
+  .t-lobby-date{font-size:10px;color:var(--text-secondary);margin-top:1px;}
+  .t-status{font-size:9.5px;font-weight:700;padding:4px 9px;border-radius:20px;letter-spacing:.02em;white-space:nowrap;}
+  .t-status.confirmed{background:rgba(46,204,113,.14);color:#3ddc84;}
+  .t-status.pending{background:rgba(255,183,3,.14);color:#ffb703;}
+
+  .t-pending-note{font-size:11px;color:var(--text-secondary);background:rgba(255,183,3,.06);border:1px dashed rgba(255,183,3,.35);border-radius:10px;padding:10px 11px;margin-bottom:2px;line-height:1.55;}
+
+  .t-cred-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+  .t-cred-box{background:var(--bg);border:1px solid var(--card-border);border-radius:10px;padding:8px 10px;min-width:0;}
+  .t-cred-label{font-size:9px;font-weight:700;letter-spacing:.04em;color:var(--text-secondary);text-transform:uppercase;margin-bottom:3px;}
+  .t-cred-val{display:flex;align-items:center;gap:6px;justify-content:space-between;}
+  .t-cred-val span{font-size:12.5px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .t-cred-val span.muted{color:var(--text-secondary);font-weight:500;font-size:11px;}
+  .t-copy-btn{flex-shrink:0;width:22px;height:22px;border-radius:6px;border:1px solid var(--card-border);background:var(--card);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .t-copy-btn svg{width:12px;height:12px;}
+  .t-copy-btn.copied{color:#3ddc84;border-color:#3ddc84;}
+
+  .t-result-btn{display:block;width:100%;padding:11px;border:none;border-radius:11px;background:var(--accent);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;text-align:center;letter-spacing:.02em;}
+  .t-result-btn:disabled{background:#232838;color:var(--text-secondary);cursor:not-allowed;}
 </style>
 <style>
 :root{
@@ -137,25 +169,131 @@
     <h1>My Tournaments</h1>
   </div>
 
-  <div class="empty-wrap">
+  <div class="loading-wrap" id="loadingWrap">Loading your tournaments...</div>
+
+  <div class="empty-wrap" id="emptyWrap" style="display:none">
     <div class="empty-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M6 3h12v2h2a3 3 0 0 1-3 3h-.2A6 6 0 0 1 13 12.9V16h3v2H8v-2h3v-3.1A6 6 0 0 1 7.2 8H7a3 3 0 0 1-3-3h2V3z"/>
       </svg>
     </div>
-    <div class="empty-title">You haven't joined any tournament</div>
-    <div class="empty-sub">Tournaments you register for will show up here, along with your slot and match details.</div>
-    <button class="browse-btn" onclick="window.location.href='index.html'">Browse Tournaments</button>
+    <div class="empty-title" id="emptyTitle">You haven't joined any tournament</div>
+    <div class="empty-sub" id="emptySub">Tournaments you register for will show up here, along with your slot and match details.</div>
+    <button class="browse-btn" id="emptyBtn" onclick="window.location.href='index.html'">Browse Tournaments</button>
   </div>
+
+  <div class="t-list" id="listWrap" style="display:none"></div>
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.addEventListener('pageshow', function(event){
-    if (event.persisted) {
-      location.reload();
-    }
+const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
+const KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+const sb=window.supabase.createClient(SUPABASE_URL,KEY);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+
+function showEmpty(title,sub,btnText,btnHref){
+  document.getElementById('loadingWrap').style.display='none';
+  document.getElementById('listWrap').style.display='none';
+  const wrap=document.getElementById('emptyWrap');
+  document.getElementById('emptyTitle').textContent=title;
+  document.getElementById('emptySub').textContent=sub;
+  const btn=document.getElementById('emptyBtn');
+  btn.textContent=btnText;
+  btn.onclick=()=>window.location.href=btnHref;
+  wrap.style.display='flex';
+}
+
+function copyCred(btn,val){
+  if(!val)return;
+  navigator.clipboard?.writeText(val).then(()=>{
+    btn.classList.add('copied');
+    setTimeout(()=>btn.classList.remove('copied'),1200);
   });
+}
+window.copyCred=copyCred;
+
+function credBox(label,val){
+  const has=val&&String(val).trim();
+  return `<div class="t-cred-box">
+    <div class="t-cred-label">${esc(label)}</div>
+    <div class="t-cred-val">
+      <span class="${has?'':'muted'}">${has?esc(val):'Not published yet'}</span>
+      ${has?`<button type="button" class="t-copy-btn" onclick="copyCred(this,'${esc(val).replace(/'/g,"&#39;")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>`:''}
+    </div>
+  </div>`;
+}
+
+function renderCard(row){
+  const lobby=row.tournament_lobbies||{};
+  const t=lobby.tournaments||{};
+  const confirmed=row.confirmation_status==='confirmed';
+  const dateLabel=lobby.lobby_date?esc(lobby.lobby_date):'';
+  const timeLabel=esc(lobby.time_label||'Scrim');
+
+  const credsOrResult = confirmed ? `
+    <div class="t-cred-grid">
+      ${credBox('Room ID',lobby.room_id)}
+      ${credBox('Password',lobby.room_password)}
+    </div>
+    <button type="button" class="t-result-btn" ${lobby.result_url?`onclick="window.open('${esc(lobby.result_url).replace(/'/g,"&#39;")}','_blank')"`:'disabled'}>${lobby.result_url?'View Result':'Result not published'}</button>
+  ` : `
+    <div class="t-pending-note">📝 Your slot request is being verified. ID, password and result will show here once the admin confirms your payment.</div>
+  `;
+
+  return `<div class="t-card">
+    ${t.banner_url?`<img class="t-banner" src="${esc(t.banner_url)}" alt="">`:''}
+    <div class="t-card-body">
+      <div class="t-title">${esc(t.title||'Tournament')}</div>
+      <div class="t-org">${esc(row.team_name||'')}</div>
+      <div class="t-lobby-row">
+        <div><div class="t-lobby-time">${timeLabel}</div><div class="t-lobby-date">${dateLabel}</div></div>
+        <div class="t-status ${confirmed?'confirmed':'pending'}">${confirmed?'CONFIRMED':'PENDING'}</div>
+      </div>
+      ${credsOrResult}
+    </div>
+  </div>`;
+}
+
+(async function(){
+  let session=null;
+  try{
+    const r=await sb.auth.getSession();
+    session=r?.data?.session||null;
+  }catch(e){}
+
+  if(!session){
+    showEmpty('Please log in','Log in to see the tournaments you have joined and their match details.','Log In','chteo_auth.html');
+    return;
+  }
+
+  const {data,error}=await sb.from('lobby_teams')
+    .select('*, tournament_lobbies(*, tournaments(title,banner_url))')
+    .eq('submitted_by',session.user.id)
+    .order('created_at',{ascending:false});
+
+  if(error){
+    showEmpty('Could not load','Something went wrong while loading your tournaments. Please try again.','Retry','tournaments.html');
+    return;
+  }
+
+  if(!data||!data.length){
+    showEmpty('You haven\'t joined any tournament','Tournaments you register for will show up here, along with your slot and match details.','Browse Tournaments','index.html');
+    return;
+  }
+
+  document.getElementById('loadingWrap').style.display='none';
+  const listWrap=document.getElementById('listWrap');
+  listWrap.innerHTML=data.map(renderCard).join('');
+  listWrap.style.display='flex';
+})();
+
+window.addEventListener('pageshow', function(event){
+  if (event.persisted) {
+    location.reload();
+  }
+});
 </script>
 
 </body>
