@@ -180,7 +180,7 @@ async function initUser(){
     const {data:p}=await sb.from('profiles').select('whatsapp,user_number').eq('id',sessionUser.id).single();
     userProfile=p||null;
     try{
-      const res=await fetch('https://chteo-api.onrender.com/get-balance.php?uid='+encodeURIComponent(sessionUser.id));
+      const res=await fetch('https://chteo-api.onrender.com/api/get-balance.php?uid='+encodeURIComponent(sessionUser.id));
       const j=await res.json();
       walletBalance=(j&&j.success)?Number(j.balance)||0:null;
     }catch(e){walletBalance=null;}
@@ -360,7 +360,7 @@ async function submitJoin(){
     try{
       const {data:{session}}=await sb.auth.getSession();
       const fee=Number(currentTournament?.entry_fee)||0;
-      const res=await fetch('https://chteo-api.onrender.com/deduct-balance.php',{
+      const res=await fetch('https://chteo-api.onrender.com/api/deduct-balance.php',{
         method:'POST',
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
         body:JSON.stringify({amount:fee,reference:'Tournament entry: '+(currentTournament?.title||''),description:'Tournament entry fee'})
