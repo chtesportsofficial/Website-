@@ -86,7 +86,7 @@
 
   .popup-overlay{display:none;position:fixed;inset:0;background:rgba(4,4,10,0.72);backdrop-filter:blur(2px);z-index:999;align-items:flex-end;justify-content:center;}
   .popup-overlay.open{display:flex;}
-  .popup-box{width:100%;max-width:420px;max-height:82vh;overflow-y:auto;background:var(--card-2);border:1px solid rgba(255,255,255,0.1);border-bottom:none;border-radius:20px 20px 0 0;padding:0;box-shadow:0 -12px 40px rgba(0,0,0,.5);animation:sheetUp .22s ease;}
+  .popup-box{width:100%;max-width:420px;max-height:82vh;max-height:82dvh;overflow-y:auto;background:var(--card-2);border:1px solid rgba(255,255,255,0.1);border-bottom:none;border-radius:20px 20px 0 0;padding:0;box-shadow:0 -12px 40px rgba(0,0,0,.5);animation:sheetUp .22s ease;}
   @keyframes sheetUp{from{transform:translateY(16px);opacity:0;}to{transform:translateY(0);opacity:1;}}
   @media (prefers-reduced-motion:reduce){.popup-box{animation:none;}}
   .popup-head{position:relative;display:flex;align-items:center;justify-content:space-between;padding:16px 16px 12px;margin-bottom:0;border-bottom:1px solid var(--border);}
@@ -96,9 +96,9 @@
   .popup-body{font-size:12px;line-height:1.75;color:#c8cdd6;white-space:pre-wrap;padding:16px;}
   .popup-body img{width:100%;border-radius:10px;margin-top:10px;border:1px solid var(--border);}
 
-  .jf-label{font-size:9.5px;font-weight:700;letter-spacing:.04em;color:var(--text-dim);text-transform:uppercase;margin:14px 0 5px;}
+  .jf-label{font-size:9.5px;font-weight:700;letter-spacing:.04em;color:var(--text-dim);text-transform:uppercase;margin:12px 0 5px;}
   .jf-label:first-child{margin-top:0;}
-  .jf-input{width:100%;background:var(--card);border:1px solid rgba(255,255,255,0.1);color:var(--text);border-radius:10px;padding:11px;font-size:12.5px;font-family:inherit;}
+  .jf-input{width:100%;background:var(--card);border:1px solid rgba(255,255,255,0.1);color:var(--text);border-radius:10px;padding:11px;font-size:12.5px;font-family:inherit;display:block;}
   .jf-input:focus{outline:none;border-color:var(--fire-2);}
   .jf-player-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;}
   .jf-note{font-size:9.5px;color:var(--text-dim);margin-top:8px;line-height:1.6;}
@@ -275,7 +275,7 @@ async function initUser(){
       </div>
       <div class="lobby-meta"><span>Joined: ${joined}</span><span>Slots: ${slots}</span></div>
       <div class="lobby-bar"><div class="lobby-bar-fill ${full?'full':''}" style="width:${pct}%"></div></div>
-      <button class="join-btn ${full?'full':''}" type="button" ${full?'disabled':`onclick="openJoinForm('${l.id}')"`}>${full?'FULL':'JOIN NOW'}</button>
+      <button class="join-btn ${full?'full':''}" type="button" ${full?'disabled':`onclick="openJoinForm('${l.id}')"`}>${full?'FULL':'BUY SLOT'}</button>
     </div>`;
   }).join('');
 })();
