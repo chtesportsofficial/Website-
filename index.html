@@ -47,19 +47,19 @@ button{font-family:inherit;cursor:pointer}
 .notice-ticker .ticker-track-inner span:last-child{display:none}
 
 /* YouTube tutorial promo card */
-.yt-promo{display:block;text-decoration:none;color:inherit;margin:12px 14px;padding:12px;border-radius:20px;position:relative;overflow:hidden;background:radial-gradient(120% 160% at 0% 0%,rgba(255,45,45,.22),transparent 60%),#0b0a0e;border:1px solid rgba(255,61,61,.5);box-shadow:0 0 22px rgba(255,40,40,.22)}
-.yt-promo-flex{display:flex;flex-direction:column;gap:10px}
-.yt-promo-row{display:flex;align-items:center;gap:13px}
-.yt-promo-icon{flex-shrink:0;width:50px;height:36px;border-radius:11px;background:linear-gradient(145deg,#ff3b3b,#c81414);display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(255,40,40,.55)}
-.yt-promo-title{font-weight:800;font-size:13.5px;line-height:1.32;color:#fff}
-.yt-promo-sub{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:10.5px;color:#c9ccd6}
-.yt-promo-sub .dot{width:5px;height:5px;border-radius:50%;background:#ff3b3b;flex-shrink:0}
-.yt-promo-cta{display:flex;align-items:center;justify-content:center;gap:8px;padding:9px 0;border-radius:12px;border:1.4px solid rgba(255,60,60,.75);color:#fff;font-weight:800;font-size:12px;background:rgba(255,30,30,.08);white-space:nowrap}
-.yt-promo-cta .play-circle{width:19px;height:19px;border-radius:50%;border:1.5px solid #ff3b3b;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.yt-promo{display:block;text-decoration:none;color:inherit;margin:12px 14px;padding:9px 11px;border-radius:14px;position:relative;overflow:hidden;background:radial-gradient(120% 160% at 0% 0%,rgba(255,45,45,.22),transparent 60%),#0b0a0e;border:1px solid rgba(255,61,61,.5);box-shadow:0 0 14px rgba(255,40,40,.16)}
+.yt-promo-flex{display:flex;align-items:center;gap:10px}
+.yt-promo-row{display:flex;align-items:center;gap:9px;flex:1;min-width:0}
+.yt-promo-icon{flex-shrink:0;width:32px;height:26px;border-radius:8px;background:linear-gradient(145deg,#ff3b3b,#c81414);display:flex;align-items:center;justify-content:center;box-shadow:0 0 10px rgba(255,40,40,.45)}
+.yt-promo-title{font-weight:800;font-size:11px;line-height:1.25;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.yt-promo-sub{display:none}
+.yt-promo-cta{display:flex;align-items:center;justify-content:center;gap:5px;padding:6px 10px;border-radius:999px;border:1.2px solid rgba(255,60,60,.75);color:#fff;font-weight:800;font-size:9.5px;background:rgba(255,30,30,.08);white-space:nowrap;flex-shrink:0}
+.yt-promo-cta .play-circle{width:15px;height:15px;border-radius:50%;border:1.3px solid #ff3b3b;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 @media(min-width:701px){
-  .yt-promo{margin:14px 22px;padding:14px 18px}
-  .yt-promo-flex{flex-direction:row;align-items:center;justify-content:space-between;gap:20px}
-  .yt-promo-cta{padding:12px 22px}
+  .yt-promo{margin:14px 22px;padding:10px 16px}
+  .yt-promo-sub{display:flex;align-items:center;gap:6px;margin-top:2px;font-size:10px;color:#c9ccd6}
+  .yt-promo-sub .dot{width:4px;height:4px;border-radius:50%;background:#ff3b3b;flex-shrink:0}
+  .yt-promo-cta{padding:8px 16px}
 }
 .section{padding:20px 16px 4px}
 .section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
@@ -458,6 +458,23 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
   </div>
 </div>
 
+<a class="my-tournaments-btn" href="tournaments.html">
+  <div class="my-tournaments-icon">📋</div>
+  <div class="my-tournaments-text">
+    <div class="my-tournaments-title">My Tournaments</div>
+    <div class="my-tournaments-sub">Track the ones you have joined</div>
+  </div>
+  <div class="my-tournaments-arrow">›</div>
+</a>
+<style>
+.my-tournaments-btn{display:flex;align-items:center;gap:11px;margin:12px 14px 0;padding:12px 13px;border-radius:14px;background:linear-gradient(135deg,rgba(255,90,46,.16),var(--surface));border:1.5px solid rgba(255,138,61,.55);text-decoration:none;color:inherit}
+.my-tournaments-icon{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--fire),var(--fire-2));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.my-tournaments-text{flex:1;min-width:0}
+.my-tournaments-title{font-size:12px;font-weight:800;color:var(--text)}
+.my-tournaments-sub{font-size:9.5px;color:var(--text-dim);margin-top:1px}
+.my-tournaments-arrow{color:var(--fire-2);font-size:16px;flex-shrink:0}
+</style>
+
 <div class="ticker notice-ticker" id="noticeTicker" role="button" tabindex="0" aria-label="Open full notice">
   <div class="dot"></div>
   <div class="ticker-fixed"><b>NOTICE:</b></div>
@@ -473,13 +490,13 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
 <a class="yt-promo" href="https://youtube.com/playlist?list=PLDnxt3WfGijA&si=q76M-YLIUWdn87OG" target="_blank" rel="noopener">
   <div class="yt-promo-flex">
     <div class="yt-promo-row">
-      <div class="yt-promo-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>
-      <div>
+      <div class="yt-promo-icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>
+      <div style="min-width:0">
         <div class="yt-promo-title" data-i18n="index.ytTitle">How to play tournament from our website?</div>
         <div class="yt-promo-sub"><span class="dot"></span><span data-i18n="index.ytSub">Watch the video to know everything in detail.</span></div>
       </div>
     </div>
-    <div class="yt-promo-cta"><span class="play-circle"><svg viewBox="0 0 24 24" width="9" height="9" fill="#ff3b3b"><path d="M8 5v14l11-7z"/></svg></span><span data-i18n="index.watchVideo">Watch Video</span></div>
+    <div class="yt-promo-cta"><span class="play-circle"><svg viewBox="0 0 24 24" width="7" height="7" fill="#ff3b3b"><path d="M8 5v14l11-7z"/></svg></span><span data-i18n="index.watchVideo">Watch</span></div>
   </div>
 </a>
 
@@ -632,12 +649,6 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
   <div class="drawer-divider"></div>
 
   <nav class="drawer-menu">
-    <a class="drawer-item" href="tournaments.html">
-      <span class="item-icon icon-tournaments"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12v2h2a3 3 0 0 1-3 3h-.2A6 6 0 0 1 13 12.9V16h3v2H8v-2h3v-3.1A6 6 0 0 1 7.2 8H7a3 3 0 0 1-3-3h2V3zm-1 4a1 1 0 0 0 1 1c-.13-.64-.2-1.32-.2-2H5v1zm14 0V6h-.8c0 .68-.07 1.36-.2 2a1 1 0 0 0 1-1z"/></svg></span>
-      <span class="item-label">My Tournaments</span>
-      <svg class="item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
-    </a>
-
     <a class="drawer-item" href="announcements.html">
       <span class="item-icon icon-announcements"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a2 2 0 0 0 2 2h1l2 5h2l-1.5-5H10l8 4V6l-8 4H6a2 2 0 0 0-2 2z"/><path d="M16 8v8"/></svg></span>
       <span class="item-label">Announcements</span>
