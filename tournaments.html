@@ -280,20 +280,45 @@ function passesFilter(row){
   if(currentFilter==='date')return currentCustomDate&&isSameDate(d,currentCustomDate);
   return true;
 }
+function extractHourValue(timeLabel){
+  const s=String(timeLabel||'');
+  const m=s.match(/(\d{1,2})\s*(AM|PM)/i);
+  if(!m)return 9999;
+  let h=parseInt(m[1],10);
+  const ap=m[2].toUpperCase();
+  if(ap==='AM'){ if(h===12)h=0; }
+  else{ if(h!==12)h+=12; }
+  return h*60;
+}
+
 function groupRows(rows){
   const map=new Map();
   const order=[];
   rows.forEach(row=>{
     const lobby=row.tournament_lobbies||{};
     const t=lobby.tournaments||{};
-    const key=(t.id||t.title||'unknown')+'::'+(row.team_name||'');
+    const key=(t.id||t.title||'unknown')+'::'+(lobby.lobby_date||'');
     if(!map.has(key)){
-      map.set(key,{title:t.title||'Tournament',team_name:row.team_name||'',slots:[]});
+      map.set(key,{title:t.title||'Tournament',lobby_date:lobby.lobby_date||'',slotMap:new Map(),slotOrder:[]});
       order.push(key);
     }
-    map.get(key).slots.push(row);
+    const g=map.get(key);
+    const lobbyKey=lobby.id||(lobby.time_label+'::'+lobby.room_id+'::'+lobby.room_password);
+    if(!g.slotMap.has(lobbyKey)){
+      g.slotMap.set(lobbyKey,{lobby,rows:[],confirmed:false});
+      g.slotOrder.push(lobbyKey);
+    }
+    const slot=g.slotMap.get(lobbyKey);
+    slot.rows.push(row);
+    if(row.confirmation_status==='confirmed')slot.confirmed=true;
   });
-  return order.map(k=>map.get(k));
+  const groups=order.map(k=>{
+    const g=map.get(k);
+    const slots=g.slotOrder.map(lk=>g.slotMap.get(lk));
+    slots.sort((a,b)=>extractHourValue(a.lobby.time_label)-extractHourValue(b.lobby.time_label));
+    return {title:g.title,lobby_date:g.lobby_date,slots};
+  });
+  return groups;
 }
 
 function applyFilter(){
@@ -333,11 +358,11 @@ document.getElementById('filterDateInput').addEventListener('change',function(){
   applyFilter();
 });
 
-function renderSlot(row){
-  const lobby=row.tournament_lobbies||{};
-  const confirmed=row.confirmation_status==='confirmed';
-  const dateLabel=lobby.lobby_date?esc(lobby.lobby_date):'';
+function renderSlot(slot){
+  const lobby=slot.lobby||{};
+  const confirmed=slot.confirmed;
   const timeLabel=esc(lobby.time_label||'Scrim');
+  const teamLabel=esc(slot.rows.map(r=>r.team_name).filter(Boolean).join(', '));
 
   const credsOrResult = confirmed ? `
     <div class="t-cred-grid">
@@ -351,7 +376,7 @@ function renderSlot(row){
 
   return `<div class="t-slot">
     <div class="t-lobby-row">
-      <div><div class="t-lobby-time">${timeLabel}</div><div class="t-lobby-date">${dateLabel}</div></div>
+      <div><div class="t-lobby-time">${timeLabel}</div><div class="t-lobby-date">${teamLabel}</div></div>
       <div class="t-status ${confirmed?'confirmed':'pending'}">${confirmed?'CONFIRMED':'PENDING'}</div>
     </div>
     ${credsOrResult}
@@ -362,7 +387,7 @@ function renderCard(group){
   return `<div class="t-card">
     <div class="t-card-body">
       <div class="t-title">${esc(group.title)}</div>
-      <div class="t-org">${esc(group.team_name)}</div>
+      <div class="t-org">${esc(group.lobby_date)}</div>
       <div class="t-slots">
         ${group.slots.map(renderSlot).join('')}
       </div>
