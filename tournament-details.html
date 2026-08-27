@@ -95,6 +95,11 @@
   .popup-head button{width:30px;height:30px;border-radius:9px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:18px;flex-shrink:0;}
   .popup-body{font-size:12px;line-height:1.75;color:#c8cdd6;white-space:pre-wrap;padding:16px;}
   .popup-body img{width:100%;border-radius:10px;margin-top:10px;border:1px solid var(--border);}
+  .success-body{text-align:center;padding:22px 16px 18px;white-space:normal;}
+  .success-icon{font-size:42px;line-height:1;margin-bottom:12px;}
+  .success-title{font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:6px;}
+  .success-text{font-size:11.5px;color:#c8cdd6;line-height:1.6;}
+  .success-goto-btn{display:block;width:100%;margin-top:18px;background:var(--fire-grad);border:none;border-radius:11px;padding:12px;text-align:center;color:#241705;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.02em;}
   .jf-body{font-size:12px;line-height:1.5;color:#c8cdd6;padding:16px;}
 
   .jf-label{font-size:9.5px;font-weight:700;letter-spacing:.04em;color:var(--text-dim);text-transform:uppercase;margin:12px 0 5px;}
@@ -400,11 +405,16 @@ async function submitJoin(){
     return;
   }
   closeJoinForm();
+  const successHtml=`
+    <div class="success-body">
+      <div class="success-icon">${confirmationStatus==='confirmed'?'✅':'📝'}</div>
+      <div class="success-title">${confirmationStatus==='confirmed'?'Paid and joined!':'Request sent!'}</div>
+      <div class="success-text">${confirmationStatus==='confirmed'?'Your slot is confirmed.':'The admin will confirm your slot after verifying payment.'}</div>
+      <button type="button" class="success-goto-btn" onclick="window.location.href='tournaments.html'">Go to my tournaments</button>
+    </div>`;
   openPopup(
     confirmationStatus==='confirmed' ? '✅ পেমেন্ট সম্পন্ন' : '📝 রিকোয়েস্ট পাঠানো হয়েছে',
-    confirmationStatus==='confirmed'
-      ? 'Paid and joined! Your slot is confirmed.'
-      : 'Request sent! The admin will confirm your slot after verifying payment.',
+    successHtml,
     ()=>location.reload()
   );
 }
