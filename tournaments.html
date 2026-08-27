@@ -274,7 +274,8 @@ function renderCard(row){
     .order('created_at',{ascending:false});
 
   if(error){
-    showEmpty('Could not load','Something went wrong while loading your tournaments. Please try again.','Retry','tournaments.html');
+    console.error('lobby_teams load error:',error);
+    showEmpty('Could not load',(error.message||'Unknown error')+(error.hint?' — '+error.hint:''),'Retry','tournaments.html');
     return;
   }
 
