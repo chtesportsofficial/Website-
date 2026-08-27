@@ -144,6 +144,15 @@
   .jf-copy-wrap{display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-end;flex-shrink:0;}
   .jf-copy-btn{background:var(--card-2);border:1px solid rgba(255,255,255,0.14);color:var(--text-mid);border-radius:7px;padding:4px 8px;font-size:9.5px;font-family:inherit;white-space:nowrap;cursor:pointer;}
   .jf-copy-btn:active{border-color:var(--fire-2);color:var(--text);}
+
+  .jf-qty-row{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:9px 10px;margin-bottom:8px;gap:8px;}
+  .jf-qty-label{font-size:11px;color:#c8cdd6;min-width:0;}
+  .jf-qty-label b{color:var(--text);font-weight:700;}
+  .jf-qty-sub{display:block;font-size:9px;color:var(--text-dim);margin-top:1px;}
+  .jf-qty-stepper{display:flex;align-items:center;gap:0;flex-shrink:0;background:var(--card-2);border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;}
+  .jf-qty-btn{background:none;border:none;color:var(--text);width:28px;height:28px;font-size:15px;font-family:inherit;cursor:pointer;}
+  .jf-qty-btn:disabled{color:var(--text-dim);cursor:not-allowed;}
+  .jf-qty-val{display:inline-block;min-width:22px;text-align:center;font-size:12.5px;font-weight:700;}
 </style>
 </head>
 <body>
@@ -184,6 +193,7 @@
     <div class="popup-head"><b>🎮 Join lobby</b><button type="button" onclick="closeJoinForm()">×</button></div>
     <div class="jf-body">
       <div class="jf-lobby-chips" id="jfLobbyChips"></div>
+      <div id="jfQuantityWrap"></div>
       <label class="jf-same-toggle" id="jfSameToggleWrap" style="display:none">
         <input type="checkbox" id="jfSameTeam" checked onchange="renderTeamBlocks()">
         একই টিম সব লবিতে খেলবে
@@ -210,6 +220,7 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 let currentTournament=null, currentJoinLobbyIds=[];
 let sessionUser=null, userProfile=null, walletBalance=null;
 let selectedLobbies=new Set(), lobbyDataById={};
+let lobbyTeamCounts={};
 
 async function initUser(){
   try{
@@ -369,15 +380,53 @@ document.getElementById('popupOverlay').addEventListener('click',function(e){
   if(e.target===this)closePopup();
 });
 
+function getTeamCount(id){return lobbyTeamCounts[id]||1}
+function getMaxTeamCount(id){
+  const l=lobbyDataById[id]||{};
+  const avail=(Number(l.total_slots)||0)-(Number(l.joined_count)||0);
+  return avail>0?Math.min(10,avail):10;
+}
+function totalEntryCount(){
+  return currentJoinLobbyIds.reduce((s,id)=>s+getTeamCount(id),0);
+}
+function changeTeamCount(id,delta){
+  const max=getMaxTeamCount(id);
+  let c=getTeamCount(id)+delta;
+  c=Math.max(1,Math.min(max,c));
+  lobbyTeamCounts[id]=c;
+  renderQuantityControls();
+  renderTeamBlocks();
+  renderPaymentOptions();
+}
+function renderQuantityControls(){
+  const wrap=document.getElementById('jfQuantityWrap');
+  wrap.innerHTML=currentJoinLobbyIds.map(id=>{
+    const l=lobbyDataById[id]||{};
+    const label=`${esc(l.time_label||'')} ${esc(l.lobby_date||'')}`.trim();
+    const c=getTeamCount(id);
+    const max=getMaxTeamCount(id);
+    return `<div class="jf-qty-row">
+      <span class="jf-qty-label"><b>${label}</b><span class="jf-qty-sub">এই স্লটে কয়টি টিম দিবেন?</span></span>
+      <div class="jf-qty-stepper">
+        <button type="button" class="jf-qty-btn" ${c<=1?'disabled':''} onclick="changeTeamCount('${id}',-1)">−</button>
+        <span class="jf-qty-val">${c}</span>
+        <button type="button" class="jf-qty-btn" ${c>=max?'disabled':''} onclick="changeTeamCount('${id}',1)">+</button>
+      </div>
+    </div>`;
+  }).join('');
+}
 function openJoinFormMulti(){
   if(!selectedLobbies.size)return;
   currentJoinLobbyIds=[...selectedLobbies];
+  lobbyTeamCounts={};
+  currentJoinLobbyIds.forEach(id=>{lobbyTeamCounts[id]=1});
   document.getElementById('jfWhatsapp').value=userProfile?.whatsapp||'';
   document.getElementById('jfError').textContent='';
   const multi=currentJoinLobbyIds.length>1;
   document.getElementById('jfSameToggleWrap').style.display=multi?'flex':'none';
   document.getElementById('jfSameTeam').checked=true;
   renderLobbyChips();
+  renderQuantityControls();
   renderTeamBlocks();
   renderPaymentOptions();
   document.getElementById('jfSubmitBtn').disabled=false;
@@ -392,7 +441,9 @@ function renderLobbyChips(){
 }
 function renderTeamBlocks(){
   const wrap=document.getElementById('jfTeamBlocks');
-  const same=currentJoinLobbyIds.length<=1 || document.getElementById('jfSameTeam').checked;
+  const allSingleCount=currentJoinLobbyIds.every(id=>getTeamCount(id)===1);
+  document.getElementById('jfSameToggleWrap').style.display=(currentJoinLobbyIds.length>1 && allSingleCount)?'flex':'none';
+  const same=allSingleCount && currentJoinLobbyIds.length>1 && document.getElementById('jfSameTeam').checked;
   if(same){
     wrap.innerHTML=`
       <div class="jf-label">Team name *</div>
@@ -402,55 +453,71 @@ function renderTeamBlocks(){
     `;
     return;
   }
+  const allKeys=[];
+  currentJoinLobbyIds.forEach(id=>{
+    const c=getTeamCount(id);
+    for(let i=1;i<=c;i++)allKeys.push({lobbyId:id,index:i,key:id+'__'+i});
+  });
   wrap.innerHTML=currentJoinLobbyIds.map(id=>{
     const l=lobbyDataById[id]||{};
     const label=`${esc(l.time_label||'')} ${esc(l.lobby_date||'')}`.trim();
-    const otherIds=currentJoinLobbyIds.filter(x=>x!==id);
-    const copyBtns=otherIds.map(oid=>{
-      const ol=lobbyDataById[oid]||{};
-      const olabel=`${esc(ol.time_label||'')} ${esc(ol.lobby_date||'')}`.trim();
-      return `<button type="button" class="jf-copy-btn" onclick="copyTeamFrom('${id}','${oid}')">📋 ${olabel} থেকে কপি</button>`;
-    }).join('');
-    return `<div class="jf-team-block" data-lobby="${id}">
-      <div class="jf-team-block-head">
-        <b>${label}</b>
-        ${otherIds.length?`<div class="jf-copy-wrap">${copyBtns}</div>`:''}
-      </div>
-      <div class="jf-label">Team name *</div>
-      <input class="jf-input" id="jfTeamName_${id}" placeholder="Team Alpha">
-      <div class="jf-label">Player name *</div>
-      <input class="jf-input" id="jfPlayerName_${id}" placeholder="In-game name">
-    </div>`;
+    const c=getTeamCount(id);
+    let blocks='';
+    for(let i=1;i<=c;i++){
+      const key=id+'__'+i;
+      const otherKeys=allKeys.filter(k=>k.key!==key);
+      const copyBtns=otherKeys.map(k=>{
+        const ol=lobbyDataById[k.lobbyId]||{};
+        const olabel=`${esc(ol.time_label||'')} ${esc(ol.lobby_date||'')}`.trim()+(getTeamCount(k.lobbyId)>1?` টিম ${k.index}`:'');
+        return `<button type="button" class="jf-copy-btn" onclick="copyTeamFrom('${key}','${k.key}')">📋 ${olabel} থেকে কপি</button>`;
+      }).join('');
+      blocks+=`<div class="jf-team-block" data-key="${key}">
+        <div class="jf-team-block-head">
+          <b>${label}${c>1?' — টিম '+i:''}</b>
+          ${otherKeys.length?`<div class="jf-copy-wrap">${copyBtns}</div>`:''}
+        </div>
+        <div class="jf-label">Team name *</div>
+        <input class="jf-input" id="jfTeamName_${key}" placeholder="Team Alpha">
+        <div class="jf-label">Player name *</div>
+        <input class="jf-input" id="jfPlayerName_${key}" placeholder="In-game name">
+      </div>`;
+    }
+    return blocks;
   }).join('');
 }
-function copyTeamFrom(targetId,sourceId){
-  if(!sourceId)return;
-  const srcTeam=document.getElementById('jfTeamName_'+sourceId)?.value||'';
-  const srcPlayer=document.getElementById('jfPlayerName_'+sourceId)?.value||'';
-  document.getElementById('jfTeamName_'+targetId).value=srcTeam;
-  document.getElementById('jfPlayerName_'+targetId).value=srcPlayer;
+function copyTeamFrom(targetKey,sourceKey){
+  if(!sourceKey)return;
+  const srcTeam=document.getElementById('jfTeamName_'+sourceKey)?.value||'';
+  const srcPlayer=document.getElementById('jfPlayerName_'+sourceKey)?.value||'';
+  document.getElementById('jfTeamName_'+targetKey).value=srcTeam;
+  document.getElementById('jfPlayerName_'+targetKey).value=srcPlayer;
 }
 function collectTeamData(){
-  const same=currentJoinLobbyIds.length<=1 || document.getElementById('jfSameTeam').checked;
-  const map={};
+  const allSingleCount=currentJoinLobbyIds.every(id=>getTeamCount(id)===1);
+  const same=allSingleCount && currentJoinLobbyIds.length>1 && document.getElementById('jfSameTeam').checked;
+  const entries=[];
   if(same){
     const teamName=document.getElementById('jfTeamName').value.trim();
     const playerName=document.getElementById('jfPlayerName').value.trim();
     if(!teamName)return{error:'Team name is required.'};
     if(!playerName)return{error:'Player name is required.'};
-    currentJoinLobbyIds.forEach(id=>{map[id]={teamName,playerName}});
-    return{map};
+    currentJoinLobbyIds.forEach(id=>entries.push({lobbyId:id,teamName,playerName}));
+    return{entries};
   }
   for(const id of currentJoinLobbyIds){
-    const teamName=(document.getElementById('jfTeamName_'+id)?.value||'').trim();
-    const playerName=(document.getElementById('jfPlayerName_'+id)?.value||'').trim();
+    const c=getTeamCount(id);
     const l=lobbyDataById[id]||{};
-    const label=`${l.time_label||''} ${l.lobby_date||''}`.trim();
-    if(!teamName)return{error:`Team name is required for ${label}.`};
-    if(!playerName)return{error:`Player name is required for ${label}.`};
-    map[id]={teamName,playerName};
+    for(let i=1;i<=c;i++){
+      const key=id+'__'+i;
+      const teamName=(document.getElementById('jfTeamName_'+key)?.value||'').trim();
+      const playerName=(document.getElementById('jfPlayerName_'+key)?.value||'').trim();
+      const label=`${l.time_label||''} ${l.lobby_date||''}`.trim()+(c>1?` টিম ${i}`:'');
+      if(!teamName)return{error:`Team name is required for ${label}.`};
+      if(!playerName)return{error:`Player name is required for ${label}.`};
+      entries.push({lobbyId:id,teamName,playerName});
+    }
   }
-  return{map};
+  return{entries};
 }
 function closeJoinForm(){
   document.getElementById('joinOverlay').classList.remove('open');
@@ -460,7 +527,7 @@ document.getElementById('joinOverlay').addEventListener('click',function(e){
 });
 
 function renderPaymentOptions(){
-  const fee=(Number(currentTournament?.entry_fee)||0)*(currentJoinLobbyIds.length||1);
+  const fee=(Number(currentTournament?.entry_fee)||0)*(totalEntryCount()||1);
   const canPayBalance=sessionUser && walletBalance!=null;
   const enough=canPayBalance && walletBalance>=fee;
   let html='';
@@ -484,8 +551,8 @@ function renderPaymentExtra(){
   const sel=document.querySelector('input[name="jfPay"]:checked')?.value;
   const box=document.getElementById('jfPaymentExtra');
   if(sel==='balance'){
-    const fee=(Number(currentTournament?.entry_fee)||0)*(currentJoinLobbyIds.length||1);
-    box.innerHTML=`<div class="jf-note">৳${fee} will be deducted from your wallet balance immediately on submit${currentJoinLobbyIds.length>1?` (${currentJoinLobbyIds.length} lobbies)`:''}.</div>`;
+    const fee=(Number(currentTournament?.entry_fee)||0)*(totalEntryCount()||1);
+    box.innerHTML=`<div class="jf-note">৳${fee} will be deducted from your wallet balance immediately on submit${totalEntryCount()>1?` (${totalEntryCount()} entries)`:''}.</div>`;
   }else{
     box.innerHTML='';
   }
@@ -505,7 +572,7 @@ async function submitJoin(){
   btn.disabled=true; btn.textContent='Submitting...';
 
   let confirmationStatus='pending', paymentRef=null;
-  const lobbyCount=currentJoinLobbyIds.length||1;
+  const lobbyCount=teamData.entries.length||1;
   {
     try{
       const {data:{session}}=await sb.auth.getSession();
@@ -513,7 +580,7 @@ async function submitJoin(){
       const res=await fetch('https://chteo-api.onrender.com/api/deduct-balance.php',{
         method:'POST',
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
-        body:JSON.stringify({amount:fee,reference:'Tournament entry: '+(currentTournament?.title||'')+(lobbyCount>1?` (${lobbyCount} lobbies)`:''),description:'Tournament entry fee'})
+        body:JSON.stringify({amount:fee,reference:'Tournament entry: '+(currentTournament?.title||'')+(lobbyCount>1?` (${lobbyCount} entries)`:''),description:'Tournament entry fee'})
       });
       const j=await res.json();
       if(!j.success){
@@ -531,10 +598,10 @@ async function submitJoin(){
     }
   }
 
-  const rows=currentJoinLobbyIds.map(lobbyId=>({
-    lobby_id:lobbyId,
-    team_name:teamData.map[lobbyId].teamName,
-    players:[{name:teamData.map[lobbyId].playerName}],
+  const rows=teamData.entries.map(e=>({
+    lobby_id:e.lobbyId,
+    team_name:e.teamName,
+    players:[{name:e.playerName}],
     contact_number:whatsapp,
     payment_reference:paymentRef,
     payment_method:payMethod,
