@@ -669,9 +669,21 @@ function openLobbies(tid){
   $('lobbySlotOverride').value='';
   openM('lbm'); loadLobbies(tid);
 }
-async function loadLobbies(tid){
+let lobbiesShowingAll=false;
+async function loadLobbies(tid,opts){
+  opts=opts||{};
   $('lobbiesActive').innerHTML='<div class="loading">Loading...</div>'; $('lobbiesHistory').innerHTML='';
-  const {data,error}=await sb.from('tournament_lobbies').select('*').eq('tournament_id',tid).order('lobby_date');
+  lobbiesShowingAll=!!opts.includeOlder;
+  let q=sb.from('tournament_lobbies').select('*').eq('tournament_id',tid).order('lobby_date');
+  if(!lobbiesShowingAll){
+    // Default view only pulls the last 60 days — active/upcoming lobbies are
+    // always today-or-later so they're never affected by this; it just
+    // keeps the panel fast as completed history piles up over months.
+    // Nothing is deleted — "Load older history" below fetches the rest.
+    const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-60);
+    q=q.gte('lobby_date',cutoff.toISOString().slice(0,10));
+  }
+  const {data,error}=await q;
   if(error){$('lobbiesActive').innerHTML='<div class="empty">Could not load lobbies.</div>';console.error(error);return;}
   lobbies=data||[];
   await applyAutoStatusUpdates(lobbies);
@@ -691,12 +703,13 @@ function renderLobbies(){
         <button class="mini" onclick="setLobbyStatus('${l.id}','completed')">✔ Complete</button>
       </div>
     </div>`).join(''):'<div class="empty">No active lobbies.</div>';
-  $('lobbiesHistory').innerHTML=history.length?history.map(l=>`
+  $('lobbiesHistory').innerHTML=(history.length?history.map(l=>`
     <div class="lobby-item">
       <div class="lobby-top"><div class="lobby-date">${fmtLobbyDate(l.lobby_date)} — ${esc(l.time_label)}</div><div class="lobby-status completed">✔ COMPLETED</div></div>
       <div class="lobby-meta">${l.joined_count||0}/${l.total_slots||0} joined</div>
       <div class="lobby-actions"><button class="mini green" onclick="openResults('${l.id}')">View Results</button></div>
-    </div>`).join(''):'<div class="empty">No completed lobbies yet.</div>';
+    </div>`).join(''):'<div class="empty">No completed lobbies in the last 60 days.</div>')
+    +(lobbiesShowingAll?'':`<button class="mini" style="width:100%;margin-top:8px" onclick="loadLobbies(currentLobbyTournament.id,{includeOlder:true})">Load older history</button>`);
 }
 function addTimeInput(){const el=document.createElement('input');el.className='lobbyTimeInput';el.placeholder='10:00 PM';$('lobbyTimes').appendChild(el);}
 async function saveLobbies(){
