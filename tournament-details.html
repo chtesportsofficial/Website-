@@ -141,7 +141,9 @@
   .jf-team-block{background:var(--card);border:1px solid rgba(255,255,255,0.08);border-radius:11px;padding:10px 10px 2px;margin-bottom:10px;}
   .jf-team-block-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;}
   .jf-team-block-head b{font-size:11.5px;font-weight:700;color:var(--text);}
-  .jf-copy-select{background:var(--card-2);border:1px solid rgba(255,255,255,0.1);color:var(--text-mid);border-radius:7px;padding:4px 6px;font-size:9.5px;font-family:inherit;max-width:150px;flex-shrink:0;}
+  .jf-copy-wrap{display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-end;flex-shrink:0;}
+  .jf-copy-btn{background:var(--card-2);border:1px solid rgba(255,255,255,0.14);color:var(--text-mid);border-radius:7px;padding:4px 8px;font-size:9.5px;font-family:inherit;white-space:nowrap;cursor:pointer;}
+  .jf-copy-btn:active{border-color:var(--fire-2);color:var(--text);}
 </style>
 </head>
 <body>
@@ -404,17 +406,15 @@ function renderTeamBlocks(){
     const l=lobbyDataById[id]||{};
     const label=`${esc(l.time_label||'')} ${esc(l.lobby_date||'')}`.trim();
     const otherIds=currentJoinLobbyIds.filter(x=>x!==id);
-    const copyOpts=otherIds.map(oid=>{
+    const copyBtns=otherIds.map(oid=>{
       const ol=lobbyDataById[oid]||{};
-      return `<option value="${oid}">${esc(ol.time_label||'')} ${esc(ol.lobby_date||'')}</option>`;
+      const olabel=`${esc(ol.time_label||'')} ${esc(ol.lobby_date||'')}`.trim();
+      return `<button type="button" class="jf-copy-btn" onclick="copyTeamFrom('${id}','${oid}')">📋 ${olabel} থেকে কপি</button>`;
     }).join('');
     return `<div class="jf-team-block" data-lobby="${id}">
       <div class="jf-team-block-head">
         <b>${label}</b>
-        ${otherIds.length?`<select class="jf-copy-select" onchange="copyTeamFrom('${id}',this.value)">
-          <option value="">একই টিম কপি করুন...</option>
-          ${copyOpts}
-        </select>`:''}
+        ${otherIds.length?`<div class="jf-copy-wrap">${copyBtns}</div>`:''}
       </div>
       <div class="jf-label">Team name *</div>
       <input class="jf-input" id="jfTeamName_${id}" placeholder="Team Alpha">
