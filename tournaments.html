@@ -361,7 +361,7 @@ document.getElementById('filterDateInput').addEventListener('change',function(){
 function renderSlot(slot){
   const lobby=slot.lobby||{};
   const confirmed=slot.confirmed;
-  const timeLabel=esc(lobby.time_label||'Scrim');
+  const timeLabel=esc(lobby.time_label||'Scrim')+(lobby.custom_title?' · '+esc(lobby.custom_title):'');
   const teamLabel=esc(slot.rows.map(r=>r.team_name).filter(Boolean).join(', '));
 
   const credsOrResult = confirmed ? `
