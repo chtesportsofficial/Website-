@@ -117,6 +117,17 @@
 
   .loading-wrap{flex:1;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:13px;padding:60px 20px;}
 
+  .filter-bar{display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding-bottom:2px;-ms-overflow-style:none;scrollbar-width:none;}
+  .filter-bar::-webkit-scrollbar{display:none;}
+  .filter-chip{flex-shrink:0;padding:8px 14px;border-radius:20px;background:var(--card);border:1px solid var(--card-border);color:var(--text-secondary);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;transition:background .15s ease,color .15s ease;}
+  .filter-chip.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .filter-date-wrap{flex-shrink:0;position:relative;}
+  .filter-date-input{flex-shrink:0;height:100%;padding:8px 12px;border-radius:20px;background:var(--card);border:1px solid var(--card-border);color:var(--text-secondary);font-size:12px;font-family:inherit;cursor:pointer;}
+  .filter-date-input.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .filter-date-input::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.6;cursor:pointer;}
+
+  .filter-empty{text-align:center;color:var(--text-secondary);font-size:13px;padding:50px 20px;}
+
   .t-list{display:flex;flex-direction:column;gap:14px;}
 
   .t-card{background:var(--card);border:1px solid var(--card-border);border-radius:16px;overflow:hidden;}
@@ -169,6 +180,16 @@
     <h1>My Tournaments</h1>
   </div>
 
+  <div class="filter-bar" id="filterBar" style="display:none">
+    <button type="button" class="filter-chip" data-filter="today">Today</button>
+    <button type="button" class="filter-chip" data-filter="yesterday">Yesterday</button>
+    <button type="button" class="filter-chip" data-filter="upcoming">Upcoming</button>
+    <div class="filter-date-wrap">
+      <input type="date" class="filter-date-input" id="filterDateInput">
+    </div>
+    <button type="button" class="filter-chip active" data-filter="all">All</button>
+  </div>
+
   <div class="loading-wrap" id="loadingWrap">Loading your tournaments...</div>
 
   <div class="empty-wrap" id="emptyWrap" style="display:none">
@@ -183,6 +204,8 @@
   </div>
 
   <div class="t-list" id="listWrap" style="display:none"></div>
+
+  <div class="filter-empty" id="filterEmptyMsg" style="display:none">No tournaments match this filter.</div>
 
 </div>
 
@@ -224,6 +247,69 @@ function credBox(label,val){
     </div>
   </div>`;
 }
+
+let allRows=[];
+let currentFilter='all';
+let currentCustomDate=null;
+
+function parseLobbyDate(row){
+  const ds=row.tournament_lobbies?.lobby_date;
+  if(!ds)return null;
+  const d=new Date(ds+'T00:00:00');
+  return isNaN(d.getTime())?null:d;
+}
+function isSameDate(a,b){
+  return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+}
+function passesFilter(row){
+  if(currentFilter==='all')return true;
+  const d=parseLobbyDate(row);
+  if(!d)return false;
+  const today=new Date(); today.setHours(0,0,0,0);
+  if(currentFilter==='today')return isSameDate(d,today);
+  if(currentFilter==='yesterday'){
+    const y=new Date(today); y.setDate(y.getDate()-1);
+    return isSameDate(d,y);
+  }
+  if(currentFilter==='upcoming')return d.getTime()>today.getTime();
+  if(currentFilter==='date')return currentCustomDate&&isSameDate(d,currentCustomDate);
+  return true;
+}
+function applyFilter(){
+  const listWrap=document.getElementById('listWrap');
+  const emptyMsg=document.getElementById('filterEmptyMsg');
+  const filtered=allRows.filter(passesFilter);
+  if(!filtered.length){
+    listWrap.style.display='none';
+    emptyMsg.style.display='block';
+    return;
+  }
+  emptyMsg.style.display='none';
+  listWrap.innerHTML=filtered.map(renderCard).join('');
+  listWrap.style.display='flex';
+}
+function setActiveChip(el){
+  document.querySelectorAll('.filter-chip').forEach(b=>b.classList.remove('active'));
+  document.getElementById('filterDateInput').classList.remove('active');
+  el.classList.add('active');
+}
+document.querySelectorAll('.filter-chip[data-filter]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    setActiveChip(btn);
+    currentFilter=btn.dataset.filter;
+    currentCustomDate=null;
+    document.getElementById('filterDateInput').value='';
+    applyFilter();
+  });
+});
+document.getElementById('filterDateInput').addEventListener('change',function(){
+  if(!this.value)return;
+  document.querySelectorAll('.filter-chip').forEach(b=>b.classList.remove('active'));
+  this.classList.add('active');
+  currentFilter='date';
+  currentCustomDate=new Date(this.value+'T00:00:00');
+  applyFilter();
+});
 
 function renderCard(row){
   const lobby=row.tournament_lobbies||{};
@@ -283,10 +369,10 @@ function renderCard(row){
     return;
   }
 
+  allRows=data;
   document.getElementById('loadingWrap').style.display='none';
-  const listWrap=document.getElementById('listWrap');
-  listWrap.innerHTML=data.map(renderCard).join('');
-  listWrap.style.display='flex';
+  document.getElementById('filterBar').style.display='flex';
+  applyFilter();
 })();
 
 window.addEventListener('pageshow', function(event){
