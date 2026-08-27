@@ -539,23 +539,39 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
 </script>
 
 <div class="section">
-  <div class="section-head"><div class="section-title"><span class="bar"></span><span data-i18n="index.topTeams">September Top Teams</span></div></div>
+  <div class="section-head"><div class="section-title"><span class="bar"></span><span data-i18n="index.topTeams">This Month's Top Teams</span></div></div>
   <div class="lb-card">
-    <div class="lb-list">
-    <div class="lb-row"><div class="lb-rank gold">1</div><div class="lb-avatar"></div><div class="lb-name">Team 1<span class="s">Squad</span></div><div class="lb-amt">230 PTS</div></div>
-    <div class="lb-row"><div class="lb-rank silver">2</div><div class="lb-avatar"></div><div class="lb-name">Team 2<span class="s">Squad</span></div><div class="lb-amt">200 PTS</div></div>
-    <div class="lb-row"><div class="lb-rank bronze">3</div><div class="lb-avatar"></div><div class="lb-name">Team 3<span class="s">Squad</span></div><div class="lb-amt">190 PTS</div></div>
-    <div class="lb-row"><div class="lb-rank">4</div><div class="lb-avatar"></div><div class="lb-name">Team 4<span class="s">Squad</span></div><div class="lb-amt">175 PTS</div></div>
-    <div class="lb-row"><div class="lb-rank">5</div><div class="lb-avatar"></div><div class="lb-name">Team 5<span class="s">Squad</span></div><div class="lb-amt">160 PTS</div></div>
-    <div class="lb-row"><div class="lb-rank">6</div><div class="lb-avatar"></div><div class="lb-name">Team 6<span class="s">Squad</span></div><div class="lb-amt">148 PTS</div></div>
-    <div class="lb-row"><div class="lb-rank">7</div><div class="lb-avatar"></div><div class="lb-name">Team 7<span class="s">Squad</span></div><div class="lb-amt">135 PTS</div></div>
-    <div class="lb-row"><div class="lb-rank">8</div><div class="lb-avatar"></div><div class="lb-name">Team 8<span class="s">Squad</span></div><div class="lb-amt">120 PTS</div></div>
-    <div class="lb-row"><div class="lb-rank">9</div><div class="lb-avatar"></div><div class="lb-name">Team 9<span class="s">Squad</span></div><div class="lb-amt">108 PTS</div></div>
-    <div class="lb-row"><div class="lb-rank">10</div><div class="lb-avatar"></div><div class="lb-name">Team 10<span class="s">Squad</span></div><div class="lb-amt">95 PTS</div></div>
-    </div>
-    <div class="lb-see" data-i18n="index.seeOther">See other teams ↓</div>
+    <div class="lb-list" id="lbTopTeams"><div class="lb-row"><div class="lb-name" style="color:var(--text-dim)">Loading...</div></div></div>
+    <a class="lb-see" href="leaderboard.html" data-i18n="index.seeOther">See other teams ↓</a>
   </div>
 </div>
+
+<script>
+(function(){
+  const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
+  const SUPABASE_KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+  function medalClass(i){return i===0?'gold':i===1?'silver':i===2?'bronze':'';}
+  function start(){
+    if(!window.supabase?.createClient){setTimeout(start,250);return}
+    const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+    const box=document.getElementById('lbTopTeams');
+    async function load(){
+      const now=new Date();
+      const monthStart=new Date(now.getFullYear(),now.getMonth(),1).toISOString().slice(0,10);
+      const {data,error}=await sb.from('leaderboard_rows').select('team_name,points').gte('lobby_date',monthStart);
+      if(error||!data){box.innerHTML='';return}
+      const totals=new Map();
+      data.forEach(r=>totals.set(r.team_name,(totals.get(r.team_name)||0)+(r.points||0)));
+      const ranked=[...totals.entries()].map(([team_name,points])=>({team_name,points})).sort((a,b)=>b.points-a.points).slice(0,10);
+      if(!ranked.length){box.innerHTML='<div class="lb-row"><div class="lb-name" style="color:var(--text-dim)">No results yet this month.</div></div>';return}
+      box.innerHTML=ranked.map((r,i)=>'<div class="lb-row"><div class="lb-rank '+medalClass(i)+'">'+(i+1)+'</div><div class="lb-avatar"></div><div class="lb-name">'+esc(r.team_name)+'<span class="s">Squad</span></div><div class="lb-amt">'+r.points+' PTS</div></div>').join('');
+    }
+    load();
+  }
+  start();
+})();
+</script>
 
 <div class="section">
   <div class="tile-grid">
