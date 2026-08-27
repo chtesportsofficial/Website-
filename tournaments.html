@@ -271,7 +271,7 @@ function renderCard(row){
   const {data,error}=await sb.from('lobby_teams')
     .select('*, tournament_lobbies(*, tournaments(title,banner_url))')
     .eq('submitted_by',session.user.id)
-    .order('created_at',{ascending:false});
+    .order('joined_at',{ascending:false});
 
   if(error){
     console.error('lobby_teams load error:',error);
