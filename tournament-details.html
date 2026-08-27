@@ -4,102 +4,168 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Tournament Details — CHT ESP ORG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0b0e1a;
-    --card:#141a2b;
-    --card-2:#161d30;
-    --border:rgba(255,255,255,0.08);
-    --text:#ffffff;
-    --text-dim:#7d8494;
-    --text-mid:#9aa0ae;
-    --gold:#f2b705;
-    --orange:#f5a623;
-    --orange-dark:#c9820f;
-    --teal:#2dd4bf;
+    --bg:#0a0a10;
+    --bg-soft:#0e0f16;
+    --surface:#15161f;
+    --surface-2:#1a1c27;
+    --border:rgba(255,255,255,0.07);
+    --border-2:rgba(255,255,255,0.12);
+    --text:#f3f4f7;
+    --text-mid:#a6aab8;
+    --text-dim:#71768a;
+    --fire-1:#ff5f2e;
+    --fire-2:#ffb703;
+    --fire-grad:linear-gradient(135deg,var(--fire-1),var(--fire-2));
+    --live:#ff3b5c;
+    --ok:#33e39a;
+    --gold:#ffd166;
+    --silver:#c9cfdb;
+    --bronze:#e0a370;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
+  html{-webkit-tap-highlight-color:transparent;}
   body{
     background:var(--bg);
-    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+    background-image:radial-gradient(ellipse 600px 300px at 50% -80px, rgba(255,95,46,0.14), transparent 70%);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
     color:var(--text);
+    -webkit-font-smoothing:antialiased;
   }
-  .page{max-width:420px;margin:0 auto;padding:14px 14px 30px;}
-  .header{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
-  .back{font-size:20px;color:var(--text-mid);text-decoration:none;line-height:1;}
-  .header h1{font-size:15px;font-weight:500;}
-  .header .org{font-size:11px;color:var(--text-dim);margin-top:2px;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .display{font-family:'Rajdhani',sans-serif;}
+  button,input{font-family:inherit;}
+  button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--fire-2);outline-offset:2px;}
 
-  .banner{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:12px;margin-bottom:10px;background:#1f2740;}
+  .page{max-width:420px;margin:0 auto;padding:0 14px 34px;}
 
-  .stat-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;}
-  .stat-box{background:var(--card);border:0.5px solid var(--border);border-radius:8px;padding:6px 4px;text-align:center;}
-  .stat-box .label{font-size:9px;text-transform:uppercase;color:var(--text-dim);}
-  .stat-box .value{font-size:12px;font-weight:500;margin-top:2px;}
+  /* header */
+  .header{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:10px;padding:14px 0;background:linear-gradient(var(--bg) 65%, transparent);margin-bottom:2px;}
+  .back{width:32px;height:32px;border-radius:9px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-mid);text-decoration:none;font-size:16px;flex-shrink:0;}
+  .header .titles{min-width:0;}
+  .header .eyebrow{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.14em;color:var(--fire-2);text-transform:uppercase;font-weight:600;}
 
-  .combo-row{display:flex;gap:6px;min-height:112px;margin-bottom:10px;}
-  .prize-card{flex:1;background:var(--card);border-radius:8px;padding:7px 8px;display:flex;flex-direction:column;}
-  .prize-card .title{font-size:9px;font-weight:500;color:#c8cdd6;margin-bottom:2px;}
-  .prize-list{flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:2px;}
-  .prize-list .row{display:flex;align-items:center;justify-content:space-between;}
-  .prize-list .rank{font-size:10px;color:var(--text-mid);}
-  .prize-list .amount{font-size:11px;font-weight:500;color:var(--gold);}
-
-  .info-col{flex:1;display:flex;flex-direction:column;gap:4px;}
-  .info-box{flex:1;background:var(--card);border-radius:8px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;min-height:24px;}
-  .info-box .label{font-size:9px;color:var(--text-dim);}
-  .info-box .value{font-size:10px;font-weight:500;}
-  .info-box .emoji{font-size:11px;}
-
-  .link-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;}
-  .link-box{background:var(--card);border:none;border-radius:8px;padding:7px 8px;display:flex;align-items:center;justify-content:space-between;color:var(--text);font-size:10px;font-weight:500;text-align:left;cursor:pointer;font-family:inherit;}
-  .link-box .chev{color:#5f6472;font-size:12px;}
-
-  .section-title{font-size:11px;font-weight:500;color:#c8cdd6;margin-bottom:6px;}
-  .maps-row{display:grid;grid-template-columns:repeat(auto-fill, 74px);gap:6px;justify-content:flex-start;margin-bottom:14px;}
-  .map-box{background:var(--card);border-radius:7px;overflow:hidden;}
-  .map-box .img{aspect-ratio:1/1;width:100%;background:#1f2740;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:#5f6472;font-size:7px;text-align:center;}
-  .map-box .name{padding:4px;text-align:center;font-size:8.5px;font-weight:500;}
-
-  .lobby-list{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}
-  .lobby-card{background:var(--card-2);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:12px;}
-  .lobby-top{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
-  .lobby-avatar{width:38px;height:38px;border-radius:50%;background:#3a4152;border:2px solid var(--teal);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;flex-shrink:0;}
-  .lobby-avatar.full{border-color:#555c6c;}
-  .lobby-time{font-size:15px;font-weight:500;}
-  .lobby-date{font-size:9px;color:var(--text-dim);margin-top:1px;}
-  .lobby-meta{display:flex;justify-content:space-between;margin-bottom:5px;font-size:11px;color:var(--text-mid);}
-  .lobby-bar{height:5px;background:#2a3145;border-radius:4px;overflow:hidden;margin-bottom:10px;}
-  .lobby-bar-fill{height:100%;background:var(--orange);}
-  .lobby-bar-fill.full{background:#5f6472;}
-  .join-btn{background:var(--orange);border:none;border-bottom:3px solid var(--orange-dark);border-radius:10px;padding:10px;text-align:center;color:#241705;font-size:13px;font-weight:500;width:100%;cursor:pointer;font-family:inherit;}
-  .join-btn.full{background:#2a3145;border-bottom-color:#1c2233;color:var(--text-dim);cursor:not-allowed;}
-
+  .loading{text-align:center;color:var(--text-dim);font-size:12px;padding:60px 10px;}
   .empty{text-align:center;color:var(--text-dim);font-size:11px;padding:20px 8px;}
-  .loading{text-align:center;color:var(--text-dim);font-size:12px;padding:40px 10px;}
 
-  .lobby-sub{font-size:10px;color:var(--text-dim);margin:-3px 0 8px;}
+  /* hero */
+  .hero{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:#171826;margin-bottom:12px;}
+  .hero .banner{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:#1f2233;}
+  .hero .scrim{position:absolute;inset:0;background:linear-gradient(180deg, rgba(10,10,16,0) 35%, rgba(10,10,16,.92) 100%);}
+  .hero .org-tag{position:absolute;top:10px;left:10px;background:rgba(10,10,16,.55);backdrop-filter:blur(6px);border:1px solid var(--border-2);padding:4px 9px;border-radius:999px;font-size:9px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text-mid);}
+  .hero .title-wrap{position:absolute;left:14px;right:14px;bottom:12px;}
+  .hero h1{font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;line-height:1.12;letter-spacing:.01em;text-shadow:0 2px 10px rgba(0,0,0,.5);}
 
-  .popup-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:999;align-items:flex-end;justify-content:center;}
+  /* entry ticket */
+  .ticket{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:12px;overflow:hidden;}
+  .ticket::after{content:'';position:absolute;top:0;right:0;width:0;height:0;border-style:solid;border-width:0 20px 20px 0;border-color:transparent var(--bg) transparent transparent;}
+  .ticket-top-bar{height:3px;background:var(--fire-grad);}
+  .ticket-grid{display:grid;grid-template-columns:1fr 1fr;}
+  .ticket-cell{padding:12px 14px;border-right:1px dashed var(--border-2);position:relative;}
+  .ticket-cell:nth-child(2n){border-right:none;}
+  .ticket-cell:nth-child(n+3){border-top:1px dashed var(--border-2);}
+  .ticket-cell .k{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;}
+  .ticket-cell .v{font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:700;color:var(--text);}
+  .ticket-cell .v.fee{background:var(--fire-grad);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .ticket-cell .v.tiny{font-size:13px;font-weight:600;display:flex;align-items:center;gap:5px;}
+
+  /* prize + rules */
+  .combo-row{display:flex;gap:8px;margin-bottom:12px;align-items:stretch;}
+  .prize-card{flex:1.15;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px;}
+  .prize-card .card-title{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;}
+  .prize-list{display:flex;flex-direction:column;gap:7px;}
+  .prize-list .row{display:flex;align-items:center;gap:8px;}
+  .prize-list .badge{width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;flex-shrink:0;color:#1a0e02;}
+  .prize-list .badge.r1{background:var(--gold);}
+  .prize-list .badge.r2{background:var(--silver);}
+  .prize-list .badge.r3{background:var(--bronze);}
+  .prize-list .badge.rn{background:var(--surface-2);color:var(--text-mid);}
+  .prize-list .rank{font-size:10px;color:var(--text-mid);flex:1;}
+  .prize-list .amount{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--gold);}
+
+  .info-col{flex:1;display:flex;flex-direction:column;gap:6px;}
+  .link-box{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:0 11px;display:flex;align-items:center;justify-content:space-between;color:var(--text);font-size:10.5px;font-weight:600;text-align:left;cursor:pointer;font-family:inherit;min-height:34px;}
+  .link-box .chev{color:var(--fire-2);font-size:13px;}
+  .toggle-row{display:flex;gap:6px;}
+  .toggle-pill{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:7px 8px;text-align:center;}
+  .toggle-pill .tp-label{font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;}
+  .toggle-pill .tp-val{font-size:13px;margin-top:2px;}
+
+  /* section headers */
+  .section-title{font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:.02em;margin-bottom:2px;display:flex;align-items:center;gap:7px;}
+  .section-title .bar{width:3px;height:13px;background:var(--fire-grad);border-radius:2px;}
+  .section-sub{font-size:10px;color:var(--text-dim);margin:2px 0 8px;}
+
+  /* maps */
+  .maps-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;scrollbar-width:none;}
+  .maps-row::-webkit-scrollbar{display:none;}
+  .map-box{flex-shrink:0;width:76px;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+  .map-box .img{aspect-ratio:1/1;width:100%;background:#1f2233;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:7px;text-align:center;}
+  .map-box .name{padding:5px 4px;text-align:center;font-size:8.5px;font-weight:600;}
+
+  /* lobby tickets */
+  .lobby-list{display:flex;flex-direction:column;gap:10px;margin-bottom:6px;}
+  .lobby-card{position:relative;display:flex;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+  .lobby-card::after{content:'';position:absolute;top:0;right:0;width:0;height:0;border-style:solid;border-width:0 16px 16px 0;border-color:transparent var(--bg) transparent transparent;}
+  .lobby-stub{width:78px;flex-shrink:0;background:var(--fire-grad);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;padding:6px;text-align:center;}
+  .lobby-stub.full{background:var(--surface-2);}
+  .lobby-stub .t-time{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;color:#210f00;line-height:1.2;}
+  .lobby-stub.full .t-time{color:var(--text-mid);}
+  .lobby-stub .t-date{font-family:'Inter',sans-serif;font-size:8.5px;font-weight:700;color:rgba(20,8,0,.6);margin-top:3px;text-transform:uppercase;letter-spacing:.03em;}
+  .lobby-stub.full .t-date{color:var(--text-dim);}
+  .lobby-perf{width:0;position:relative;border-left:1.5px dashed rgba(255,255,255,.16);}
+  .lobby-perf::before,.lobby-perf::after{content:'';position:absolute;width:12px;height:12px;background:var(--bg);border-radius:50%;left:-6.5px;}
+  .lobby-perf::before{top:-6px;}
+  .lobby-perf::after{bottom:-6px;}
+  .lobby-body{flex:1;padding:10px 12px;display:flex;flex-direction:column;gap:7px;min-width:0;}
+  .lobby-body-top{display:flex;align-items:center;justify-content:space-between;}
+  .status-pill{font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.06em;padding:3px 7px;border-radius:5px;text-transform:uppercase;display:flex;align-items:center;gap:4px;}
+  .status-pill.upcoming{background:rgba(51,227,154,.12);color:var(--ok);}
+  .status-pill.live{background:rgba(255,59,92,.14);color:var(--live);}
+  .status-pill.live .dot{width:5px;height:5px;border-radius:50%;background:var(--live);animation:pulse 1.4s infinite;}
+  .status-pill.full{background:var(--surface-2);color:var(--text-dim);}
+  @media (prefers-reduced-motion:reduce){.status-pill.live .dot{animation:none;}}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+  .lobby-meta{display:flex;justify-content:space-between;font-size:10px;color:var(--text-mid);font-family:'JetBrains Mono',monospace;}
+  .lobby-bar{height:4px;background:var(--surface-2);border-radius:4px;overflow:hidden;}
+  .lobby-bar-fill{height:100%;background:var(--fire-grad);}
+  .lobby-bar-fill.full{background:var(--text-dim);}
+  .join-btn{background:var(--fire-grad);border:none;border-radius:9px;padding:8px;text-align:center;color:#210f00;font-size:11.5px;font-weight:700;width:100%;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:.03em;}
+  .join-btn.full{background:var(--surface-2);color:var(--text-dim);cursor:not-allowed;}
+
+  /* popups */
+  .popup-overlay{display:none;position:fixed;inset:0;background:rgba(4,4,8,0.72);backdrop-filter:blur(2px);z-index:999;align-items:flex-end;justify-content:center;}
   .popup-overlay.open{display:flex;}
-  .popup-box{width:100%;max-width:420px;max-height:80vh;overflow-y:auto;background:var(--card-2);border-radius:18px 18px 0 0;padding:16px;}
-  .popup-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
-  .popup-head b{font-size:14px;}
-  .popup-head button{width:30px;height:30px;border-radius:9px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:18px;}
-  .popup-body{font-size:12px;line-height:1.7;color:#c8cdd6;white-space:pre-wrap;}
-  .popup-body img{width:100%;border-radius:10px;margin-top:10px;}
+  .popup-box{width:100%;max-width:420px;max-height:82vh;overflow-y:auto;background:var(--bg-soft);border:1px solid var(--border-2);border-bottom:none;border-radius:20px 20px 0 0;padding:0;animation:sheetUp .22s ease;}
+  @keyframes sheetUp{from{transform:translateY(16px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  @media (prefers-reduced-motion:reduce){.popup-box{animation:none;}}
+  .popup-head{position:relative;display:flex;align-items:center;justify-content:space-between;padding:16px 16px 12px;border-bottom:1px solid var(--border);}
+  .popup-head::before{content:'';position:absolute;top:0;left:16px;right:16px;height:2px;background:var(--fire-grad);border-radius:2px;}
+  .popup-head b{font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;}
+  .popup-head button{width:28px;height:28px;border-radius:8px;border:1px solid var(--border-2);background:var(--surface);color:var(--text);font-size:16px;line-height:1;}
+  .popup-body{font-size:12px;line-height:1.7;color:var(--text-mid);white-space:pre-wrap;padding:16px;}
+  .popup-body img{width:100%;border-radius:10px;margin-top:10px;border:1px solid var(--border);}
 
-  .jf-label{font-size:9px;font-weight:700;color:var(--text-dim);text-transform:uppercase;margin:10px 0 4px;}
-  .jf-label:first-child{margin-top:0;}
-  .jf-input{width:100%;background:var(--card);border:0.5px solid var(--border);color:var(--text);border-radius:9px;padding:10px;font-size:12px;font-family:inherit;}
-  .jf-player-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;}
-  .jf-note{font-size:9px;color:var(--text-dim);margin-top:8px;line-height:1.5;}
-  .jf-submit{background:var(--orange);border:none;border-bottom:3px solid var(--orange-dark);border-radius:10px;padding:11px;text-align:center;color:#241705;font-size:13px;font-weight:500;width:100%;cursor:pointer;font-family:inherit;margin-top:12px;}
-  .jf-submit:disabled{background:#2a3145;border-bottom-color:#1c2233;color:var(--text-dim);cursor:not-allowed;}
-  .jf-error{font-size:10px;color:#ff6f7c;margin-top:6px;min-height:12px;}
-  .jf-pay-opt{display:flex;align-items:center;gap:8px;background:var(--card);border:0.5px solid var(--border);border-radius:9px;padding:10px;font-size:11px;margin-top:6px;}
-  .jf-pay-opt input{width:auto;}
-  .jf-pay-opt.disabled{opacity:.5;}
+  /* join form */
+  .jf-label{font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.08em;color:var(--text-dim);text-transform:uppercase;margin:14px 0 5px;}
+  .jf-label:first-of-type{margin-top:0;}
+  .jf-input{width:100%;background:var(--surface);border:1px solid var(--border-2);color:var(--text);border-radius:10px;padding:11px;font-size:13px;font-family:'Inter',sans-serif;}
+  .jf-input:focus{border-color:var(--fire-2);}
+  .jf-note{font-size:9.5px;color:var(--text-dim);margin-top:8px;line-height:1.6;}
+  .jf-submit{background:var(--fire-grad);border:none;border-radius:11px;padding:12px;text-align:center;color:#210f00;font-size:13.5px;font-weight:700;width:100%;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:.02em;margin-top:14px;}
+  .jf-submit:disabled{background:var(--surface-2);color:var(--text-dim);cursor:not-allowed;}
+  .jf-error{font-size:10px;color:var(--live);margin-top:6px;min-height:12px;font-weight:600;}
+  .jf-pay-opt{display:flex;align-items:center;gap:9px;background:var(--surface);border:1.5px solid var(--border-2);border-radius:11px;padding:11px;font-size:11.5px;margin-top:7px;cursor:pointer;}
+  .jf-pay-opt:has(input:checked){border-color:var(--fire-2);background:rgba(255,183,3,.06);}
+  .jf-pay-opt input{width:16px;height:16px;accent-color:var(--fire-2);flex-shrink:0;}
+  .jf-pay-opt.disabled{opacity:.45;}
+  .jf-pay-opt .pay-icon{font-size:15px;flex-shrink:0;}
+  .jf-pay-opt .pay-text b{display:block;font-size:11.5px;}
+  .jf-pay-opt .pay-text span{display:block;font-size:9.5px;color:var(--text-dim);margin-top:1px;}
 </style>
 </head>
 <body>
@@ -107,9 +173,8 @@
 
   <div class="header">
     <a href="javascript:history.back()" class="back">‹</a>
-    <div>
-      <h1 id="hTitle">Loading...</h1>
-      <div class="org" id="hOrg">CHT ESP ORG</div>
+    <div class="titles">
+      <div class="eyebrow">CHT ESP ORG</div>
     </div>
   </div>
 
@@ -126,36 +191,28 @@
 
 <div class="popup-overlay" id="joinOverlay">
   <div class="popup-box">
-    <div class="popup-head"><b id="joinStepTitle">Payment</b><button type="button" onclick="closeJoinForm()">×</button></div>
+    <div class="popup-head"><b>Join lobby</b><button type="button" onclick="closeJoinForm()">×</button></div>
     <div class="popup-body">
+      <div class="jf-label">Team name *</div>
+      <input class="jf-input" id="jfTeamName" placeholder="Team Alpha">
 
-      <div id="jfStepPayment">
-        <div class="jf-note" id="jfFeeNote" style="font-size:13px;color:var(--text);font-weight:700;margin-bottom:10px;"></div>
-        <div class="jf-label">Payment method *</div>
-        <div id="jfPaymentOptions"></div>
-        <div id="jfPaymentExtra"></div>
-        <div class="jf-error" id="jfPayError"></div>
-        <button type="button" class="jf-submit" id="jfPayNextBtn" onclick="proceedFromPayment()">Continue</button>
-      </div>
-
-      <div id="jfStepDetails" style="display:none">
-        <div class="jf-label">Team name *</div>
-        <input class="jf-input" id="jfTeamName" placeholder="Team Alpha">
-
+      <div id="jfPlayers">
         <div class="jf-label">Player name *</div>
         <input class="jf-input" id="jfPlayerName" placeholder="In-game name">
-
-        <div class="jf-label">WhatsApp number *</div>
-        <input class="jf-input" id="jfWhatsapp" placeholder="01XXXXXXXXX">
-
-        <div class="jf-note">Your slot stays pending until the admin verifies payment and confirms it (instant if paid from balance).</div>
-        <div class="jf-error" id="jfError"></div>
-        <button type="button" class="jf-submit" id="jfSubmitBtn" onclick="submitJoin()">Submit</button>
       </div>
 
+      <div class="jf-label">WhatsApp number *</div>
+      <input class="jf-input" id="jfWhatsapp" placeholder="01XXXXXXXXX">
+
+      <div class="jf-label">Payment method *</div>
+      <div id="jfPaymentOptions"></div>
+      <div id="jfPaymentExtra"></div>
+
+      <div class="jf-note">Your slot stays pending until the admin verifies payment and confirms it (instant if paid from balance).</div>
+      <div class="jf-error" id="jfError"></div>
+      <button type="button" class="jf-submit" id="jfSubmitBtn" onclick="submitJoin()">Submit</button>
     </div>
   </div>
-
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -175,7 +232,7 @@ async function initUser(){
     const {data:p}=await sb.from('profiles').select('whatsapp,user_number').eq('id',sessionUser.id).single();
     userProfile=p||null;
     try{
-      const res=await fetch('https://chteo-api.onrender.com/api/get-balance.php?uid='+encodeURIComponent(sessionUser.id));
+      const res=await fetch('https://chteo-api.onrender.com/get-balance.php?uid='+encodeURIComponent(sessionUser.id));
       const j=await res.json();
       walletBalance=(j&&j.success)?Number(j.balance)||0:null;
     }catch(e){walletBalance=null;}
@@ -196,9 +253,6 @@ async function initUser(){
   }
   currentTournament=t;
 
-  document.getElementById('hTitle').textContent=t.title||'Tournament';
-  document.getElementById('hOrg').textContent=t.tournament_sections?.name||'CHT ESP ORG';
-
   const prizeDist=Array.isArray(t.prize_distribution)?[...t.prize_distribution].sort((a,b)=>a.rank-b.rank):[];
   const maps=Array.isArray(t.maps)?t.maps:[];
   const rulesImages=Array.isArray(t.rules_images)?t.rules_images:[];
@@ -208,42 +262,53 @@ async function initUser(){
   window.pointHtml=esc(t.point_system_text||'No point system added yet.')+pointImages.map(u=>`<img src="${esc(u)}">`).join('');
 
   const ordinal=n=>({1:'1st',2:'2nd',3:'3rd'}[n]||`${n}th`);
+  const badgeClass=n=>n===1?'r1':n===2?'r2':n===3?'r3':'rn';
   const matchTypeLabel=t.match_type==='clash_squad'?'Clash squad':'Full map';
   const formatLabel=t.format?t.format.charAt(0).toUpperCase()+t.format.slice(1):'—';
+  const orgName=t.tournament_sections?.name||'CHT ESP ORG';
 
   root.innerHTML=`
-    <div class="stat-row">
-      <div class="stat-box"><div class="label">Entry fee</div><div class="value">৳${Number(t.entry_fee||0)}</div></div>
-      <div class="stat-box"><div class="label">Slot</div><div class="value">${Number(t.default_slots||t.total_slots||0)}</div></div>
+    <div class="hero">
+      <img class="banner" src="${esc(t.banner_url||'')}" alt="">
+      <div class="scrim"></div>
+      <div class="org-tag">${esc(orgName)}</div>
+      <div class="title-wrap"><h1>${esc(t.title||'Tournament')}</h1></div>
+    </div>
+
+    <div class="ticket">
+      <div class="ticket-top-bar"></div>
+      <div class="ticket-grid">
+        <div class="ticket-cell"><div class="k">Entry fee</div><div class="v fee">৳${Number(t.entry_fee||0)}</div></div>
+        <div class="ticket-cell"><div class="k">Slots</div><div class="v">${Number(t.default_slots||t.total_slots||0)}</div></div>
+        <div class="ticket-cell"><div class="k">Format</div><div class="v tiny">${esc(formatLabel)}</div></div>
+        <div class="ticket-cell"><div class="k">Mode</div><div class="v tiny">${esc(matchTypeLabel)}</div></div>
+      </div>
     </div>
 
     <div class="combo-row">
       <div class="prize-card">
-        <div class="title">Prize distribution</div>
+        <div class="card-title">Prize distribution</div>
         <div class="prize-list">
-          ${prizeDist.length?prizeDist.map(p=>`<div class="row"><span class="rank">${ordinal(p.rank)}</span><span class="amount">৳${Number(p.amount||0)}</span></div>`).join(''):'<div class="row"><span class="rank">—</span></div>'}
+          ${prizeDist.length?prizeDist.map(p=>`<div class="row"><span class="badge ${badgeClass(p.rank)}">${p.rank}</span><span class="rank">${ordinal(p.rank)} place</span><span class="amount">৳${Number(p.amount||0)}</span></div>`).join(''):'<div class="row"><span class="rank">No prize info yet</span></div>'}
         </div>
       </div>
       <div class="info-col">
-        <div class="info-box"><span class="label">Format</span><span class="value">${esc(formatLabel)}</span></div>
-        <div class="info-box"><span class="label">ESports mode</span><span class="value">${esc(matchTypeLabel)}</span></div>
-        <div class="info-box"><span class="label">Vehicle</span><span class="emoji">${t.vehicle_allowed?'✅':'❌'}</span></div>
-        <div class="info-box"><span class="label">Gun skin</span><span class="emoji">${t.gun_skin_allowed?'✅':'❌'}</span></div>
+        <button class="link-box" type="button" onclick="openPopup('Tournament rules', rulesHtml)">📋 Tournament rules<span class="chev">›</span></button>
+        <button class="link-box" type="button" onclick="openPopup('Point system', pointHtml)">🏆 Point system<span class="chev">›</span></button>
+        <div class="toggle-row">
+          <div class="toggle-pill"><div class="tp-label">Vehicle</div><div class="tp-val">${t.vehicle_allowed?'✅':'❌'}</div></div>
+          <div class="toggle-pill"><div class="tp-label">Gun skin</div><div class="tp-val">${t.gun_skin_allowed?'✅':'❌'}</div></div>
+        </div>
       </div>
     </div>
 
-    <div class="link-row">
-      <button class="link-box" type="button" onclick="openPopup('Tournament rules', rulesHtml)">Tournament rules<span class="chev">›</span></button>
-      <button class="link-box" type="button" onclick="openPopup('Point system', pointHtml)">Point system<span class="chev">›</span></button>
-    </div>
-
-    ${maps.length?`<div class="section-title">Maps</div>
+    ${maps.length?`<div class="section-title"><span class="bar"></span>Maps</div>
     <div class="maps-row">
       ${maps.map(m=>`<div class="map-box"><div class="img" style="background-image:url('${esc(m.image_url||'')}')">${m.image_url?'':'No image'}</div><div class="name">${esc(m.name||'—')}</div></div>`).join('')}
     </div>`:''}
 
-    <div class="section-title">Hourly lobbies</div>
-    <div class="lobby-sub">Play the tournament at whichever time suits you.</div>
+    <div class="section-title"><span class="bar"></span>Hourly lobbies</div>
+    <div class="section-sub">Play the tournament at whichever time suits you.</div>
     <div class="lobby-list" id="lobbyList"><div class="empty">Loading lobbies...</div></div>
   `;
 
@@ -259,18 +324,27 @@ async function initUser(){
   if(lerr){lobbyBox.innerHTML='<div class="empty">Could not load lobbies.</div>';return}
   if(!lobbies||!lobbies.length){lobbyBox.innerHTML='<div class="empty">No lobbies open right now.</div>';return}
 
+  const statusPill=s=>{
+    if(s==='live')return `<span class="status-pill live"><span class="dot"></span>LIVE</span>`;
+    if(s==='full')return `<span class="status-pill full">FULL</span>`;
+    return `<span class="status-pill upcoming">OPEN</span>`;
+  };
+
   lobbyBox.innerHTML=lobbies.map(l=>{
     const slots=l.total_slots||0,joined=l.joined_count||0;
     const full=l.status==='full'||joined>=slots;
     const pct=slots?Math.min(100,Math.round(joined/slots*100)):0;
     return `<div class="lobby-card">
-      <div class="lobby-top">
-        <div class="lobby-avatar ${full?'full':''}">${esc((l.time_label||'?')[0])}</div>
-        <div><div class="lobby-time">${esc(l.time_label||'')}</div><div class="lobby-date">${esc(l.lobby_date||'')}</div></div>
+      <div class="lobby-stub ${full?'full':''}">
+        <div class="t-time mono">${esc(l.time_label||'?')}</div>
+        <div class="t-date">${esc(l.lobby_date||'')}</div>
       </div>
-      <div class="lobby-meta"><span>Joined: ${joined}</span><span>Slots: ${slots}</span></div>
-      <div class="lobby-bar"><div class="lobby-bar-fill ${full?'full':''}" style="width:${pct}%"></div></div>
-      <button class="join-btn ${full?'full':''}" type="button" ${full?'disabled':`onclick="openJoinForm('${l.id}')"`}>${full?'FULL':'JOIN NOW'}</button>
+      <div class="lobby-perf"></div>
+      <div class="lobby-body">
+        <div class="lobby-body-top">${statusPill(full?'full':l.status)}<span class="lobby-meta">${joined}/${slots} joined</span></div>
+        <div class="lobby-bar"><div class="lobby-bar-fill ${full?'full':''}" style="width:${pct}%"></div></div>
+        <button class="join-btn ${full?'full':''}" type="button" ${full?'disabled':`onclick="openJoinForm('${l.id}')"`}>${full?'FULL':'JOIN NOW'}</button>
+      </div>
     </div>`;
   }).join('');
 })();
@@ -287,26 +361,15 @@ document.getElementById('popupOverlay').addEventListener('click',function(e){
   if(e.target===this)closePopup();
 });
 
-let pendingPaymentMethod=null, pendingPaymentRef=null, pendingConfirmationStatus='pending';
-
 function openJoinForm(lobbyId){
   currentJoinLobbyId=lobbyId;
-  pendingPaymentMethod=null; pendingPaymentRef=null; pendingConfirmationStatus='pending';
   document.getElementById('jfTeamName').value='';
   document.getElementById('jfPlayerName').value='';
   document.getElementById('jfWhatsapp').value=userProfile?.whatsapp||'';
   document.getElementById('jfError').textContent='';
-  document.getElementById('jfPayError').textContent='';
-  document.getElementById('joinStepTitle').textContent='Payment';
-  document.getElementById('jfStepPayment').style.display='';
-  document.getElementById('jfStepDetails').style.display='none';
-  const fee=Number(currentTournament?.entry_fee)||0;
-  document.getElementById('jfFeeNote').textContent='Entry fee: ৳'+fee;
   renderPaymentOptions();
-  const payBtn=document.getElementById('jfPayNextBtn');
-  payBtn.disabled=false; payBtn.textContent='Continue';
-  const subBtn=document.getElementById('jfSubmitBtn');
-  subBtn.disabled=false; subBtn.textContent='Submit';
+  document.getElementById('jfSubmitBtn').disabled=false;
+  document.getElementById('jfSubmitBtn').textContent='Submit';
   document.getElementById('joinOverlay').classList.add('open');
 }
 function closeJoinForm(){
@@ -322,14 +385,13 @@ function renderPaymentOptions(){
   let html='';
   if(canPayBalance){
     const enough=walletBalance>=fee;
-    html+=`<label class="jf-pay-opt ${enough?'':'disabled'}"><input type="radio" name="jfPay" value="balance" ${enough?'checked':'disabled'}> Pay ৳${fee} from wallet balance (Balance: ৳${walletBalance})</label>`;
-    html+=`<label class="jf-pay-opt"><input type="radio" name="jfPay" value="manual" ${enough?'':'checked'}> Pay via bKash/Nagad manually</label>`;
+    html+=`<label class="jf-pay-opt ${enough?'':'disabled'}"><input type="radio" name="jfPay" value="balance" ${enough?'':'disabled'} onchange="renderPaymentExtra()"><span class="pay-icon">💰</span><span class="pay-text"><b>Pay ৳${fee} from balance</b><span>Wallet balance: ৳${walletBalance}</span></span></label>`;
+    html+=`<label class="jf-pay-opt"><input type="radio" name="jfPay" value="manual" ${enough?'':'checked'} onchange="renderPaymentExtra()"><span class="pay-icon">📱</span><span class="pay-text"><b>Pay via bKash/Nagad</b><span>Manual — enter transaction ID</span></span></label>`;
   }else{
-    html+=`<label class="jf-pay-opt"><input type="radio" name="jfPay" value="manual" checked> Pay via bKash/Nagad manually</label>`;
-    html+=sessionUser?`<div class="jf-note">Could not load your wallet balance right now.</div>`:`<div class="jf-note">Log in to pay instantly from your wallet balance.</div>`;
+    html+=`<label class="jf-pay-opt"><input type="radio" name="jfPay" value="manual" checked onchange="renderPaymentExtra()"><span class="pay-icon">📱</span><span class="pay-text"><b>Pay via bKash/Nagad</b><span>Manual — enter transaction ID</span></span></label>`;
+    html+=`<div class="jf-note">Log in to pay instantly from your wallet balance.</div>`;
   }
   document.getElementById('jfPaymentOptions').innerHTML=html;
-  document.querySelectorAll('input[name="jfPay"]').forEach(el=>el.addEventListener('change',renderPaymentExtra));
   renderPaymentExtra();
 }
 function renderPaymentExtra(){
@@ -338,53 +400,9 @@ function renderPaymentExtra(){
   if(sel==='manual'){
     box.innerHTML=`<div class="jf-label">Payment / transaction reference *</div><input class="jf-input" id="jfPaymentRef" placeholder="bKash TrxID">`;
   }else{
-    box.innerHTML='';
-  }
-}
-
-async function proceedFromPayment(){
-  const errBox=document.getElementById('jfPayError'); errBox.textContent='';
-  const payMethod=document.querySelector('input[name="jfPay"]:checked')?.value||'manual';
-  const btn=document.getElementById('jfPayNextBtn');
-
-  if(payMethod==='manual'){
-    const ref=document.getElementById('jfPaymentRef')?.value.trim()||'';
-    if(!ref){errBox.textContent='Payment/transaction reference is required.';return}
-    pendingPaymentMethod='manual'; pendingPaymentRef=ref; pendingConfirmationStatus='pending';
-    showDetailsStep();
-    return;
-  }
-
-  // balance — charge now, before moving to team details
-  btn.disabled=true; btn.textContent='Processing payment...';
-  try{
-    const {data:{session}}=await sb.auth.getSession();
     const fee=Number(currentTournament?.entry_fee)||0;
-    const res=await fetch('https://chteo-api.onrender.com/api/deduct-balance.php',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
-      body:JSON.stringify({amount:fee,reference:'Tournament entry: '+(currentTournament?.title||''),description:'Tournament entry fee'})
-    });
-    const j=await res.json();
-    if(!j.success){
-      errBox.textContent='Payment failed: '+(j.message||'could not deduct balance.');
-      btn.disabled=false; btn.textContent='Continue';
-      return;
-    }
-    walletBalance=j.balance;
-    pendingPaymentMethod='balance'; pendingPaymentRef='Wallet balance ✓'; pendingConfirmationStatus='confirmed';
-    btn.disabled=false; btn.textContent='Continue';
-    showDetailsStep();
-  }catch(e){
-    errBox.textContent='Payment failed: could not reach wallet service.';
-    btn.disabled=false; btn.textContent='Continue';
+    box.innerHTML=`<div class="jf-note">৳${fee} will be deducted from your wallet balance immediately on submit.</div>`;
   }
-}
-
-function showDetailsStep(){
-  document.getElementById('joinStepTitle').textContent='Team details';
-  document.getElementById('jfStepPayment').style.display='none';
-  document.getElementById('jfStepDetails').style.display='';
 }
 
 async function submitJoin(){
@@ -396,26 +414,55 @@ async function submitJoin(){
   if(!playerName){errBox.textContent='Player name is required.';return}
   if(!whatsapp){errBox.textContent='WhatsApp number is required.';return}
 
+  const payMethod=document.querySelector('input[name="jfPay"]:checked')?.value||'manual';
+  let paymentRef=null;
+  if(payMethod==='manual'){
+    paymentRef=document.getElementById('jfPaymentRef')?.value.trim()||'';
+    if(!paymentRef){errBox.textContent='Payment/transaction reference is required.';return}
+  }
+
   const btn=document.getElementById('jfSubmitBtn');
   btn.disabled=true; btn.textContent='Submitting...';
+
+  let confirmationStatus='pending';
+  if(payMethod==='balance'){
+    try{
+      const {data:{session}}=await sb.auth.getSession();
+      const fee=Number(currentTournament?.entry_fee)||0;
+      const res=await fetch('https://chteo-api.onrender.com/deduct-balance.php',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+        body:JSON.stringify({amount:fee,reference:'Tournament entry: '+(currentTournament?.title||''),description:'Tournament entry fee'})
+      });
+      const j=await res.json();
+      if(!j.success){
+        errBox.textContent='Payment failed: '+(j.message||'could not deduct balance.');
+        btn.disabled=false; btn.textContent='Submit';
+        return;
+      }
+      walletBalance=j.balance;
+      paymentRef='Wallet balance ✓';
+      confirmationStatus='confirmed';
+    }catch(e){
+      errBox.textContent='Payment failed: could not reach wallet service.';
+      btn.disabled=false; btn.textContent='Submit';
+      return;
+    }
+  }
 
   const {error}=await sb.from('lobby_teams').insert({
     lobby_id:currentJoinLobbyId,
     team_name:teamName,
     players:[{name:playerName}],
     contact_number:whatsapp,
-    payment_reference:pendingPaymentRef,
-    payment_method:pendingPaymentMethod,
+    payment_reference:paymentRef,
+    payment_method:payMethod,
     submitted_by:sessionUser?.id||null,
-    confirmation_status:pendingConfirmationStatus
+    confirmation_status:confirmationStatus
   });
 
   if(error){
-    if(pendingPaymentMethod==='balance'){
-      errBox.textContent='Payment succeeded but saving your team failed: '+error.message+'. Please contact support with this — your ৳ was already deducted.';
-    }else{
-      errBox.textContent='Could not submit: '+error.message;
-    }
+    errBox.textContent='Could not submit: '+error.message;
     btn.disabled=false; btn.textContent='Submit';
     return;
   }
