@@ -107,15 +107,15 @@ function start(){
 
   async function load(range){
     listEl.innerHTML='<div class="empty">Loading...</div>';
-    let q=sb.from('leaderboard_rows').select('team_name,kills,prize_won,points');
+    let q=sb.from('leaderboard_rows').select('team_name,prize_won,points');
     const from=rangeStart(range);
     if(from)q=q.gte('lobby_date',from);
     const {data,error}=await q;
     if(error){listEl.innerHTML='<div class="empty">Could not load leaderboard.</div>';console.error(error);return}
     const totals=new Map();
     (data||[]).forEach(r=>{
-      const cur=totals.get(r.team_name)||{team_name:r.team_name,points:0,kills:0,prize:0};
-      cur.points+=r.points||0; cur.kills+=r.kills||0; cur.prize+=Number(r.prize_won)||0;
+      const cur=totals.get(r.team_name)||{team_name:r.team_name,points:0,prize:0};
+      cur.points+=r.points||0; cur.prize+=Number(r.prize_won)||0;
       totals.set(r.team_name,cur);
     });
     const ranked=[...totals.values()].sort((a,b)=>b.points-a.points);
@@ -124,7 +124,7 @@ function start(){
       <div class="lb-row">
         <div class="lb-rank ${medalClass(i)}">${i+1}</div>
         <div class="lb-avatar"></div>
-        <div class="lb-name">${esc(r.team_name)}<span class="s">${r.kills} kills · ৳${r.prize}</span></div>
+        <div class="lb-name">${esc(r.team_name)}<span class="s">৳${r.prize} won</span></div>
         <div class="lb-amt">${r.points} PTS</div>
       </div>`).join('');
   }

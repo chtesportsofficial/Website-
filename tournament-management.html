@@ -110,9 +110,18 @@
 .team-pay.balance{background:#203329;color:#5ee98b}
 .team-pay.manual{background:#2b2410;color:#f6c453}
 .team-actions{display:flex;gap:6px;margin-top:8px}
-.result-row{display:grid;grid-template-columns:1fr 52px 52px 66px;gap:6px;align-items:center;background:#171f31;border:1px solid #293650;border-radius:12px;padding:8px;margin-top:8px}
+.result-row{display:grid;grid-template-columns:26px 1fr 58px 66px 30px;gap:6px;align-items:center;background:#171f31;border:1px solid #293650;border-radius:12px;padding:8px;margin-top:8px}
+.result-rank-badge{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;background:#101725;border:1px solid #2b3852;color:#9eabc0}
+.result-rank-badge.r1{background:#3a2c05;color:#f6c453;border-color:#5c4708}
+.result-rank-badge.r2{background:#232833;color:#c9cfdb;border-color:#3a4150}
+.result-rank-badge.r3{background:#33220f;color:#e0a370;border-color:#4d3417}
 .result-name{font-size:11px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .result-row input{padding:7px;font-size:10px}
+.result-updown{display:flex;flex-direction:column;gap:2px}
+.result-updown button{border:1px solid #293650;background:#101725;color:#e8ebf2;border-radius:6px;width:28px;height:15px;font-size:9px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center}
+.result-updown button:disabled{opacity:.3}
+.results-toolbar{display:flex;justify-content:flex-end;margin-bottom:2px}
+.results-toolbar button{border:1px solid #293650;background:#141b2b;color:#e9edf5;border-radius:9px;padding:7px 11px;font-size:9px;font-weight:900}
 </style>
 </head>
 <body>
@@ -217,6 +226,7 @@
 
 <div class="modal" id="lrm"><div class="box">
   <div class="mh"><b id="lrmTitle">Enter Result</b><button type="button" onclick="closeM('lrm')">×</button></div>
+  <div class="results-toolbar"><button type="button" onclick="sortResultsByPoints()">↕ Sort by points</button></div>
   <div id="resultsList"><div class="loading">Loading...</div></div>
   <div class="modal-actions"><button type="button" onclick="saveResults()">Save Results</button><button type="button" class="primary" onclick="saveResultsAndComplete()">Save &amp; Complete</button></div>
 </div></div>
@@ -724,20 +734,66 @@ async function openResults(lobbyId){
   ]);
   if(teamsRes.error||resultsRes.error){$('resultsList').innerHTML='<div class="empty">Could not load result data.</div>';console.error(teamsRes.error||resultsRes.error);return;}
   const rMap=new Map((resultsRes.data||[]).map(r=>[r.team_id,r]));
-  const teams=teamsRes.data||[];
-  $('resultsList').innerHTML=teams.length?teams.map(tm=>{const r=rMap.get(tm.id)||{};return `<div class="result-row" data-team="${tm.id}">
+  let teams=teamsRes.data||[];
+  // Order rows the same way they were last saved (by rank) so admin sees
+  // their previous arrangement; teams never scored yet fall back to name order.
+  teams=[...teams].sort((a,b)=>{
+    const ra=rMap.get(a.id)?.rank, rb=rMap.get(b.id)?.rank;
+    if(ra==null&&rb==null)return a.team_name.localeCompare(b.team_name);
+    if(ra==null)return 1;
+    if(rb==null)return -1;
+    return ra-rb;
+  });
+  renderResultRows(teams,rMap);
+}
+function rankBadgeClass(i){return i===0?'r1':i===1?'r2':i===2?'r3':'';}
+function renderResultRows(teams,rMap){
+  $('resultsList').innerHTML=teams.length?teams.map((tm,i)=>{const r=rMap.get(tm.id)||{};return `<div class="result-row" data-team="${tm.id}">
+      <div class="result-rank-badge ${rankBadgeClass(i)}">${i+1}</div>
       <div class="result-name">${esc(tm.team_name)}</div>
-      <input type="number" class="resRank" placeholder="Rank" min="1" value="${r.rank??''}">
-      <input type="number" class="resKills" placeholder="Kills" min="0" value="${r.kills??0}">
+      <input type="number" class="resPoints" placeholder="PTS" min="0" value="${r.total_points??''}">
       <input type="number" class="resPrize" placeholder="৳" min="0" value="${r.prize_won??0}">
+      <div class="result-updown"><button type="button" ${i===0?'disabled':''} onclick="moveResultRow('${tm.id}',-1)">▲</button><button type="button" ${i===teams.length-1?'disabled':''} onclick="moveResultRow('${tm.id}',1)">▼</button></div>
     </div>`;}).join(''):'<div class="empty">No confirmed teams for this lobby.</div>';
+}
+function moveResultRow(teamId,dir){
+  const list=$('resultsList');
+  const row=list.querySelector(`.result-row[data-team="${teamId}"]`);
+  if(!row)return;
+  const sibling=dir<0?row.previousElementSibling:row.nextElementSibling;
+  if(!sibling)return;
+  if(dir<0)list.insertBefore(row,sibling); else list.insertBefore(sibling,row);
+  renumberResultRows();
+}
+function sortResultsByPoints(){
+  const list=$('resultsList');
+  const rows=[...list.querySelectorAll('.result-row')];
+  // Stable sort: ties keep their current relative order, so any manual
+  // up/down adjustment you already made for a tie survives re-sorting.
+  rows.sort((a,b)=>{
+    const pa=+a.querySelector('.resPoints').value||0;
+    const pb=+b.querySelector('.resPoints').value||0;
+    return pb-pa;
+  });
+  rows.forEach(r=>list.appendChild(r));
+  renumberResultRows();
+}
+function renumberResultRows(){
+  const rows=[...document.querySelectorAll('#resultsList .result-row')];
+  rows.forEach((row,i)=>{
+    const badge=row.querySelector('.result-rank-badge');
+    badge.textContent=i+1;
+    badge.className='result-rank-badge '+rankBadgeClass(i);
+    row.querySelectorAll('.result-updown button')[0].disabled=i===0;
+    row.querySelectorAll('.result-updown button')[1].disabled=i===rows.length-1;
+  });
 }
 async function saveResults(){
   const lobbyId=currentLobbyForResults?.id; if(!lobbyId)return;
-  const rows=[...document.querySelectorAll('#resultsList .result-row')].map(row=>({
+  const rows=[...document.querySelectorAll('#resultsList .result-row')].map((row,i)=>({
     lobby_id:lobbyId, team_id:row.dataset.team,
-    rank:row.querySelector('.resRank').value?+row.querySelector('.resRank').value:null,
-    kills:+row.querySelector('.resKills').value||0,
+    rank:i+1,
+    total_points:+row.querySelector('.resPoints').value||0,
     prize_won:+row.querySelector('.resPrize').value||0
   }));
   if(!rows.length)return msg('No teams to save.');

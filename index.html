@@ -510,7 +510,7 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
     const root=document.getElementById('dynamicTournamentSections');
     async function load(){
       const {data,error}=await sb.from('tournament_sections')
-        .select('id,name,display_order,is_active,tournaments(id,title,banner_url,short_description,entry_fee,prize_pool,total_slots,status,show_on_homepage,created_at)')
+        .select('id,name,display_order,is_active,tournaments(id,title,banner_url,entry_fee,prize_pool,total_slots,status,show_on_homepage,created_at)')
         .eq('is_active',true).order('display_order',{ascending:true});
       if(error){console.warn(error);root.innerHTML='';return}
       // Keep homepage tournament order exactly the same as the Tournament Management
