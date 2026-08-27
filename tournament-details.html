@@ -313,26 +313,32 @@ document.getElementById('joinOverlay').addEventListener('click',function(e){
 function renderPaymentOptions(){
   const fee=Number(currentTournament?.entry_fee)||0;
   const canPayBalance=sessionUser && walletBalance!=null;
+  const enough=canPayBalance && walletBalance>=fee;
   let html='';
   if(canPayBalance){
-    const enough=walletBalance>=fee;
-    html+=`<label class="jf-pay-opt ${enough?'':'disabled'}"><input type="radio" name="jfPay" value="balance" ${enough?'':'disabled'} onchange="renderPaymentExtra()"><span class="pay-icon">💰</span><span class="pay-text"><b>Pay ৳${fee} from balance</b><span>Wallet balance: ৳${walletBalance}</span></span></label>`;
-    html+=`<label class="jf-pay-opt"><input type="radio" name="jfPay" value="manual" ${enough?'':'checked'} onchange="renderPaymentExtra()"><span class="pay-icon">📱</span><span class="pay-text"><b>Pay via bKash/Nagad</b><span>Manual — enter transaction ID</span></span></label>`;
-  }else{
-    html+=`<label class="jf-pay-opt"><input type="radio" name="jfPay" value="manual" checked onchange="renderPaymentExtra()"><span class="pay-icon">📱</span><span class="pay-text"><b>Pay via bKash/Nagad</b><span>Manual — enter transaction ID</span></span></label>`;
-    html+=`<div class="jf-note">Log in to pay instantly from your wallet balance.</div>`;
+    html+=`<label class="jf-pay-opt ${enough?'':'disabled'}"><input type="radio" name="jfPay" value="balance" ${enough?'checked':'disabled'} onchange="renderPaymentExtra()"><span class="pay-icon">💰</span><span class="pay-text"><b>Pay ৳${fee} from balance</b><span>Wallet balance: ৳${walletBalance}</span></span></label>`;
+  }
+  html+=`<label class="jf-pay-opt disabled" onclick="event.preventDefault();showManualComingSoon();"><input type="radio" name="jfPay" value="manual" disabled><span class="pay-icon">📱</span><span class="pay-text"><b>Pay via bKash/Nagad</b><span>শীঘ্রই আসছে</span></span></label>`;
+  if(!canPayBalance){
+    html+=`<div class="jf-note">স্লট বুক করতে আগে লগইন করুন এবং ওয়ালেট ব্যালেন্স থেকে পে করুন।</div>`;
+  }else if(!enough){
+    html+=`<div class="jf-note">ব্যালেন্স যথেষ্ট নয় — স্লট বুক করতে ওয়ালেটে টাকা যোগ করুন।</div>`;
   }
   document.getElementById('jfPaymentOptions').innerHTML=html;
   renderPaymentExtra();
 }
+function showManualComingSoon(){
+  openPopup('📱 bKash/Nagad পেমেন্ট',
+    'এখনও অটো পেমেন্ট সিস্টেম যোগ করা হয়নি।<br><br>খুব শীঘ্রই bKash/Nagad পেমেন্ট অপশন চালু করা হবে — কাজ চলছে, একটু ধৈর্য ধরুন 🙏<br><br>ততক্ষণ ওয়ালেট ব্যালেন্স থেকে পেমেন্ট করে স্লট বুক করতে পারবেন।');
+}
 function renderPaymentExtra(){
   const sel=document.querySelector('input[name="jfPay"]:checked')?.value;
   const box=document.getElementById('jfPaymentExtra');
-  if(sel==='manual'){
-    box.innerHTML=`<div class="jf-label">Payment / transaction reference *</div><input class="jf-input" id="jfPaymentRef" placeholder="bKash TrxID">`;
-  }else{
+  if(sel==='balance'){
     const fee=Number(currentTournament?.entry_fee)||0;
     box.innerHTML=`<div class="jf-note">৳${fee} will be deducted from your wallet balance immediately on submit.</div>`;
+  }else{
+    box.innerHTML='';
   }
 }
 
@@ -345,18 +351,14 @@ async function submitJoin(){
   if(!playerName){errBox.textContent='Player name is required.';return}
   if(!whatsapp){errBox.textContent='WhatsApp number is required.';return}
 
-  const payMethod=document.querySelector('input[name="jfPay"]:checked')?.value||'manual';
-  let paymentRef=null;
-  if(payMethod==='manual'){
-    paymentRef=document.getElementById('jfPaymentRef')?.value.trim()||'';
-    if(!paymentRef){errBox.textContent='Payment/transaction reference is required.';return}
-  }
+  const payMethod=document.querySelector('input[name="jfPay"]:checked')?.value;
+  if(payMethod!=='balance'){errBox.textContent='ওয়ালেট ব্যালেন্স থেকে পে করেই এখন স্লট বুক করা যাচ্ছে — bKash/Nagad পেমেন্ট এখনো চালু হয়নি।';return}
 
   const btn=document.getElementById('jfSubmitBtn');
   btn.disabled=true; btn.textContent='Submitting...';
 
-  let confirmationStatus='pending';
-  if(payMethod==='balance'){
+  let confirmationStatus='pending', paymentRef=null;
+  {
     try{
       const {data:{session}}=await sb.auth.getSession();
       const fee=Number(currentTournament?.entry_fee)||0;
