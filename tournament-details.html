@@ -192,7 +192,7 @@
   <div class="popup-box">
     <div class="popup-head"><b>🎮 Join lobby</b><button type="button" onclick="closeJoinForm()">×</button></div>
     <div class="jf-body">
-      <div class="jf-lobby-chips" id="jfLobbyChips"></div>
+      <div class="jf-lobby-chips" id="jfLobbyChips" style="display:none"></div>
       <div id="jfQuantityWrap"></div>
       <label class="jf-same-toggle" id="jfSameToggleWrap" style="display:none">
         <input type="checkbox" id="jfSameTeam" checked onchange="renderTeamBlocks()">
@@ -468,7 +468,8 @@ function renderTeamBlocks(){
       const otherKeys=allKeys.filter(k=>k.key!==key);
       const copyBtns=otherKeys.map(k=>{
         const ol=lobbyDataById[k.lobbyId]||{};
-        const olabel=`${esc(ol.time_label||'')} ${esc(ol.lobby_date||'')}`.trim()+(getTeamCount(k.lobbyId)>1?` টিম ${k.index}`:'');
+        const sameLobby=k.lobbyId===id;
+        const olabel=sameLobby?`টিম ${k.index}`:`${esc(ol.time_label||'')} ${esc(ol.lobby_date||'')}`.trim()+(getTeamCount(k.lobbyId)>1?` টিম ${k.index}`:'');
         return `<button type="button" class="jf-copy-btn" onclick="copyTeamFrom('${key}','${k.key}')">📋 ${olabel} থেকে কপি</button>`;
       }).join('');
       blocks+=`<div class="jf-team-block" data-key="${key}">
