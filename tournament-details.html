@@ -95,6 +95,7 @@
   .popup-head button{width:30px;height:30px;border-radius:9px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:18px;flex-shrink:0;}
   .popup-body{font-size:12px;line-height:1.75;color:#c8cdd6;white-space:pre-wrap;padding:16px;}
   .popup-body img{width:100%;border-radius:10px;margin-top:10px;border:1px solid var(--border);}
+  .jf-body{font-size:12px;line-height:1.5;color:#c8cdd6;padding:16px;}
 
   .jf-label{font-size:9.5px;font-weight:700;letter-spacing:.04em;color:var(--text-dim);text-transform:uppercase;margin:12px 0 5px;}
   .jf-label:first-child{margin-top:0;}
@@ -140,22 +141,18 @@
 <div class="popup-overlay" id="joinOverlay">
   <div class="popup-box">
     <div class="popup-head"><b>🎮 Join lobby</b><button type="button" onclick="closeJoinForm()">×</button></div>
-    <div class="popup-body">
+    <div class="jf-body">
       <div class="jf-label">Team name *</div>
       <input class="jf-input" id="jfTeamName" placeholder="Team Alpha">
-
       <div id="jfPlayers">
         <div class="jf-label">Player name *</div>
         <input class="jf-input" id="jfPlayerName" placeholder="In-game name">
       </div>
-
       <div class="jf-label">WhatsApp number *</div>
       <input class="jf-input" id="jfWhatsapp" placeholder="01XXXXXXXXX">
-
       <div class="jf-label">Payment method *</div>
       <div id="jfPaymentOptions"></div>
       <div id="jfPaymentExtra"></div>
-
       <div class="jf-note">Your slot stays pending until the admin verifies payment and confirms it (instant if paid from balance).</div>
       <div class="jf-error" id="jfError"></div>
       <button type="button" class="jf-submit" id="jfSubmitBtn" onclick="submitJoin()">Submit</button>
