@@ -472,10 +472,10 @@ function renderTeamBlocks(){
         return `<button type="button" class="jf-copy-btn" onclick="copyTeamFrom('${key}','${k.key}')">📋 ${olabel} থেকে কপি</button>`;
       }).join('');
       blocks+=`<div class="jf-team-block" data-key="${key}">
-        <div class="jf-team-block-head">
-          <b>${label}${c>1?' — টিম '+i:''}</b>
+        ${(c>1||otherKeys.length)?`<div class="jf-team-block-head">
+          <b>${c>1?'টিম '+i:''}</b>
           ${otherKeys.length?`<div class="jf-copy-wrap">${copyBtns}</div>`:''}
-        </div>
+        </div>`:''}
         <div class="jf-label">Team name *</div>
         <input class="jf-input" id="jfTeamName_${key}" placeholder="Team Alpha">
         <div class="jf-label">Player name *</div>
