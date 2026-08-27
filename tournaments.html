@@ -243,7 +243,6 @@ function renderCard(row){
   `;
 
   return `<div class="t-card">
-    ${t.banner_url?`<img class="t-banner" src="${esc(t.banner_url)}" alt="">`:''}
     <div class="t-card-body">
       <div class="t-title">${esc(t.title||'Tournament')}</div>
       <div class="t-org">${esc(row.team_name||'')}</div>
