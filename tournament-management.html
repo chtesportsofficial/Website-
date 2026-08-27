@@ -628,6 +628,39 @@ let currentLobbyTournament=null, lobbies=[], lobbyTeamsCache=[], currentLobbyFor
 function fmtLobbyDate(d){try{return new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short'});}catch(e){return d;}}
 function lobbyDot(s){return {upcoming:'○',live:'●',full:'●',completed:'✔',cancelled:'○'}[s]||'○';}
 
+// Parses time-based labels like "9:00 PM" into a real Date. Capacity-based
+// labels like "Batch 1" don't parse (no clock time to compare) — those
+// only get the date-rollover check below, never the same-day live check.
+function parseLobbyDateTime(lobbyDate,timeLabel){
+  const m=/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec((timeLabel||'').trim());
+  if(!m)return null;
+  let h=(+m[1])%12; if(/pm/i.test(m[3]))h+=12;
+  const d=new Date(lobbyDate+'T00:00:00'); d.setHours(h,+m[2],0,0);
+  return d;
+}
+// No cron/edge function on this stack, so status transitions happen on the
+// client whenever the admin opens the Lobbies tab (matches the roadmap's
+// "simple client-side check" note): any lobby dated before today is safely
+// past its match, so it's rolled to completed; a today-dated upcoming lobby
+// flips to live once its start time has arrived. Never auto-completes a
+// same-day live lobby (no reliable match-duration to go on) — that stays a
+// manual "✔ Complete" click, same as before.
+async function applyAutoStatusUpdates(list){
+  const now=new Date();
+  const todayStr=now.toISOString().slice(0,10);
+  const toLive=[],toCompleted=[];
+  list.forEach(l=>{
+    if(!['upcoming','live','full'].includes(l.status))return;
+    if(l.lobby_date<todayStr){toCompleted.push(l.id);l.status='completed';return;}
+    if(l.lobby_date===todayStr&&l.status==='upcoming'){
+      const dt=parseLobbyDateTime(l.lobby_date,l.time_label);
+      if(dt&&dt<=now){toLive.push(l.id);l.status='live';}
+    }
+  });
+  if(toLive.length)await sb.from('tournament_lobbies').update({status:'live'}).in('id',toLive);
+  if(toCompleted.length)await sb.from('tournament_lobbies').update({status:'completed'}).in('id',toCompleted);
+}
+
 function openLobbies(tid){
   currentLobbyTournament=tournaments.find(x=>x.id===tid); if(!currentLobbyTournament)return;
   $('lbmTitle').textContent=currentLobbyTournament.title+' — Lobbies';
@@ -640,7 +673,9 @@ async function loadLobbies(tid){
   $('lobbiesActive').innerHTML='<div class="loading">Loading...</div>'; $('lobbiesHistory').innerHTML='';
   const {data,error}=await sb.from('tournament_lobbies').select('*').eq('tournament_id',tid).order('lobby_date');
   if(error){$('lobbiesActive').innerHTML='<div class="empty">Could not load lobbies.</div>';console.error(error);return;}
-  lobbies=data||[]; renderLobbies();
+  lobbies=data||[];
+  await applyAutoStatusUpdates(lobbies);
+  renderLobbies();
 }
 function renderLobbies(){
   const active=[...lobbies].filter(l=>l.status!=='completed').sort((a,b)=>(a.lobby_date+a.time_label).localeCompare(b.lobby_date+b.time_label));
