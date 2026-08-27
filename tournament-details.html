@@ -126,28 +126,36 @@
 
 <div class="popup-overlay" id="joinOverlay">
   <div class="popup-box">
-    <div class="popup-head"><b>Join lobby</b><button type="button" onclick="closeJoinForm()">×</button></div>
+    <div class="popup-head"><b id="joinStepTitle">Payment</b><button type="button" onclick="closeJoinForm()">×</button></div>
     <div class="popup-body">
-      <div class="jf-label">Team name *</div>
-      <input class="jf-input" id="jfTeamName" placeholder="Team Alpha">
 
-      <div id="jfPlayers">
-        <div class="jf-label">Player name *</div>
-        <input class="jf-input" id="jfPlayerName" placeholder="In-game name">
+      <div id="jfStepPayment">
+        <div class="jf-note" id="jfFeeNote" style="font-size:13px;color:var(--text);font-weight:700;margin-bottom:10px;"></div>
+        <div class="jf-label">Payment method *</div>
+        <div id="jfPaymentOptions"></div>
+        <div id="jfPaymentExtra"></div>
+        <div class="jf-error" id="jfPayError"></div>
+        <button type="button" class="jf-submit" id="jfPayNextBtn" onclick="proceedFromPayment()">Continue</button>
       </div>
 
-      <div class="jf-label">WhatsApp number *</div>
-      <input class="jf-input" id="jfWhatsapp" placeholder="01XXXXXXXXX">
+      <div id="jfStepDetails" style="display:none">
+        <div class="jf-label">Team name *</div>
+        <input class="jf-input" id="jfTeamName" placeholder="Team Alpha">
 
-      <div class="jf-label">Payment method *</div>
-      <div id="jfPaymentOptions"></div>
-      <div id="jfPaymentExtra"></div>
+        <div class="jf-label">Player name *</div>
+        <input class="jf-input" id="jfPlayerName" placeholder="In-game name">
 
-      <div class="jf-note">Your slot stays pending until the admin verifies payment and confirms it (instant if paid from balance).</div>
-      <div class="jf-error" id="jfError"></div>
-      <button type="button" class="jf-submit" id="jfSubmitBtn" onclick="submitJoin()">Submit</button>
+        <div class="jf-label">WhatsApp number *</div>
+        <input class="jf-input" id="jfWhatsapp" placeholder="01XXXXXXXXX">
+
+        <div class="jf-note">Your slot stays pending until the admin verifies payment and confirms it (instant if paid from balance).</div>
+        <div class="jf-error" id="jfError"></div>
+        <button type="button" class="jf-submit" id="jfSubmitBtn" onclick="submitJoin()">Submit</button>
+      </div>
+
     </div>
   </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -167,7 +175,7 @@ async function initUser(){
     const {data:p}=await sb.from('profiles').select('whatsapp,user_number').eq('id',sessionUser.id).single();
     userProfile=p||null;
     try{
-      const res=await fetch('https://chteo-api.onrender.com/get-balance.php?uid='+encodeURIComponent(sessionUser.id));
+      const res=await fetch('https://chteo-api.onrender.com/api/get-balance.php?uid='+encodeURIComponent(sessionUser.id));
       const j=await res.json();
       walletBalance=(j&&j.success)?Number(j.balance)||0:null;
     }catch(e){walletBalance=null;}
@@ -279,15 +287,26 @@ document.getElementById('popupOverlay').addEventListener('click',function(e){
   if(e.target===this)closePopup();
 });
 
+let pendingPaymentMethod=null, pendingPaymentRef=null, pendingConfirmationStatus='pending';
+
 function openJoinForm(lobbyId){
   currentJoinLobbyId=lobbyId;
+  pendingPaymentMethod=null; pendingPaymentRef=null; pendingConfirmationStatus='pending';
   document.getElementById('jfTeamName').value='';
   document.getElementById('jfPlayerName').value='';
   document.getElementById('jfWhatsapp').value=userProfile?.whatsapp||'';
   document.getElementById('jfError').textContent='';
+  document.getElementById('jfPayError').textContent='';
+  document.getElementById('joinStepTitle').textContent='Payment';
+  document.getElementById('jfStepPayment').style.display='';
+  document.getElementById('jfStepDetails').style.display='none';
+  const fee=Number(currentTournament?.entry_fee)||0;
+  document.getElementById('jfFeeNote').textContent='Entry fee: ৳'+fee;
   renderPaymentOptions();
-  document.getElementById('jfSubmitBtn').disabled=false;
-  document.getElementById('jfSubmitBtn').textContent='Submit';
+  const payBtn=document.getElementById('jfPayNextBtn');
+  payBtn.disabled=false; payBtn.textContent='Continue';
+  const subBtn=document.getElementById('jfSubmitBtn');
+  subBtn.disabled=false; subBtn.textContent='Submit';
   document.getElementById('joinOverlay').classList.add('open');
 }
 function closeJoinForm(){
@@ -303,13 +322,14 @@ function renderPaymentOptions(){
   let html='';
   if(canPayBalance){
     const enough=walletBalance>=fee;
-    html+=`<label class="jf-pay-opt ${enough?'':'disabled'}"><input type="radio" name="jfPay" value="balance" ${enough?'':'disabled'} onchange="renderPaymentExtra()"> Pay ৳${fee} from wallet balance (Balance: ৳${walletBalance})</label>`;
-    html+=`<label class="jf-pay-opt"><input type="radio" name="jfPay" value="manual" ${enough?'':'checked'} onchange="renderPaymentExtra()"> Pay via bKash/Nagad manually</label>`;
+    html+=`<label class="jf-pay-opt ${enough?'':'disabled'}"><input type="radio" name="jfPay" value="balance" ${enough?'checked':'disabled'}> Pay ৳${fee} from wallet balance (Balance: ৳${walletBalance})</label>`;
+    html+=`<label class="jf-pay-opt"><input type="radio" name="jfPay" value="manual" ${enough?'':'checked'}> Pay via bKash/Nagad manually</label>`;
   }else{
-    html+=`<label class="jf-pay-opt"><input type="radio" name="jfPay" value="manual" checked onchange="renderPaymentExtra()"> Pay via bKash/Nagad manually</label>`;
-    html+=`<div class="jf-note">Log in to pay instantly from your wallet balance.</div>`;
+    html+=`<label class="jf-pay-opt"><input type="radio" name="jfPay" value="manual" checked> Pay via bKash/Nagad manually</label>`;
+    html+=sessionUser?`<div class="jf-note">Could not load your wallet balance right now.</div>`:`<div class="jf-note">Log in to pay instantly from your wallet balance.</div>`;
   }
   document.getElementById('jfPaymentOptions').innerHTML=html;
+  document.querySelectorAll('input[name="jfPay"]').forEach(el=>el.addEventListener('change',renderPaymentExtra));
   renderPaymentExtra();
 }
 function renderPaymentExtra(){
@@ -318,9 +338,53 @@ function renderPaymentExtra(){
   if(sel==='manual'){
     box.innerHTML=`<div class="jf-label">Payment / transaction reference *</div><input class="jf-input" id="jfPaymentRef" placeholder="bKash TrxID">`;
   }else{
-    const fee=Number(currentTournament?.entry_fee)||0;
-    box.innerHTML=`<div class="jf-note">৳${fee} will be deducted from your wallet balance immediately on submit.</div>`;
+    box.innerHTML='';
   }
+}
+
+async function proceedFromPayment(){
+  const errBox=document.getElementById('jfPayError'); errBox.textContent='';
+  const payMethod=document.querySelector('input[name="jfPay"]:checked')?.value||'manual';
+  const btn=document.getElementById('jfPayNextBtn');
+
+  if(payMethod==='manual'){
+    const ref=document.getElementById('jfPaymentRef')?.value.trim()||'';
+    if(!ref){errBox.textContent='Payment/transaction reference is required.';return}
+    pendingPaymentMethod='manual'; pendingPaymentRef=ref; pendingConfirmationStatus='pending';
+    showDetailsStep();
+    return;
+  }
+
+  // balance — charge now, before moving to team details
+  btn.disabled=true; btn.textContent='Processing payment...';
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    const fee=Number(currentTournament?.entry_fee)||0;
+    const res=await fetch('https://chteo-api.onrender.com/api/deduct-balance.php',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+      body:JSON.stringify({amount:fee,reference:'Tournament entry: '+(currentTournament?.title||''),description:'Tournament entry fee'})
+    });
+    const j=await res.json();
+    if(!j.success){
+      errBox.textContent='Payment failed: '+(j.message||'could not deduct balance.');
+      btn.disabled=false; btn.textContent='Continue';
+      return;
+    }
+    walletBalance=j.balance;
+    pendingPaymentMethod='balance'; pendingPaymentRef='Wallet balance ✓'; pendingConfirmationStatus='confirmed';
+    btn.disabled=false; btn.textContent='Continue';
+    showDetailsStep();
+  }catch(e){
+    errBox.textContent='Payment failed: could not reach wallet service.';
+    btn.disabled=false; btn.textContent='Continue';
+  }
+}
+
+function showDetailsStep(){
+  document.getElementById('joinStepTitle').textContent='Team details';
+  document.getElementById('jfStepPayment').style.display='none';
+  document.getElementById('jfStepDetails').style.display='';
 }
 
 async function submitJoin(){
@@ -332,55 +396,26 @@ async function submitJoin(){
   if(!playerName){errBox.textContent='Player name is required.';return}
   if(!whatsapp){errBox.textContent='WhatsApp number is required.';return}
 
-  const payMethod=document.querySelector('input[name="jfPay"]:checked')?.value||'manual';
-  let paymentRef=null;
-  if(payMethod==='manual'){
-    paymentRef=document.getElementById('jfPaymentRef')?.value.trim()||'';
-    if(!paymentRef){errBox.textContent='Payment/transaction reference is required.';return}
-  }
-
   const btn=document.getElementById('jfSubmitBtn');
   btn.disabled=true; btn.textContent='Submitting...';
-
-  let confirmationStatus='pending';
-  if(payMethod==='balance'){
-    try{
-      const {data:{session}}=await sb.auth.getSession();
-      const fee=Number(currentTournament?.entry_fee)||0;
-      const res=await fetch('https://chteo-api.onrender.com/deduct-balance.php',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
-        body:JSON.stringify({amount:fee,reference:'Tournament entry: '+(currentTournament?.title||''),description:'Tournament entry fee'})
-      });
-      const j=await res.json();
-      if(!j.success){
-        errBox.textContent='Payment failed: '+(j.message||'could not deduct balance.');
-        btn.disabled=false; btn.textContent='Submit';
-        return;
-      }
-      walletBalance=j.balance;
-      paymentRef='Wallet balance ✓';
-      confirmationStatus='confirmed';
-    }catch(e){
-      errBox.textContent='Payment failed: could not reach wallet service.';
-      btn.disabled=false; btn.textContent='Submit';
-      return;
-    }
-  }
 
   const {error}=await sb.from('lobby_teams').insert({
     lobby_id:currentJoinLobbyId,
     team_name:teamName,
     players:[{name:playerName}],
     contact_number:whatsapp,
-    payment_reference:paymentRef,
-    payment_method:payMethod,
+    payment_reference:pendingPaymentRef,
+    payment_method:pendingPaymentMethod,
     submitted_by:sessionUser?.id||null,
-    confirmation_status:confirmationStatus
+    confirmation_status:pendingConfirmationStatus
   });
 
   if(error){
-    errBox.textContent='Could not submit: '+error.message;
+    if(pendingPaymentMethod==='balance'){
+      errBox.textContent='Payment succeeded but saving your team failed: '+error.message+'. Please contact support with this — your ৳ was already deducted.';
+    }else{
+      errBox.textContent='Could not submit: '+error.message;
+    }
     btn.disabled=false; btn.textContent='Submit';
     return;
   }
