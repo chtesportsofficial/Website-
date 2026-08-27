@@ -10,7 +10,20 @@ require_once "../db.php";
 
 // ---- 1. Read the bearer token the frontend sends (the user's own Supabase
 //         session access_token) — never trust a client-supplied uid directly.
-$authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? ($_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '');
+$authHeader = '';
+if (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
+    $authHeader = $_SERVER['HTTP_AUTHORIZATION'];
+} elseif (!empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+    $authHeader = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+} elseif (function_exists('getallheaders')) {
+    foreach (getallheaders() as $name => $value) {
+        if (strcasecmp($name, 'Authorization') === 0) { $authHeader = $value; break; }
+    }
+} elseif (function_exists('apache_request_headers')) {
+    foreach (apache_request_headers() as $name => $value) {
+        if (strcasecmp($name, 'Authorization') === 0) { $authHeader = $value; break; }
+    }
+}
 if (!preg_match('/Bearer\s+(.+)/i', $authHeader, $m)) {
     echo json_encode(["success" => false, "message" => "Missing auth token"]);
     exit;
