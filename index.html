@@ -6,6 +6,14 @@
 <title>CHT ESP ORG</title>
 <link rel="stylesheet" href="theme.css">
 <script src="global.js" defer></script>
+<!-- Notice / Tournament / Ranking below all poll for window.supabase directly
+     instead of going through CHTEO.getSupabaseClient(). Previously nothing
+     loaded the actual Supabase SDK unless the visitor was logged in
+     (global.js only injects it inside syncProfile(), which only runs when
+     chteo_logged_in==='true') — so for a logged-out visitor window.supabase
+     never existed and those sections polled forever, stuck on "Loading...".
+     Loading the SDK here unconditionally fixes that for everyone. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --bg:#0a0d13;--bg-alt:#0d1119;--surface:#131826;--surface-2:#171d2d;
@@ -873,7 +881,7 @@ window.addEventListener('pageshow', function(event){
 <style>
 /* ============ First-time Profile Spotlight ============ */
 .profile-spotlight{position:fixed;inset:0;z-index:9998;display:none}
-.spotlight-hole{position:fixed;border-radius:18px;box-shadow:0 0 0 9999px rgba(4,6,10,.86);transition:top .2s ease,left .2s ease,width .2s ease,height .2s ease;z-index:9998}
+.spotlight-hole{position:fixed;border-radius:18px;box-shadow:0 0 0 9999px rgba(4,6,10,.5);transition:top .2s ease,left .2s ease,width .2s ease,height .2s ease;z-index:9998}
 .spotlight-tip{position:fixed;z-index:9999;width:260px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 12px 30px rgba(0,0,0,.55)}
 .spotlight-tip::after{content:"";position:absolute;bottom:-8px;right:26px;width:16px;height:16px;background:var(--surface);border-right:1px solid var(--line);border-bottom:1px solid var(--line);transform:rotate(45deg)}
 .spotlight-tip-text{font-size:12.5px;line-height:1.55;color:var(--text);margin-bottom:12px}
