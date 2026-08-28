@@ -575,16 +575,18 @@ async function handleSignin(){
   }
 
   const submitBtn = document.querySelector('#view-signin .submit-btn');
+  const submitBtnOriginalText = submitBtn.textContent;
   submitBtn.disabled = true;
+  submitBtn.textContent = 'Signing in...';
 
   const { data, error } = await supabaseClient.auth.signInWithPassword({
     email,
     password: pw
   });
 
-  submitBtn.disabled = false;
-
   if(error){
+    submitBtn.disabled = false;
+    submitBtn.textContent = submitBtnOriginalText;
     showToast(error.message);
     return;
   }
@@ -600,6 +602,8 @@ async function handleSignin(){
     console.error('Could not verify account status:', gateErr.message);
   } else if(gateProfile && gateProfile.is_banned){
     await supabaseClient.auth.signOut();
+    submitBtn.disabled = false;
+    submitBtn.textContent = submitBtnOriginalText;
     showBlockedToast();
     return;
   }
@@ -636,7 +640,7 @@ async function handleSignin(){
     showToast('Login successful. Wallet sync failed: ' + walletResult.message);
   } else {
     console.log('WALLET SYNC SUCCESS:', walletResult);
-    showToast('Signed in successfully. Wallet connected.', true);
+    showToast('Signed in successfully.', true);
   }
 
   // Always finish the login flow.
