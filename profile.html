@@ -584,6 +584,7 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 function getProfile(){
   try { return JSON.parse(localStorage.getItem('user_profile') || '{}'); }
@@ -650,6 +651,54 @@ renderProfile();
 // reads all editable fields from the same user_profile object used by
 // edit_profile.html, including location.
 document.addEventListener('chteo:profile-synced', renderProfile);
+
+/* ============ Slot Bought + Monthly Team Rank ============
+   Slot Bought: how many lobby_teams rows this user has submitted
+   (same table tournament-details.html inserts into when a user buys a
+   slot — submitted_by = the logged-in Supabase auth user id).
+   Team Rank: this user's PROFILE team's position in the current month's
+   leaderboard. Points are grouped by owner_team_name (the buyer's saved
+   profile team name at the time they bought the slot), not by the
+   free-typed squad name on that particular entry — so slots bought
+   under any typed team name still count toward the buyer's own team. */
+const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
+const SUPABASE_KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+
+async function loadSlotAndRank(){
+  try{
+    if(!window.supabase || !window.supabase.createClient) return;
+    const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session) return;
+    const uid=session.user.id;
+
+    const slotEl=document.getElementById('slotBought');
+    if(slotEl){
+      const {count,error}=await sb.from('lobby_teams').select('id',{count:'exact',head:true}).eq('submitted_by',uid);
+      if(!error) slotEl.textContent=count||0;
+    }
+
+    const rankEl=document.getElementById('teamRank');
+    const teamName=(getProfile().teamName||'').trim();
+    if(rankEl && teamName){
+      const now=new Date();
+      const monthStart=new Date(now.getFullYear(),now.getMonth(),1).toISOString().slice(0,10);
+      const {data,error}=await sb.from('leaderboard_rows').select('team_name,owner_team_name,points').gte('lobby_date',monthStart);
+      if(!error && data){
+        const totals=new Map();
+        data.forEach(r=>{
+          const key=(r.owner_team_name||r.team_name);
+          totals.set(key,(totals.get(key)||0)+(r.points||0));
+        });
+        const ranked=[...totals.entries()].sort((a,b)=>b[1]-a[1]);
+        const idx=ranked.findIndex(r=>r[0]===teamName);
+        rankEl.textContent=idx>=0?('#'+(idx+1)):'--';
+      }
+    }
+  }catch(e){ console.warn('Slot/rank load failed:',e); }
+}
+loadSlotAndRank();
+document.addEventListener('chteo:profile-synced', loadSlotAndRank);
 
 function getMsg(key, fallback){
   try{

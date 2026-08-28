@@ -217,6 +217,10 @@ const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
 const KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
 const sb=window.supabase.createClient(SUPABASE_URL,KEY);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+function getProfile(){
+  try { return JSON.parse(localStorage.getItem('user_profile') || '{}'); }
+  catch(e){ return {}; }
+}
 let currentTournament=null, currentJoinLobbyIds=[];
 let sessionUser=null, userProfile=null, walletBalance=null;
 let selectedLobbies=new Set(), lobbyDataById={};
@@ -496,13 +500,15 @@ function copyTeamFrom(targetKey,sourceKey){
 function collectTeamData(){
   const allSingleCount=currentJoinLobbyIds.every(id=>getTeamCount(id)===1);
   const same=allSingleCount && currentJoinLobbyIds.length>1 && document.getElementById('jfSameTeam').checked;
+  const ownerTeamName=(getProfile().teamName||'').trim();
+  if(!ownerTeamName)return{error:'Please set your team name from Edit Profile before joining a tournament — it is used for your ranking.'};
   const entries=[];
   if(same){
     const teamName=document.getElementById('jfTeamName').value.trim();
     const playerName=document.getElementById('jfPlayerName').value.trim();
     if(!teamName)return{error:'Team name is required.'};
     if(!playerName)return{error:'Player name is required.'};
-    currentJoinLobbyIds.forEach(id=>entries.push({lobbyId:id,teamName,playerName}));
+    currentJoinLobbyIds.forEach(id=>entries.push({lobbyId:id,teamName,playerName,ownerTeamName}));
     return{entries};
   }
   for(const id of currentJoinLobbyIds){
@@ -515,7 +521,7 @@ function collectTeamData(){
       const label=`${l.time_label||''} ${l.lobby_date||''}`.trim()+(c>1?` টিম ${i}`:'');
       if(!teamName)return{error:`Team name is required for ${label}.`};
       if(!playerName)return{error:`Player name is required for ${label}.`};
-      entries.push({lobbyId:id,teamName,playerName});
+      entries.push({lobbyId:id,teamName,playerName,ownerTeamName});
     }
   }
   return{entries};
@@ -602,6 +608,7 @@ async function submitJoin(){
   const rows=teamData.entries.map(e=>({
     lobby_id:e.lobbyId,
     team_name:e.teamName,
+    owner_team_name:e.ownerTeamName,
     players:[{name:e.playerName}],
     contact_number:whatsapp,
     payment_reference:paymentRef,
