@@ -889,7 +889,7 @@ async function submitManualTeam(){
     players:playerName?[{name:playerName}]:[],
     contact_number:whatsapp,
     payment_method:'manual',
-    payment_reference:'Added manually by admin (WhatsApp)',
+    payment_reference:`Added by ${currentAdminName}`,
     confirmation_status:'confirmed',
     joined_at:joinedAt
   };
