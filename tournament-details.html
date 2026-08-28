@@ -240,6 +240,10 @@ function isJoinWindowClosed(l){
   if(!dt)return false;
   return new Date()>=new Date(dt.getTime()+10*60000);
 }
+function lobbyIsFull(l){
+  const slots=l.total_slots||0,joined=l.joined_count||0;
+  return l.status==='full'||joined>=slots||isJoinWindowClosed(l);
+}
 let sessionUser=null, userProfile=null, walletBalance=null;
 let selectedLobbies=new Set(), lobbyDataById={};
 let lobbyTeamCounts={};
@@ -330,8 +334,7 @@ async function initUser(){
     .select('*')
     .eq('tournament_id',id)
     .in('status',['upcoming','live','full'])
-    .order('lobby_date',{ascending:true})
-    .order('time_label',{ascending:true});
+    .order('lobby_date',{ascending:true});
 
   const lobbyBox=document.getElementById('lobbyList');
   if(lerr){lobbyBox.innerHTML='<div class="empty">Could not load lobbies.</div>';return}
@@ -339,9 +342,24 @@ async function initUser(){
 
   lobbies.forEach(l=>{lobbyDataById[l.id]=l;});
 
+  // Sort chronologically by actual clock time — "time_label" is text
+  // ("10:00 PM" vs "9:00 PM"), so an alphabetical sort would wrongly put
+  // 10 PM before 8/9 PM. Within the same date, lobbies that are already
+  // full (or past their 10-minute join window) drop to the bottom so
+  // players immediately see which times are still open at a glance —
+  // open slots first in order (8, 11, 12...), full ones after (9, 10...).
+  lobbies.sort((a,b)=>{
+    if(a.lobby_date!==b.lobby_date)return a.lobby_date<b.lobby_date?-1:1;
+    const fa=lobbyIsFull(a),fb=lobbyIsFull(b);
+    if(fa!==fb)return fa?1:-1;
+    const da=parseLobbyDateTime(a.lobby_date,a.time_label),db=parseLobbyDateTime(b.lobby_date,b.time_label);
+    if(da&&db)return da-db;
+    return (a.time_label||'').localeCompare(b.time_label||'');
+  });
+
   lobbyBox.innerHTML=lobbies.map(l=>{
     const slots=l.total_slots||0,joined=l.joined_count||0;
-    const full=l.status==='full'||joined>=slots||isJoinWindowClosed(l);
+    const full=lobbyIsFull(l);
     const pct=slots?Math.min(100,Math.round(joined/slots*100)):0;
     const left=Math.max(slots-joined,0);
     // "8 PM" typed by admin -> "8 PM SLOT (35 BDT)" shown automatically,
