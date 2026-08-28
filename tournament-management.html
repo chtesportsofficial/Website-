@@ -98,10 +98,11 @@
 </style>
 <style>
 .lobby-add-box{background:#0e1420;border:1px solid #293650;border-radius:14px;padding:12px;margin-bottom:10px}
+.lobby-dt-row{display:flex;gap:8px}
+.lobby-dt-col{flex:1;min-width:0}
 .lobby-time-row{display:flex;gap:8px;margin-top:6px}
 .lobby-time-row:first-child{margin-top:0}
-.lobby-time-row .lobbyTimeInput{flex:0 0 118px}
-.lobby-time-row .lobbyTitleInput{flex:1;min-width:0}
+.lobby-time-row .lobbyTimeInput{flex:1;width:100%}
 .lobby-item{background:#171f31;border:1px solid #293650;border-radius:14px;padding:11px;margin-top:8px}
 .lobby-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .lobby-date{font-size:12px;font-weight:900}
@@ -215,15 +216,15 @@
   <div class="mh"><b id="lbmTitle">Lobbies</b><button type="button" onclick="closeM('lbm')">×</button></div>
 
   <div class="lobby-add-box">
-    <label>Date</label><input type="date" id="lobbyDate">
-    <label>Time / Batch label(s)</label>
-    <div id="lobbyTimes"><div class="lobby-time-row"><input type="time" step="3600" class="lobbyTimeInput"><input type="text" class="lobbyTitleInput" placeholder="Title (optional, shown to players)"></div></div>
+    <div class="lobby-dt-row">
+      <div class="lobby-dt-col"><label>Date</label><input type="date" id="lobbyDate"></div>
+      <div class="lobby-dt-col"><label>Time</label><div id="lobbyTimes"><div class="lobby-time-row"><input type="time" step="3600" class="lobbyTimeInput"></div></div></div>
+    </div>
     <button type="button" class="mini" style="margin-top:8px;width:100%" onclick="addTimeInput()">＋ Add another time</button>
-    <label>Slots override (optional)</label><input type="number" id="lobbySlotOverride" min="0" placeholder="Uses tournament default">
     <button type="button" class="create-bottom" onclick="saveLobbies()">Save Lobby(s)</button>
   </div>
 
-  <div class="sub-panel-head"><b>Active / Upcoming</b></div>
+  <div class="sub-panel-head"><b>Active</b></div>
   <div id="lobbiesActive"><div class="loading">Loading...</div></div>
 
   <div class="sub-panel-head"><b>History (Completed)</b></div>
@@ -712,8 +713,7 @@ function openLobbies(tid){
   currentLobbyTournament=tournaments.find(x=>x.id===tid); if(!currentLobbyTournament)return;
   $('lbmTitle').textContent=currentLobbyTournament.title+' — Lobbies';
   $('lobbyDate').value=new Date().toISOString().slice(0,10);
-  $('lobbyTimes').innerHTML='<div class="lobby-time-row"><input type="time" step="3600" class="lobbyTimeInput"><input type="text" class="lobbyTitleInput" placeholder="Title (optional, shown to players)"></div>';
-  $('lobbySlotOverride').value='';
+  $('lobbyTimes').innerHTML='<div class="lobby-time-row"><input type="time" step="3600" class="lobbyTimeInput"></div>';
   openM('lbm'); loadLobbies(tid);
 }
 let lobbiesShowingAll=false;
@@ -742,7 +742,7 @@ function renderLobbies(){
   const lobbyLabel=l=>fmtLobbyDate(l.lobby_date)+' — '+esc(l.time_label)+(l.custom_title?' <span style="color:#8b96aa;font-weight:700">('+esc(l.custom_title)+')</span>':'');
   $('lobbiesActive').innerHTML=active.length?active.map(l=>`
     <div class="lobby-item">
-      <div class="lobby-top"><div class="lobby-date">${lobbyLabel(l)}</div><div class="lobby-status ${l.status}">${lobbyDot(l.status)} ${l.status.toUpperCase()}</div></div>
+      <div class="lobby-top"><div class="lobby-date">${lobbyLabel(l)}</div><div class="lobby-status ${l.status}">${lobbyDot(l.status)} ${l.status==='cancelled'?'CANCELLED':'ACTIVE'}</div></div>
       <div class="lobby-meta">${l.joined_count||0}/${l.total_slots||0} joined</div>
       <div class="lobby-actions">
         <button class="mini green" onclick="openTeams('${l.id}')">Teams</button>
@@ -762,7 +762,7 @@ function renderLobbies(){
 function addTimeInput(){
   const row=document.createElement('div');
   row.className='lobby-time-row';
-  row.innerHTML='<input type="time" step="3600" class="lobbyTimeInput"><input type="text" class="lobbyTitleInput" placeholder="Title (optional, shown to players)">';
+  row.innerHTML='<input type="time" step="3600" class="lobbyTimeInput">';
   $('lobbyTimes').appendChild(row);
 }
 // Converts a native <input type="time"> value ("21:00") into the "H:MM AM/PM"
@@ -779,19 +779,15 @@ function timeValueTo12h(v){
 async function saveLobbies(){
   const tid=currentLobbyTournament?.id; if(!tid)return;
   const date=$('lobbyDate').value; if(!date)return msg('Pick a date.');
-  const rows_in=[...document.querySelectorAll('.lobby-time-row')].map(row=>({
-    time:timeValueTo12h(row.querySelector('.lobbyTimeInput').value),
-    title:row.querySelector('.lobbyTitleInput').value.trim()
-  })).filter(r=>r.time);
-  if(!rows_in.length)return msg('Add at least one time.');
-  const override=+$('lobbySlotOverride').value||0;
-  const slots=override>0?override:(currentLobbyTournament.default_slots||currentLobbyTournament.total_slots||0);
-  const rows=rows_in.map(r=>({tournament_id:tid,lobby_date:date,time_label:r.time,custom_title:r.title||null,total_slots:slots,status:'upcoming'}));
+  const times=[...document.querySelectorAll('.lobby-time-row')].map(row=>timeValueTo12h(row.querySelector('.lobbyTimeInput').value)).filter(Boolean);
+  if(!times.length)return msg('Add at least one time.');
+  const slots=currentLobbyTournament.default_slots||currentLobbyTournament.total_slots||0;
+  const rows=times.map(t=>({tournament_id:tid,lobby_date:date,time_label:t,total_slots:slots,status:'upcoming'}));
   const {data,error}=await sb.from('tournament_lobbies').insert(rows).select();
   if(error)return msg(error.message);
   if(!data||data.length===0)return msg('Insert blocked (0 rows) — check the INSERT RLS policy on tournament_lobbies.');
   await logActivity('lobbies_added','tournament','tournament_lobby',tid,currentLobbyTournament.title,{narration:`added ${rows.length} lobby slot(s) for ${currentLobbyTournament.title} on ${date}.`,highlight_targets:[currentLobbyTournament.title]});
-  $('lobbyTimes').innerHTML='<div class="lobby-time-row"><input type="time" step="3600" class="lobbyTimeInput"><input type="text" class="lobbyTitleInput" placeholder="Title (optional, shown to players)"></div>'; $('lobbySlotOverride').value='';
+  $('lobbyTimes').innerHTML='<div class="lobby-time-row"><input type="time" step="3600" class="lobbyTimeInput"></div>';
   await loadLobbies(tid);
 }
 async function setLobbyStatus(id,status){
