@@ -253,13 +253,38 @@ let sections=[], tournaments=[]; let currentAdminId=null; let currentAdminName='
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
-function openM(id){$(id).classList.add('open')} function closeM(id){$(id).classList.remove('open')}
+let openModalCount=0,savedScrollY=0;
+function openM(id){
+ $(id).classList.add('open');
+ if(openModalCount===0){
+  savedScrollY=window.scrollY;
+  document.body.style.position='fixed';
+  document.body.style.top='-'+savedScrollY+'px';
+  document.body.style.left='0';
+  document.body.style.right='0';
+  document.body.style.width='100%';
+ }
+ openModalCount++;
+}
+function closeM(id){
+ $(id).classList.remove('open');
+ openModalCount=Math.max(0,openModalCount-1);
+ if(openModalCount===0){
+  document.body.style.position='';
+  document.body.style.top='';
+  document.body.style.left='';
+  document.body.style.right='';
+  document.body.style.width='';
+  window.scrollTo(0,savedScrollY);
+ }
+}
 function msg(x){alert(x)}
 function askConfirm(title,text,action,danger=true){
-  $('confirmTitle').textContent=title;$('confirmText').textContent=text;$('confirm').classList.add('open');
+  $('confirmTitle').textContent=title;$('confirmText').textContent=text;
+  openM('confirm');
   $('confirmOk').onclick=async()=>{closeConfirm();await action()};
 }
-function closeConfirm(){$('confirm').classList.remove('open')}
+function closeConfirm(){closeM('confirm')}
 
 async function logActivity(action, category, targetType=null, targetId=null, targetName=null, details={}) {
   try {
