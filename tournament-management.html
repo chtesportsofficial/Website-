@@ -109,7 +109,6 @@
 .lobby-status{font-size:9px;font-weight:900;padding:4px 8px;border-radius:999px;background:#203329;color:#5ee98b;white-space:nowrap}
 .lobby-status.cancelled{background:#2b1720;color:#ff6575}
 .lobby-status.completed{background:#1c2a3d;color:#7cc2ff}
-.lobby-status.live,.lobby-status.full{background:#2b2410;color:#f6c453}
 .lobby-meta{font-size:10px;color:#8e98ab;margin-top:5px}
 .lobby-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
 .team-item{background:#171f31;border:1px solid #293650;border-radius:14px;padding:10px;margin-top:8px}
@@ -737,12 +736,17 @@ async function loadLobbies(tid,opts){
   renderLobbies();
 }
 function renderLobbies(){
-  const active=[...lobbies].filter(l=>l.status!=='completed').sort((a,b)=>(a.lobby_date+a.time_label).localeCompare(b.lobby_date+b.time_label));
+  const active=[...lobbies].filter(l=>l.status!=='completed').sort((a,b)=>{
+    if(a.lobby_date!==b.lobby_date)return a.lobby_date<b.lobby_date?-1:1;
+    const da=parseLobbyDateTime(a.lobby_date,a.time_label),db=parseLobbyDateTime(b.lobby_date,b.time_label);
+    if(da&&db)return da-db;
+    return (a.time_label||'').localeCompare(b.time_label||'');
+  });
   const history=[...lobbies].filter(l=>l.status==='completed').sort((a,b)=>(b.lobby_date+b.time_label).localeCompare(a.lobby_date+a.time_label));
   const lobbyLabel=l=>fmtLobbyDate(l.lobby_date)+' — '+esc(l.time_label)+(l.custom_title?' <span style="color:#8b96aa;font-weight:700">('+esc(l.custom_title)+')</span>':'');
   $('lobbiesActive').innerHTML=active.length?active.map(l=>`
     <div class="lobby-item">
-      <div class="lobby-top"><div class="lobby-date">${lobbyLabel(l)}</div><div class="lobby-status ${l.status}">${lobbyDot(l.status)} ${l.status==='cancelled'?'CANCELLED':'ACTIVE'}</div></div>
+      <div class="lobby-top"><div class="lobby-date">${lobbyLabel(l)}</div>${l.status==='cancelled'?`<div class="lobby-status cancelled">${lobbyDot(l.status)} CANCELLED</div>`:''}</div>
       <div class="lobby-meta">${l.joined_count||0}/${l.total_slots||0} joined</div>
       <div class="lobby-actions">
         <button class="mini green" onclick="openTeams('${l.id}')">Teams</button>
