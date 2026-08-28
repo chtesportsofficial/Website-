@@ -107,16 +107,20 @@ function start(){
 
   async function load(range){
     listEl.innerHTML='<div class="empty">Loading...</div>';
-    let q=sb.from('leaderboard_rows').select('team_name,prize_won,points');
+    let q=sb.from('leaderboard_rows').select('team_name,owner_team_name,prize_won,points');
     const from=rangeStart(range);
     if(from)q=q.gte('lobby_date',from);
     const {data,error}=await q;
     if(error){listEl.innerHTML='<div class="empty">Could not load leaderboard.</div>';console.error(error);return}
     const totals=new Map();
     (data||[]).forEach(r=>{
-      const cur=totals.get(r.team_name)||{team_name:r.team_name,points:0,prize:0};
+      // Group by the buyer's saved PROFILE team name (owner_team_name), not
+      // the free-typed squad name on that particular slot entry (team_name).
+      // Falls back to team_name only for old rows that predate owner_team_name.
+      const key=r.owner_team_name||r.team_name;
+      const cur=totals.get(key)||{team_name:key,points:0,prize:0};
       cur.points+=r.points||0; cur.prize+=Number(r.prize_won)||0;
-      totals.set(r.team_name,cur);
+      totals.set(key,cur);
     });
     const ranked=[...totals.values()].sort((a,b)=>b.points-a.points);
     if(!ranked.length){listEl.innerHTML='<div class="empty">No results yet for this period.</div>';return}

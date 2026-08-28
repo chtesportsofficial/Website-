@@ -500,16 +500,20 @@ function copyTeamFrom(targetKey,sourceKey){
 function collectTeamData(){
   const allSingleCount=currentJoinLobbyIds.every(id=>getTeamCount(id)===1);
   const same=allSingleCount && currentJoinLobbyIds.length>1 && document.getElementById('jfSameTeam').checked;
-  const ownerTeamName=(getProfile().teamName||'').trim();
-  if(!ownerTeamName)return{error:'Please set your team name from Edit Profile before joining a tournament — it is used for your ranking.'};
+  // If the profile has no saved team name yet, don't block the booking —
+  // fall back to whatever team name the user types on this form. submitJoin()
+  // will auto-save that as the profile's team name after a successful submit,
+  // so it's used for ranking from now on without the user visiting Edit Profile.
+  let ownerTeamName=(getProfile().teamName||'').trim();
   const entries=[];
   if(same){
     const teamName=document.getElementById('jfTeamName').value.trim();
     const playerName=document.getElementById('jfPlayerName').value.trim();
     if(!teamName)return{error:'Team name is required.'};
     if(!playerName)return{error:'Player name is required.'};
+    if(!ownerTeamName)ownerTeamName=teamName;
     currentJoinLobbyIds.forEach(id=>entries.push({lobbyId:id,teamName,playerName,ownerTeamName}));
-    return{entries};
+    return{entries,newOwnerTeamName:ownerTeamName};
   }
   for(const id of currentJoinLobbyIds){
     const c=getTeamCount(id);
@@ -521,10 +525,11 @@ function collectTeamData(){
       const label=`${l.time_label||''} ${l.lobby_date||''}`.trim()+(c>1?` টিম ${i}`:'');
       if(!teamName)return{error:`Team name is required for ${label}.`};
       if(!playerName)return{error:`Player name is required for ${label}.`};
+      if(!ownerTeamName)ownerTeamName=teamName;
       entries.push({lobbyId:id,teamName,playerName,ownerTeamName});
     }
   }
-  return{entries};
+  return{entries,newOwnerTeamName:ownerTeamName};
 }
 function closeJoinForm(){
   document.getElementById('joinOverlay').classList.remove('open');
@@ -624,6 +629,26 @@ async function submitJoin(){
     btn.disabled=false; btn.textContent='Submit';
     return;
   }
+
+  // First-time team name: profile had none, so save the name typed on this
+  // form as the user's profile team name — locally right away, and to the
+  // profiles table in the background so it carries over to other devices too.
+  if(!(getProfile().teamName||'').trim() && teamData.newOwnerTeamName){
+    try{
+      const prof=getProfile();
+      prof.teamName=teamData.newOwnerTeamName;
+      localStorage.setItem('user_profile',JSON.stringify(prof));
+      document.dispatchEvent(new Event('chteo:profile-synced'));
+    }catch(e){/* ignore local save issues */}
+    if(sessionUser){
+      // Team Name lives in the 'full_name' column on Supabase 'profiles'
+      // (see edit_profile.html / global.js) — there is no 'team_name' column.
+      sb.from('profiles').update({full_name:teamData.newOwnerTeamName}).eq('id',sessionUser.id)
+        .then(({error})=>{ if(error) console.warn('Could not sync team name to profile:',error); })
+        .catch(()=>{});
+    }
+  }
+
   closeJoinForm();
   selectedLobbies.clear();
   const successHtml=`
