@@ -609,6 +609,11 @@ async function handleSignin(){
   localStorage.removeItem('profile_picture');
   localStorage.removeItem('user_uid');
   localStorage.setItem('chteo_logged_in', 'true');
+  // Persists across logout (never removed) — lets index.html's profile
+  // spotlight tell "this device has logged in before" apart from a
+  // genuinely first-time visitor, so it can show "Login" instead of
+  // "Login / Create Account" for a returning-but-signed-out user.
+  localStorage.setItem('chteo_ever_logged_in', 'true');
 
   // Keep the existing Supabase profile sync.
   if (window.CHTEO && window.CHTEO.syncProfile) {
@@ -821,6 +826,7 @@ async function handleCreate(){
   }
 
   localStorage.setItem('chteo_logged_in', 'true');
+  localStorage.setItem('chteo_ever_logged_in', 'true');
   localStorage.setItem('chteo_referral', referral);
 
   if(data.session){

@@ -870,5 +870,113 @@ window.addEventListener('pageshow', function(event){
     <div class="notice-modal-admin" id="noticeModalAdmin">Admin —</div>
   </div>
 </div>
+<style>
+/* ============ First-time Profile Spotlight ============ */
+.profile-spotlight{position:fixed;inset:0;z-index:9998;display:none}
+.spotlight-hole{position:fixed;border-radius:18px;box-shadow:0 0 0 9999px rgba(4,6,10,.86);transition:top .2s ease,left .2s ease,width .2s ease,height .2s ease;z-index:9998}
+.spotlight-tip{position:fixed;z-index:9999;width:260px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 12px 30px rgba(0,0,0,.55)}
+.spotlight-tip::after{content:"";position:absolute;bottom:-8px;right:26px;width:16px;height:16px;background:var(--surface);border-right:1px solid var(--line);border-bottom:1px solid var(--line);transform:rotate(45deg)}
+.spotlight-tip-text{font-size:12.5px;line-height:1.55;color:var(--text);margin-bottom:12px}
+.spotlight-tip-actions{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.spotlight-skip{background:transparent;border:none;color:var(--text-dim);font-size:11.5px;font-weight:700;padding:9px 4px}
+.spotlight-cta{flex:1;background:linear-gradient(135deg,var(--fire),var(--fire-2));border:none;color:#fff;font-weight:800;font-size:11.5px;padding:10px 12px;border-radius:10px}
+</style>
+
+<div class="profile-spotlight" id="profileSpotlight">
+  <div class="spotlight-hole" id="spotlightHole"></div>
+  <div class="spotlight-tip" id="spotlightTip">
+    <div class="spotlight-tip-text" id="spotlightTipText">প্রথমবার এসেছেন? Profile বাটনে গিয়ে Login / Create Account করে নিন।</div>
+    <div class="spotlight-tip-actions">
+      <button type="button" class="spotlight-skip" id="spotlightSkipBtn">Skip</button>
+      <button type="button" class="spotlight-cta" id="spotlightCtaBtn">Login / Create Account</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  function $(id){return document.getElementById(id);}
+  function isLoggedIn(){ return localStorage.getItem('chteo_logged_in') === 'true'; }
+
+  // Whenever we detect the visitor IS logged in, stamp a permanent
+  // "this device has had an account before" flag. Unlike chteo_logged_in
+  // (which flips to false on logout), this flag is never removed here —
+  // so after a logout we can still tell "returning user" apart from
+  // "brand new visitor" and change the spotlight message accordingly.
+  if(isLoggedIn()) localStorage.setItem('chteo_ever_logged_in', 'true');
+
+  function shouldShow(everHadAccount){
+    if(isLoggedIn()) return false; // already logged in, nothing to point at
+    // A returning user who has an account (just currently signed out)
+    // gets nudged EVERY visit until they actually log back in — that's
+    // not a one-time tour, it's a "you're not logged in" reminder.
+    // A brand-new visitor only gets the onboarding tour ONCE, ever.
+    if(!everHadAccount && localStorage.getItem('chteo_profile_spotlight_seen') === 'true') return false;
+    var target = document.querySelector('.bottomnav .navitem:last-child');
+    return !!target;
+  }
+
+  function positionSpotlight(){
+    var target = document.querySelector('.bottomnav .navitem:last-child');
+    if(!target) return;
+    var r = target.getBoundingClientRect();
+    var pad = 8;
+    var hole = $('spotlightHole');
+    hole.style.left = (r.left - pad) + 'px';
+    hole.style.top = (r.top - pad) + 'px';
+    hole.style.width = (r.width + pad * 2) + 'px';
+    hole.style.height = (r.height + pad * 2) + 'px';
+
+    var tip = $('spotlightTip');
+    var tipW = Math.min(260, window.innerWidth - 24);
+    tip.style.width = tipW + 'px';
+    var left = Math.min(window.innerWidth - tipW - 12, Math.max(12, r.right - tipW));
+    tip.style.left = left + 'px';
+    tip.style.top = (r.top - pad - 12 - tip.offsetHeight) + 'px';
+  }
+
+  function dismiss(everHadAccount){
+    // Only the FIRST-TIME tour gets "marked seen forever". A returning
+    // signed-out user's reminder isn't a tour to suppress — it should
+    // come back next visit too, as long as they're still logged out.
+    if(!everHadAccount){
+      localStorage.setItem('chteo_profile_spotlight_seen', 'true');
+    }
+    var el = $('profileSpotlight');
+    if(el) el.style.display = 'none';
+    window.removeEventListener('resize', positionSpotlight);
+  }
+
+  function init(){
+    var everHadAccount = localStorage.getItem('chteo_ever_logged_in') === 'true';
+    if(!shouldShow(everHadAccount)) return;
+    var textEl = $('spotlightTipText'), ctaEl = $('spotlightCtaBtn');
+    if(everHadAccount){
+      textEl.textContent = 'আপনার আগে থেকেই একটি Account আছে — Profile থেকে গিয়ে Login করে নিন।';
+      ctaEl.textContent = 'Login';
+    } else {
+      textEl.textContent = 'প্রথমবার এসেছেন? Profile বাটনে গিয়ে Login / Create Account করে নিন।';
+      ctaEl.textContent = 'Login / Create Account';
+    }
+
+    var el = $('profileSpotlight');
+    el.style.display = 'block';
+    positionSpotlight();
+    window.addEventListener('resize', positionSpotlight);
+
+    $('spotlightSkipBtn').addEventListener('click', function(e){ e.stopPropagation(); dismiss(everHadAccount); });
+    $('spotlightCtaBtn').addEventListener('click', function(e){ e.stopPropagation(); dismiss(everHadAccount); goToProfile(); });
+    $('spotlightHole').addEventListener('click', function(e){ e.stopPropagation(); dismiss(everHadAccount); goToProfile(); });
+    el.addEventListener('click', function(e){ if(e.target === el) dismiss(everHadAccount); });
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+
 </body>
 </html>
