@@ -222,6 +222,24 @@ function getProfile(){
   catch(e){ return {}; }
 }
 let currentTournament=null, currentJoinLobbyIds=[];
+
+// A lobby's "BUY SLOT" stays open right up to 10 minutes after its own
+// scheduled time (e.g. a 3:20 lobby closes at 3:30) — after that the match
+// has effectively started, so joining is pointless even if slots aren't
+// technically full. Matches the same "H:MM AM/PM" label format used by the
+// admin panel's own auto-status logic.
+function parseLobbyDateTime(lobbyDate,timeLabel){
+  const m=/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec((timeLabel||'').trim());
+  if(!m)return null;
+  let h=(+m[1])%12; if(/pm/i.test(m[3]))h+=12;
+  const d=new Date(lobbyDate+'T00:00:00'); d.setHours(h,+m[2],0,0);
+  return d;
+}
+function isJoinWindowClosed(l){
+  const dt=parseLobbyDateTime(l.lobby_date,l.time_label);
+  if(!dt)return false;
+  return new Date()>=new Date(dt.getTime()+10*60000);
+}
 let sessionUser=null, userProfile=null, walletBalance=null;
 let selectedLobbies=new Set(), lobbyDataById={};
 let lobbyTeamCounts={};
@@ -323,7 +341,7 @@ async function initUser(){
 
   lobbyBox.innerHTML=lobbies.map(l=>{
     const slots=l.total_slots||0,joined=l.joined_count||0;
-    const full=l.status==='full'||joined>=slots;
+    const full=l.status==='full'||joined>=slots||isJoinWindowClosed(l);
     const pct=slots?Math.min(100,Math.round(joined/slots*100)):0;
     const left=Math.max(slots-joined,0);
     // "8 PM" typed by admin -> "8 PM SLOT (35 BDT)" shown automatically,
@@ -584,6 +602,8 @@ function renderPaymentExtra(){
 
 async function submitJoin(){
   const errBox=document.getElementById('jfError'); errBox.textContent='';
+  const closedLobby=currentJoinLobbyIds.map(id=>lobbyDataById[id]).find(l=>l&&isJoinWindowClosed(l));
+  if(closedLobby){errBox.textContent=`${closedLobby.time_label||'This'} লবিতে জয়েন করার সময় শেষ হয়ে গেছে — ম্যাচ শুরু হয়ে গেছে।`;return}
   const teamData=collectTeamData();
   if(teamData.error){errBox.textContent=teamData.error;return}
   const whatsapp=document.getElementById('jfWhatsapp').value.trim();
