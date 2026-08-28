@@ -806,7 +806,13 @@ window.addEventListener('pageshow', function(event){
     function open(){if(!current)return;const n=parse(current.message);const titleEl=document.getElementById('noticeModalTitle');titleEl.textContent=n.title||'Notice';text.textContent=n.body||n.title||'No Notice';if(image){if(n.image){image.src=n.image;image.style.display='block';}else{image.removeAttribute('src');image.style.display='none';}}meta.textContent=dt(current.created_at);admin.textContent='Admin — '+(current.admin_name||'Admin');modal.classList.add('show');modal.setAttribute('aria-hidden','false');}
     function hide(){modal.classList.remove('show');modal.setAttribute('aria-hidden','true');}
     async function load(){const {data,error}=await sb.from('site_notices').select('id,message,created_at,admin_name').eq('is_active',true).order('created_at',{ascending:false}).limit(1).maybeSingle();if(error||!data){current=null;const dbg=error?('DEBUG ERR: '+(error.message||JSON.stringify(error))):'DEBUG: no row returned';t1.textContent=dbg;t2.textContent=dbg;return;}current=data;const n=parse(data.message);const display=[n.title,n.body].filter(Boolean).join(' — ')||'No Notice';t1.textContent=display;t2.textContent=display;}
-    ticker.addEventListener('click',open);ticker.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});close.addEventListener('click',hide);modal.addEventListener('click',e=>{if(e.target===modal)hide();});document.addEventListener('keydown',e=>{if(e.key==='Escape')hide();});load();setInterval(load,30000);
+    try{
+      if(!ticker||!t1||!t2||!modal||!close){throw new Error('DOM MISSING: ticker='+!!ticker+' t1='+!!t1+' t2='+!!t2+' modal='+!!modal+' close='+!!close);}
+      t1.textContent='JS RUNNING...';t2.textContent='JS RUNNING...';
+      ticker.addEventListener('click',open);ticker.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});close.addEventListener('click',hide);modal.addEventListener('click',e=>{if(e.target===modal)hide();});document.addEventListener('keydown',e=>{if(e.key==='Escape')hide();});load();setInterval(load,30000);
+    }catch(e){
+      if(t1){t1.textContent='JS ERROR: '+e.message;} if(t2){t2.textContent='JS ERROR: '+e.message;}
+    }
   } start();
 })();</script>
 
