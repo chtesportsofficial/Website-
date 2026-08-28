@@ -344,14 +344,15 @@ async function initUser(){
 
   // Sort chronologically by actual clock time — "time_label" is text
   // ("10:00 PM" vs "9:00 PM"), so an alphabetical sort would wrongly put
-  // 10 PM before 8/9 PM. Within the same date, lobbies that are already
-  // full (or past their 10-minute join window) drop to the bottom so
-  // players immediately see which times are still open at a glance —
-  // open slots first in order (8, 11, 12...), full ones after (9, 10...).
+  // 10 PM before 8/9 PM. Being FULL does NOT by itself move a lobby down —
+  // a 10 PM lobby that's already full still shows at its normal 10 PM spot
+  // (so players know that slot is taken) as long as its time hasn't arrived
+  // yet. Only once a lobby's own time has actually passed (its 10-minute
+  // join window has closed) does it drop below the still-upcoming ones.
   lobbies.sort((a,b)=>{
     if(a.lobby_date!==b.lobby_date)return a.lobby_date<b.lobby_date?-1:1;
-    const fa=lobbyIsFull(a),fb=lobbyIsFull(b);
-    if(fa!==fb)return fa?1:-1;
+    const pa=isJoinWindowClosed(a),pb=isJoinWindowClosed(b);
+    if(pa!==pb)return pa?1:-1;
     const da=parseLobbyDateTime(a.lobby_date,a.time_label),db=parseLobbyDateTime(b.lobby_date,b.time_label);
     if(da&&db)return da-db;
     return (a.time_label||'').localeCompare(b.time_label||'');
