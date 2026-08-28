@@ -35,7 +35,7 @@ $targetUserId = isset($data['user_id']) ? trim($data['user_id']) : '';
 $targetEmail  = isset($data['email']) ? trim($data['email']) : '';
 $amount       = isset($data['amount']) ? (float)$data['amount'] : 0.0;
 $type         = isset($data['type']) ? trim($data['type']) : '';
-$reason       = isset($data['reason']) ? trim($data['reason']) : '';
+$balanceType = isset($data['balance_type']) ? trim($data['balance_type']) : '';
 
 if ($accessToken === '') {
     http_response_code(401);
@@ -61,9 +61,9 @@ if (!in_array($type, ['add', 'remove'], true)) {
     exit;
 }
 
-if ($reason === '') {
+if (!in_array($balanceType, ['withdrawable', 'non_withdrawable'], true)) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Reason is required']);
+    echo json_encode(['success' => false, 'message' => "balance_type must be 'withdrawable' or 'non_withdrawable'"]);
     exit;
 }
 
@@ -146,7 +146,10 @@ $conn->begin_transaction();
 
 try {
     // Lock the target user's wallet row so concurrent adjustments don't clash.
-    $stmt = $conn->prepare("SELECT id, balance FROM wallet_users WHERE email = ? FOR UPDATE");
+    $stmt = $conn->prepare(
+        "SELECT id, balance, withdrawable_balance, non_withdrawable_balance
+         FROM wallet_users WHERE email = ? FOR UPDATE"
+    );
     $stmt->bind_param('s', $targetEmail);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -157,18 +160,35 @@ try {
         throw new Exception('Wallet account not found for this user');
     }
 
-    $currentBalance = (float)$walletRow['balance'];
+    $currentWithdrawable = (float)$walletRow['withdrawable_balance'];
+    $currentNonWithdrawable = (float)$walletRow['non_withdrawable_balance'];
+    $currentBalance = $currentWithdrawable + $currentNonWithdrawable;
 
-    if ($type === 'remove' && $currentBalance < $amount) {
-        throw new Exception('Insufficient balance to remove this amount');
+    $currentTypeBalance = $balanceType === 'withdrawable'
+        ? $currentWithdrawable
+        : $currentNonWithdrawable;
+
+    if ($type === 'remove' && $currentTypeBalance < $amount) {
+        throw new Exception(
+            'Insufficient ' .
+            ($balanceType === 'withdrawable' ? 'withdrawable' : 'non-withdrawable') .
+            ' balance'
+        );
     }
 
-    if ($type === 'add') {
-        $stmt = $conn->prepare("UPDATE wallet_users SET balance = balance + ? WHERE email = ?");
-    } else {
-        $stmt = $conn->prepare("UPDATE wallet_users SET balance = balance - ? WHERE email = ?");
-    }
-    $stmt->bind_param('ds', $amount, $targetEmail);
+    $column = $balanceType === 'withdrawable'
+        ? 'withdrawable_balance'
+        : 'non_withdrawable_balance';
+
+    $delta = $type === 'add' ? $amount : -$amount;
+
+    $stmt = $conn->prepare(
+        "UPDATE wallet_users
+         SET $column = $column + ?,
+             balance = withdrawable_balance + non_withdrawable_balance + ?
+         WHERE email = ?"
+    );
+    $stmt->bind_param('dds', $delta, $delta, $targetEmail);
     $stmt->execute();
 
     if ($stmt->affected_rows === 0) {
@@ -178,6 +198,7 @@ try {
     $stmt->close();
 
     // ---- Log the adjustment in the audit table ----
+    $reason = 'Balance type: ' . $balanceType;
     $stmt = $conn->prepare(
         "INSERT INTO wallet_balance_adjustments (user_id, email, amount, type, reason, admin_email)
          VALUES (?, ?, ?, ?, ?, ?)"
@@ -187,13 +208,20 @@ try {
     $stmt->close();
 
     // ---- Fetch the new balance to return to the client ----
-    $stmt = $conn->prepare("SELECT balance FROM wallet_users WHERE email = ?");
+    $stmt = $conn->prepare(
+        "SELECT balance, withdrawable_balance, non_withdrawable_balance
+         FROM wallet_users WHERE email = ?"
+    );
     $stmt->bind_param('s', $targetEmail);
     $stmt->execute();
     $res = $stmt->get_result();
     $newBalance = null;
+    $newWithdrawable = null;
+    $newNonWithdrawable = null;
     if ($row = $res->fetch_assoc()) {
         $newBalance = (float)$row['balance'];
+        $newWithdrawable = (float)$row['withdrawable_balance'];
+        $newNonWithdrawable = (float)$row['non_withdrawable_balance'];
     }
     $stmt->close();
 
@@ -206,7 +234,10 @@ try {
         'email' => $targetEmail,
         'type' => $type,
         'amount' => $amount,
-        'new_balance' => $newBalance
+        'balance_type' => $balanceType,
+        'new_balance' => $newBalance,
+        'withdrawable_balance' => $newWithdrawable,
+        'non_withdrawable_balance' => $newNonWithdrawable
     ]);
 } catch (Exception $e) {
     $conn->rollback();

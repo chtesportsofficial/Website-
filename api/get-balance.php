@@ -14,7 +14,7 @@ if ($uid === '') {
     exit;
 }
 
-$stmt = $conn->prepare("SELECT id, balance FROM wallet_users WHERE supabase_uid = ? LIMIT 1");
+$stmt = $conn->prepare("SELECT id, balance, withdrawable_balance, non_withdrawable_balance FROM wallet_users WHERE supabase_uid = ? LIMIT 1");
 
 if (!$stmt) {
     echo json_encode([
@@ -26,13 +26,15 @@ if (!$stmt) {
 
 $stmt->bind_param("s", $uid);
 $stmt->execute();
-$stmt->bind_result($user_id, $balance);
+$stmt->bind_result($user_id, $balance, $withdrawableBalance, $nonWithdrawableBalance);
 
 if ($stmt->fetch()) {
     echo json_encode([
         "success" => true,
         "user_id" => $user_id,
-        "balance" => (float)$balance
+        'balance' => (float)$balance,
+        'withdrawable_balance' => (float)$withdrawableBalance,
+        'non_withdrawable_balance' => (float)$nonWithdrawableBalance
     ]);
 } else {
     echo json_encode([

@@ -71,10 +71,13 @@ if ($amount <= 0) {
 //         from two simultaneous requests racing each other)
 $conn->begin_transaction();
 try {
-    $stmt = $conn->prepare("SELECT id, balance FROM wallet_users WHERE supabase_uid = ? LIMIT 1 FOR UPDATE");
+    $stmt = $conn->prepare(
+        "SELECT id, balance, withdrawable_balance, non_withdrawable_balance
+         FROM wallet_users WHERE supabase_uid = ? LIMIT 1 FOR UPDATE"
+    );
     $stmt->bind_param("s", $verifiedUid);
     $stmt->execute();
-    $stmt->bind_result($user_id, $balance);
+    $stmt->bind_result($user_id, $balance, $withdrawableBalance, $nonWithdrawableBalance);
     $found = $stmt->fetch();
     $stmt->close();
 
@@ -90,10 +93,22 @@ try {
         exit;
     }
 
-    $newBalance = (float)$balance - $amount;
+    // Tournament fees can use the whole wallet. Consume withdrawable funds first,
+    // then non-withdrawable funds, while keeping the two balances and total in sync.
+    $fromWithdrawable = min((float)$withdrawableBalance, $amount);
+    $fromNonWithdrawable = $amount - $fromWithdrawable;
+    $newWithdrawable = (float)$withdrawableBalance - $fromWithdrawable;
+    $newNonWithdrawable = (float)$nonWithdrawableBalance - $fromNonWithdrawable;
+    $newBalance = $newWithdrawable + $newNonWithdrawable;
 
-    $upd = $conn->prepare("UPDATE wallet_users SET balance = ? WHERE id = ?");
-    $upd->bind_param("di", $newBalance, $user_id);
+    $upd = $conn->prepare(
+        "UPDATE wallet_users
+         SET withdrawable_balance = ?,
+             non_withdrawable_balance = ?,
+             balance = ?
+         WHERE id = ?"
+    );
+    $upd->bind_param("dddi", $newWithdrawable, $newNonWithdrawable, $newBalance, $user_id);
     $upd->execute();
     $upd->close();
 
@@ -103,7 +118,7 @@ try {
     $ins->close();
 
     $conn->commit();
-    echo json_encode(["success" => true, "balance" => (float)$newBalance]);
+    echo json_encode(["success" => true, "balance" => (float)$newBalance, "withdrawable_balance" => (float)$newWithdrawable, "non_withdrawable_balance" => (float)$newNonWithdrawable]);
 } catch (Exception $e) {
     $conn->rollback();
     echo json_encode(["success" => false, "message" => "Server error: " . $e->getMessage()]);

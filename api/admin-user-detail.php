@@ -151,12 +151,19 @@ $targetEmail = $targetProfile['email'];
 $conn->set_charset('utf8mb4');
 
 $balance = null;
-$stmt = $conn->prepare("SELECT balance FROM wallet_users WHERE email = ?");
+$withdrawableBalance = 0.0;
+$nonWithdrawableBalance = 0.0;
+$stmt = $conn->prepare(
+    "SELECT balance, withdrawable_balance, non_withdrawable_balance
+     FROM wallet_users WHERE email = ?"
+);
 $stmt->bind_param('s', $targetEmail);
 $stmt->execute();
 $res = $stmt->get_result();
 if ($row = $res->fetch_assoc()) {
-    $balance = (float)$row['balance'];
+    $withdrawableBalance = (float)$row['withdrawable_balance'];
+    $nonWithdrawableBalance = (float)$row['non_withdrawable_balance'];
+    $balance = $withdrawableBalance + $nonWithdrawableBalance;
 }
 $stmt->close();
 
@@ -186,7 +193,9 @@ echo json_encode([
         'email' => $targetEmail,
         'is_admin' => !empty($targetProfile['is_admin']),
         'is_owner' => !empty($targetProfile['is_owner']),
-        'balance' => $balance
+        'balance' => $balance,
+        'withdrawable_balance' => $withdrawableBalance,
+        'non_withdrawable_balance' => $nonWithdrawableBalance
     ],
     'deposits' => $deposits
 ]);
