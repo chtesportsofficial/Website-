@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHT ESP ORG</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
+<!-- Notice / Tournament / Ranking below all poll for window.supabase directly
+     instead of going through CHTEO.getSupabaseClient(). Previously nothing
+     loaded the actual Supabase SDK unless the visitor was logged in
+     (global.js only injects it inside syncProfile(), which only runs when
+     chteo_logged_in==='true') — so for a logged-out visitor window.supabase
+     never existed and those sections polled forever, stuck on "Loading...".
+     Loading the SDK here unconditionally fixes that for everyone. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#0a0d13;--bg-alt:#0d1119;--surface:#131826;--surface-2:#171d2d;
+  --line:#232b3d;--fire:#ff5a2e;--fire-2:#ff8a3d;--green:#22e08a;
+  --cyan:#21e6c1;--text:#eef1f7;--text-dim:#8b93a9;--text-dimmer:#5b6379;
+  --danger:#ff3d5a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--text);font-family:Arial,"Noto Sans Bengali",sans-serif}
+button{font-family:inherit;cursor:pointer}
+.app{
+ width:100%;min-height:100vh;margin:auto;background:
+ radial-gradient(120% 60% at 15% 0%,rgba(255,90,46,.10),transparent 55%),
+ radial-gradient(90% 50% at 100% 10%,rgba(33,230,193,.07),transparent 55%),var(--bg);
+ padding-bottom:100px;overflow:hidden;position:relative
+}
+.browser-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#0d1119;border-bottom:1px solid var(--line)}
+.browser-bar .url-pill{flex:1;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:9px 14px;min-width:0;color:var(--text-dim)}
+.browser-bar span{font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.browser-bar svg{color:var(--text-dim);flex-shrink:0}
+.tabs{width:26px;height:26px;border:1.8px solid var(--text-dim);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:800;color:var(--text-dim);flex-shrink:0}
+.topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--surface);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.icon-btn{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--surface);border:1px solid var(--line);color:var(--text-dim);flex-shrink:0}
+.brand{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.brand-mark{width:40px;height:40px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.brand-mark img{width:100%;height:100%;object-fit:contain}
+.brand-name{font-weight:800;font-size:15px;letter-spacing:.03em}
+.balance-chip{display:flex;align-items:center;gap:7px;background:linear-gradient(135deg,rgba(34,224,138,.14),rgba(34,224,138,.04));border:1px solid rgba(34,224,138,.35);border-radius:999px;padding:7px 9px 7px 8px;flex-shrink:0}
+.coin{width:22px;height:22px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;color:#063d26}
+.amt{font-weight:800;font-size:13.5px;color:var(--green)}
+.plus{width:18px;height:18px;border-radius:50%;background:var(--green);color:#052e1c;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900}
+.ticker{display:flex;align-items:flex-start;gap:10px;margin:10px 14px 0;padding:12px 13px;background:linear-gradient(135deg,rgba(34,224,138,.06),var(--surface));border:1px solid var(--line);border-radius:14px;font-size:12px;color:var(--text-dim);overflow:hidden;cursor:pointer}
+.ticker .dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);flex-shrink:0;margin-top:5px}
+.ticker b{color:var(--text)}
+.notice-ticker .ticker-fixed{flex:0 0 auto}
+.notice-ticker .ticker-track{min-width:0;flex:1;white-space:normal;overflow:hidden}
+.notice-ticker .ticker-track-inner{display:block;white-space:normal;line-height:1.45}
+.notice-ticker .ticker-track-inner span:last-child{display:none}
+
+/* YouTube tutorial promo card */
+.yt-promo{display:block;text-decoration:none;color:inherit;margin:12px 14px;padding:9px 11px;border-radius:14px;position:relative;overflow:hidden;background:radial-gradient(120% 160% at 0% 0%,rgba(255,45,45,.22),transparent 60%),#0b0a0e;border:1px solid rgba(255,61,61,.5);box-shadow:0 0 14px rgba(255,40,40,.16)}
+.yt-promo-flex{display:flex;align-items:center;gap:10px}
+.yt-promo-row{display:flex;align-items:center;gap:9px;flex:1;min-width:0}
+.yt-promo-icon{flex-shrink:0;width:32px;height:26px;border-radius:8px;background:linear-gradient(145deg,#ff3b3b,#c81414);display:flex;align-items:center;justify-content:center;box-shadow:0 0 10px rgba(255,40,40,.45)}
+.yt-promo-title{font-weight:800;font-size:11px;line-height:1.25;color:#fff;white-space:normal;overflow:visible;text-overflow:clip}
+.yt-promo-sub{display:none}
+.yt-promo-cta{display:flex;align-items:center;justify-content:center;gap:5px;padding:6px 10px;border-radius:999px;border:1.2px solid rgba(255,60,60,.75);color:#fff;font-weight:800;font-size:9.5px;background:rgba(255,30,30,.08);white-space:nowrap;flex-shrink:0}
+.yt-promo-cta .play-circle{width:15px;height:15px;border-radius:50%;border:1.3px solid #ff3b3b;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+@media(min-width:701px){
+  .yt-promo{margin:14px 22px;padding:10px 16px}
+  .yt-promo-sub{display:flex;align-items:center;gap:6px;margin-top:2px;font-size:10px;color:#c9ccd6}
+  .yt-promo-sub .dot{width:4px;height:4px;border-radius:50%;background:#ff3b3b;flex-shrink:0}
+  .yt-promo-cta{padding:8px 16px}
+}
+.section{padding:20px 16px 4px}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+.section-title{font-weight:800;font-size:14px;letter-spacing:.03em;display:flex;align-items:center;gap:9px}
+.section-title .bar{width:4px;height:16px;border-radius:2px;background:linear-gradient(var(--fire),var(--green))}
+.section-link{font-size:11.5px;color:var(--fire-2);font-weight:700}
+.tile-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:12px}
+.tile{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:linear-gradient(145deg,var(--surface-2),var(--surface));min-height:168px}
+.tile.hero{grid-row:span 2;min-height:348px}
+.tile::before{content:"";position:absolute;width:180px;height:180px;border-radius:50%;background:rgba(255,90,46,.22);right:-45px;top:-60px}
+.tile:nth-child(2)::before{background:rgba(33,230,193,.18)}
+.tile:nth-child(3)::before{background:rgba(255,138,61,.18)}
+.placeholder-icon{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:50px;opacity:.20}
+.scrim{position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,rgba(10,13,19,.94) 100%)}
+.tile-label{position:absolute;left:0;right:0;bottom:0;padding:12px 13px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tile-label .t{font-weight:800;font-size:14px}.tile-label .sub{font-size:10.5px;color:var(--text-dim);margin-top:3px}
+.chevron{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.09);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.badge{position:absolute;top:10px;left:10px;font-weight:800;font-size:10px;padding:5px 9px;border-radius:999px;background:rgba(10,13,19,.65);border:1px solid rgba(34,224,138,.5);color:var(--green)}
+.prize-tag{position:absolute;top:10px;right:10px;font-weight:900;font-size:11px;color:#052e1c;background:linear-gradient(135deg,#7dffc0,var(--green));padding:7px 10px;border-radius:8px}
+.hscroll{display:flex;gap:12px;overflow-x:auto;padding-bottom:7px;scroll-snap-type:x mandatory;scrollbar-width:none}
+.hscroll::-webkit-scrollbar{display:none}
+.dscrim-card{flex:0 0 250px;scroll-snap-align:start;border-radius:14px;overflow:hidden;border:1px solid color-mix(in srgb,var(--tc) 40%,var(--line));background:var(--surface)}
+.dscrim-card.blue{--tc:#3b82f6;--tc2:#7fb2ff}.dscrim-card.teal{--tc:#17d9a6;--tc2:#6df0cf}.dscrim-card.gold{--tc:#ffcc33;--tc2:#ffe38a}.dscrim-card.fire{--tc:#ff5a2e;--tc2:#ff8a3d}
+.dscrim-body{padding:11px}
+.dscrim-card-title{font-weight:800;font-size:12.5px;color:var(--tc);margin-bottom:8px}
+.dscrim-top-row{display:flex;gap:8px;margin-bottom:9px}
+.dscrim-pool{flex:0 0 76px;border:1px solid color-mix(in srgb,var(--tc) 45%,var(--line));border-radius:10px;padding:8px 7px;background:rgba(255,255,255,.02)}
+.dscrim-pool[style]{flex:1}
+.lbl{font-size:7.5px;color:var(--text-dim);letter-spacing:.04em;margin-bottom:3px}
+.val{font-weight:900;font-size:16px;color:var(--tc);line-height:1.05}
+.dscrim-distrib{flex:1;border:1px solid color-mix(in srgb,var(--tc) 45%,var(--line));border-radius:10px;padding:6px 8px}
+.dscrim-distrib .head{font-size:7.5px;font-weight:700;color:var(--tc);text-align:center;margin-bottom:4px}
+.dscrim-drow{display:flex;align-items:center;justify-content:space-between;font-size:9px;padding:1.5px 0;color:var(--text-dim)}
+.dscrim-drow .amt{color:var(--tc);font-weight:700}
+.dscrim-mid-row{display:flex;gap:8px;margin-bottom:9px}
+.dscrim-info{flex:1;display:flex;align-items:center;gap:8px;border:1px solid color-mix(in srgb,var(--tc) 40%,var(--line));border-radius:10px;padding:7px 9px}
+.dscrim-info .ic{width:22px;height:22px;border-radius:50%;border:1.6px solid var(--tc);color:var(--tc);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.dscrim-info .val{color:var(--text);font-size:13px}
+.dscrim-slots{margin-bottom:10px}
+.dscrim-slots-top{display:flex;justify-content:space-between;font-size:8.5px;color:var(--text-dim);margin-bottom:5px}
+.dscrim-slots-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:2.5px}
+.dscrim-slots-grid span{height:10px;border-radius:2px;background:var(--surface-2);border:1px solid color-mix(in srgb,var(--tc) 35%,var(--line))}
+.dscrim-slots-grid span.filled{background:var(--danger);border-color:var(--danger)}
+.dscrim-cta{width:100%;padding:9px 0;border-radius:9px;border:none;font-weight:800;font-size:12px;background:linear-gradient(135deg,var(--tc),var(--tc2));color:#04141f}
+.lb-card{background:linear-gradient(135deg,rgba(33,230,193,.08),rgba(19,24,38,.4));border:1px solid rgba(33,230,193,.25);border-radius:16px;padding:14px}
+.lb-list{max-height:174px;overflow-y:auto;scrollbar-width:thin;padding-right:2px}.lb-list::-webkit-scrollbar{width:4px}.lb-list::-webkit-scrollbar-thumb{background:var(--line);border-radius:10px}
+.lb-row{display:flex;align-items:center;gap:11px;padding:8px 2px}.lb-row+.lb-row{border-top:1px solid var(--line)}
+.lb-rank{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;background:var(--surface-2);color:var(--text-dim);flex-shrink:0}
+.lb-rank.gold{background:#22e08a;color:#073b25}.lb-rank.silver{background:#c7ccd7;color:#282d38}.lb-rank.bronze{background:#bd7842;color:#2e1a06}
+.lb-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(145deg,#26344a,#111722);border:1px solid var(--line);flex-shrink:0}
+.lb-name{font-weight:700;font-size:12px;flex:1}.lb-name .s{display:block;font-size:10px;color:var(--text-dimmer);font-weight:500}
+.lb-amt{font-weight:800;font-size:11px;color:var(--green);white-space:nowrap}
+.lb-see{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;padding:9px 0;border-radius:10px;background:var(--surface-2);border:1px solid var(--line);font-size:11px;font-weight:700;color:var(--text-dim)}
+.app-footer{text-align:center;font-size:10.5px;color:var(--text-dimmer);padding:18px 16px 4px}
+/* Bottom nav / support FAB visuals now come from the shared theme.css
+   (so the whole site stays in sync and Support only glows when active). */
+@media(max-width:360px){.brand-name{font-size:13px}.balance-chip .amt{font-size:12px}.dscrim-card{flex-basis:240px}}
+
+/* ============ TABLET (>=701px) ============ */
+/* .app stays 100% width at every size -- only spacing/sizing grows, so there is never a blank gap on any screen */
+@media(min-width:701px){
+  .topbar{padding:16px 24px}
+  .section{padding:24px 24px 6px}
+  .brand-name{font-size:16px}
+  .section-title{font-size:15px}
+  .tile-grid{gap:14px}
+  .tile{min-height:200px}
+  .tile.hero{min-height:400px}
+  .dscrim-card{flex:0 0 270px}
+  .lb-card{padding:16px}
+}
+
+/* ============ DESKTOP (>=1024px) ============ */
+@media(min-width:1024px){
+  .topbar{padding:18px 40px}
+  .section{padding:26px 40px 8px}
+  .tile-grid{grid-template-columns:repeat(4,1fr);gap:16px}
+  .tile.hero{grid-column:span 2;grid-row:span 1;min-height:280px}
+  .tile:not(.hero){min-height:220px}
+  .hscroll{overflow-x:visible;flex-wrap:wrap}
+  .dscrim-card{flex:1 1 280px;max-width:320px}
+  .lb-list{max-height:none}
+  .lb-card,.hscroll{max-width:1100px}
+}
+
+.badge.free-all{
+  color:#061b14;
+  background:linear-gradient(135deg,#7dffc0,#22e08a);
+  border-color:#22e08a;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.08em;
+  padding:7px 12px;
+  box-shadow:0 0 16px rgba(34,224,138,.45);
+}
+
+.vip-btn{
+position:absolute; left:12px; right:12px; bottom:62px; z-index:3;
+width:calc(100% - 24px); padding:10px 12px; border:1px solid rgba(34,224,138,.65);
+border-radius:10px; background:linear-gradient(135deg,#22e08a,#13b66e);
+color:#041a10; font-family:'Orbitron','Hind Siliguri',sans-serif;
+font-size:11px; font-weight:900; letter-spacing:.04em;
+box-shadow:0 5px 18px rgba(34,224,138,.28);
+}
+.badge.free-all{font-size:9.5px; padding:6px 10px; white-space:nowrap;}
+
+/* =========================
+   HERO VIP CHAMPIONSHIP CARD
+========================= */
+.tile.hero{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  background:#0d1420;
+  padding-bottom:14px;
+}
+.tile.hero::before{display:none}
+.hero-vip-header{
+  width:100%;
+  min-height:58px;
+  background:#0d2b20;
+  border-bottom:2px solid #18b875;
+  border-radius:0 0 22px 22px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:10px 8px;
+}
+.hero-vip-only{
+  font-size:9.5px;
+  font-weight:800;
+  letter-spacing:1.2px;
+  color:#c9f6df;
+  line-height:1.1;
+}
+.hero-vip-members{
+  margin-top:3px;
+  font-size:15px;
+  font-weight:900;
+  letter-spacing:.4px;
+  color:#20dc8a;
+  line-height:1.05;
+}
+.hero-vip-content{
+  flex:1;
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:14px 12px;
+}
+.hero-vip-title{
+  margin:0;
+  font-size:16.5px;
+  font-weight:900;
+  line-height:1.25;
+  letter-spacing:-.2px;
+  color:#f1f3f7;
+  text-transform:uppercase;
+}
+.hero-vip-title span{
+  display:inline-block;
+  margin-top:2px;
+  font-size:16.5px;
+  color:#f1f3f7;
+}
+.hero-vip-button{
+  width:86%;
+  min-height:38px;
+  border-radius:12px;
+  border:1.6px solid #20dc8a;
+  background:#0d2b20;
+  color:#20dc8a;
+  font-size:11.5px;
+  font-weight:900;
+  letter-spacing:.3px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  cursor:pointer;
+  transition:background .2s ease, transform .15s ease, box-shadow .2s ease;
+}
+.hero-vip-button span{
+  font-size:15px;
+  line-height:1;
+}
+.hero-vip-button:hover{
+  background:#123b2b;
+  box-shadow:0 0 12px rgba(32,220,138,.18);
+}
+.hero-vip-button:active{
+  transform:scale(.98);
+}
+
+/* VIP Modal */
+.vip-modal{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:rgba(0,0,0,.72);
+}
+.vip-modal.show{display:flex}
+.vip-modal-box{
+  width:100%;
+  max-width:420px;
+  position:relative;
+  padding:24px;
+  border-radius:20px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+}
+.vip-modal-box h3{
+  margin:0 0 10px;
+  font-size:18px;
+  color:#20dc8a;
+}
+.vip-modal-box p{
+  margin:0;
+  color:var(--text-dim);
+  font-size:13.5px;
+  line-height:1.6;
+}
+.vip-close{
+  position:absolute;
+  top:10px;
+  right:10px;
+  width:30px;
+  height:30px;
+  border-radius:8px;
+  border:1px solid var(--line);
+  background:var(--surface-2);
+  color:var(--text);
+  font-size:18px;
+  cursor:pointer;
+}
+
+
+/* Seamless news-style ticker */
+.ticker{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  overflow:hidden;
+  white-space:nowrap;
+}
+.ticker-fixed{
+  flex:0 0 auto;
+  position:relative;
+  z-index:2;
+  background:var(--surface);
+  font-weight:900;
+  color:var(--text);
+  padding-right:2px;
+}
+.ticker-track{
+  flex:1;
+  min-width:0;
+  overflow:hidden;
+  white-space:nowrap;
+  position:relative;
+}
+.ticker-track-inner{
+  display:flex;
+  width:max-content;
+  will-change:transform;
+  animation:tickerMove 16s linear infinite;
+}
+.ticker-track span{
+  display:block;
+  flex:0 0 auto;
+  padding-right:24px;
+}
+@keyframes tickerMove{
+  from{transform:translateX(0)}
+  to{transform:translateX(-50%)}
+}
+
+/* ============ Side drawer (opened from the ☰ button) ============ */
+.drawer-overlay{
+  display:none;position:fixed;inset:0;z-index:99998;
+  background:rgba(0,0,0,.6);
+}
+.drawer-overlay.open{display:block;animation:drawerFade .18s ease-out}
+@keyframes drawerFade{from{opacity:0}to{opacity:1}}
+
+.drawer{
+  position:fixed;top:0;left:0;bottom:0;z-index:99999;
+  width:78%;max-width:340px;
+  background:var(--bg);border-right:1px solid var(--line);
+  transform:translateX(-100%);
+  transition:transform .22s cubic-bezier(.32,.72,0,1);
+  display:flex;flex-direction:column;overflow-y:auto;
+}
+.drawer.open{transform:translateX(0)}
+
+.drawer-profile{
+  padding:calc(28px + env(safe-area-inset-top,0px)) 24px 22px;
+  display:flex;flex-direction:column;align-items:center;text-align:center;
+}
+.drawer-logo-wrap{
+  width:88px;height:88px;border-radius:50%;overflow:hidden;
+  background:var(--surface);border:1px solid var(--line);margin-bottom:14px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.drawer-logo-wrap img{width:100%;height:100%;object-fit:cover;display:none}
+.drawer-logo-wrap svg{width:44px;height:44px;color:var(--text-dim)}
+.drawer-org-name{font-size:19px;font-weight:800;margin:0 0 12px;color:var(--text)}
+.drawer-uid{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:999px;padding:8px 16px;font-size:13.5px;font-weight:700;
+  color:var(--text);cursor:pointer;
+}
+.drawer-uid svg{width:15px;height:15px;color:var(--text-dim)}
+.drawer-uid.copied svg{color:var(--green)}
+
+.drawer-divider{height:1px;background:var(--line);margin:4px 20px 14px}
+
+.drawer-menu{padding:0 14px 24px;display:flex;flex-direction:column;gap:10px}
+.drawer-item{
+  display:flex;align-items:center;gap:16px;
+  padding:14px;border-radius:16px;border:1px solid var(--line);
+  background:var(--surface);cursor:pointer;text-decoration:none;color:var(--text);
+}
+.drawer-item:active{background:var(--surface-2)}
+.drawer-item .item-icon{
+  width:38px;height:38px;border-radius:12px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.drawer-item .item-icon svg{width:19px;height:19px}
+.drawer-item .item-label{flex:1;font-size:15px;font-weight:700}
+.drawer-item .item-chevron{width:18px;height:18px;color:var(--text-dim);flex-shrink:0}
+
+.icon-tournaments{background:rgba(34,224,138,.14);color:var(--green)}
+.icon-announcements{background:rgba(255,138,61,.14);color:var(--fire-2)}
+.icon-language{background:rgba(34,224,138,.14);color:var(--green)}
+.icon-theme{background:rgba(33,230,193,.14);color:var(--cyan)}
+.icon-chat{background:rgba(33,230,193,.14);color:var(--cyan)}
+
+@media(min-width:480px){.drawer{width:340px}}
+
+/* Notice box overrides the old scrolling ticker */
+.ticker.notice-ticker{display:flex;align-items:center;gap:10px;margin:10px 14px 0;padding:12px 13px;background:linear-gradient(135deg,rgba(34,224,138,.06),var(--surface));border:1px solid var(--line);border-radius:14px;white-space:nowrap;overflow:hidden;cursor:pointer}
+.ticker.notice-ticker .ticker-track{white-space:nowrap;overflow:hidden;flex:1;min-width:0}
+.ticker.notice-ticker .ticker-track-inner{display:flex;width:max-content;animation:tickerMove 16s linear infinite;white-space:nowrap;line-height:1.45}
+.ticker.notice-ticker .ticker-track span{display:block;flex:0 0 auto;padding-right:40px}
+.ticker.notice-ticker #noticeTickerTextClone{display:none}
+</style>
+<style>
+:root{
+  --bg: var(--g-bg);
+  --bg-alt: var(--g-surface-2);
+  --surface: var(--g-surface);
+  --surface-2: var(--g-surface-2);
+  --line: var(--g-border);
+  --text: var(--g-text);
+  --text-dim: var(--g-muted);
+  --text-dimmer: var(--g-muted);
+}
+/* Clickable dynamic notice */
+.notice-ticker{cursor:pointer;position:relative}
+.notice-ticker:active{opacity:.85}
+.notice-click-hint{flex:0 0 auto;font-size:9px;font-weight:900;color:var(--fire-2);border:1px solid rgba(255,138,61,.35);border-radius:999px;padding:3px 7px;background:var(--surface)}
+.notice-arrow{display:none}
+.notice-modal{position:fixed;inset:0;z-index:100000;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.68);backdrop-filter:blur(5px)}
+.notice-modal.show{display:flex}
+.notice-modal-box{width:min(430px,100%);max-height:78vh;overflow:auto;background:var(--surface);color:var(--text);border:1px solid rgba(255,138,61,.4);border-radius:22px;padding:22px;position:relative;box-shadow:0 24px 70px rgba(0,0,0,.5)}
+.notice-modal-close{position:absolute;right:12px;top:12px;width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--text);font-size:22px;cursor:pointer}
+.notice-modal-box h3{margin:0 42px 7px 0;font-size:20px}
+.notice-modal-meta{font-size:11px;color:var(--text-dim);margin-bottom:16px}
+.notice-modal-text{font-size:14px;line-height:1.75;white-space:pre-wrap;word-break:break-word}.notice-modal-image{display:block;width:100%;max-height:260px;object-fit:contain;border-radius:14px;margin:0 0 14px;border:1px solid var(--line);background:var(--surface-2)}
+.notice-modal-admin{margin-top:17px;padding-top:13px;border-top:1px solid var(--line);font-size:12px;color:var(--text-dim)}
+</style>
+
+</head>
+<body>
+<div class="app">
+<div class="topbar">
+  <div class="icon-btn" id="menuBtn" style="cursor:pointer">☰</div>
+  <div class="brand">
+    <div class="brand-mark">
+      <img src="https://raw.githubusercontent.com/chtesportsofficial/Chteo_img/refs/heads/main/CHTEO%20(1).png" alt="CHT ESP ORG LOGO">
+    </div>
+    <div class="brand-name">CHT ESP ORG</div>
+  </div>
+  <div class="balance-chip">
+    <div class="coin">৳</div><div class="amt" id="topBalanceAmount">0</div>
+  </div>
+</div>
+
+<div class="ticker notice-ticker" id="noticeTicker" role="button" tabindex="0" aria-label="Open full notice">
+  <div class="dot"></div>
+  <div class="ticker-fixed"><b>NOTICE:</b></div>
+  <div class="ticker-track">
+    <div class="ticker-track-inner" id="noticeTickerInner">
+      <span id="noticeTickerText">No Notice</span>
+      <span id="noticeTickerTextClone">No Notice</span>
+    </div>
+  </div>
+  <span class="notice-click-hint">TAP TO READ</span>
+</div>
+
+<a class="yt-promo" href="https://youtube.com/playlist?list=PLDnxt3WfGijA&si=q76M-YLIUWdn87OG" target="_blank" rel="noopener">
+  <div class="yt-promo-flex">
+    <div class="yt-promo-row">
+      <div class="yt-promo-icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>
+      <div style="min-width:0">
+        <div class="yt-promo-title" data-i18n="index.ytTitle">How to play tournament from our website?</div>
+        <div class="yt-promo-sub"><span class="dot"></span><span data-i18n="index.ytSub">Watch the video to know everything in detail.</span></div>
+      </div>
+    </div>
+    <div class="yt-promo-cta"><span class="play-circle"><svg viewBox="0 0 24 24" width="7" height="7" fill="#ff3b3b"><path d="M8 5v14l11-7z"/></svg></span><span data-i18n="index.watchVideo">Watch</span></div>
+  </div>
+</a>
+
+<a class="my-tournaments-btn" href="tournaments.html">
+  <div class="my-tournaments-icon">📋</div>
+  <div class="my-tournaments-text">
+    <div class="my-tournaments-title">My Tournaments</div>
+    <div class="my-tournaments-sub">Track the ones you have joined</div>
+  </div>
+  <div class="my-tournaments-arrow">›</div>
+</a>
+<style>
+.my-tournaments-btn{display:flex;align-items:center;gap:11px;margin:12px 14px 0;padding:12px 13px;border-radius:14px;background:linear-gradient(135deg,rgba(255,90,46,.16),var(--surface));border:1.5px solid rgba(255,138,61,.55);text-decoration:none;color:inherit}
+.my-tournaments-icon{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--fire),var(--fire-2));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.my-tournaments-text{flex:1;min-width:0}
+.my-tournaments-title{font-size:12px;font-weight:800;color:var(--text)}
+.my-tournaments-sub{font-size:9.5px;color:var(--text-dim);margin-top:1px}
+.my-tournaments-arrow{color:var(--fire-2);font-size:16px;flex-shrink:0}
+</style>
+
+<div class="section" id="dynamicTournamentArea">
+  <div id="dynamicTournamentSections"></div>
+</div>
+<style>
+#dynamicTournamentSections .dyn-section{margin:0 0 18px}
+#dynamicTournamentSections .dyn-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+#dynamicTournamentSections .dyn-title{font-weight:800;font-size:14px;letter-spacing:.03em;display:flex;align-items:center;gap:9px}
+#dynamicTournamentSections .dyn-title .bar{width:4px;height:16px;border-radius:2px;background:linear-gradient(var(--fire),var(--green))}
+#dynamicTournamentSections .dyn-scroll{display:flex;gap:12px;overflow-x:auto;padding-bottom:7px;scroll-snap-type:x mandatory;scrollbar-width:none}
+#dynamicTournamentSections .dyn-scroll::-webkit-scrollbar{display:none}
+#dynamicTournamentSections .dyn-card{position:relative;flex:0 0 72%;max-width:292px;scroll-snap-align:start;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--surface)}
+#dynamicTournamentSections .dyn-banner{display:block;width:100%;aspect-ratio:1/1;height:auto;object-fit:contain;background:#0d1320}
+#dynamicTournamentSections .dyn-body{padding:8px;background:var(--surface)}
+#dynamicTournamentSections .dyn-cta{display:flex;width:100%;align-items:center;justify-content:center;gap:6px;padding:9px 0;border-radius:10px;border:none;font-weight:800;font-size:11px;background:linear-gradient(135deg,var(--green),#7dffc0);color:#04141f;text-align:center;text-decoration:none}.dyn-cta .arrow{font-size:15px;line-height:1}
+</style>
+<script>
+(function(){
+  const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
+  const SUPABASE_KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+  const money=v=>'৳'+(Number.isInteger(Number(v||0))?Number(v||0):Number(v||0).toFixed(2));
+  function start(){
+    if(!window.supabase?.createClient){setTimeout(start,250);return}
+    const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+    const root=document.getElementById('dynamicTournamentSections');
+    async function load(){
+      const {data,error}=await sb.from('tournament_sections')
+        .select('id,name,display_order,is_active,tournaments(id,title,banner_url,entry_fee,prize_pool,total_slots,status,show_on_homepage,created_at)')
+        .eq('is_active',true).order('display_order',{ascending:true});
+      if(error){console.warn(error);root.innerHTML='';return}
+      // Keep homepage tournament order exactly the same as the Tournament Management
+      // order. Management stores a separate order for every section, so each
+      // section keeps its own 1,2,3... sequence.
+      let savedOrders={};
+      try { savedOrders=JSON.parse(localStorage.getItem('chteo_tournament_orders_by_section')||'{}')||{}; } catch(e) { savedOrders={}; }
+      function orderForSection(sectionId,items){
+        const saved=Array.isArray(savedOrders[sectionId])?savedOrders[sectionId]:[];
+        const rank=new Map(saved.map((id,i)=>[String(id),i]));
+        return [...items].sort((a,b)=>{
+          const ar=rank.get(String(a.id)), br=rank.get(String(b.id));
+          if(ar===undefined&&br===undefined) return new Date(a.created_at||0)-new Date(b.created_at||0);
+          if(ar===undefined) return 1;
+          if(br===undefined) return -1;
+          return ar-br;
+        });
+      }
+      const groups=(data||[]).map(s=>({s,ts:orderForSection(s.id,(s.tournaments||[]).filter(t=>t.status==='published'&&t.show_on_homepage===true))})).filter(x=>x.ts.length);
+      root.innerHTML=groups.map(x=>'<section class="dyn-section"><div class="dyn-head"><div class="dyn-title"><span class="bar"></span>'+esc(x.s.name)+'</div></div><div class="dyn-scroll">'+x.ts.map((t,i)=>'<article class="dyn-card" data-index="'+(i+1)+'">'+(t.banner_url?'<img class="dyn-banner" src="'+esc(t.banner_url)+'" alt="">':'')+'<div class="dyn-body"><a class="dyn-cta" aria-label="Open tournament" href="tournament-details.html?id='+encodeURIComponent(t.id)+'"><span>VIEW DETAILS</span><span class="arrow">›</span></a></div></article>').join('')+'</div></section>').join('');
+    }
+    load();
+  }
+  start();
+})();
+</script>
+
+<div class="section">
+  <div class="section-head"><div class="section-title"><span class="bar"></span><span data-i18n="index.topTeams">This Month's Top Teams</span></div></div>
+  <div class="lb-card">
+    <div class="lb-list" id="lbTopTeams"><div class="lb-row"><div class="lb-name" style="color:var(--text-dim)">Loading...</div></div></div>
+    <a class="lb-see" href="leaderboard.html" data-i18n="index.seeOther">See other teams ↓</a>
+  </div>
+</div>
+
+<script>
+(function(){
+  const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
+  const SUPABASE_KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+  function medalClass(i){return i===0?'gold':i===1?'silver':i===2?'bronze':'';}
+  function start(){
+    if(!window.supabase?.createClient){setTimeout(start,250);return}
+    const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+    const box=document.getElementById('lbTopTeams');
+    async function load(){
+      const now=new Date();
+      const monthStart=new Date(now.getFullYear(),now.getMonth(),1).toISOString().slice(0,10);
+      const {data,error}=await sb.from('leaderboard_rows').select('team_name,owner_team_name,points').gte('lobby_date',monthStart);
+      if(error||!data){box.innerHTML='';return}
+      const totals=new Map();
+      data.forEach(r=>{
+        const key=(r.owner_team_name||r.team_name);
+        totals.set(key,(totals.get(key)||0)+(r.points||0));
+      });
+      const ranked=[...totals.entries()].map(([team_name,points])=>({team_name,points})).sort((a,b)=>b.points-a.points).slice(0,10);
+      if(!ranked.length){box.innerHTML='<div class="lb-row"><div class="lb-name" style="color:var(--text-dim)">No results yet this month.</div></div>';return}
+      box.innerHTML=ranked.map((r,i)=>'<div class="lb-row"><div class="lb-rank '+medalClass(i)+'">'+(i+1)+'</div><div class="lb-avatar"></div><div class="lb-name">'+esc(r.team_name)+'<span class="s">Squad</span></div><div class="lb-amt">'+r.points+' PTS</div></div>').join('');
+    }
+    load();
+  }
+  start();
+})();
+</script>
+
+<div class="section">
+  <div class="tile-grid">
+    <div class="tile hero">
+      <div class="hero-vip-header">
+        <div class="hero-vip-only" data-i18n="index.vipOnly">ONLY FOR</div>
+        <div class="hero-vip-members" data-i18n="index.vipMembers">VIP MEMBERS</div>
+      </div>
+      <div class="hero-vip-content">
+        <h2 class="hero-vip-title">CHTEO<br>CHAMPIONSHIP<br><span>SSN - 1</span></h2>
+      </div>
+      <button class="hero-vip-button" onclick="openVipModal()"><span data-i18n="index.vipButton">BE A VIP MEMBER</span><span>›</span></button>
+    </div>
+    <div class="tile"><div class="placeholder-icon">🎧</div><div class="scrim"></div><div class="tile-label"><div><div class="t">GADGET ZONE</div></div></div></div>
+    <div class="tile"><div class="placeholder-icon">💎</div><div class="scrim"></div><div class="tile-label"><div><div class="t">DIAMOND TOP UP</div></div></div></div>
+  </div>
+</div>
+
+<div class="app-footer">©CHT ESP ORG. All Rights Reserved</div>
+
+<div class="bottomnav">
+  <div class="navitem active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 3 10.5V21h6.2v-6.4h5.6V21H21V10.5L12 3.2Z"/></svg><div class="lbl">Home</div></div>
+  <div class="navitem" onclick="window.location.href='refer-earn.html'" style="cursor:pointer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9.5" cy="8" r="3.4"/><path d="M3 20c0-3.9 2.9-6.6 6.5-6.6S16 16.1 16 20"/><path d="M18.5 8v5M16 10.5h5"/></svg><div class="lbl">Refer & Earn</div></div>
+  <div class="navitem support-item" onclick="window.location.href='support.html'" style="cursor:pointer"><div class="support-fab">🎧</div><div class="lbl">Support</div></div>
+  <div class="navitem" onclick="window.location.href='wallet.html'" style="cursor:pointer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8a2 2 0 0 1 2-2h11a1 1 0 0 1 1 1v2"/><path d="M4 8v9a2 2 0 0 0 2 2h13a1 1 0 0 0 1-1v-7a2 2 0 0 0-2-2H6a2 2 0 0 1-2-2Z"/></svg><div class="lbl">Wallet</div></div>
+  <div class="navitem" onclick="goToProfile()" style="cursor:pointer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9.2"/><circle cx="12" cy="9.6" r="3"/><path d="M6 18.2c1.1-2.5 3.2-3.8 6-3.8s4.9 1.3 6 3.8"/></svg><div class="lbl">Profile</div></div>
+</div>
+
+</div>
+
+<div class="vip-modal" id="vipModal">
+  <div class="vip-modal-box">
+    <button class="vip-close" onclick="closeVipModal()">×</button>
+    <h3>VIP Membership</h3>
+    <p>
+      VIP member হওয়ার জন্য কী কী করতে হবে
+      এবং membership-এর requirements এখানে
+      দেখানো হবে।
+    </p>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<div class="drawer" id="drawer">
+
+  <div class="drawer-profile">
+    <div class="drawer-logo-wrap">
+      <img id="drawerLogo" alt="Team logo">
+      <svg id="drawerLogoPlaceholder" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+    </div>
+    <h2 class="drawer-org-name" id="drawerOrgName">Your Team Name</h2>
+    <div class="drawer-uid" id="drawerUid">
+      <span id="drawerUidText">UID : —</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>
+    </div>
+  </div>
+
+  <div class="drawer-divider"></div>
+
+  <nav class="drawer-menu">
+    <a class="drawer-item" href="announcements.html">
+      <span class="item-icon icon-announcements"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a2 2 0 0 0 2 2h1l2 5h2l-1.5-5H10l8 4V6l-8 4H6a2 2 0 0 0-2 2z"/><path d="M16 8v8"/></svg></span>
+      <span class="item-label">Announcements</span>
+      <svg class="item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </a>
+
+    <a class="drawer-item" href="language-select.html">
+      <span class="item-icon icon-language"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></span>
+      <span class="item-label">Language</span>
+      <svg class="item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </a>
+
+    <a class="drawer-item" href="theme.html">
+      <span class="item-icon icon-theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg></span>
+      <span class="item-label">Theme</span>
+      <svg class="item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </a>
+
+    <a class="drawer-item" id="chatAdminLink" href="#" target="_blank" rel="noopener">
+      <span class="item-icon icon-chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>
+      <span class="item-label">Chat with admin</span>
+      <svg class="item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </a>
+  </nav>
+</div>
+
+<script>
+function goToProfile(){
+  var isLoggedIn = localStorage.getItem('chteo_logged_in') === 'true';
+  window.location.href = isLoggedIn ? 'profile.html' : 'chteo_auth.html';
+}
+function vipModalHideUI(){
+  document.getElementById("vipModal").classList.remove("show");
+}
+function openVipModal(){
+  document.getElementById("vipModal").classList.add("show");
+  // Hooks the modal into the device/browser Back button (global.js):
+  // one Back press closes the modal instead of leaving the page.
+  if(window.CHTEO && CHTEO.openModal) CHTEO.openModal(vipModalHideUI);
+}
+function closeVipModal(){
+  vipModalHideUI();
+  if(window.CHTEO && CHTEO.closeModal) CHTEO.closeModal();
+}
+document.getElementById("vipModal").addEventListener("click", function(e){
+  if(e.target === this){
+    closeVipModal();
+  }
+});
+
+/* ============ Side drawer (☰ button, top-left) ============ */
+(function(){
+  const menuBtn        = document.getElementById('menuBtn');
+  const drawer          = document.getElementById('drawer');
+  const drawerOverlay   = document.getElementById('drawerOverlay');
+  const uidBtn          = document.getElementById('drawerUid');
+  const uidText         = document.getElementById('drawerUidText');
+  const chatAdminLink   = document.getElementById('chatAdminLink');
+  const logoImg         = document.getElementById('drawerLogo');
+  const logoPlaceholder = document.getElementById('drawerLogoPlaceholder');
+  const orgNameEl       = document.getElementById('drawerOrgName');
+
+  // ---- EDIT THESE TWO LINES for your WhatsApp support chat ----
+  const WHATSAPP_NUMBER = '8801989242505';   // country code + number, no + or spaces
+  const WHATSAPP_MSG    = 'Hi, I need help with my CHT Esports account.';
+  // ---------------------------------------------------------------
+
+  // Pull team logo / team name / UID from the same localStorage keys
+  // edit_profile.html already saves to.
+  function getProfile(){
+    try { return JSON.parse(localStorage.getItem('user_profile') || '{}'); }
+    catch(e){ return {}; }
+  }
+  const savedProfile = getProfile();
+  const savedPicture = localStorage.getItem('profile_picture');
+
+  if (savedProfile.teamName) orgNameEl.textContent = savedProfile.teamName;
+
+  if (savedPicture){
+    logoImg.src = savedPicture;
+    logoImg.style.display = 'block';
+    logoPlaceholder.style.display = 'none';
+  }
+
+  // UID — change 'user_uid' below if your account system stores it under
+  // a different key (e.g. inside a bigger account/user object).
+  const savedUid = localStorage.getItem('user_uid') || savedProfile.uid;
+  if (savedUid) uidText.textContent = 'UID : #' + savedUid;
+
+  chatAdminLink.href = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(WHATSAPP_MSG);
+
+  function openDrawer(){
+    drawer.classList.add('open');
+    drawerOverlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    if (window.CHTEO && CHTEO.openModal) CHTEO.openModal(closeDrawer);
+  }
+  function closeDrawer(){
+    drawer.classList.remove('open');
+    drawerOverlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  menuBtn.addEventListener('click', openDrawer);
+  drawerOverlay.addEventListener('click', function(){
+    closeDrawer();
+    if (window.CHTEO && CHTEO.closeModal) CHTEO.closeModal();
+  });
+
+  uidBtn.addEventListener('click', function(){
+    const rawUid = uidText.textContent.replace('UID : ', '');
+    if (rawUid === '—') return;
+    navigator.clipboard?.writeText(rawUid).then(function(){
+      uidBtn.classList.add('copied');
+      setTimeout(function(){ uidBtn.classList.remove('copied'); }, 1200);
+    });
+  });
+})();
+
+/* ============ Fix: reflect Language/Theme changes on Back ============
+   When you go Back from language-select.html / theme.html, the browser
+   often restores this page from its "bfcache" (a frozen snapshot) instead
+   of reloading it — so a language/theme change made on the other page
+   never gets applied here until you refresh manually. Forcing a reload
+   only when the page is restored from bfcache fixes this with no
+   noticeable delay, and doesn't affect normal first-time page loads. */
+window.addEventListener('pageshow', function(event){
+  if (event.persisted) {
+    location.reload();
+  }
+});
+/* ============ Dynamic Notice ============ */
+(function(){
+  const URL='https://myfficbwcbgbxbdqjexv.supabase.co';
+  const KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+  function start(){
+    if(!window.supabase || !window.supabase.createClient){setTimeout(start,200);return;}
+    const sb=window.supabase.createClient(URL,KEY);
+    const ticker=document.getElementById('noticeTicker'), t1=document.getElementById('noticeTickerText'), t2=document.getElementById('noticeTickerTextClone');
+    const modal=document.getElementById('noticeModal'), text=document.getElementById('noticeModalText'), image=document.getElementById('noticeModalImage');
+    const meta=document.getElementById('noticeModalMeta'), admin=document.getElementById('noticeModalAdmin'), close=document.getElementById('noticeModalClose'); let current=null;
+    function parse(raw){if(!raw)return {title:'',body:'',image:''};try{const o=JSON.parse(raw);if(o&&typeof o==='object')return {title:o.title||'',body:o.body||'',image:o.image||''};}catch(e){}return {title:'',body:raw,image:''};}
+    function dt(v){const d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleString('en-BD',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});}
+    function open(){if(!current)return;const n=parse(current.message);const titleEl=document.getElementById('noticeModalTitle');titleEl.textContent=n.title||'Notice';text.textContent=n.body||n.title||'No Notice';if(image){if(n.image){image.src=n.image;image.style.display='block';}else{image.removeAttribute('src');image.style.display='none';}}meta.textContent=dt(current.created_at);admin.textContent='Admin — '+(current.admin_name||'Admin');modal.classList.add('show');modal.setAttribute('aria-hidden','false');}
+    function hide(){modal.classList.remove('show');modal.setAttribute('aria-hidden','true');}
+    async function load(){const {data,error}=await sb.from('site_notices').select('id,message,created_at,admin_name').eq('is_active',true).order('created_at',{ascending:false}).limit(1).maybeSingle();if(error||!data){current=null;const dbg=error?('DEBUG ERR: '+(error.message||JSON.stringify(error))):'DEBUG: no row returned';t1.textContent=dbg;t2.textContent=dbg;return;}current=data;const n=parse(data.message);const display=[n.title,n.body].filter(Boolean).join(' — ')||'No Notice';t1.textContent=display;t2.textContent=display;}
+    try{
+      if(!ticker||!t1||!t2||!modal||!close){throw new Error('DOM MISSING: ticker='+!!ticker+' t1='+!!t1+' t2='+!!t2+' modal='+!!modal+' close='+!!close);}
+      t1.textContent='JS RUNNING...';t2.textContent='JS RUNNING...';
+      ticker.addEventListener('click',open);ticker.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});close.addEventListener('click',hide);modal.addEventListener('click',e=>{if(e.target===modal)hide();});document.addEventListener('keydown',e=>{if(e.key==='Escape')hide();});load();setInterval(load,30000);
+    }catch(e){
+      if(t1){t1.textContent='JS ERROR: '+e.message;} if(t2){t2.textContent='JS ERROR: '+e.message;}
+    }
+  } start();
+})();</script>
+
+<script>
+(function(){
+  // Same fast-path as wallet.html: read the plain 'supabase_uid' key
+  // directly (global.js writes this synchronously on login/sync) so the
+  // top balance chip doesn't have to wait for the full Supabase
+  // auth+profile round trip before showing a number.
+  let lastFetchedUid = null;
+  const CACHE_KEY = 'cached_balance';
+  const CACHE_UID_KEY = 'cached_balance_uid';
+
+  function loadTopBalance(){
+    let profile = {};
+    try { profile = JSON.parse(localStorage.getItem('user_profile') || '{}'); } catch(e){}
+    const uid = localStorage.getItem('supabase_uid') || profile.supabase_uid;
+    const el = document.getElementById('topBalanceAmount');
+    if(!uid || !el) return;
+
+    // Instant paint: show last-known balance from localStorage immediately,
+    // with zero network wait — but ONLY if it was cached for THIS uid.
+    // localStorage is per-device, not per-account, so a different
+    // account (or a fresh signup with no wallet row yet) must never
+    // show the previous user's cached balance.
+    const cachedUid = localStorage.getItem(CACHE_UID_KEY);
+    const cached = localStorage.getItem(CACHE_KEY);
+    if(cached !== null && cachedUid === uid){
+      el.textContent = cached;
+    } else {
+      el.textContent = '...';
+    }
+
+    if(uid === lastFetchedUid) return;
+
+    // Then quietly refresh from the server in the background and correct
+    // the number if it changed (stale-while-revalidate).
+    fetch('https://chteo-api.onrender.com/api/get-balance.php?uid=' + encodeURIComponent(uid))
+      .then(res => res.json())
+      .then(data => {
+        lastFetchedUid = uid;
+        if(data.success){
+          el.textContent = data.balance;
+          localStorage.setItem(CACHE_KEY, data.balance);
+          localStorage.setItem(CACHE_UID_KEY, uid);
+        } else {
+          // No wallet row yet (e.g. brand-new signup, sync not done) —
+          // show 0 rather than leaving a stale/wrong number on screen.
+          el.textContent = '0';
+          localStorage.removeItem(CACHE_KEY);
+          localStorage.removeItem(CACHE_UID_KEY);
+        }
+      })
+      .catch(err => console.warn('Top balance load failed:', err));
+  }
+  loadTopBalance();
+  document.addEventListener('chteo:profile-synced', loadTopBalance);
+})();
+</script>
+
+
+<div class="notice-modal" id="noticeModal" aria-hidden="true">
+  <div class="notice-modal-box" role="dialog" aria-modal="true" aria-labelledby="noticeModalTitle">
+    <button class="notice-modal-close" id="noticeModalClose" aria-label="Close notice">×</button>
+    <h3 id="noticeModalTitle">Full Notice</h3>
+    <div class="notice-modal-meta" id="noticeModalMeta">—</div>
+    <img class="notice-modal-image" id="noticeModalImage" alt="Notice image" style="display:none">
+    <div class="notice-modal-text" id="noticeModalText">No Notice</div>
+    <div class="notice-modal-admin" id="noticeModalAdmin">Admin —</div>
+  </div>
+</div>
+<style>
+/* ============ First-time Profile Spotlight ============ */
+.profile-spotlight{position:fixed;inset:0;z-index:9998;display:none}
+.spotlight-hole{position:fixed;border-radius:18px;box-shadow:0 0 0 9999px rgba(4,6,10,.5);transition:top .2s ease,left .2s ease,width .2s ease,height .2s ease;z-index:9998}
+.spotlight-tip{position:fixed;z-index:9999;width:260px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 12px 30px rgba(0,0,0,.55)}
+.spotlight-tip::after{content:"";position:absolute;bottom:-8px;right:26px;width:16px;height:16px;background:var(--surface);border-right:1px solid var(--line);border-bottom:1px solid var(--line);transform:rotate(45deg)}
+.spotlight-tip-text{font-size:12.5px;line-height:1.55;color:var(--text);margin-bottom:12px}
+.spotlight-tip-actions{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.spotlight-skip{background:transparent;border:none;color:var(--text-dim);font-size:11.5px;font-weight:700;padding:9px 4px}
+.spotlight-cta{flex:1;background:linear-gradient(135deg,var(--fire),var(--fire-2));border:none;color:#fff;font-weight:800;font-size:11.5px;padding:10px 12px;border-radius:10px}
+</style>
+
+<div class="profile-spotlight" id="profileSpotlight">
+  <div class="spotlight-hole" id="spotlightHole"></div>
+  <div class="spotlight-tip" id="spotlightTip">
+    <div class="spotlight-tip-text" id="spotlightTipText">প্রথমবার এসেছেন? Profile বাটনে গিয়ে Login / Create Account করে নিন।</div>
+    <div class="spotlight-tip-actions">
+      <button type="button" class="spotlight-skip" id="spotlightSkipBtn">Skip</button>
+      <button type="button" class="spotlight-cta" id="spotlightCtaBtn">Login / Create Account</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  function $(id){return document.getElementById(id);}
+  function isLoggedIn(){ return localStorage.getItem('chteo_logged_in') === 'true'; }
+
+  // Whenever we detect the visitor IS logged in, stamp a permanent
+  // "this device has had an account before" flag. Unlike chteo_logged_in
+  // (which flips to false on logout), this flag is never removed here —
+  // so after a logout we can still tell "returning user" apart from
+  // "brand new visitor" and change the spotlight message accordingly.
+  if(isLoggedIn()) localStorage.setItem('chteo_ever_logged_in', 'true');
+
+  function shouldShow(everHadAccount){
+    if(isLoggedIn()) return false; // already logged in, nothing to point at
+    // A returning user who has an account (just currently signed out)
+    // gets nudged EVERY visit until they actually log back in — that's
+    // not a one-time tour, it's a "you're not logged in" reminder.
+    // A brand-new visitor only gets the onboarding tour ONCE, ever.
+    if(!everHadAccount && localStorage.getItem('chteo_profile_spotlight_seen') === 'true') return false;
+    var target = document.querySelector('.bottomnav .navitem:last-child');
+    return !!target;
+  }
+
+  function positionSpotlight(){
+    var target = document.querySelector('.bottomnav .navitem:last-child');
+    if(!target) return;
+    var r = target.getBoundingClientRect();
+    var pad = 8;
+    var hole = $('spotlightHole');
+    hole.style.left = (r.left - pad) + 'px';
+    hole.style.top = (r.top - pad) + 'px';
+    hole.style.width = (r.width + pad * 2) + 'px';
+    hole.style.height = (r.height + pad * 2) + 'px';
+
+    var tip = $('spotlightTip');
+    var tipW = Math.min(260, window.innerWidth - 24);
+    tip.style.width = tipW + 'px';
+    var left = Math.min(window.innerWidth - tipW - 12, Math.max(12, r.right - tipW));
+    tip.style.left = left + 'px';
+    tip.style.top = (r.top - pad - 12 - tip.offsetHeight) + 'px';
+  }
+
+  function dismiss(everHadAccount){
+    // Only the FIRST-TIME tour gets "marked seen forever". A returning
+    // signed-out user's reminder isn't a tour to suppress — it should
+    // come back next visit too, as long as they're still logged out.
+    if(!everHadAccount){
+      localStorage.setItem('chteo_profile_spotlight_seen', 'true');
+    }
+    var el = $('profileSpotlight');
+    if(el) el.style.display = 'none';
+    window.removeEventListener('resize', positionSpotlight);
+  }
+
+  function init(){
+    var everHadAccount = localStorage.getItem('chteo_ever_logged_in') === 'true';
+    if(!shouldShow(everHadAccount)) return;
+    var textEl = $('spotlightTipText'), ctaEl = $('spotlightCtaBtn');
+    if(everHadAccount){
+      textEl.textContent = 'আপনার আগে থেকেই একটি Account আছে — Profile থেকে গিয়ে Login করে নিন।';
+      ctaEl.textContent = 'Login';
+    } else {
+      textEl.textContent = 'প্রথমবার এসেছেন? Profile বাটনে গিয়ে Login / Create Account করে নিন।';
+      ctaEl.textContent = 'Login / Create Account';
+    }
+
+    var el = $('profileSpotlight');
+    el.style.display = 'block';
+    positionSpotlight();
+    window.addEventListener('resize', positionSpotlight);
+
+    $('spotlightSkipBtn').addEventListener('click', function(e){ e.stopPropagation(); dismiss(everHadAccount); });
+    $('spotlightCtaBtn').addEventListener('click', function(e){ e.stopPropagation(); dismiss(everHadAccount); goToProfile(); });
+    $('spotlightHole').addEventListener('click', function(e){ e.stopPropagation(); dismiss(everHadAccount); goToProfile(); });
+    el.addEventListener('click', function(e){ if(e.target === el) dismiss(everHadAccount); });
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+
+</body>
+</html>
