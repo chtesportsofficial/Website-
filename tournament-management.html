@@ -109,6 +109,8 @@
 .lobby-status{font-size:9px;font-weight:900;padding:4px 8px;border-radius:999px;background:#203329;color:#5ee98b;white-space:nowrap}
 .lobby-status.cancelled{background:#2b1720;color:#ff6575}
 .lobby-status.completed{background:#1c2a3d;color:#7cc2ff}
+.lobby-status.live{background:#203329;color:#5ee98b}
+.lobby-status.pending{background:#2b2410;color:#f6c453}
 .lobby-meta{font-size:10px;color:#8e98ab;margin-top:5px}
 .lobby-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
 .team-item{background:#171f31;border:1px solid #293650;border-radius:14px;padding:10px;margin-top:8px}
@@ -674,6 +676,18 @@ let currentLobbyTournament=null, lobbies=[], lobbyTeamsCache=[], currentLobbyFor
 
 function fmtLobbyDate(d){try{return new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short'});}catch(e){return d;}}
 function lobbyDot(s){return {upcoming:'○',live:'●',full:'●',completed:'✔',cancelled:'○'}[s]||'○';}
+// A 'live' lobby (its scheduled time has passed) shows "MATCH ON" for the
+// first hour after start (typical match length), then "PENDING" from then
+// on — a standing nudge that this one still needs its result submitted
+// (submitting via "Save & Complete" in the Enter Result modal is what
+// actually marks it completed; there's no separate manual Complete button).
+function lobbyLiveBadge(l){
+  if(l.status!=='live')return null;
+  const dt=parseLobbyDateTime(l.lobby_date,l.time_label);
+  if(!dt)return {cls:'live',text:'MATCH ON'};
+  const mins=(Date.now()-dt.getTime())/60000;
+  return mins<60?{cls:'live',text:'MATCH ON'}:{cls:'pending',text:'PENDING'};
+}
 
 // Parses time-based labels like "9:00 PM" into a real Date. Capacity-based
 // labels like "Batch 1" don't parse (no clock time to compare) — those
@@ -744,17 +758,20 @@ function renderLobbies(){
   });
   const history=[...lobbies].filter(l=>l.status==='completed').sort((a,b)=>(b.lobby_date+b.time_label).localeCompare(a.lobby_date+a.time_label));
   const lobbyLabel=l=>fmtLobbyDate(l.lobby_date)+' — '+esc(l.time_label)+(l.custom_title?' <span style="color:#8b96aa;font-weight:700">('+esc(l.custom_title)+')</span>':'');
-  $('lobbiesActive').innerHTML=active.length?active.map(l=>`
+  $('lobbiesActive').innerHTML=active.length?active.map(l=>{
+    const liveBadge=lobbyLiveBadge(l);
+    const badgeHtml=l.status==='cancelled'?`<div class="lobby-status cancelled">${lobbyDot(l.status)} CANCELLED</div>`:liveBadge?`<div class="lobby-status ${liveBadge.cls}">${lobbyDot(l.status)} ${liveBadge.text}</div>`:'';
+    return `
     <div class="lobby-item">
-      <div class="lobby-top"><div class="lobby-date">${lobbyLabel(l)}</div>${l.status==='cancelled'?`<div class="lobby-status cancelled">${lobbyDot(l.status)} CANCELLED</div>`:''}</div>
+      <div class="lobby-top"><div class="lobby-date">${lobbyLabel(l)}</div>${badgeHtml}</div>
       <div class="lobby-meta">${l.joined_count||0}/${l.total_slots||0} joined</div>
       <div class="lobby-actions">
         <button class="mini green" onclick="openTeams('${l.id}')">Teams</button>
         <button class="mini" onclick="openResults('${l.id}')">Enter Result</button>
         ${l.status==='cancelled'?`<button class="mini green" onclick="setLobbyStatus('${l.id}','upcoming')">On</button><button class="mini t-delete" onclick="deleteLobby('${l.id}')">Delete</button>`:`<button class="mini red" onclick="setLobbyStatus('${l.id}','cancelled')">Off</button>`}
-        <button class="mini" onclick="setLobbyStatus('${l.id}','completed')">✔ Complete</button>
       </div>
-    </div>`).join(''):'<div class="empty">No active lobbies.</div>';
+    </div>`;
+  }).join(''):'<div class="empty">No active lobbies.</div>';
   $('lobbiesHistory').innerHTML=(history.length?history.map(l=>`
     <div class="lobby-item">
       <div class="lobby-top"><div class="lobby-date">${lobbyLabel(l)}</div><div class="lobby-status completed">✔ COMPLETED</div></div>
