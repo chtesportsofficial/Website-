@@ -67,11 +67,12 @@
 
   .lobby-list{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}
   .lobby-card{background:var(--card-2);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:12px;}
-  .lobby-top{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .lobby-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
+  .lobby-left{display:flex;align-items:center;gap:10px;min-width:0;}
   .lobby-avatar{width:38px;height:38px;border-radius:50%;background:#3a4152;border:2px solid var(--teal);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;flex-shrink:0;}
   .lobby-avatar.full{border-color:#555c6c;}
   .lobby-time{font-size:15px;font-weight:500;}
-  .lobby-date{font-size:9px;color:var(--text-dim);margin-top:1px;}
+  .lobby-date{font-size:9px;color:var(--text-dim);flex-shrink:0;white-space:nowrap;}
   .lobby-meta{display:flex;justify-content:space-between;margin-bottom:5px;font-size:11px;color:var(--text-mid);}
   .lobby-bar{height:5px;background:#2a3145;border-radius:4px;overflow:hidden;margin-bottom:10px;}
   .lobby-bar-fill{height:100%;background:var(--orange);}
@@ -162,7 +163,6 @@
     <a href="javascript:history.back()" class="back">‹</a>
     <div>
       <h1 id="hTitle">Loading...</h1>
-      <div class="org" id="hOrg">CHT ESP ORG</div>
     </div>
   </div>
 
@@ -256,7 +256,6 @@ async function initUser(){
   currentTournament=t;
 
   document.getElementById('hTitle').textContent=t.title||'Tournament';
-  document.getElementById('hOrg').textContent=t.tournament_sections?.name||'CHT ESP ORG';
 
   const prizeDist=Array.isArray(t.prize_distribution)?[...t.prize_distribution].sort((a,b)=>a.rank-b.rank):[];
   const maps=Array.isArray(t.maps)?t.maps:[];
@@ -324,12 +323,23 @@ async function initUser(){
     const slots=l.total_slots||0,joined=l.joined_count||0;
     const full=l.status==='full'||joined>=slots;
     const pct=slots?Math.min(100,Math.round(joined/slots*100)):0;
+    const left=Math.max(slots-joined,0);
+    // "8 PM" typed by admin -> "8 PM SLOT (35 BDT)" shown automatically,
+    // using the tournament's own entry fee — no need to type the fee
+    // into every lobby's time label.
+    const timeLabelFull=`${l.time_label||''} SLOT (${Number(t.entry_fee||0)} BDT)`.trim();
+    // lobby_date is stored as YYYY-MM-DD -> shown as DD-MM-YYYY
+    const dateParts=(l.lobby_date||'').split('-');
+    const dateLabel=dateParts.length===3?`${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`:(l.lobby_date||'');
     return `<div class="lobby-card" id="lcard-${l.id}">
       <div class="lobby-top">
-        <div class="lobby-avatar ${full?'full':''}">${esc((l.time_label||'?')[0])}</div>
-        <div><div class="lobby-time">${esc(l.time_label||'')}</div><div class="lobby-date">${esc(l.lobby_date||'')}</div></div>
+        <div class="lobby-left">
+          <div class="lobby-avatar ${full?'full':''}">${esc((l.time_label||'?')[0])}</div>
+          <div class="lobby-time">${esc(timeLabelFull)}</div>
+        </div>
+        <div class="lobby-date">${esc(dateLabel)}</div>
       </div>
-      <div class="lobby-meta"><span>Joined: ${joined}</span><span>Slots: ${slots}</span></div>
+      <div class="lobby-meta"><span>Joined: ${joined}</span><span>last ${left} slot left</span><span>Slots: ${slots}</span></div>
       <div class="lobby-bar"><div class="lobby-bar-fill ${full?'full':''}" style="width:${pct}%"></div></div>
       <button class="join-btn ${full?'full':''}" id="jbtn-${l.id}" type="button" ${full?'disabled':`onclick="toggleLobbySelect('${l.id}')"`}>${full?'FULL':'BUY SLOT'}</button>
     </div>`;
