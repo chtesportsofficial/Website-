@@ -51,7 +51,7 @@
 .t-actions .switch:not(.on) .switch-label{right:10px;left:auto}
 .t-actions .drag{margin-left:auto;flex:0 0 42px;width:42px;height:38px;border-radius:11px}
 
-@media(max-width:520px){.wrap{padding-left:12px;padding-right:12px}.grid,.modal-actions{grid-template-columns:1fr}.tournament-item{padding:12px}.tournament-top{grid-template-columns:32px 88px minmax(0,1fr);gap:10px}.tournament-top .thumb{width:88px;height:88px}.t-title-row .t-title{font-size:13px}.t-meta{font-size:8px;margin-top:6px}.t-actions{padding-left:42px;gap:6px;overflow:hidden}.t-actions .mini{padding:8px 11px;font-size:9px}.t-actions .switch{width:60px;height:31px;flex-basis:60px}.t-actions .switch .knob{width:23px;height:23px}.t-actions .switch.on .knob{left:33px}.t-actions .switch-label{top:9px;font-size:8px}.t-actions .drag{flex-basis:38px;width:38px;height:34px}}
+@media(max-width:520px){.wrap{padding-left:12px;padding-right:12px}.grid,.modal-actions{grid-template-columns:1fr}.modal-actions.results-actions{grid-template-columns:1fr 1fr}.tournament-item{padding:12px}.tournament-top{grid-template-columns:32px 88px minmax(0,1fr);gap:10px}.tournament-top .thumb{width:88px;height:88px}.t-title-row .t-title{font-size:13px}.t-meta{font-size:8px;margin-top:6px}.t-actions{padding-left:42px;gap:6px;overflow:hidden}.t-actions .mini{padding:8px 11px;font-size:9px}.t-actions .switch{width:60px;height:31px;flex-basis:60px}.t-actions .switch .knob{width:23px;height:23px}.t-actions .switch.on .knob{left:33px}.t-actions .switch-label{top:9px;font-size:8px}.t-actions .drag{flex-basis:38px;width:38px;height:34px}}
 
 
 /* ===== Final requested layout ===== */
@@ -125,7 +125,7 @@
 .team-pay.balance{background:#203329;color:#5ee98b}
 .team-pay.manual{background:#2b2410;color:#f6c453}
 .team-actions{display:flex;gap:6px;margin-top:8px}
-.result-row{display:grid;grid-template-columns:26px 1fr 58px 66px 30px;gap:6px;align-items:center;background:#171f31;border:1px solid #293650;border-radius:12px;padding:8px;margin-top:8px}
+.result-row{display:grid;grid-template-columns:26px 1fr 66px 58px 30px;gap:6px;align-items:center;background:#171f31;border:1px solid #293650;border-radius:12px;padding:8px;margin-top:8px}
 .result-rank-badge{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;background:#101725;border:1px solid #2b3852;color:#9eabc0}
 .result-rank-badge.r1{background:#3a2c05;color:#f6c453;border-color:#5c4708}
 .result-rank-badge.r2{background:#232833;color:#c9cfdb;border-color:#3a4150}
@@ -135,6 +135,7 @@
 .result-updown{display:flex;flex-direction:column;gap:2px}
 .result-updown button{border:1px solid #293650;background:#101725;color:#e8ebf2;border-radius:6px;width:28px;height:15px;font-size:9px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center}
 .result-updown button:disabled{opacity:.3}
+.resPrize:disabled{opacity:.3;background:#10141d}
 .results-toolbar{display:flex;justify-content:flex-end;margin-bottom:2px}
 .results-toolbar button{border:1px solid #293650;background:#141b2b;color:#e9edf5;border-radius:9px;padding:7px 11px;font-size:9px;font-weight:900}
 </style>
@@ -241,7 +242,7 @@
   <div class="mh"><b id="lrmTitle">Enter Result</b><button type="button" onclick="closeM('lrm')">×</button></div>
   <div class="results-toolbar"><button type="button" onclick="sortResultsByPoints()">↕ Sort by points</button></div>
   <div id="resultsList"><div class="loading">Loading...</div></div>
-  <div class="modal-actions"><button type="button" onclick="saveResults()">Save Results</button><button type="button" class="primary" onclick="saveResultsAndComplete()">Save &amp; Complete</button></div>
+  <div class="modal-actions results-actions"><button type="button" onclick="saveResults()">Save Results</button><button type="button" class="primary" onclick="saveResultsAndComplete()">Complete</button></div>
 </div></div>
 
 <div class="confirm" id="confirm"><div class="confirm-card"><div class="confirm-icon">!</div><div class="confirm-title" id="confirmTitle">Are you sure?</div><div class="confirm-text" id="confirmText"></div><div class="confirm-actions"><button type="button" onclick="closeConfirm()">Cancel</button><button type="button" class="danger" id="confirmOk">Continue</button></div></div></div>
@@ -879,14 +880,32 @@ async function openResults(lobbyId){
   renderResultRows(teams,rMap);
 }
 function rankBadgeClass(i){return i===0?'r1':i===1?'r2':i===2?'r3':'';}
+// How many top ranks actually get a prize, per the tournament's own
+// prize_distribution set when it was created (e.g. "Top 4" -> length 4).
+// Falls back to unlimited if a tournament somehow has no distribution set.
+function prizeRankCount(){
+  const n=currentLobbyTournament?.prize_distribution?.length;
+  return Number.isInteger(n)&&n>0?n:Infinity;
+}
+function updatePrizeLocks(){
+  const n=prizeRankCount();
+  [...document.querySelectorAll('#resultsList .result-row')].forEach((row,i)=>{
+    const inp=row.querySelector('.resPrize'); if(!inp)return;
+    const locked=i>=n;
+    inp.disabled=locked;
+    inp.placeholder=locked?'—':'৳';
+    if(locked)inp.value='';
+  });
+}
 function renderResultRows(teams,rMap){
   $('resultsList').innerHTML=teams.length?teams.map((tm,i)=>{const r=rMap.get(tm.id)||{};return `<div class="result-row" data-team="${tm.id}">
       <div class="result-rank-badge ${rankBadgeClass(i)}">${i+1}</div>
       <div class="result-name">${esc(tm.team_name)}</div>
-      <input type="number" class="resPoints" placeholder="PTS" min="0" value="${r.total_points??''}">
       <input type="number" class="resPrize" placeholder="৳" min="0" value="${r.prize_won??0}">
+      <input type="number" class="resPoints" placeholder="PTS" min="0" value="${r.total_points??''}">
       <div class="result-updown"><button type="button" ${i===0?'disabled':''} onclick="moveResultRow('${tm.id}',-1)">▲</button><button type="button" ${i===teams.length-1?'disabled':''} onclick="moveResultRow('${tm.id}',1)">▼</button></div>
     </div>`;}).join(''):'<div class="empty">No confirmed teams for this lobby.</div>';
+  updatePrizeLocks();
 }
 function moveResultRow(teamId,dir){
   const list=$('resultsList');
@@ -919,6 +938,7 @@ function renumberResultRows(){
     row.querySelectorAll('.result-updown button')[0].disabled=i===0;
     row.querySelectorAll('.result-updown button')[1].disabled=i===rows.length-1;
   });
+  updatePrizeLocks();
 }
 async function saveResults(){
   const lobbyId=currentLobbyForResults?.id; if(!lobbyId)return;
