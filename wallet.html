@@ -407,12 +407,12 @@
   <div class="card split-card">
     <div class="split-item withdrawable">
       <div class="lbl" data-i18n="wallet.withdrawable">Withdrawable</div>
-      <div class="val">৳0</div>
+      <div class="val" id="withdrawableBalance">৳0</div>
     </div>
     <div class="divider-v"></div>
     <div class="split-item non-withdrawable">
       <div class="lbl" data-i18n="wallet.nonWithdrawable">Non-Withdrawable</div>
-      <div class="val">৳0</div>
+      <div class="val" id="nonWithdrawableBalance">৳0</div>
     </div>
   </div>
 
@@ -447,11 +447,12 @@
         <option value="Nagad">Nagad</option>
       </select>
 
-      <input type="number" placeholder="Enter your Amount" data-i18n-placeholder="wallet.enterAmount">
+      <input type="number" id="withdrawAmount" min="50" step="0.01" placeholder="Enter your Amount" data-i18n-placeholder="wallet.enterAmount">
 
       <input type="text" id="numberInput" placeholder="Enter your number" data-i18n-placeholder="wallet.enterNumber">
 
-      <button class="btn btn-withdraw" data-i18n="wallet.requestWithdraw">Request Withdraw</button>
+      <div id="withdrawMsg" style="font-size:13px;margin-bottom:10px;"></div>
+      <button class="btn btn-withdraw" id="withdrawSubmitBtn" data-i18n="wallet.requestWithdraw">Request Withdraw</button>
     </div>
   </div>
 
@@ -606,19 +607,12 @@ async function getSupabaseAccessToken(){
 
 function loadWalletBalance(){
   const profile = getProfile();
-  // Read straight from the plain 'supabase_uid' key first — global.js
-  // writes this synchronously and it's available instantly on page load,
-  // before the slower Supabase auth/profile-table round trip finishes.
-  // Falls back to the profile object for older cached sessions.
   const uid = localStorage.getItem('supabase_uid') || profile.supabase_uid;
   const balanceEl = document.getElementById('balanceAmount');
+  const withdrawableEl = document.getElementById('withdrawableBalance');
+  const nonWithdrawableEl = document.getElementById('nonWithdrawableBalance');
   if(!uid || !balanceEl) return;
 
-  // Instant paint: show last-known balance from localStorage immediately,
-  // with zero network wait — but ONLY if it was cached for THIS uid.
-  // localStorage is per-device, not per-account, so on a different
-  // account (or a fresh signup with no wallet row yet) the previous
-  // user's cached balance must never be shown.
   const cachedUid = localStorage.getItem(WALLET_CACHE_UID_KEY);
   const cached = localStorage.getItem(WALLET_CACHE_KEY);
   if(cached !== null && cachedUid === uid){
@@ -629,20 +623,25 @@ function loadWalletBalance(){
 
   if(uid === _walletLastFetchedUid) return;
 
-  // Then quietly refresh from the server in the background and correct
-  // the number if it changed (stale-while-revalidate).
   fetch('https://chteo-api.onrender.com/api/get-balance.php?uid=' + encodeURIComponent(uid))
     .then(res => res.json())
     .then(data => {
       _walletLastFetchedUid = uid;
       if(data.success){
-        balanceEl.textContent = '৳' + formatBDT(data.balance);
-        localStorage.setItem(WALLET_CACHE_KEY, data.balance);
+        const total = Number(data.balance || 0);
+        const withdrawable = Number(data.withdrawable_balance || 0);
+        const nonWithdrawable = Number(data.non_withdrawable_balance || 0);
+
+        balanceEl.textContent = '৳' + formatBDT(total);
+        if(withdrawableEl) withdrawableEl.textContent = '৳' + formatBDT(withdrawable);
+        if(nonWithdrawableEl) nonWithdrawableEl.textContent = '৳' + formatBDT(nonWithdrawable);
+
+        localStorage.setItem(WALLET_CACHE_KEY, total);
         localStorage.setItem(WALLET_CACHE_UID_KEY, uid);
       } else {
-        // No wallet row yet (e.g. brand-new signup, sync not done) —
-        // show 0 rather than leaving a stale/wrong number on screen.
         balanceEl.textContent = '৳0';
+        if(withdrawableEl) withdrawableEl.textContent = '৳0';
+        if(nonWithdrawableEl) nonWithdrawableEl.textContent = '৳0';
         localStorage.removeItem(WALLET_CACHE_KEY);
         localStorage.removeItem(WALLET_CACHE_UID_KEY);
       }
@@ -793,6 +792,73 @@ document.getElementById('depositSubmitBtn').addEventListener('click', async func
         'Could not reach the server: ' + err.message + '. Please try again, or contact us on WhatsApp.'
       );
     });
+});
+
+/* ============ Withdraw request ============ */
+function showWithdrawMsg(text, isError){
+  const el = document.getElementById('withdrawMsg');
+  if(!el) return;
+  el.textContent = text;
+  el.style.color = isError ? '#ef4444' : '#22c55e';
+}
+
+document.getElementById('withdrawSubmitBtn').addEventListener('click', async function(){
+  const btn = document.getElementById('withdrawSubmitBtn');
+  const method = document.getElementById('paymentMethod').value;
+  const amount = Number(document.getElementById('withdrawAmount').value);
+  const accountNumber = document.getElementById('numberInput').value.trim();
+
+  showWithdrawMsg('', false);
+
+  const accessToken = await getSupabaseAccessToken();
+  if(!accessToken){
+    showWithdrawMsg('Please sign in first.', true);
+    return;
+  }
+  if(!method){
+    showWithdrawMsg('Select a payment method.', true);
+    return;
+  }
+  if(!amount || amount < 50){
+    showWithdrawMsg('Minimum withdraw is 50 BDT.', true);
+    return;
+  }
+  if(!/^01[0-9]{9}$/.test(accountNumber)){
+    showWithdrawMsg('Enter a valid 11-digit number (01XXXXXXXXX).', true);
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+
+  try{
+    const res = await fetch('https://chteo-api.onrender.com/submit-withdraw-request.php', {
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({
+        access_token: accessToken,
+        method: method,
+        amount: amount,
+        account_number: accountNumber
+      })
+    });
+    const data = await res.json();
+
+    if(data && data.success){
+      showWithdrawMsg(data.message || 'Withdrawal request submitted successfully.', false);
+      document.getElementById('withdrawAmount').value = '';
+      document.getElementById('numberInput').value = '';
+      document.getElementById('paymentMethod').selectedIndex = 0;
+      loadWalletBalance();
+    }else{
+      showWithdrawMsg((data && data.message) || 'Withdrawal request failed.', true);
+    }
+  }catch(err){
+    showWithdrawMsg('Could not reach the server. Please try again.', true);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Request Withdraw';
+  }
 });
 </script>
 

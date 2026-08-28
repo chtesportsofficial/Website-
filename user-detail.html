@@ -422,13 +422,21 @@
           <span id="adjBalSpinner" style="width:16px;height:16px;border:2px solid rgba(53,87,255,0.25);border-top-color:var(--accent);border-radius:50%;display:inline-block;animation:spin .8s linear infinite;flex-shrink:0;"></span>
           <span id="adjBalText"></span>
         </div>
+        <div style="display:flex;justify-content:center;gap:18px;margin-top:7px;font-size:11px;">
+          <span style="color:var(--success);">Withdrawable: <b id="adjWithdrawableText">৳0</b></span>
+          <span style="color:#b47800;">Non-Withdrawable: <b id="adjNonWithdrawableText">৳0</b></span>
+        </div>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:12px;">
         <button id="adj-btn-add" onclick="adjSetType('add')" style="flex:1;padding:10px 0;border-radius:10px;border:1px solid rgba(28,124,77,0.35);background:rgba(28,124,77,0.12);color:var(--success);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">+ Add</button>
         <button id="adj-btn-remove" onclick="adjSetType('remove')" style="flex:1;padding:10px 0;border-radius:10px;border:1px solid var(--line);background:#f6f7fb;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">− Remove</button>
       </div>
       <input id="adj-amount" type="number" min="1" placeholder="Amount (৳)" style="width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--line);background:#f6f7fb;color:var(--ink);font-size:14px;font-family:inherit;margin-bottom:8px;" />
-      <input id="adj-reason" type="text" maxlength="255" placeholder="Reason (e.g. Refund, Bonus, Correction)" style="width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--line);background:#f6f7fb;color:var(--ink);font-size:14px;font-family:inherit;margin-bottom:12px;" />
+      <select id="adj-balance-type" style="width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--line);background:#f6f7fb;color:var(--ink);font-size:14px;font-family:inherit;margin-bottom:12px;">
+        <option value="" disabled selected>Select balance type</option>
+        <option value="withdrawable">Withdrawable</option>
+        <option value="non_withdrawable">Non-Withdrawable</option>
+      </select>
       <button id="adj-submit-btn" onclick="adjSubmit()" style="width:100%;padding:13px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Apply Adjustment</button>
       <div id="adj-msg" style="font-size:13px;font-weight:600;text-align:center;padding:8px 0 0;min-height:22px;"></div>
     </div>
@@ -713,7 +721,7 @@ let _adjType = 'add';
 
 function adjOpen(){
   document.getElementById('adj-amount').value = '';
-  document.getElementById('adj-reason').value = '';
+  document.getElementById('adj-balance-type').value = '';
   document.getElementById('adj-msg').textContent = '';
   document.getElementById('adj-msg').style.color = '';
   document.getElementById('adjBalText').textContent = '';
@@ -735,7 +743,11 @@ function adjOpen(){
       document.getElementById('adjBalSpinner').style.display = 'none';
       if(data && data.success && data.user){
         const bal = data.user.balance !== null ? '৳' + data.user.balance : '৳0';
+        const wb = Number(data.user.withdrawable_balance || 0);
+        const nwb = Number(data.user.non_withdrawable_balance || 0);
         document.getElementById('adjBalText').textContent = bal;
+        document.getElementById('adjWithdrawableText').textContent = '৳' + wb;
+        document.getElementById('adjNonWithdrawableText').textContent = '৳' + nwb;
         document.getElementById('balanceVal').textContent = bal;
         document.getElementById('balanceRow').style.display = 'flex';
       } else {
@@ -801,7 +813,7 @@ async function adjSubmit(){
   if(!session){ showToast('Session expired. Please log in again.'); return; }
 
   const amount = parseFloat(document.getElementById('adj-amount').value);
-  const reason = document.getElementById('adj-reason').value.trim();
+  const balanceType = document.getElementById('adj-balance-type').value;
   const msgEl  = document.getElementById('adj-msg');
   const btnEl  = document.getElementById('adj-submit-btn');
 
@@ -809,7 +821,7 @@ async function adjSubmit(){
   msgEl.style.color = '';
 
   if(!amount || amount <= 0){ msgEl.style.color='var(--error)'; msgEl.textContent='Valid amount required.'; return; }
-  if(!reason){ msgEl.style.color='var(--error)'; msgEl.textContent='Reason is required.'; return; }
+  if(!balanceType){ msgEl.style.color='var(--error)'; msgEl.textContent='Please select a balance type.'; return; }
 
   btnEl.disabled = true;
   btnEl.textContent = 'Processing...';
@@ -824,7 +836,7 @@ async function adjSubmit(){
         email:   targetProfile.email,
         amount:  amount,
         type:    _adjType,
-        reason:  reason
+        balance_type: balanceType
       })
     });
     const data = await res.json();
@@ -835,9 +847,11 @@ async function adjSubmit(){
       msgEl.style.color = 'var(--success)';
       msgEl.textContent = 'Done! New balance: ' + newBal;
       document.getElementById('balanceVal').textContent = newBal;
-      document.getElementById('adjModalBalance').textContent = newBal;
+      document.getElementById('adjBalText').textContent = newBal;
+      document.getElementById('adjWithdrawableText').textContent = '৳' + Number(data.withdrawable_balance || 0);
+      document.getElementById('adjNonWithdrawableText').textContent = '৳' + Number(data.non_withdrawable_balance || 0);
       document.getElementById('adj-amount').value = '';
-      document.getElementById('adj-reason').value = '';
+      document.getElementById('adj-balance-type').value = '';
     } else {
       msgEl.style.color = 'var(--error)';
       msgEl.textContent = (data && data.message) || 'Something went wrong.';
