@@ -125,6 +125,10 @@
 .team-pay.balance{background:#203329;color:#5ee98b}
 .team-pay.manual{background:#2b2410;color:#f6c453}
 .team-actions{display:flex;gap:6px;margin-top:8px}
+.add-team-btn{width:100%;padding:11px;margin:2px 0 12px;text-align:center;font-size:10px}
+.add-team-form{background:#141b2b;border:1px solid #293650;border-radius:14px;padding:12px;margin-bottom:14px}
+.add-team-form label{margin:8px 0 5px}
+.add-team-form label:first-child{margin-top:0}
 .result-row{display:grid;grid-template-columns:26px 1fr 66px 58px 30px;gap:6px;align-items:center;background:#171f31;border:1px solid #293650;border-radius:12px;padding:8px;margin-top:8px}
 .result-rank-badge{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;background:#101725;border:1px solid #2b3852;color:#9eabc0}
 .result-rank-badge.r1{background:#3a2c05;color:#f6c453;border-color:#5c4708}
@@ -235,6 +239,16 @@
 
 <div class="modal" id="ltm"><div class="box">
   <div class="mh"><b id="ltmTitle">Teams</b><button type="button" onclick="closeM('ltm')">×</button></div>
+  <button type="button" class="mini add-team-btn" onclick="toggleAddTeamForm()">+ Add Team</button>
+  <div id="addTeamForm" class="add-team-form" style="display:none">
+    <label>Team Name *</label><input id="atTeamName" placeholder="Team name">
+    <label>Player Name</label><input id="atPlayerName" placeholder="Player name">
+    <label>WhatsApp Number *</label><input id="atWhatsapp" placeholder="01XXXXXXXXX" inputmode="tel">
+    <div class="modal-actions">
+      <button type="button" onclick="toggleAddTeamForm(false)">Cancel</button>
+      <button type="button" class="primary" onclick="submitManualTeam()">Add Team</button>
+    </div>
+  </div>
   <div id="teamsList"><div class="loading">Loading...</div></div>
 </div></div>
 
@@ -848,6 +862,43 @@ function renderTeamsList(){
       ${tm.confirmation_status==='pending'?`<div class="team-actions"><button class="mini green" onclick="setTeamStatus('${tm.id}','confirmed')">Confirm</button><button class="mini red" onclick="setTeamStatus('${tm.id}','rejected')">Reject</button></div>`:`<div class="team-actions"><button class="mini" onclick="setTeamStatus('${tm.id}','pending')">Reset</button></div>`}
     </div>`;
   }).join(''):'<div class="empty">No teams joined yet.</div>';
+}
+function toggleAddTeamForm(show){
+  const el=$('addTeamForm');
+  const willShow=show===undefined?el.style.display==='none':show;
+  el.style.display=willShow?'block':'none';
+  if(willShow){$('atTeamName').value='';$('atPlayerName').value='';$('atWhatsapp').value='';$('atTeamName').focus();}
+}
+// Manually-added teams usually represent a slot someone already booked over
+// WhatsApp (outside the app) before the admin got around to entering it here.
+// So instead of joining the list at the bottom like a brand-new signup, we
+// back-date joined_at just before the current earliest team in this lobby,
+// which puts it at the top — as if it had claimed the 1st slot.
+async function submitManualTeam(){
+  const teamName=$('atTeamName').value.trim();
+  const playerName=$('atPlayerName').value.trim();
+  const whatsapp=$('atWhatsapp').value.trim();
+  if(!teamName)return msg('Team name is required.');
+  if(!whatsapp)return msg('WhatsApp number is required.');
+  if(!currentLobbyForTeams)return;
+  const earliest=lobbyTeamsCache.length?Math.min(...lobbyTeamsCache.map(t=>new Date(t.joined_at).getTime())):Date.now();
+  const joinedAt=new Date(earliest-1000).toISOString();
+  const payload={
+    lobby_id:currentLobbyForTeams.id,
+    team_name:teamName,
+    players:playerName?[{name:playerName}]:[],
+    contact_number:whatsapp,
+    payment_method:'manual',
+    payment_reference:'Added manually by admin (WhatsApp)',
+    confirmation_status:'confirmed',
+    joined_at:joinedAt
+  };
+  const {error}=await sb.from('lobby_teams').insert(payload);
+  if(error)return msg(error.message);
+  await logActivity('team_added_manually','tournament','tournament_lobby',currentLobbyForTeams.id,teamName,{narration:`manually added team "${teamName}" to the lobby (WhatsApp booking).`,highlight_targets:[teamName]});
+  toggleAddTeamForm(false);
+  await openTeams(currentLobbyForTeams.id);
+  await loadLobbies(currentLobbyTournament.id);
 }
 async function setTeamStatus(teamId,status){
   const {data,error}=await sb.from('lobby_teams').update({confirmation_status:status}).eq('id',teamId).select();
