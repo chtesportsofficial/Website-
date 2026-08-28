@@ -82,9 +82,17 @@
 </style>
 <style>
 .img-note{font-size:9px;color:#7f899d;margin:4px 0 6px}
-.map-box-edit,.prize-box-edit{background:#0e1420;border:1px solid #293650;border-radius:11px;padding:9px;margin-top:8px}
+.map-box-edit,.prize-box-edit{background:#0e1420;border:1px solid #293650;border-radius:11px;padding:9px;margin-top:0}
 .map-box-edit label,.prize-box-edit label{margin:5px 0 4px}
-.map-box-edit .existing-img{font-size:9px;color:#5ee98b;word-break:break-all;margin-top:3px}
+.map-box-edit .existing-img{font-size:9px;color:#5ee98b;word-break:break-all;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Side-by-side layouts that stay side-by-side even on small phones —
+   unlike .grid, which collapses to 1 column under 520px. */
+.prize-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.map-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.map-box-edit input{padding:8px 6px;font-size:10px}
+.map-box-edit label{font-size:8px}
+.field-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:start}
+.field-pair textarea{min-height:110px}
 </style>
 <style>
 .lobby-add-box{background:#0e1420;border:1px solid #293650;border-radius:14px;padding:12px;margin-bottom:10px}
@@ -161,35 +169,32 @@
 
   <label>Prize Distribution (Top N)</label>
   <select id="rankCount" onchange="renderPrizeBoxes()"></select>
-  <div id="prizeBoxes" class="grid"></div>
+  <div id="prizeBoxes" class="prize-grid"></div>
 
   <div class="grid">
     <div><label>Format</label><select id="format"><option value="solo">Solo</option><option value="duo">Duo</option><option value="squad">Squad</option></select></div>
     <div><label>Type</label><select id="matchType"><option value="full_map">Full map</option><option value="clash_squad">Clash squad</option></select></div>
     <div><label>Vehicle</label><select id="vehicle"><option value="true">✅ Allowed</option><option value="false">❌ Not allowed</option></select></div>
     <div><label>Gun Skin</label><select id="gunskin"><option value="false">❌ Not allowed</option><option value="true">✅ Allowed</option></select></div>
-    <div><label>Status</label><select id="status"><option>draft</option><option>published</option><option>unpublished</option><option>archived</option></select></div>
+    <div><label>Emote</label><select id="emote"><option value="false">❌ Not allowed</option><option value="true">✅ Allowed</option></select></div>
   </div>
 
-  <label>Tournament Rules</label>
-  <textarea id="rulesText" placeholder="Write the rules here..."></textarea>
-  <label>Rules Images (optional, multiple)</label>
-  <input id="rulesImages" type="file" accept="image/png,image/jpeg,image/webp" multiple>
-  <div class="img-note" id="rulesImagesNote"></div>
+  <div class="field-pair">
+    <div><label>Tournament Rules</label><textarea id="rulesText" placeholder="Write the rules here..."></textarea></div>
+    <div><label>Rules Images (optional, multiple)</label><input id="rulesImages" type="file" accept="image/png,image/jpeg,image/webp" multiple><div class="img-note" id="rulesImagesNote"></div></div>
+  </div>
   <input type="hidden" id="rulesImagesOld" value="[]">
 
-  <label>Point System</label>
-  <textarea id="pointText" placeholder="Write the point system here..."></textarea>
-  <label>Point System Images (optional, multiple)</label>
-  <input id="pointImages" type="file" accept="image/png,image/jpeg,image/webp" multiple>
-  <div class="img-note" id="pointImagesNote"></div>
+  <div class="field-pair">
+    <div><label>Point System</label><textarea id="pointText" placeholder="Write the point system here..."></textarea></div>
+    <div><label>Point System Images (optional, multiple)</label><input id="pointImages" type="file" accept="image/png,image/jpeg,image/webp" multiple><div class="img-note" id="pointImagesNote"></div></div>
+  </div>
   <input type="hidden" id="pointImagesOld" value="[]">
 
   <label>Maps</label>
   <select id="mapCount" onchange="renderMapBoxes()"></select>
-  <div id="mapBoxes"></div>
+  <div id="mapBoxes" class="map-grid"></div>
 
-  <label>Show on Homepage</label><select id="home"><option value="false">No</option><option value="true">Yes</option></select>
   <div class="modal-actions"><button type="button" id="cancelTmBtn">Cancel</button><button type="button" class="primary" id="saveTournamentBtn">Save Tournament</button></div>
 </div></div>
 
@@ -495,10 +500,10 @@ function renderMapBoxes(prefill){
  $('mapBoxes').innerHTML=Array.from({length:n},(_,i)=>{
   const m=old[i]||{};
   return `<div class="map-box-edit">
-    <label>Map ${i+1} Name</label><input class="mapName" data-i="${i}" placeholder="Bermuda" value="${esc(m.name||'')}">
-    <label>Map ${i+1} Image</label><input type="file" class="mapImg" data-i="${i}" accept="image/png,image/jpeg,image/webp">
+    <label>Map ${i+1}</label><input class="mapName" data-i="${i}" placeholder="Bermuda" value="${esc(m.name||'')}">
+    <label>Image</label><input type="file" class="mapImg" data-i="${i}" accept="image/png,image/jpeg,image/webp">
     <input type="hidden" class="mapImgUrl" data-i="${i}" value="${esc(m.image_url||'')}">
-    ${m.image_url?`<div class="existing-img">Current: ${esc(m.image_url)}</div>`:''}
+    ${m.image_url?`<div class="existing-img" title="${esc(m.image_url)}">Current: ${esc(m.image_url)}</div>`:''}
   </div>`;
  }).join('');
 }
@@ -515,10 +520,10 @@ async function uploadMany(files){
 }
 function newTournament(){
  $('tid').value='';$('tmTitle').textContent='Create Tournament';$('title').value='';$('entry').value=0;$('slots').value=0;
- $('format').value='squad';$('matchType').value='full_map';$('vehicle').value='true';$('gunskin').value='false';
+ $('format').value='squad';$('matchType').value='full_map';$('vehicle').value='true';$('gunskin').value='false';$('emote').value='false';
  $('rulesText').value='';$('rulesImages').value='';$('rulesImagesOld').value='[]';$('rulesImagesNote').textContent='';
  $('pointText').value='';$('pointImages').value='';$('pointImagesOld').value='[]';$('pointImagesNote').textContent='';
- $('status').value='draft';$('home').value='false';$('banner').value='';
+ $('banner').value='';
  fillRankCount(4);renderPrizeBoxes([]);
  fillMapCount(3);renderMapBoxes([]);
  fillSections();openM('tm');
@@ -528,14 +533,14 @@ function editTournament(id){
  $('tid').value=t.id;$('tmTitle').textContent='Edit Tournament';fillSections(t.section_id);
  $('title').value=t.title||'';$('entry').value=t.entry_fee||0;$('slots').value=t.default_slots||t.total_slots||0;
  $('format').value=t.format||'squad';$('matchType').value=t.match_type||'full_map';
- $('vehicle').value=String(t.vehicle_allowed!==false);$('gunskin').value=String(!!t.gun_skin_allowed);
+ $('vehicle').value=String(t.vehicle_allowed!==false);$('gunskin').value=String(!!t.gun_skin_allowed);$('emote').value=String(!!t.emote_allowed);
  $('rulesText').value=t.rules_text||t.rules||'';$('rulesImages').value='';
  const rImgs=Array.isArray(t.rules_images)?t.rules_images:[];$('rulesImagesOld').value=JSON.stringify(rImgs);
  $('rulesImagesNote').textContent=rImgs.length?`${rImgs.length} existing image(s). Choosing new files will replace them.`:'';
  $('pointText').value=t.point_system_text||'';$('pointImages').value='';
  const pImgs=Array.isArray(t.point_system_images)?t.point_system_images:[];$('pointImagesOld').value=JSON.stringify(pImgs);
  $('pointImagesNote').textContent=pImgs.length?`${pImgs.length} existing image(s). Choosing new files will replace them.`:'';
- $('status').value=t.status||'draft';$('home').value=String(!!t.show_on_homepage);$('banner').value='';
+ $('banner').value='';
  const dist=Array.isArray(t.prize_distribution)?t.prize_distribution:[];
  fillRankCount(dist.length||4);renderPrizeBoxes(dist);
  const maps=Array.isArray(t.maps)?t.maps:[];
@@ -572,12 +577,16 @@ async function saveTournament(){
    entry_fee:+$('entry').value||0,default_slots:+$('slots').value||0,total_slots:+$('slots').value||0,
    prize_distribution:prizeDistribution,prize_pool:prizePool,
    format:$('format').value,match_type:$('matchType').value,
-   vehicle_allowed:$('vehicle').value==='true',gun_skin_allowed:$('gunskin').value==='true',
+   vehicle_allowed:$('vehicle').value==='true',gun_skin_allowed:$('gunskin').value==='true',emote_allowed:$('emote').value==='true',
    rules_text:$('rulesText').value.trim()||null,rules_images:rulesImages,
    point_system_text:$('pointText').value.trim()||null,point_system_images:pointSystemImages,
-   maps:maps,
-   status:$('status').value,show_on_homepage:$('home').value==='true'
+   maps:maps
   };
+  // Status / Show on Homepage are no longer in this form — a new
+  // tournament is created OFF by default, and admins turn it on with the
+  // switch in the Tournaments list. Editing an existing tournament must
+  // never touch these two fields, so its current ON/OFF state survives.
+  if(!id){ p.status='unpublished'; p.show_on_homepage=false; }
   let q=id?sb.from('tournaments').update(p).eq('id',id).select():sb.from('tournaments').insert(p).select();let r=await q;if(r.error)throw r.error;
   if(id&&(!r.data||r.data.length===0))throw new Error('Update blocked (0 rows affected) — check the UPDATE RLS policy on the tournaments table.');
   const savedRow=(r.data&&Array.isArray(r.data)?r.data[0]:null);
