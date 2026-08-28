@@ -1,0 +1,1032 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Tournament Management — CHT ESP ORG</title>
+<style>
+:root{--bg:#080b12;--surface:#121827;--surface2:#171f31;--line:#26324a;--muted:#8b96aa;--green:#25d366;--green2:#39e77b;--red:#ff5d6c;--gold:#f6c453}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#080b12,#0b0f18 55%,#080b12);color:#f4f6fb;font-family:Inter,system-ui,-apple-system,sans-serif}
+.wrap{max-width:760px;margin:auto;padding:20px 14px 110px}.head{display:flex;gap:12px;align-items:center;margin-bottom:18px}.back{width:34px;height:34px;display:grid;place-items:center;color:#fff;text-decoration:none;font-size:27px;border:1px solid #202a40;border-radius:11px;background:#101625}.head h1{font-size:21px;margin:0;font-weight:900}.sub{font-size:10px;color:var(--muted);margin-top:4px}
+.topbar{display:flex;justify-content:flex-end;margin:-2px 0 12px}.archive-link{display:inline-flex;align-items:center;gap:7px;padding:10px 13px;border:1px solid #293650;background:#141b2b;color:#e9edf5;border-radius:12px;text-decoration:none;font-size:10px;font-weight:900;box-shadow:0 6px 20px #0003}
+.panel{background:linear-gradient(180deg,#141b2b,#111827);border:1px solid #27334c;border-radius:19px;padding:12px;margin-bottom:12px;box-shadow:0 12px 30px #0003}.ph{display:flex;justify-content:space-between;align-items:center;padding:2px 4px 9px}.ph b{font-size:14px}.count{color:#7e899d;font-size:10px;font-weight:800}
+.section-item{position:relative;background:#171f31;border:1px solid #293650;border-radius:16px;padding:12px 12px 11px;margin-top:8px}.section-top{display:flex;align-items:center;justify-content:space-between;gap:10px}.section-name{font-size:12px;font-weight:900;min-width:0}.status{font-size:8px;font-weight:900;padding:4px 7px;border-radius:999px;background:#203329;color:#5ee98b;margin-left:5px}.status.off{background:#282c36;color:#9299a6}.section-tools{display:flex;align-items:center;gap:7px}.drag{font-size:17px;line-height:1;color:#8994a8;letter-spacing:-3px;cursor:grab;padding:5px}.drag:active{cursor:grabbing}.mini{border:1px solid #293650;background:#111827;color:#e8ebf2;border-radius:999px;padding:7px 11px;font-size:9px;font-weight:900}.mini.green{color:#62eb91}.mini.red{color:#ff6f7c}.section-bottom{display:flex;align-items:center;justify-content:flex-end;margin-top:10px}.switch{width:60px;height:30px;border:0;border-radius:999px;background:#343a45;position:relative;padding:0;box-shadow:inset 0 0 0 1px #4a5260}.switch .knob{position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:50%;background:#e9edf2;box-shadow:0 2px 5px #0006;transition:.18s}.switch.on{background:#18c866;box-shadow:none}.switch.on .knob{left:34px}.switch-label{position:absolute;left:9px;top:8px;font-size:8px;font-weight:900;color:#fff}.switch:not(.on) .switch-label{left:auto;right:9px;color:#aeb5c0}
+.add-section{width:100%;margin:0 0 12px}.add-section button,.create-bottom{width:100%;border:1px solid #293650;background:#141b2b;color:#fff;border-radius:13px;padding:12px;font-size:10px;font-weight:900}.create-bottom{background:linear-gradient(135deg,#20ca5f,#25d56b);color:#06120a;border-color:#20ca5f;margin-top:9px}
+.tournament-item{display:grid;grid-template-columns:70px 1fr;gap:11px;position:relative;background:#171f31;border:1px solid #293650;border-radius:16px;padding:10px;margin-top:8px}.thumb{width:70px;height:52px;border-radius:9px;overflow:hidden;background:#0d1320;border:1px solid #293650;align-self:start}.thumb img{width:100%;height:100%;object-fit:cover;display:block}.t-main{min-width:0;padding-right:54px}.t-title{font-size:11px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.t-meta{font-size:8px;color:#8e98ab;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.t-actions{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}.t-edit{position:absolute;right:10px;top:10px}.t-edit .mini{padding:7px 10px}.archive-btn{color:#e9c96a}.t-delete{color:#ff6977}.t-toggle{margin-left:0}.empty,.loading{text-align:center;color:var(--muted);font-size:11px;padding:22px}
+.modal{display:none;position:fixed;inset:0;background:#000b;z-index:9999;align-items:flex-end;backdrop-filter:blur(4px)}.modal.open{display:flex}.box{width:100%;max-height:92vh;max-height:92dvh;overflow:auto;background:#0c111b;border:1px solid #293650;border-radius:22px 22px 0 0;padding:0 17px 17px}.mh{display:flex;justify-content:space-between;align-items:center;padding:17px 0 13px;position:sticky;top:0;z-index:20;background:#0c111b}.mh b{font-size:14px}.mh button{width:34px;height:34px;border-radius:10px;border:1px solid #293650;background:#151d2c;color:#fff;font-size:20px}label{display:block;color:#8d98ab;font-size:9px;font-weight:900;margin:9px 0 5px}input,select,textarea{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-radius:11px;padding:10px;font-size:11px}textarea{min-height:80px;resize:vertical}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}.modal-actions button{border:1px solid #293650;background:#151d2c;color:#fff;border-radius:11px;padding:11px;font-weight:900}.modal-actions .primary{background:#22c55e;color:#06120a;border-color:#22c55e}
+.confirm{display:none;position:fixed;inset:0;z-index:10000;background:#000a;align-items:center;justify-content:center;padding:20px}.confirm.open{display:flex}.confirm-card{width:min(360px,100%);background:#141a29;border:1px solid #2c3851;border-radius:20px;padding:20px;box-shadow:0 25px 70px #0008}.confirm-icon{width:44px;height:44px;border-radius:14px;background:#2b1720;color:#ff6575;display:grid;place-items:center;font-size:20px;margin-bottom:12px}.confirm-title{font-size:15px;font-weight:900}.confirm-text{font-size:10px;color:#929caf;line-height:1.5;margin-top:6px}.confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}.confirm-actions button{border:1px solid #293650;background:#111827;color:#fff;border-radius:11px;padding:11px;font-weight:900}.confirm-actions .danger{background:#e5485a;border-color:#e5485a}
+.dragging{opacity:.45}.drag-over{outline:1px dashed #36df7a;outline-offset:2px}
+
+/* ===== Management UI refinements ===== */
+.management-panel{padding:12px}
+.inline-add{margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.inline-add button{width:100%;border:1px solid #293650;background:#141b2b;color:#fff;border-radius:12px;padding:10px;font-size:10px;font-weight:900}
+.sub-panel-head{display:flex;justify-content:space-between;align-items:center;padding:14px 4px 2px;margin-top:4px;border-top:1px solid var(--line)}
+.sub-panel-head b{font-size:14px}
+.management-panel .create-bottom{margin-top:10px}
+.section-item{padding:11px 12px}
+.section-name{display:flex;align-items:center;gap:8px}
+.section-name .status{display:none}
+.section-tools{gap:5px}
+.section-bottom{display:flex;align-items:center;justify-content:flex-start;gap:7px;margin-top:9px}
+.section-index,.t-index{width:27px;height:27px;display:grid;place-items:center;flex:0 0 27px;border-radius:8px;background:#101725;border:1px solid #2b3852;color:#9eabc0;font-size:10px;font-weight:900}
+.section-name-wrap,.t-title-row{display:flex;align-items:center;gap:8px;min-width:0}
+.drag{width:34px;height:32px;display:grid;place-items:center;border:1px solid #293650;border-radius:9px;background:#111827;letter-spacing:-4px}
+.tournament-item{display:grid;grid-template-columns:1fr;gap:10px;padding:14px;border-radius:18px;background:linear-gradient(145deg,#182237,#141d30);border:1px solid #2b3852;box-shadow:0 8px 22px #0002}
+.tournament-top{display:grid;grid-template-columns:38px 108px minmax(0,1fr);align-items:center;gap:12px;min-width:0}
+.tournament-top .thumb{width:108px;height:108px;aspect-ratio:1/1;flex:0 0 108px;border-radius:13px;border:1px solid #33425f;background:#0c1320;box-shadow:0 5px 16px #0004}
+.tournament-top .thumb img{width:100%;height:100%;object-fit:contain;background:#0d1320;display:block}
+.t-main{padding-right:0;min-width:0;align-self:center}
+.t-title-row{display:block;min-width:0}
+.t-title-row .t-title{display:block;min-width:0;font-size:16px;font-weight:950;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t-title .status{display:none}
+.t-meta{font-size:9px;color:#8e98ab;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t-edit{display:none}
+.t-actions{display:flex;align-items:center;gap:9px;flex-wrap:nowrap;width:100%;margin-top:0;padding-left:50px}
+.t-actions .mini{min-height:38px;padding:9px 16px;font-size:10px}
+.t-actions .switch{width:68px;height:34px;flex:0 0 68px}
+.t-actions .switch .knob{width:26px;height:26px;top:4px;left:4px}
+.t-actions .switch.on .knob{left:38px}
+.t-actions .switch-label{top:10px;left:10px;font-size:9px}
+.t-actions .switch:not(.on) .switch-label{right:10px;left:auto}
+.t-actions .drag{margin-left:auto;flex:0 0 42px;width:42px;height:38px;border-radius:11px}
+
+@media(max-width:520px){.wrap{padding-left:12px;padding-right:12px}.grid,.modal-actions{grid-template-columns:1fr}.modal-actions.results-actions{grid-template-columns:1fr 1fr}.tournament-item{padding:12px}.tournament-top{grid-template-columns:32px 88px minmax(0,1fr);gap:10px}.tournament-top .thumb{width:88px;height:88px}.t-title-row .t-title{font-size:13px}.t-meta{font-size:8px;margin-top:6px}.t-actions{padding-left:42px;gap:6px;overflow:hidden}.t-actions .mini{padding:8px 11px;font-size:9px}.t-actions .switch{width:60px;height:31px;flex-basis:60px}.t-actions .switch .knob{width:23px;height:23px}.t-actions .switch.on .knob{left:33px}.t-actions .switch-label{top:9px;font-size:8px}.t-actions .drag{flex-basis:38px;width:38px;height:34px}}
+
+
+/* ===== Final requested layout ===== */
+.homepage-panel,.tournaments-panel{padding:14px 12px 12px}.homepage-panel-head{padding:0 3px 11px}.head-controls{display:flex;align-items:center;gap:9px}.collapse-switch{width:43px;height:24px;border:1px solid #2b3852;border-radius:999px;background:#242d3e;position:relative;padding:0;cursor:pointer}.collapse-switch span{position:absolute;width:18px;height:18px;border-radius:50%;background:#e9edf2;top:2px;left:3px;transition:.18s}.collapse-switch.on{background:#18c866;border-color:#18c866}.collapse-switch.on span{left:20px}.homepage-panel.collapsed #homepageContent{display:none}.homepage-panel.collapsed{padding-bottom:10px}.section-item{display:grid;grid-template-columns:minmax(0,1fr);gap:11px;padding:13px 12px;margin-top:9px;border-radius:18px;background:linear-gradient(145deg,#182237,#141d30);border:1px solid #2b3852;box-shadow:0 8px 22px #0002}.section-top{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px}.section-name-wrap{min-width:0}.section-name{font-size:14px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.section-index{width:36px;height:36px;border-radius:10px}.section-tools{display:flex;align-items:center;gap:7px}.section-tools .mini{min-height:38px;padding:9px 14px}.section-bottom{display:flex;align-items:center;gap:8px;margin-top:0;flex-wrap:wrap}.section-bottom .switch{width:68px;height:34px}.section-bottom .switch .knob{width:26px;height:26px}.section-bottom .switch.on .knob{left:38px}.section-bottom .switch-label{top:10px;font-size:9px}.section-bottom .switch:not(.on) .switch-label{right:10px;left:auto}.section-bottom .mini{min-height:38px;padding:9px 15px}.section-item>.section-top>.section-tools>.drag{width:42px;height:38px;flex:0 0 42px}.section-item .section-index{margin-right:8px}.section-name-wrap{display:flex;align-items:center}.inline-add{margin-top:11px;padding-top:11px}.tournaments-panel .ph{padding-top:1px}.tournament-group{margin-top:12px}.tournament-group-head{display:flex;align-items:center;justify-content:space-between;padding:4px 5px 7px}.tournament-group-name{font-size:11px;font-weight:950;color:#dfe5f0}.tournament-group-count{font-size:9px;color:#7f8ba0;font-weight:900}.tournament-item{grid-template-columns:1fr;gap:11px}.tournament-top{grid-template-columns:38px 108px minmax(0,1fr)}.t-meta{font-size:9px;line-height:1.45;white-space:normal}.t-meta span{display:inline-block}.t-actions{padding-left:50px;align-items:center}.t-actions .drag{cursor:grab}.t-actions .drag:active{cursor:grabbing}.tournament-group+.tournament-group{border-top:1px solid #253047;padding-top:4px}.tournament-item.dragging{opacity:.45}.tournament-item.drag-over{outline:1px dashed #36df7a;outline-offset:2px}
+@media(max-width:520px){.section-top{grid-template-columns:minmax(0,1fr) auto}.section-tools .mini{padding:8px 10px}.section-item>.section-top>.section-tools>.drag{width:38px;height:34px;flex-basis:38px}.section-bottom .mini{padding:8px 12px}.tournament-top{grid-template-columns:32px 88px minmax(0,1fr)}.tournament-top .thumb{width:88px;height:88px}.t-actions{padding-left:42px;gap:6px;overflow:visible}.t-actions .mini{padding:8px 10px}.t-actions .switch{width:60px;height:31px;flex-basis:60px}.t-actions .switch .knob{width:23px;height:23px}.t-actions .switch.on .knob{left:33px}.t-actions .drag{width:38px;height:34px;flex-basis:38px}}
+
+/* ===== Reference-style section controls ===== */
+.section-item{display:grid;grid-template-columns:1fr;gap:10px;padding:13px 12px}
+.section-top{display:block}
+.section-name-wrap{display:flex;align-items:center;gap:10px;min-width:0}
+.section-name{font-size:14px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.section-actions{display:flex;align-items:center;gap:8px;width:100%;flex-wrap:wrap}
+.section-actions .mini{min-height:38px;padding:9px 15px}
+.section-actions .switch{width:68px;height:34px;flex:0 0 68px}
+.section-actions .switch .knob{width:26px;height:26px;top:4px;left:4px}
+.section-actions .switch.on .knob{left:38px}
+.section-actions .switch-label{top:10px;left:10px;font-size:9px}
+.section-actions .switch:not(.on) .switch-label{left:auto;right:10px}
+.section-actions .drag{margin-left:auto;flex:0 0 42px;width:42px;height:38px;border-radius:11px;padding:0}
+@media(max-width:520px){.section-actions{gap:6px}.section-actions .mini{padding:8px 12px}.section-actions .switch{width:60px;height:31px;flex-basis:60px}.section-actions .switch .knob{width:23px;height:23px}.section-actions .switch.on .knob{left:33px}.section-actions .switch-label{top:9px;font-size:8px}.section-actions .drag{width:38px;height:34px;flex-basis:38px}}
+</style>
+<style>
+.homepage-panel.collapsed #homepageContent{display:none}
+.homepage-panel:not(.collapsed) #homepageCollapse span{transform:rotate(180deg)}
+.section-chevron{width:38px;height:38px;border:1px solid #2b3852;border-radius:11px;background:#111827;color:#dfe6f2;display:grid;place-items:center;cursor:pointer;font-size:20px;font-weight:900}.section-chevron span{display:block;transition:.18s}
+.drag{touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.section-item.dragging,.tournament-item.dragging{opacity:.5;box-shadow:0 0 0 2px #25d366}
+</style>
+<style>
+.img-note{font-size:9px;color:#7f899d;margin:4px 0 6px}
+.map-box-edit,.prize-box-edit{background:#0e1420;border:1px solid #293650;border-radius:11px;padding:9px;margin-top:0}
+.map-box-edit label,.prize-box-edit label{margin:5px 0 4px}
+.map-box-edit .existing-img{font-size:9px;color:#5ee98b;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+/* Side-by-side layouts that stay side-by-side even on small phones —
+   unlike .grid, which collapses to 1 column under 520px. */
+.prize-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.map-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.map-grid>.map-box-edit,.prize-grid>.prize-box-edit{min-width:0}
+#prizeBoxes,#mapBoxes{margin-top:10px}
+.map-box-edit input{padding:8px 6px;font-size:10px}
+.map-box-edit label{font-size:8px}
+.field-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:start}
+.field-pair textarea{min-height:110px}
+</style>
+<style>
+.lobby-add-box{background:#0e1420;border:1px solid #293650;border-radius:14px;padding:12px;margin-bottom:10px}
+.lobby-dt-row{display:flex;gap:8px}
+.lobby-dt-col{flex:1;min-width:0}
+.lobby-time-row{display:flex;gap:8px;margin-top:6px}
+.lobby-time-row:first-child{margin-top:0}
+.lobby-time-row .lobbyTimeInput{flex:1;width:100%}
+.lobby-item{background:#171f31;border:1px solid #293650;border-radius:14px;padding:11px;margin-top:8px}
+.lobby-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.lobby-date{font-size:12px;font-weight:900}
+.lobby-status{font-size:9px;font-weight:900;padding:4px 8px;border-radius:999px;background:#203329;color:#5ee98b;white-space:nowrap}
+.lobby-status.cancelled{background:#2b1720;color:#ff6575}
+.lobby-status.completed{background:#1c2a3d;color:#7cc2ff}
+.lobby-status.live{background:#203329;color:#5ee98b}
+.lobby-status.pending{background:#2b2410;color:#f6c453}
+.lobby-meta{font-size:10px;color:#8e98ab;margin-top:5px}
+.lobby-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.team-item{background:#171f31;border:1px solid #293650;border-radius:14px;padding:10px;margin-top:8px}
+.team-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.team-status{font-size:9px;font-weight:900;padding:3px 8px;border-radius:999px;background:#203329;color:#5ee98b;text-transform:capitalize}
+.team-status.pending{background:#2b2410;color:#f6c453}
+.team-status.rejected{background:#2b1720;color:#ff6575}
+.team-meta{font-size:9px;color:#8e98ab;margin-top:4px}
+.team-uid{background:#1c2a3d;color:#7cc2ff;font-weight:900;padding:2px 7px;border-radius:999px;font-size:9px}
+.team-uid.guest{background:#232a3d;color:#8e98ab}
+.team-pay{padding:2px 7px;border-radius:999px;font-size:9px;font-weight:900;margin-left:4px}
+.team-pay.balance{background:#203329;color:#5ee98b}
+.team-pay.manual{background:#2b2410;color:#f6c453}
+.team-actions{display:flex;gap:6px;margin-top:8px}
+.add-team-btn{width:100%;padding:11px;margin:2px 0 12px;text-align:center;font-size:10px}
+.add-team-form{background:#141b2b;border:1px solid #293650;border-radius:14px;padding:12px;margin-bottom:14px}
+.add-team-form label{margin:8px 0 5px}
+.add-team-form label:first-child{margin-top:0}
+.result-row{display:grid;grid-template-columns:26px 1fr 66px 58px 30px;gap:6px;align-items:center;background:#171f31;border:1px solid #293650;border-radius:12px;padding:8px;margin-top:8px}
+.result-rank-badge{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;background:#101725;border:1px solid #2b3852;color:#9eabc0}
+.result-rank-badge.r1{background:#3a2c05;color:#f6c453;border-color:#5c4708}
+.result-rank-badge.r2{background:#232833;color:#c9cfdb;border-color:#3a4150}
+.result-rank-badge.r3{background:#33220f;color:#e0a370;border-color:#4d3417}
+.result-name{font-size:11px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.result-row input{padding:7px;font-size:10px}
+.result-updown{display:flex;flex-direction:column;gap:2px}
+.result-updown button{border:1px solid #293650;background:#101725;color:#e8ebf2;border-radius:6px;width:28px;height:15px;font-size:9px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center}
+.result-updown button:disabled{opacity:.3}
+.resPrize:disabled{opacity:.3;background:#10141d}
+.results-toolbar{display:flex;justify-content:flex-end;margin-bottom:2px}
+.results-toolbar button{border:1px solid #293650;background:#141b2b;color:#e9edf5;border-radius:9px;padding:7px 11px;font-size:9px;font-weight:900}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="head"><a class="back" href="admin-panel.html">‹</a><div><h1>Tournament Management</h1><div class="sub">Create, edit and publish Homepage tournaments</div></div></div>
+  <div class="topbar"><a class="archive-link" href="archive-tournaments.html">Archived Tournaments</a></div>
+
+  <section class="panel management-panel homepage-panel collapsed" id="homepagePanel">
+    <div class="ph homepage-panel-head"><b>Homepage Sections</b><div class="head-controls"><span class="count" id="scount">0</span><button type="button" class="section-chevron" id="homepageCollapse" aria-label="Expand or collapse Homepage Sections"><span>⌄</span></button></div></div>
+    <div id="homepageContent">
+      <div id="sections"><div class="loading">Loading...</div></div>
+      <div class="inline-add"><button type="button" id="addSectionBtn">＋ Add New Section</button></div>
+    </div>
+  </section>
+
+  <section class="panel management-panel tournaments-panel">
+    <div class="ph"><b>Tournaments</b><span class="count" id="tcount">0</span></div>
+    <div id="tournaments"><div class="loading">Loading...</div></div>
+    <button type="button" class="create-bottom" id="createTournamentBtn">＋ Create Tournament</button>
+  </section>
+</main>
+
+<div class="modal" id="tm"><div class="box">
+  <div class="mh"><b id="tmTitle">Create Tournament</b><button type="button" id="closeTmBtn">×</button></div>
+  <input type="hidden" id="tid">
+  <label>Tournament Name *</label><input id="title" placeholder="CHT DAILY SCRIM #01">
+  <label>Homepage Section *</label><select id="section"></select>
+  <label>Banner</label><input id="banner" type="file" accept="image/png,image/jpeg,image/webp">
+
+  <div class="grid">
+    <div><label>Entry Fee</label><input id="entry" type="number" min="0" value="0"></div>
+    <div><label>Slot (default)</label><input id="slots" type="number" min="0" value="0"></div>
+  </div>
+
+  <label>Prize Distribution (Top N)</label>
+  <select id="rankCount" onchange="renderPrizeBoxes()"></select>
+  <div id="prizeBoxes" class="prize-grid"></div>
+
+  <div class="grid">
+    <div><label>Format</label><select id="format"><option value="solo">Solo</option><option value="duo">Duo</option><option value="squad">Squad</option></select></div>
+    <div><label>Mode</label><select id="gameMode"><option value="esports">ESports</option><option value="classic">Classic</option></select></div>
+    <div><label>Type</label><select id="matchType"><option value="full_map">Full map</option><option value="clash_squad">Clash squad</option></select></div>
+    <div><label>Vehicle</label><select id="vehicle"><option value="true">✅ Allowed</option><option value="false">❌ Not allowed</option></select></div>
+    <div><label>Gun Skin</label><select id="gunskin"><option value="false">❌ Not allowed</option><option value="true">✅ Allowed</option></select></div>
+    <div><label>Emote</label><select id="emote"><option value="false">❌ Not allowed</option><option value="true">✅ Allowed</option></select></div>
+  </div>
+
+  <div class="field-pair">
+    <div><label>Tournament Rules</label><textarea id="rulesText" placeholder="Write the rules here..."></textarea></div>
+    <div><label>Rules Images (optional, multiple)</label><input id="rulesImages" type="file" accept="image/png,image/jpeg,image/webp" multiple><div class="img-note" id="rulesImagesNote"></div></div>
+  </div>
+  <input type="hidden" id="rulesImagesOld" value="[]">
+
+  <div class="field-pair">
+    <div><label>Point System</label><textarea id="pointText" placeholder="Write the point system here..."></textarea></div>
+    <div><label>Point System Images (optional, multiple)</label><input id="pointImages" type="file" accept="image/png,image/jpeg,image/webp" multiple><div class="img-note" id="pointImagesNote"></div></div>
+  </div>
+  <input type="hidden" id="pointImagesOld" value="[]">
+
+  <label>Maps</label>
+  <select id="mapCount" onchange="renderMapBoxes()"></select>
+  <div id="mapBoxes" class="map-grid"></div>
+
+  <div class="modal-actions"><button type="button" id="cancelTmBtn">Cancel</button><button type="button" class="primary" id="saveTournamentBtn">Save Tournament</button></div>
+</div></div>
+
+<div class="modal" id="sm"><div class="box">
+  <div class="mh"><b id="smTitle">Add New Section</b><button type="button" id="closeSmBtn">×</button></div>
+  <input type="hidden" id="sid">
+  <label>Section Name *</label><input id="sname" placeholder="Today's Scrim Tournaments">
+  <input type="hidden" id="sdesc" value="">
+  <input type="hidden" id="sorder" value="1">
+  <input type="hidden" id="sactive" value="true"></select>
+  <div class="modal-actions"><button type="button" id="cancelSmBtn">Cancel</button><button type="button" class="primary" id="saveSectionBtn">Save Section</button></div>
+</div></div>
+
+<div class="modal" id="lbm"><div class="box">
+  <div class="mh"><b id="lbmTitle">Lobbies</b><button type="button" onclick="closeM('lbm')">×</button></div>
+
+  <div class="lobby-add-box">
+    <div class="lobby-dt-row">
+      <div class="lobby-dt-col"><label>Date</label><input type="date" id="lobbyDate"></div>
+      <div class="lobby-dt-col"><label>Time</label><div id="lobbyTimes"><div class="lobby-time-row"><input type="time" step="3600" class="lobbyTimeInput"></div></div></div>
+    </div>
+    <button type="button" class="mini" style="margin-top:8px;width:100%" onclick="addTimeInput()">＋ Add another time</button>
+    <button type="button" class="create-bottom" onclick="saveLobbies()">Save Lobby(s)</button>
+  </div>
+
+  <div class="sub-panel-head"><b>Active</b></div>
+  <div id="lobbiesActive"><div class="loading">Loading...</div></div>
+
+  <div class="sub-panel-head"><b>History (Completed)</b></div>
+  <div id="lobbiesHistory"></div>
+</div></div>
+
+<div class="modal" id="ltm"><div class="box">
+  <div class="mh"><b id="ltmTitle">Teams</b><button type="button" onclick="closeM('ltm')">×</button></div>
+  <button type="button" class="mini add-team-btn" onclick="toggleAddTeamForm()">+ Add Team</button>
+  <div id="addTeamForm" class="add-team-form" style="display:none">
+    <label>Team Name *</label><input id="atTeamName" placeholder="Team name">
+    <label>Player Name</label><input id="atPlayerName" placeholder="Player name">
+    <label>WhatsApp Number *</label><input id="atWhatsapp" placeholder="01XXXXXXXXX" inputmode="tel">
+    <div class="modal-actions">
+      <button type="button" onclick="toggleAddTeamForm(false)">Cancel</button>
+      <button type="button" class="primary" onclick="submitManualTeam()">Add Team</button>
+    </div>
+  </div>
+  <div id="teamsList"><div class="loading">Loading...</div></div>
+</div></div>
+
+<div class="modal" id="lrm"><div class="box">
+  <div class="mh"><b id="lrmTitle">Enter Result</b><button type="button" onclick="closeM('lrm')">×</button></div>
+  <div class="results-toolbar"><button type="button" onclick="sortResultsByPoints()">↕ Sort by points</button></div>
+  <div id="resultsList"><div class="loading">Loading...</div></div>
+  <div class="modal-actions results-actions"><button type="button" onclick="saveResults()">Save Results</button><button type="button" class="primary" onclick="saveResultsAndComplete()">Complete</button></div>
+</div></div>
+
+<div class="confirm" id="confirm"><div class="confirm-card"><div class="confirm-icon">!</div><div class="confirm-title" id="confirmTitle">Are you sure?</div><div class="confirm-text" id="confirmText"></div><div class="confirm-actions"><button type="button" onclick="closeConfirm()">Cancel</button><button type="button" class="danger" id="confirmOk">Continue</button></div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
+const KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+const sb=window.supabase.createClient(SUPABASE_URL,KEY);
+let sections=[], tournaments=[]; let currentAdminId=null; let currentAdminName='Admin';
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+let openModalCount=0,savedScrollY=0;
+function openM(id){
+ $(id).classList.add('open');
+ if(openModalCount===0){
+  savedScrollY=window.scrollY;
+  document.body.style.position='fixed';
+  document.body.style.top='-'+savedScrollY+'px';
+  document.body.style.left='0';
+  document.body.style.right='0';
+  document.body.style.width='100%';
+ }
+ openModalCount++;
+}
+function closeM(id){
+ $(id).classList.remove('open');
+ openModalCount=Math.max(0,openModalCount-1);
+ if(openModalCount===0){
+  document.body.style.position='';
+  document.body.style.top='';
+  document.body.style.left='';
+  document.body.style.right='';
+  document.body.style.width='';
+  window.scrollTo(0,savedScrollY);
+ }
+}
+function msg(x){alert(x)}
+function askConfirm(title,text,action,danger=true){
+  $('confirmTitle').textContent=title;$('confirmText').textContent=text;
+  openM('confirm');
+  $('confirmOk').onclick=async()=>{closeConfirm();await action()};
+}
+function closeConfirm(){closeM('confirm')}
+
+async function logActivity(action, category, targetType=null, targetId=null, targetName=null, details={}) {
+  try {
+    const { error } = await sb.from('activity_logs').insert({
+      admin_id: currentAdminId, admin_name: currentAdminName,
+      action, category, target_type: targetType, target_id: targetId,
+      target_name: targetName, details, status:'success',
+      user_agent: navigator.userAgent
+    });
+    if(error){console.error('Activity log failed:', error);msg('Saved, but the log entry failed: '+error.message);}
+  } catch(e) { console.error('Activity log failed:', e); msg('Saved, but the log entry failed: '+(e?.message||e)); }
+}
+
+async function admin(){
+ const {data:{session}}=await sb.auth.getSession();
+ if(!session){location.href='login.html';return false}
+  currentAdminId=session.user.id;
+ const {data:p,error}=await sb.from('profiles').select('is_admin,full_name,email').eq('id',session.user.id).single();
+ if(error||!p?.is_admin){msg('Admin access required.');location.href='index.html';return false}
+ currentAdminName=p?.full_name||p?.email||'Admin';
+ return true;
+}
+
+async function load(){
+ const a=await sb.from('tournament_sections').select('*').order('display_order');
+ const b=await sb.from('tournaments').select('*,tournament_sections(name)').order('created_at',{ascending:false});
+ if(a.error) {$('sections').innerHTML='<div class="empty">Could not load sections.</div>';console.error(a.error)} else {sections=a.data||[];renderSections()}
+ if(b.error) {$('tournaments').innerHTML='<div class="empty">Could not load tournaments.</div>';console.error(b.error)} else {
+   tournaments=b.data||[];
+   try{const saved=JSON.parse(localStorage.getItem('chteo_tournament_admin_order')||'[]');const rank=new Map(saved.map((id,i)=>[id,i]));tournaments.sort((x,y)=>(rank.get(x.id)??999999)-(rank.get(y.id)??999999));}catch(e){}
+   renderTournaments()
+ }
+ fillSections();
+}
+
+function renderSections(){
+ $('scount').textContent=sections.length;
+ $('sections').innerHTML=sections.length?sections.map((s,i)=>`<div class="section-item" data-id="${s.id}">
+   <div class="section-top">
+     <div class="section-name-wrap"><span class="section-index">${i+1}</span><div class="section-name">${esc(s.name)}</div></div>
+   </div>
+   <div class="section-actions">
+     <button class="mini green" onclick="editSection('${s.id}')">Edit</button>
+     <button class="mini red" onclick="deleteSection('${s.id}')">Delete</button>
+     <button class="switch ${s.is_active?'on':''}" onclick="toggleSection('${s.id}',${!s.is_active})"><span class="switch-label">${s.is_active?'ON':'OFF'}</span><span class="knob"></span></button>
+     <span class="drag section-drag" title="Drag to reorder" role="button" aria-label="Drag to reorder">⠿</span>
+   </div>
+ </div>`).join(''):'<div class="empty">No sections.</div>';
+ bindSectionDrag();
+}
+function getTournamentOrder(sectionId){
+ try{const all=JSON.parse(localStorage.getItem('chteo_tournament_orders_by_section')||'{}');return Array.isArray(all[sectionId])?all[sectionId]:[];}catch(e){return [];}
+}
+function setTournamentOrder(sectionId,ids){
+ try{const all=JSON.parse(localStorage.getItem('chteo_tournament_orders_by_section')||'{}');all[sectionId]=ids;localStorage.setItem('chteo_tournament_orders_by_section',JSON.stringify(all));}catch(e){}
+}
+function orderedSectionTournaments(sectionId,items){
+ const saved=getTournamentOrder(sectionId);const rank=new Map(saved.map((id,i)=>[id,i]));
+ return [...items].sort((a,b)=>{const ar=rank.get(a.id),br=rank.get(b.id);if(ar===undefined&&br===undefined)return new Date(a.created_at||0)-new Date(b.created_at||0);if(ar===undefined)return 1;if(br===undefined)return -1;return ar-br;});
+}
+function renderTournaments(){
+ const active=tournaments.filter(t=>t.status!=='archived');
+ $('tcount').textContent=active.length;
+ if(!active.length){$('tournaments').innerHTML='<div class="empty">No tournaments created yet.</div>';return;}
+ const groups=sections.map(s=>({s,items:orderedSectionTournaments(s.id,active.filter(t=>t.section_id===s.id))})).filter(g=>g.items.length);
+ const ungrouped=active.filter(t=>!sections.some(s=>s.id===t.section_id));
+ if(ungrouped.length)groups.push({s:{id:'__ungrouped',name:'Unassigned'},items:orderedSectionTournaments('__ungrouped',ungrouped)});
+ $('tournaments').innerHTML=groups.map(g=>`<div class="tournament-group" data-section-id="${g.s.id}">
+   <div class="tournament-group-head"><div class="tournament-group-name">${esc(g.s.name)}</div><div class="tournament-group-count">${g.items.length} tournament${g.items.length===1?'':'s'}</div></div>
+   <div class="tournament-group-list">${g.items.map((t,i)=>`<div class="tournament-item" data-id="${t.id}" data-name="${esc(t.title)}" data-section-id="${g.s.id}">
+     <div class="tournament-top"><span class="t-index">${i+1}</span><div class="thumb">${t.banner_url?`<img src="${esc(t.banner_url)}" alt="">`:''}</div><div class="t-main"><div class="t-title-row"><div class="t-title">${esc(t.title)}</div></div><div class="t-meta"><span>Entry ৳${t.entry_fee||0}</span> · <span>Prize ৳${t.prize_pool||0}</span> · <span>Slots ${t.total_slots||0}</span></div></div></div>
+     <div class="t-actions"><button class="mini" onclick="openLobbies('${t.id}')">Lobbies</button><button class="mini green" onclick="editTournament('${t.id}')">Edit</button><button class="mini archive-btn" onclick="archive('${t.id}')">Archive</button><button class="mini t-delete" onclick="deleteTournament('${t.id}')">Delete</button><button class="switch t-toggle ${t.status==='published'?'on':''}" onclick="toggleTournament('${t.id}',${t.status!=='published'})"><span class="switch-label">${t.status==='published'?'ON':'OFF'}</span><span class="knob"></span></button><span class="drag tournament-drag" title="Drag to reorder">⠿</span></div>
+   </div>`).join('')}</div></div>`).join('');
+ bindTournamentDrag();
+}
+function fillSections(selected=''){
+ const a=sections.filter(x=>x.is_active);
+ $('section').innerHTML=a.length?a.map(x=>`<option value="${x.id}" ${x.id===selected?'selected':''}>${esc(x.name)}</option>`).join(''):'<option value="">No active section</option>';
+}
+function bindPointerReorder(container,itemSel,handleSel,{getId,getName,onDrop}){
+  const items=()=>[...container.querySelectorAll(itemSel)];
+  let dragEl=null,startIndex=-1,startId=null,startName='';
+  function onMove(e){
+    if(!dragEl)return;
+    e.preventDefault();
+    const y=e.clientY;
+    let closest=null,closestDist=Infinity,closestRect=null;
+    items().forEach(el=>{
+      if(el===dragEl)return;
+      const r=el.getBoundingClientRect();
+      const cy=r.top+r.height/2;
+      const dist=Math.abs(y-cy);
+      if(dist<closestDist){closestDist=dist;closest=el;closestRect=r}
+    });
+    if(closest){
+      const before=y<closestRect.top+closestRect.height/2;
+      if(before)closest.before(dragEl);else closest.after(dragEl);
+    }
+  }
+  function onUp(){
+    if(!dragEl)return;
+    dragEl.classList.remove('dragging');
+    document.removeEventListener('pointermove',onMove);
+    document.removeEventListener('pointerup',onUp);
+    document.removeEventListener('pointercancel',onUp);
+    const newIndex=items().indexOf(dragEl)+1;
+    const el=dragEl;dragEl=null;
+    if(startId&&newIndex!==startIndex)onDrop(el,startId,startName,startIndex,newIndex);
+  }
+  items().forEach(el=>{
+    const handle=el.querySelector(handleSel);
+    if(!handle)return;
+    handle.addEventListener('pointerdown',e=>{
+      e.preventDefault();
+      dragEl=el;startIndex=items().indexOf(el)+1;startId=getId(el);startName=getName(el);
+      el.classList.add('dragging');
+      document.addEventListener('pointermove',onMove,{passive:false});
+      document.addEventListener('pointerup',onUp);
+      document.addEventListener('pointercancel',onUp);
+    });
+    handle.addEventListener('contextmenu',e=>e.preventDefault());
+  });
+}
+function bindSectionDrag(){
+  bindPointerReorder($('sections'),'.section-item','.section-drag',{
+    getId:el=>el.dataset.id,
+    getName:el=>sections.find(s=>s.id===el.dataset.id)?.name||el.querySelector('.section-name')?.textContent?.trim()||'Homepage Section',
+    onDrop:(el,id,name,oldIndex)=>{saveSectionOrder(id,name,oldIndex)}
+  });
+}
+async function saveSectionOrder(draggedId,draggedName,oldIndex){
+  const ids=[...$('sections').querySelectorAll('.section-item')].map(x=>x.dataset.id);
+  const newIndex=ids.indexOf(draggedId)+1;
+
+  // Nothing moved: don't create a log.
+  if(!draggedId||newIndex<1||oldIndex===newIndex)return;
+
+  for(let i=0;i<ids.length;i++){
+    const {error}=await sb.from('tournament_sections').update({display_order:i+1}).eq('id',ids[i]);
+    if(error){console.error('Section order update failed:',error);msg('Reorder failed to save: '+error.message);return;}
+  }
+
+  // IMPORTANT: log the section that was actually dragged, not the section
+  // that happened to occupy the destination slot.
+  await logActivity(
+    'sections_reordered',
+    'homepage_section',
+    'tournament_section',
+    draggedId,
+    draggedId,
+    {
+      name:draggedName,
+      oldPosition:oldIndex,
+      newPosition:newIndex,
+      narration:`moved the homepage section ${draggedName}: #${oldIndex} → #${newIndex}.`,
+      highlight_targets:[draggedName]
+    }
+  );
+
+  await load();
+}
+function bindTournamentDrag(){
+ document.querySelectorAll('.tournament-group-list').forEach(box=>{
+  bindPointerReorder(box,'.tournament-item','.tournament-drag',{
+    getId:el=>el.dataset.id,
+    getName:el=>el.dataset.name||el.querySelector('.t-title')?.textContent?.trim()||'Tournament',
+    onDrop:(el,id,name,oldIndex)=>{saveTournamentGroupOrder(box,{oldIndex,oldId:id,oldName:name})}
+  });
+ });
+}
+async function saveTournamentGroupOrder(box,move){
+ const sectionId=box.closest('.tournament-group')?.dataset.sectionId;
+ if(!sectionId)return;
+ const ids=[...box.querySelectorAll('.tournament-item')].map(x=>x.dataset.id);
+ const newIndex=move?.oldId ? ids.indexOf(move.oldId)+1 : null;
+ setTournamentOrder(sectionId,ids);
+ if(move?.oldIndex && newIndex && move.oldIndex!==newIndex){
+  const details={
+   section_id:sectionId,
+   order:ids,
+   tournament_id:move.oldId,
+   tournament_name:move.oldName,
+   old_position:move.oldIndex,
+   new_position:newIndex,
+   narration:`moved ${move.oldName}: #${move.oldIndex} → #${newIndex}.`,
+   highlight_targets:[move.oldName]
+  };
+  await logActivity('tournaments_reordered','tournament','tournament',move.oldId,move.oldName,details);
+ }
+ renderTournaments();
+}
+
+function newSection(){ $('sid').value='';$('smTitle').textContent='Add New Section';$('sname').value='';$('sdesc').value='';$('sorder').value=sections.length+1;$('sactive').value='true';openM('sm') }
+async function saveSection(){
+ const id=$('sid').value,old=id?sections.find(x=>x.id===id):null,p={name:$('sname').value.trim(),description:$('sdesc').value.trim()||null,display_order:+$('sorder').value||0,is_active:$('sactive').value==='true'};
+ if(!p.name)return msg('Section name required.');
+ const saveBtn=$('saveSectionBtn'),saveBtnOriginalText=saveBtn.textContent;
+ saveBtn.disabled=true;saveBtn.textContent='Saving...';
+ try{
+  const q=id?sb.from('tournament_sections').update(p).eq('id',id):sb.from('tournament_sections').insert(p);
+  const {error}=await q;
+  if(error)return msg(error.message);
+  if(id){
+    if(old&&old.name!==p.name){
+      await logActivity('section_updated','homepage_section','tournament_section',id,p.name,{narration:`changed the homepage section's name: ${old.name} → ${p.name}.`,highlight_targets:[old.name]});
+    }
+    // name unchanged: nothing meaningful happened, skip logging
+  }else{
+    await logActivity('section_created','homepage_section','tournament_section',null,p.name,{narration:`created the homepage section ${p.name}.`,highlight_targets:[p.name]});
+  }
+  closeM('sm');await load();
+ }finally{saveBtn.disabled=false;saveBtn.textContent=saveBtnOriginalText}
+}
+function editSection(id){let s=sections.find(x=>x.id===id);if(!s)return;$('sid').value=s.id;$('sname').value=s.name;$('sdesc').value='';$('sorder').value=s.display_order;$('sactive').value=String(s.is_active);$('smTitle').textContent='Edit Section';openM('sm')}
+async function toggleSection(id,on){
+  const s=sections.find(x=>x.id===id);
+  const {error}=await sb.from('tournament_sections').update({is_active:on}).eq('id',id);
+  if(error)return msg(error.message);
+  await logActivity(on?'section_enabled':'section_disabled','homepage_section','tournament_section',id,s?.name||null,{narration:`turned ${on?'ON':'OFF'} the homepage section ${s?.name||'Section'}.`,highlight_targets:[s?.name||'Section']});
+  load();
+}
+async function deleteSection(id){if(tournaments.some(t=>t.section_id===id&&t.status!=='archived'))return msg('This section has active tournaments. Move or archive them first.');askConfirm('Delete section?','This section will be permanently deleted.',async()=>{const s=sections.find(x=>x.id===id);
+  const {error}=await sb.from('tournament_sections').delete().eq('id',id);
+  if(error)return msg(error.message);
+  await logActivity('section_deleted','homepage_section','tournament_section',id,s?.name||null,{narration:`deleted the homepage section ${s?.name||'Section'}.`,highlight_targets:[s?.name||'Section']});
+  load()})}
+
+function fillRankCount(selected){
+ $('rankCount').innerHTML=Array.from({length:12},(_,i)=>i+1).map(n=>`<option value="${n}" ${n===selected?'selected':''}>${n}</option>`).join('');
+}
+function fillMapCount(selected){
+ $('mapCount').innerHTML=Array.from({length:7},(_,i)=>i+1).map(n=>`<option value="${n}" ${n===selected?'selected':''}>${n}</option>`).join('');
+}
+function renderPrizeBoxes(prefill){
+ const n=+$('rankCount').value||1;
+ const old=Array.isArray(prefill)?prefill:[];
+ $('prizeBoxes').innerHTML=Array.from({length:n},(_,i)=>{
+  const rank=i+1,amt=old.find(x=>+x.rank===rank)?.amount??0;
+  return `<div class="prize-box-edit"><label>Rank ${rank}</label><input type="number" min="0" class="prizeAmt" data-rank="${rank}" value="${amt}"></div>`;
+ }).join('');
+}
+function renderMapBoxes(prefill){
+ const n=+$('mapCount').value||1;
+ const old=Array.isArray(prefill)?prefill:[];
+ $('mapBoxes').innerHTML=Array.from({length:n},(_,i)=>{
+  const m=old[i]||{};
+  return `<div class="map-box-edit">
+    <label>Map ${i+1}</label><input class="mapName" data-i="${i}" placeholder="Bermuda" value="${esc(m.name||'')}">
+    <label>Image</label><input type="file" class="mapImg" data-i="${i}" accept="image/png,image/jpeg,image/webp">
+    <input type="hidden" class="mapImgUrl" data-i="${i}" value="${esc(m.image_url||'')}">
+    ${m.image_url?`<div class="existing-img" title="${esc(m.image_url)}">✓ Image set</div>`:''}
+  </div>`;
+ }).join('');
+}
+async function uploadMany(files){
+ const urls=[];
+ for(const file of files){
+  let ext=(file.name.split('.').pop()||'jpg').toLowerCase();if(!['jpg','jpeg','png','webp'].includes(ext))ext='jpg';
+  let path=crypto.randomUUID()+'.'+ext;
+  let u=await sb.storage.from('tournament-banners').upload(path,file,{upsert:false,contentType:file.type});
+  if(u.error)throw u.error;
+  urls.push(sb.storage.from('tournament-banners').getPublicUrl(path).data.publicUrl);
+ }
+ return urls;
+}
+function newTournament(){
+ $('tid').value='';$('tmTitle').textContent='Create Tournament';$('title').value='';$('entry').value=0;$('slots').value=0;
+ $('format').value='squad';$('matchType').value='full_map';$('gameMode').value='esports';$('vehicle').value='true';$('gunskin').value='false';$('emote').value='false';
+ $('rulesText').value='';$('rulesImages').value='';$('rulesImagesOld').value='[]';$('rulesImagesNote').textContent='';
+ $('pointText').value='';$('pointImages').value='';$('pointImagesOld').value='[]';$('pointImagesNote').textContent='';
+ $('banner').value='';
+ fillRankCount(4);renderPrizeBoxes([]);
+ fillMapCount(3);renderMapBoxes([]);
+ fillSections();openM('tm');
+}
+function editTournament(id){
+ let t=tournaments.find(x=>x.id===id);if(!t)return;
+ $('tid').value=t.id;$('tmTitle').textContent='Edit Tournament';fillSections(t.section_id);
+ $('title').value=t.title||'';$('entry').value=t.entry_fee||0;$('slots').value=t.default_slots||t.total_slots||0;
+ $('format').value=t.format||'squad';$('matchType').value=t.match_type||'full_map';$('gameMode').value=t.game_mode||'esports';
+ $('vehicle').value=String(t.vehicle_allowed!==false);$('gunskin').value=String(!!t.gun_skin_allowed);$('emote').value=String(!!t.emote_allowed);
+ $('rulesText').value=t.rules_text||t.rules||'';$('rulesImages').value='';
+ const rImgs=Array.isArray(t.rules_images)?t.rules_images:[];$('rulesImagesOld').value=JSON.stringify(rImgs);
+ $('rulesImagesNote').textContent=rImgs.length?`${rImgs.length} existing image(s). Choosing new files will replace them.`:'';
+ $('pointText').value=t.point_system_text||'';$('pointImages').value='';
+ const pImgs=Array.isArray(t.point_system_images)?t.point_system_images:[];$('pointImagesOld').value=JSON.stringify(pImgs);
+ $('pointImagesNote').textContent=pImgs.length?`${pImgs.length} existing image(s). Choosing new files will replace them.`:'';
+ $('banner').value='';
+ const dist=Array.isArray(t.prize_distribution)?t.prize_distribution:[];
+ fillRankCount(dist.length||4);renderPrizeBoxes(dist);
+ const maps=Array.isArray(t.maps)?t.maps:[];
+ fillMapCount(maps.length||3);renderMapBoxes(maps);
+ openM('tm');
+}
+async function saveTournament(){
+ let id=$('tid').value,old=tournaments.find(x=>x.id===id),banner=old?.banner_url||null,file=$('banner').files[0];
+ if(!$('title').value.trim())return msg('Tournament name required.');
+ if(!$('section').value)return msg('Select a section.');
+ const saveBtn=$('saveTournamentBtn'),saveBtnOriginalText=saveBtn.textContent;
+ saveBtn.disabled=true;saveBtn.textContent='Saving...';
+ try{
+  if(file){let ext=(file.name.split('.').pop()||'jpg').toLowerCase();if(!['jpg','jpeg','png','webp'].includes(ext))ext='jpg';let path=crypto.randomUUID()+'.'+ext;let u=await sb.storage.from('tournament-banners').upload(path,file,{upsert:false,contentType:file.type});if(u.error)throw u.error;banner=sb.storage.from('tournament-banners').getPublicUrl(path).data.publicUrl}
+
+  const prizeDistribution=[...document.querySelectorAll('.prizeAmt')].map(el=>({rank:+el.dataset.rank,amount:+el.value||0}));
+  const prizePool=prizeDistribution.reduce((s,x)=>s+x.amount,0);
+
+  const rulesNewFiles=[...($('rulesImages').files||[])];
+  const rulesImages=rulesNewFiles.length?await uploadMany(rulesNewFiles):JSON.parse($('rulesImagesOld').value||'[]');
+
+  const pointNewFiles=[...($('pointImages').files||[])];
+  const pointSystemImages=pointNewFiles.length?await uploadMany(pointNewFiles):JSON.parse($('pointImagesOld').value||'[]');
+
+  const mapBoxEls=[...document.querySelectorAll('#mapBoxes .map-box-edit')];
+  const maps=[];
+  for(const box of mapBoxEls){
+   const nameEl=box.querySelector('.mapName'),fileEl=box.querySelector('.mapImg'),urlEl=box.querySelector('.mapImgUrl');
+   let imgUrl=urlEl.value||'';
+   if(fileEl.files&&fileEl.files[0]){const up=await uploadMany([fileEl.files[0]]);imgUrl=up[0];}
+   maps.push({name:nameEl.value.trim(),image_url:imgUrl});
+  }
+
+  let p={
+   section_id:$('section').value,title:$('title').value.trim(),banner_url:banner,
+   entry_fee:+$('entry').value||0,default_slots:+$('slots').value||0,total_slots:+$('slots').value||0,
+   prize_distribution:prizeDistribution,prize_pool:prizePool,
+   format:$('format').value,match_type:$('matchType').value,game_mode:$('gameMode').value,
+   vehicle_allowed:$('vehicle').value==='true',gun_skin_allowed:$('gunskin').value==='true',emote_allowed:$('emote').value==='true',
+   rules_text:$('rulesText').value.trim()||null,rules_images:rulesImages,
+   point_system_text:$('pointText').value.trim()||null,point_system_images:pointSystemImages,
+   maps:maps
+  };
+  // Status / Show on Homepage are no longer in this form — a new
+  // tournament is created OFF by default, and admins turn it on with the
+  // switch in the Tournaments list. Editing an existing tournament must
+  // never touch these two fields, so its current ON/OFF state survives.
+  if(!id){ p.status='unpublished'; p.show_on_homepage=false; }
+  let q=id?sb.from('tournaments').update(p).eq('id',id).select():sb.from('tournaments').insert(p).select();let r=await q;if(r.error)throw r.error;
+  if(id&&(!r.data||r.data.length===0))throw new Error('Update blocked (0 rows affected) — check the UPDATE RLS policy on the tournaments table.');
+  const savedRow=(r.data&&Array.isArray(r.data)?r.data[0]:null);
+  const newId=id||savedRow?.id||null;
+  if(id){
+    const oldSectionName=sections.find(s=>s.id===old?.section_id)?.name||'—';
+    const newSectionName=sections.find(s=>s.id===p.section_id)?.name||'—';
+    const target=old?.title||p.title;
+    const nameChanged=(old?.title||'')!==p.title;
+    const diffs=[];
+    if((+(old?.entry_fee||0))!==p.entry_fee)diffs.push(`entry fee: ৳${old?.entry_fee||0} → ৳${p.entry_fee}`);
+    if((+(old?.prize_pool||0))!==p.prize_pool)diffs.push(`prize pool: ৳${old?.prize_pool||0} → ৳${p.prize_pool}`);
+    if((+(old?.total_slots||0))!==p.total_slots)diffs.push(`slots: ${old?.total_slots||0} → ${p.total_slots}`);
+    if((old?.section_id||'')!==p.section_id)diffs.push(`section: ${oldSectionName} → ${newSectionName}`);
+    if(nameChanged&&!diffs.length){
+      await logActivity('tournament_updated','tournament','tournament',newId,p.title,{narration:`renamed ${target} → ${p.title}.`,highlight_targets:[target]});
+    }else if(nameChanged&&diffs.length){
+      await logActivity('tournament_updated','tournament','tournament',newId,p.title,{narration:`changed ${target} → ${p.title}, ${diffs.join(', ')}.`,highlight_targets:[target]});
+    }else if(diffs.length){
+      await logActivity('tournament_updated','tournament','tournament',newId,p.title,{narration:`changed ${target} — ${diffs.join(', ')}.`,highlight_targets:[target]});
+    }
+    // no fields actually changed: skip logging, nothing to say
+  }else{
+    await logActivity('tournament_created','tournament','tournament',newId,p.title,{narration:`created the tournament ${p.title}.`,highlight_targets:[p.title]});
+  }
+  closeM('tm');await load();
+ }catch(e){console.error(e);msg(e.message||'Save failed')}
+ finally{saveBtn.disabled=false;saveBtn.textContent=saveBtnOriginalText}
+}
+async function toggleTournament(id,on){
+  const t=tournaments.find(x=>x.id===id);
+  let {error}=await sb.from('tournaments').update({status:on?'published':'unpublished',show_on_homepage:on}).eq('id',id);
+  if(error)return msg(error.message);
+  await logActivity(on?'tournament_enabled':'tournament_disabled','tournament','tournament',id,t?.title||null,{narration:`turned ${on?'ON':'OFF'} the tournament ${t?.title||'Tournament'}.`,highlight_targets:[t?.title||'Tournament']});
+  load();
+}
+async function deleteTournament(id){askConfirm('Delete tournament?','This will permanently remove this tournament. This action cannot be undone.',async()=>{const t=tournaments.find(x=>x.id===id);
+  let {error}=await sb.from('tournaments').delete().eq('id',id);
+  if(error)return msg(error.message);
+  await logActivity('tournament_deleted','tournament','tournament',id,t?.title||null,{narration:`deleted the tournament ${t?.title||'Tournament'}.`,highlight_targets:[t?.title||'Tournament']});
+  load()})}
+async function archive(id){askConfirm('Archive tournament?','The tournament will disappear from the active list and move to Archived Tournaments.',async()=>{const t=tournaments.find(x=>x.id===id);
+  let {error}=await sb.from('tournaments').update({status:'archived',show_on_homepage:false}).eq('id',id);
+  if(error)return msg(error.message);
+  await logActivity('tournament_archived','tournament','tournament',id,t?.title||null,{status:'archived',highlight_targets:[t?.title||null],narration:`archived the tournament ${t?.title||'Tournament'}.`});
+  load()})}
+
+
+/* ================= LOBBIES / TEAMS / RESULTS ================= */
+let currentLobbyTournament=null, lobbies=[], lobbyTeamsCache=[], currentLobbyForTeams=null, currentLobbyForResults=null;
+
+function fmtLobbyDate(d){try{return new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short'});}catch(e){return d;}}
+function lobbyDot(s){return {upcoming:'○',live:'●',full:'●',completed:'✔',cancelled:'○'}[s]||'○';}
+// A 'live' lobby (its scheduled time has passed) shows "MATCH ON" for the
+// first hour after start (typical match length), then "PENDING" from then
+// on — a standing nudge that this one still needs its result submitted
+// (submitting via "Save & Complete" in the Enter Result modal is what
+// actually marks it completed; there's no separate manual Complete button).
+function lobbyLiveBadge(l){
+  if(l.status!=='live')return null;
+  const dt=parseLobbyDateTime(l.lobby_date,l.time_label);
+  if(!dt)return {cls:'live',text:'MATCH ON'};
+  const mins=(Date.now()-dt.getTime())/60000;
+  return mins<60?{cls:'live',text:'MATCH ON'}:{cls:'pending',text:'PENDING'};
+}
+
+// Parses time-based labels like "9:00 PM" into a real Date. Capacity-based
+// labels like "Batch 1" don't parse (no clock time to compare) — those
+// only get the date-rollover check below, never the same-day live check.
+function parseLobbyDateTime(lobbyDate,timeLabel){
+  const m=/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec((timeLabel||'').trim());
+  if(!m)return null;
+  let h=(+m[1])%12; if(/pm/i.test(m[3]))h+=12;
+  const d=new Date(lobbyDate+'T00:00:00'); d.setHours(h,+m[2],0,0);
+  return d;
+}
+// No cron/edge function on this stack, so status transitions happen on the
+// client whenever the admin opens the Lobbies tab (matches the roadmap's
+// "simple client-side check" note): any lobby dated before today is safely
+// past its match, so it's rolled to completed; a today-dated upcoming lobby
+// flips to live once its start time has arrived. Never auto-completes a
+// same-day live lobby (no reliable match-duration to go on) — that stays a
+// manual "✔ Complete" click, same as before.
+async function applyAutoStatusUpdates(list){
+  const now=new Date();
+  const todayStr=now.toISOString().slice(0,10);
+  const toLive=[],toCompleted=[];
+  list.forEach(l=>{
+    if(!['upcoming','live','full'].includes(l.status))return;
+    if(l.lobby_date<todayStr){toCompleted.push(l.id);l.status='completed';return;}
+    if(l.lobby_date===todayStr&&l.status==='upcoming'){
+      const dt=parseLobbyDateTime(l.lobby_date,l.time_label);
+      if(dt&&dt<=now){toLive.push(l.id);l.status='live';}
+    }
+  });
+  if(toLive.length)await sb.from('tournament_lobbies').update({status:'live'}).in('id',toLive);
+  if(toCompleted.length)await sb.from('tournament_lobbies').update({status:'completed'}).in('id',toCompleted);
+}
+
+function openLobbies(tid){
+  currentLobbyTournament=tournaments.find(x=>x.id===tid); if(!currentLobbyTournament)return;
+  $('lbmTitle').textContent=currentLobbyTournament.title+' — Lobbies';
+  $('lobbyDate').value=new Date().toISOString().slice(0,10);
+  $('lobbyTimes').innerHTML='<div class="lobby-time-row"><input type="time" step="3600" class="lobbyTimeInput"></div>';
+  openM('lbm'); loadLobbies(tid);
+}
+let lobbiesShowingAll=false;
+async function loadLobbies(tid,opts){
+  opts=opts||{};
+  $('lobbiesActive').innerHTML='<div class="loading">Loading...</div>'; $('lobbiesHistory').innerHTML='';
+  lobbiesShowingAll=!!opts.includeOlder;
+  let q=sb.from('tournament_lobbies').select('*').eq('tournament_id',tid).order('lobby_date');
+  if(!lobbiesShowingAll){
+    // Default view only pulls the last 60 days — active/upcoming lobbies are
+    // always today-or-later so they're never affected by this; it just
+    // keeps the panel fast as completed history piles up over months.
+    // Nothing is deleted — "Load older history" below fetches the rest.
+    const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-60);
+    q=q.gte('lobby_date',cutoff.toISOString().slice(0,10));
+  }
+  const {data,error}=await q;
+  if(error){$('lobbiesActive').innerHTML='<div class="empty">Could not load lobbies.</div>';console.error(error);return;}
+  lobbies=data||[];
+  await applyAutoStatusUpdates(lobbies);
+  renderLobbies();
+}
+function renderLobbies(){
+  const active=[...lobbies].filter(l=>l.status!=='completed').sort((a,b)=>{
+    if(a.lobby_date!==b.lobby_date)return a.lobby_date<b.lobby_date?-1:1;
+    const da=parseLobbyDateTime(a.lobby_date,a.time_label),db=parseLobbyDateTime(b.lobby_date,b.time_label);
+    if(da&&db)return da-db;
+    return (a.time_label||'').localeCompare(b.time_label||'');
+  });
+  const history=[...lobbies].filter(l=>l.status==='completed').sort((a,b)=>(b.lobby_date+b.time_label).localeCompare(a.lobby_date+a.time_label));
+  const lobbyLabel=l=>fmtLobbyDate(l.lobby_date)+' — '+esc(l.time_label)+(l.custom_title?' <span style="color:#8b96aa;font-weight:700">('+esc(l.custom_title)+')</span>':'');
+  $('lobbiesActive').innerHTML=active.length?active.map(l=>{
+    const liveBadge=lobbyLiveBadge(l);
+    const badgeHtml=l.status==='cancelled'?`<div class="lobby-status cancelled">${lobbyDot(l.status)} CANCELLED</div>`:liveBadge?`<div class="lobby-status ${liveBadge.cls}">${lobbyDot(l.status)} ${liveBadge.text}</div>`:'';
+    return `
+    <div class="lobby-item">
+      <div class="lobby-top"><div class="lobby-date">${lobbyLabel(l)}</div>${badgeHtml}</div>
+      <div class="lobby-meta">${l.joined_count||0}/${l.total_slots||0} joined</div>
+      <div class="lobby-actions">
+        <button class="mini green" onclick="openTeams('${l.id}')">Teams</button>
+        <button class="mini" onclick="openResults('${l.id}')">Enter Result</button>
+        ${l.status==='cancelled'?`<button class="mini green" onclick="setLobbyStatus('${l.id}','upcoming')">On</button><button class="mini t-delete" onclick="deleteLobby('${l.id}')">Delete</button>`:`<button class="mini red" onclick="setLobbyStatus('${l.id}','cancelled')">Off</button>`}
+      </div>
+    </div>`;
+  }).join(''):'<div class="empty">No active lobbies.</div>';
+  $('lobbiesHistory').innerHTML=(history.length?history.map(l=>`
+    <div class="lobby-item">
+      <div class="lobby-top"><div class="lobby-date">${lobbyLabel(l)}</div><div class="lobby-status completed">✔ COMPLETED</div></div>
+      <div class="lobby-meta">${l.joined_count||0}/${l.total_slots||0} joined</div>
+      <div class="lobby-actions"><button class="mini green" onclick="openResults('${l.id}')">View Results</button></div>
+    </div>`).join(''):'<div class="empty">No completed lobbies in the last 60 days.</div>')
+    +(lobbiesShowingAll?'':`<button class="mini" style="width:100%;margin-top:8px" onclick="loadLobbies(currentLobbyTournament.id,{includeOlder:true})">Load older history</button>`);
+}
+function addTimeInput(){
+  const row=document.createElement('div');
+  row.className='lobby-time-row';
+  row.innerHTML='<input type="time" step="3600" class="lobbyTimeInput">';
+  $('lobbyTimes').appendChild(row);
+}
+// Converts a native <input type="time"> value ("21:00") into the "H:MM AM/PM"
+// label format the rest of the app (parseLobbyDateTime, sorting) expects.
+function timeValueTo12h(v){
+  if(!v)return '';
+  const [hStr,mStr]=v.split(':');
+  let h=parseInt(hStr,10);
+  const m=(mStr||'00').padStart(2,'0');
+  const ap=h>=12?'PM':'AM';
+  let h12=h%12; if(h12===0)h12=12;
+  return h12+':'+m+' '+ap;
+}
+async function saveLobbies(){
+  const tid=currentLobbyTournament?.id; if(!tid)return;
+  const date=$('lobbyDate').value; if(!date)return msg('Pick a date.');
+  const times=[...document.querySelectorAll('.lobby-time-row')].map(row=>timeValueTo12h(row.querySelector('.lobbyTimeInput').value)).filter(Boolean);
+  if(!times.length)return msg('Add at least one time.');
+  const slots=currentLobbyTournament.default_slots||currentLobbyTournament.total_slots||0;
+  const rows=times.map(t=>({tournament_id:tid,lobby_date:date,time_label:t,total_slots:slots,status:'upcoming'}));
+  const {data,error}=await sb.from('tournament_lobbies').insert(rows).select();
+  if(error)return msg(error.message);
+  if(!data||data.length===0)return msg('Insert blocked (0 rows) — check the INSERT RLS policy on tournament_lobbies.');
+  await logActivity('lobbies_added','tournament','tournament_lobby',tid,currentLobbyTournament.title,{narration:`added ${rows.length} lobby slot(s) for ${currentLobbyTournament.title} on ${date}.`,highlight_targets:[currentLobbyTournament.title]});
+  $('lobbyTimes').innerHTML='<div class="lobby-time-row"><input type="time" step="3600" class="lobbyTimeInput"></div>';
+  await loadLobbies(tid);
+}
+async function setLobbyStatus(id,status){
+  const l=lobbies.find(x=>x.id===id);
+  const {data,error}=await sb.from('tournament_lobbies').update({status}).eq('id',id).select();
+  if(error)return msg(error.message);
+  if(!data||data.length===0)return msg('Update blocked (0 rows) — check the UPDATE RLS policy on tournament_lobbies.');
+  await logActivity('lobby_status_changed','tournament','tournament_lobby',id,l?`${fmtLobbyDate(l.lobby_date)} ${l.time_label}`:null,{narration:`set lobby ${l?fmtLobbyDate(l.lobby_date)+' '+l.time_label:''} to ${status}.`});
+  await loadLobbies(currentLobbyTournament.id);
+}
+async function deleteLobby(id){
+  askConfirm('Delete lobby?','This lobby slot will be permanently removed.',async()=>{
+    const {error}=await sb.from('tournament_lobbies').delete().eq('id',id);
+    if(error)return msg(error.message);
+    await loadLobbies(currentLobbyTournament.id);
+  });
+}
+
+async function openTeams(lobbyId){
+  currentLobbyForTeams=lobbies.find(x=>x.id===lobbyId);
+  $('ltmTitle').textContent=currentLobbyForTeams?`Teams — ${fmtLobbyDate(currentLobbyForTeams.lobby_date)} ${currentLobbyForTeams.time_label}`:'Teams';
+  $('teamsList').innerHTML='<div class="loading">Loading...</div>'; openM('ltm');
+  const {data,error}=await sb.from('lobby_teams').select('*, profiles(user_number,whatsapp,email)').eq('lobby_id',lobbyId).order('joined_at');
+  if(error){$('teamsList').innerHTML='<div class="empty">Could not load teams.</div>';console.error(error);return;}
+  lobbyTeamsCache=data||[]; renderTeamsList();
+}
+function renderTeamsList(){
+  $('teamsList').innerHTML=lobbyTeamsCache.length?lobbyTeamsCache.map(tm=>{
+    const uidBadge=tm.profiles?.user_number ? `<span class="team-uid">UID #${tm.profiles.user_number}</span>` : `<span class="team-uid guest">Guest</span>`;
+    const playerName=Array.isArray(tm.players)&&tm.players[0]?.name ? esc(tm.players[0].name) : '';
+    const payBadge=tm.payment_method==='balance' ? `<span class="team-pay balance">Balance</span>` : `<span class="team-pay manual">Manual</span>`;
+    return `<div class="team-item">
+      <div class="team-top"><b>${esc(tm.team_name)}</b><span class="team-status ${tm.confirmation_status}">${tm.confirmation_status}</span></div>
+      <div class="team-meta">${playerName?'👤 '+playerName+' · ':''}${uidBadge} ${payBadge}</div>
+      <div class="team-meta">${tm.contact_number?'📱 '+esc(tm.contact_number):''}${tm.payment_reference?' · Ref: '+esc(tm.payment_reference):''}</div>
+      ${tm.confirmation_status==='pending'?`<div class="team-actions"><button class="mini green" onclick="setTeamStatus('${tm.id}','confirmed')">Confirm</button><button class="mini red" onclick="setTeamStatus('${tm.id}','rejected')">Reject</button></div>`:`<div class="team-actions"><button class="mini" onclick="setTeamStatus('${tm.id}','pending')">Reset</button></div>`}
+    </div>`;
+  }).join(''):'<div class="empty">No teams joined yet.</div>';
+}
+function toggleAddTeamForm(show){
+  const el=$('addTeamForm');
+  const willShow=show===undefined?el.style.display==='none':show;
+  el.style.display=willShow?'block':'none';
+  if(willShow){$('atTeamName').value='';$('atPlayerName').value='';$('atWhatsapp').value='';$('atTeamName').focus();}
+}
+// Manually-added teams usually represent a slot someone already booked over
+// WhatsApp (outside the app) before the admin got around to entering it here.
+// So instead of joining the list at the bottom like a brand-new signup, we
+// back-date joined_at just before the current earliest team in this lobby,
+// which puts it at the top — as if it had claimed the 1st slot.
+async function submitManualTeam(){
+  const teamName=$('atTeamName').value.trim();
+  const playerName=$('atPlayerName').value.trim();
+  const whatsapp=$('atWhatsapp').value.trim();
+  if(!teamName)return msg('Team name is required.');
+  if(!whatsapp)return msg('WhatsApp number is required.');
+  if(!currentLobbyForTeams)return;
+  const earliest=lobbyTeamsCache.length?Math.min(...lobbyTeamsCache.map(t=>new Date(t.joined_at).getTime())):Date.now();
+  const joinedAt=new Date(earliest-1000).toISOString();
+  const payload={
+    lobby_id:currentLobbyForTeams.id,
+    team_name:teamName,
+    players:playerName?[{name:playerName}]:[],
+    contact_number:whatsapp,
+    payment_method:'manual',
+    payment_reference:`Added by ${currentAdminName}`,
+    confirmation_status:'confirmed',
+    joined_at:joinedAt
+  };
+  const {error}=await sb.from('lobby_teams').insert(payload);
+  if(error)return msg(error.message);
+  await logActivity('team_added_manually','tournament','tournament_lobby',currentLobbyForTeams.id,teamName,{narration:`manually added team "${teamName}" to the lobby (WhatsApp booking).`,highlight_targets:[teamName]});
+  toggleAddTeamForm(false);
+  await openTeams(currentLobbyForTeams.id);
+  await loadLobbies(currentLobbyTournament.id);
+}
+async function setTeamStatus(teamId,status){
+  const {data,error}=await sb.from('lobby_teams').update({confirmation_status:status}).eq('id',teamId).select();
+  if(error)return msg(error.message);
+  if(!data||data.length===0)return msg('Update blocked (0 rows) — check the UPDATE RLS policy on lobby_teams.');
+  await openTeams(currentLobbyForTeams.id);
+  await loadLobbies(currentLobbyTournament.id);
+}
+
+async function openResults(lobbyId){
+  currentLobbyForResults=lobbies.find(x=>x.id===lobbyId);
+  $('lrmTitle').textContent=currentLobbyForResults?`Result — ${fmtLobbyDate(currentLobbyForResults.lobby_date)} ${currentLobbyForResults.time_label}`:'Enter Result';
+  $('resultsList').innerHTML='<div class="loading">Loading...</div>'; openM('lrm');
+  const [teamsRes,resultsRes]=await Promise.all([
+    sb.from('lobby_teams').select('*').eq('lobby_id',lobbyId).eq('confirmation_status','confirmed').order('team_name'),
+    sb.from('lobby_results').select('*').eq('lobby_id',lobbyId)
+  ]);
+  if(teamsRes.error||resultsRes.error){$('resultsList').innerHTML='<div class="empty">Could not load result data.</div>';console.error(teamsRes.error||resultsRes.error);return;}
+  const rMap=new Map((resultsRes.data||[]).map(r=>[r.team_id,r]));
+  let teams=teamsRes.data||[];
+  // Order rows the same way they were last saved (by rank) so admin sees
+  // their previous arrangement; teams never scored yet fall back to name order.
+  teams=[...teams].sort((a,b)=>{
+    const ra=rMap.get(a.id)?.rank, rb=rMap.get(b.id)?.rank;
+    if(ra==null&&rb==null)return a.team_name.localeCompare(b.team_name);
+    if(ra==null)return 1;
+    if(rb==null)return -1;
+    return ra-rb;
+  });
+  renderResultRows(teams,rMap);
+}
+function rankBadgeClass(i){return i===0?'r1':i===1?'r2':i===2?'r3':'';}
+// How many top ranks actually get a prize, per the tournament's own
+// prize_distribution set when it was created (e.g. "Top 4" -> length 4).
+// Falls back to unlimited if a tournament somehow has no distribution set.
+function prizeRankCount(){
+  const n=currentLobbyTournament?.prize_distribution?.length;
+  return Number.isInteger(n)&&n>0?n:Infinity;
+}
+function updatePrizeLocks(){
+  const n=prizeRankCount();
+  [...document.querySelectorAll('#resultsList .result-row')].forEach((row,i)=>{
+    const inp=row.querySelector('.resPrize'); if(!inp)return;
+    const locked=i>=n;
+    inp.disabled=locked;
+    inp.placeholder=locked?'—':'৳';
+    if(locked)inp.value='';
+  });
+}
+function renderResultRows(teams,rMap){
+  $('resultsList').innerHTML=teams.length?teams.map((tm,i)=>{const r=rMap.get(tm.id)||{};return `<div class="result-row" data-team="${tm.id}">
+      <div class="result-rank-badge ${rankBadgeClass(i)}">${i+1}</div>
+      <div class="result-name">${esc(tm.team_name)}</div>
+      <input type="number" class="resPrize" placeholder="৳" min="0" value="${r.prize_won??0}">
+      <input type="number" class="resPoints" placeholder="PTS" min="0" value="${r.total_points??''}">
+      <div class="result-updown"><button type="button" ${i===0?'disabled':''} onclick="moveResultRow('${tm.id}',-1)">▲</button><button type="button" ${i===teams.length-1?'disabled':''} onclick="moveResultRow('${tm.id}',1)">▼</button></div>
+    </div>`;}).join(''):'<div class="empty">No confirmed teams for this lobby.</div>';
+  updatePrizeLocks();
+}
+function moveResultRow(teamId,dir){
+  const list=$('resultsList');
+  const row=list.querySelector(`.result-row[data-team="${teamId}"]`);
+  if(!row)return;
+  const sibling=dir<0?row.previousElementSibling:row.nextElementSibling;
+  if(!sibling)return;
+  if(dir<0)list.insertBefore(row,sibling); else list.insertBefore(sibling,row);
+  renumberResultRows();
+}
+function sortResultsByPoints(){
+  const list=$('resultsList');
+  const rows=[...list.querySelectorAll('.result-row')];
+  // Stable sort: ties keep their current relative order, so any manual
+  // up/down adjustment you already made for a tie survives re-sorting.
+  rows.sort((a,b)=>{
+    const pa=+a.querySelector('.resPoints').value||0;
+    const pb=+b.querySelector('.resPoints').value||0;
+    return pb-pa;
+  });
+  rows.forEach(r=>list.appendChild(r));
+  renumberResultRows();
+}
+function renumberResultRows(){
+  const rows=[...document.querySelectorAll('#resultsList .result-row')];
+  rows.forEach((row,i)=>{
+    const badge=row.querySelector('.result-rank-badge');
+    badge.textContent=i+1;
+    badge.className='result-rank-badge '+rankBadgeClass(i);
+    row.querySelectorAll('.result-updown button')[0].disabled=i===0;
+    row.querySelectorAll('.result-updown button')[1].disabled=i===rows.length-1;
+  });
+  updatePrizeLocks();
+}
+async function saveResults(){
+  const lobbyId=currentLobbyForResults?.id; if(!lobbyId)return;
+  const rows=[...document.querySelectorAll('#resultsList .result-row')].map((row,i)=>({
+    lobby_id:lobbyId, team_id:row.dataset.team,
+    rank:i+1,
+    total_points:+row.querySelector('.resPoints').value||0,
+    prize_won:+row.querySelector('.resPrize').value||0
+  }));
+  if(!rows.length)return msg('No teams to save.');
+  const {data,error}=await sb.from('lobby_results').upsert(rows,{onConflict:'lobby_id,team_id'}).select();
+  if(error)return msg(error.message);
+  if(!data||data.length===0)return msg('Save blocked (0 rows) — check the INSERT/UPDATE RLS policy on lobby_results.');
+  await logActivity('lobby_results_saved','tournament','tournament_lobby',lobbyId,currentLobbyForResults?`${fmtLobbyDate(currentLobbyForResults.lobby_date)} ${currentLobbyForResults.time_label}`:null,{narration:'saved results for the lobby.'});
+  return true;
+}
+async function saveResultsAndComplete(){
+  const ok=await saveResults(); if(ok===false||ok===undefined)return;
+  await setLobbyStatus(currentLobbyForResults.id,'completed');
+  closeM('lrm');
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  const hc=$('homepageCollapse');
+  hc.addEventListener('click',()=>{const panel=$('homepagePanel');panel.classList.toggle('collapsed');hc.classList.toggle('on',!panel.classList.contains('collapsed'));});
+  document.getElementById('createTournamentBtn').addEventListener('click', newTournament);
+  document.getElementById('addSectionBtn').addEventListener('click', newSection);
+  document.getElementById('closeTmBtn').addEventListener('click', function(){closeM('tm')});
+  document.getElementById('cancelTmBtn').addEventListener('click', function(){closeM('tm')});
+  document.getElementById('closeSmBtn').addEventListener('click', function(){closeM('sm')});
+  document.getElementById('cancelSmBtn').addEventListener('click', function(){closeM('sm')});
+  document.getElementById('saveTournamentBtn').addEventListener('click', saveTournament);
+  document.getElementById('saveSectionBtn').addEventListener('click', saveSection);
+});
+
+(async()=>{if(await admin())await load()})();
+</script>
+
+</body>
+</html>
