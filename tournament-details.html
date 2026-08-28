@@ -284,7 +284,7 @@ async function initUser(){
       </div>
       <div class="info-col">
         <div class="info-box"><span class="label">Format</span><span class="value">${esc(formatLabel)}</span></div>
-        <div class="info-box"><span class="label">Mode</span><span class="value">ESports</span></div>
+        <div class="info-box"><span class="label">Mode</span><span class="value">${t.game_mode==='classic'?'Classic':'ESports'}</span></div>
         <div class="info-box"><span class="label">Types</span><span class="value">${esc(matchTypeLabel)}</span></div>
         <div class="info-box"><span class="label">Gun skin</span><span class="emoji">${t.gun_skin_allowed?'✅':'❌'}</span></div>
         <div class="info-box"><span class="label">Vehicle</span><span class="emoji">${t.vehicle_allowed?'✅':'❌'}</span></div>

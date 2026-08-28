@@ -84,11 +84,12 @@
 .img-note{font-size:9px;color:#7f899d;margin:4px 0 6px}
 .map-box-edit,.prize-box-edit{background:#0e1420;border:1px solid #293650;border-radius:11px;padding:9px;margin-top:0}
 .map-box-edit label,.prize-box-edit label{margin:5px 0 4px}
-.map-box-edit .existing-img{font-size:9px;color:#5ee98b;word-break:break-all;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.map-box-edit .existing-img{font-size:9px;color:#5ee98b;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 /* Side-by-side layouts that stay side-by-side even on small phones —
    unlike .grid, which collapses to 1 column under 520px. */
 .prize-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .map-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.map-grid>.map-box-edit,.prize-grid>.prize-box-edit{min-width:0}
 .map-box-edit input{padding:8px 6px;font-size:10px}
 .map-box-edit label{font-size:8px}
 .field-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:start}
@@ -173,6 +174,7 @@
 
   <div class="grid">
     <div><label>Format</label><select id="format"><option value="solo">Solo</option><option value="duo">Duo</option><option value="squad">Squad</option></select></div>
+    <div><label>Mode</label><select id="gameMode"><option value="esports">ESports</option><option value="classic">Classic</option></select></div>
     <div><label>Type</label><select id="matchType"><option value="full_map">Full map</option><option value="clash_squad">Clash squad</option></select></div>
     <div><label>Vehicle</label><select id="vehicle"><option value="true">✅ Allowed</option><option value="false">❌ Not allowed</option></select></div>
     <div><label>Gun Skin</label><select id="gunskin"><option value="false">❌ Not allowed</option><option value="true">✅ Allowed</option></select></div>
@@ -503,7 +505,7 @@ function renderMapBoxes(prefill){
     <label>Map ${i+1}</label><input class="mapName" data-i="${i}" placeholder="Bermuda" value="${esc(m.name||'')}">
     <label>Image</label><input type="file" class="mapImg" data-i="${i}" accept="image/png,image/jpeg,image/webp">
     <input type="hidden" class="mapImgUrl" data-i="${i}" value="${esc(m.image_url||'')}">
-    ${m.image_url?`<div class="existing-img" title="${esc(m.image_url)}">Current: ${esc(m.image_url)}</div>`:''}
+    ${m.image_url?`<div class="existing-img" title="${esc(m.image_url)}">✓ Image set</div>`:''}
   </div>`;
  }).join('');
 }
@@ -520,7 +522,7 @@ async function uploadMany(files){
 }
 function newTournament(){
  $('tid').value='';$('tmTitle').textContent='Create Tournament';$('title').value='';$('entry').value=0;$('slots').value=0;
- $('format').value='squad';$('matchType').value='full_map';$('vehicle').value='true';$('gunskin').value='false';$('emote').value='false';
+ $('format').value='squad';$('matchType').value='full_map';$('gameMode').value='esports';$('vehicle').value='true';$('gunskin').value='false';$('emote').value='false';
  $('rulesText').value='';$('rulesImages').value='';$('rulesImagesOld').value='[]';$('rulesImagesNote').textContent='';
  $('pointText').value='';$('pointImages').value='';$('pointImagesOld').value='[]';$('pointImagesNote').textContent='';
  $('banner').value='';
@@ -532,7 +534,7 @@ function editTournament(id){
  let t=tournaments.find(x=>x.id===id);if(!t)return;
  $('tid').value=t.id;$('tmTitle').textContent='Edit Tournament';fillSections(t.section_id);
  $('title').value=t.title||'';$('entry').value=t.entry_fee||0;$('slots').value=t.default_slots||t.total_slots||0;
- $('format').value=t.format||'squad';$('matchType').value=t.match_type||'full_map';
+ $('format').value=t.format||'squad';$('matchType').value=t.match_type||'full_map';$('gameMode').value=t.game_mode||'esports';
  $('vehicle').value=String(t.vehicle_allowed!==false);$('gunskin').value=String(!!t.gun_skin_allowed);$('emote').value=String(!!t.emote_allowed);
  $('rulesText').value=t.rules_text||t.rules||'';$('rulesImages').value='';
  const rImgs=Array.isArray(t.rules_images)?t.rules_images:[];$('rulesImagesOld').value=JSON.stringify(rImgs);
@@ -576,7 +578,7 @@ async function saveTournament(){
    section_id:$('section').value,title:$('title').value.trim(),banner_url:banner,
    entry_fee:+$('entry').value||0,default_slots:+$('slots').value||0,total_slots:+$('slots').value||0,
    prize_distribution:prizeDistribution,prize_pool:prizePool,
-   format:$('format').value,match_type:$('matchType').value,
+   format:$('format').value,match_type:$('matchType').value,game_mode:$('gameMode').value,
    vehicle_allowed:$('vehicle').value==='true',gun_skin_allowed:$('gunskin').value==='true',emote_allowed:$('emote').value==='true',
    rules_text:$('rulesText').value.trim()||null,rules_images:rulesImages,
    point_system_text:$('pointText').value.trim()||null,point_system_images:pointSystemImages,
