@@ -387,7 +387,7 @@
 
       "index.dailyTournaments": "Daily (Scrims) Tournaments",
       "index.paidTournaments": "Today's Paid (Qualify) Tournaments",
-      "index.topTeams": "{month} Top Teams",
+      "index.topTeams": "{month}'s Top Teams",
       "index.viewAll": "View All →",
       "index.seeOther": "See other teams ↓",
       "index.vipOnly": "ONLY FOR",
