@@ -100,6 +100,36 @@
     return merged;
   }
 
+  // Calls the Render backend's sync-wallet.php with the current Supabase
+  // access token — this is what actually creates the wallet_users row for
+  // a brand-new account (or updates it for an existing one) on the MySQL
+  // side. Without this call nothing ever inserts into wallet_users, which
+  // is why deposits / admin balance adjustments were failing with
+  // "Wallet user not found".
+  var WALLET_SYNC_URL = "https://chteo-api.onrender.com/api/sync-wallet.php";
+
+  function syncWallet() {
+    return new Promise(function (resolve) {
+      getSupabaseClient(function (client) {
+        client.auth.getSession().then(function (res) {
+          var session = res && res.data && res.data.session;
+          if (!session || !session.access_token) { resolve(null); return; }
+          fetch(WALLET_SYNC_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ access_token: session.access_token })
+          })
+            .then(function (r) { return r.json(); })
+            .then(function (j) {
+              if (!j || !j.success) console.warn("CHTEO.syncWallet: sync-wallet.php did not succeed —", j && j.message);
+              resolve(j);
+            })
+            .catch(function (e) { console.warn("CHTEO.syncWallet: request failed —", e); resolve(null); });
+        }).catch(function () { resolve(null); });
+      });
+    });
+  }
+
   // Pulls the signed-in user's real row from Supabase and refreshes
   // localStorage + fires 'chteo:profile-synced' so any page listening
   // (see profile.html) can re-render with the fresh data.
@@ -788,6 +818,7 @@
     // Supabase so real email/UID show up instead of stale/placeholder data.
     if (localStorage.getItem(AUTH_KEY) === "true") {
       syncProfile();
+      syncWallet();
       startBanWatcher();
     }
   }
@@ -811,6 +842,7 @@
     openModal: openModal,
     closeModal: closeModal,
     syncProfile: syncProfile,
+    syncWallet: syncWallet,
     getSupabaseClient: getSupabaseClient,
     startBanWatcher: startBanWatcher
   };
