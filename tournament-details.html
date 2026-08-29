@@ -369,7 +369,7 @@ async function initUser(){
   });
 
   lobbyBox.innerHTML=lobbies.map(l=>{
-    const slots=l.total_slots||0,joined=l.joined_count||0;
+    const slots=l.total_slots||0,joined=lobbyDisplayJoined(l);
     const full=lobbyIsFull(l);
     const pct=slots?Math.min(100,Math.round(joined/slots*100)):0;
     const left=lobbyDisplayLeft(l);
