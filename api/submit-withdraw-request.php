@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Allow-Headers: Content-Type, Accept, X-Requested-With');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
@@ -11,10 +11,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-require_once "../db.php";
+require_once __DIR__ . '/../db.php';
 
 $supabaseUrl = 'https://myfficbwcbgbxbdqjexv.supabase.co';
 $supabaseAnonKey = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+
+$MIN_WITHDRAW = 50.00;
 
 $data = json_decode(file_get_contents('php://input'), true);
 if (!is_array($data)) {
@@ -23,9 +25,9 @@ if (!is_array($data)) {
     exit;
 }
 
-$accessToken = isset($data['access_token']) ? trim($data['access_token']) : '';
-$amount = isset($data['amount']) ? (float)$data['amount'] : 0.0;
-$method = isset($data['method']) ? trim($data['method']) : '';
+$accessToken   = isset($data['access_token']) ? trim($data['access_token']) : '';
+$method        = isset($data['method']) ? trim($data['method']) : '';
+$amount        = isset($data['amount']) ? (float)$data['amount'] : 0;
 $accountNumber = isset($data['account_number']) ? trim($data['account_number']) : '';
 
 if ($accessToken === '') {
@@ -33,27 +35,28 @@ if ($accessToken === '') {
     echo json_encode(['success' => false, 'message' => 'Access token missing']);
     exit;
 }
-if ($amount < 50) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Minimum withdraw is 50 BDT']);
-    exit;
-}
 if (!in_array($method, ['Bkash', 'Nagad'], true)) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Invalid payment method']);
+    echo json_encode(['success' => false, 'message' => 'Select a valid payment method']);
+    exit;
+}
+if ($amount < $MIN_WITHDRAW) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Minimum withdraw is ' . $MIN_WITHDRAW . ' BDT']);
     exit;
 }
 if (!preg_match('/^01[0-9]{9}$/', $accountNumber)) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Invalid 11-digit account number']);
+    echo json_encode(['success' => false, 'message' => 'Enter a valid 11-digit number (01XXXXXXXXX)']);
     exit;
 }
 
-/* Verify the real Supabase session and get the real user id. */
+// ---- Verify the user with Supabase ----
 $ch = curl_init(rtrim($supabaseUrl, '/') . '/auth/v1/user');
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_TIMEOUT => 20,
+    CURLOPT_CONNECTTIMEOUT => 10,
     CURLOPT_HTTPHEADER => [
         'apikey: ' . $supabaseAnonKey,
         'Authorization: Bearer ' . $accessToken,
@@ -64,85 +67,76 @@ $authResponse = curl_exec($ch);
 $authCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 curl_close($ch);
 
-$authUser = json_decode($authResponse, true);
-if ($authResponse === false || $authCode !== 200 || empty($authUser['id'])) {
+$user = json_decode($authResponse, true);
+if ($authResponse === false || $authCode !== 200 || empty($user['id'])) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Invalid or expired session']);
     exit;
 }
 
-$verifiedUid = $authUser['id'];
-$email = isset($authUser['email']) ? trim($authUser['email']) : '';
+$userId = $user['id'];
+$email  = isset($user['email']) ? trim($user['email']) : '';
 
+// ---- Deduct from withdrawable_balance and insert the request, atomically ----
 $conn->set_charset('utf8mb4');
 $conn->begin_transaction();
 
 try {
-    /* Lock wallet so two withdrawal requests cannot spend the same funds. */
     $stmt = $conn->prepare(
-        "SELECT id, email, balance, withdrawable_balance, non_withdrawable_balance
+        "SELECT id, withdrawable_balance, non_withdrawable_balance
          FROM wallet_users
          WHERE supabase_uid = ? LIMIT 1 FOR UPDATE"
     );
-    $stmt->bind_param('s', $verifiedUid);
+    $stmt->bind_param('s', $userId);
     $stmt->execute();
     $result = $stmt->get_result();
     $wallet = $result->fetch_assoc();
     $stmt->close();
 
     if (!$wallet) {
-        throw new Exception('Wallet not found for this account');
+        throw new Exception('Wallet account not found for this user');
     }
 
     $withdrawable = (float)$wallet['withdrawable_balance'];
+    $nonWithdrawable = (float)$wallet['non_withdrawable_balance'];
+
     if ($withdrawable < $amount) {
-        throw new Exception(
-            'Insufficient withdrawable balance. Available: ৳' . $withdrawable
-        );
+        throw new Exception('Insufficient withdrawable balance');
     }
 
     $newWithdrawable = $withdrawable - $amount;
-    $newNonWithdrawable = (float)$wallet['non_withdrawable_balance'];
-    $newBalance = $newWithdrawable + $newNonWithdrawable;
+    $newBalance = $newWithdrawable + $nonWithdrawable;
 
-    /* Reserve the money immediately. It is refunded automatically if an admin rejects the request. */
+    // Reserve the amount immediately — approval later keeps it deducted,
+    // rejection (see admin-review-withdraw.php) refunds it back.
     $stmt = $conn->prepare(
         "UPDATE wallet_users
-         SET withdrawable_balance = ?,
-             balance = ?
+         SET withdrawable_balance = ?, balance = ?
          WHERE id = ?"
     );
     $stmt->bind_param('ddi', $newWithdrawable, $newBalance, $wallet['id']);
     $stmt->execute();
     $stmt->close();
 
-    $walletEmail = $wallet['email'] ?: $email;
+    $status = 'pending';
     $stmt = $conn->prepare(
         "INSERT INTO wallet_withdraw_requests
-         (user_id, email, amount, method, account_number, status)
-         VALUES (?, ?, ?, ?, ?, 'pending')"
+            (user_id, email, amount, method, account_number, status, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, NOW())"
     );
-    $stmt->bind_param(
-        'ssdss',
-        $verifiedUid,
-        $walletEmail,
-        $amount,
-        $method,
-        $accountNumber
-    );
+    $stmt->bind_param('ssdsss', $userId, $email, $amount, $method, $accountNumber, $status);
     $stmt->execute();
-    $requestId = $stmt->insert_id;
+    $requestId = (int)$stmt->insert_id;
     $stmt->close();
 
     $conn->commit();
 
     echo json_encode([
         'success' => true,
-        'message' => 'Withdrawal request submitted successfully. Your amount is reserved until admin review.',
-        'request_id' => (int)$requestId,
-        'balance' => $newBalance,
+        'message' => 'Withdrawal request submitted successfully.',
+        'request_id' => $requestId,
         'withdrawable_balance' => $newWithdrawable,
-        'non_withdrawable_balance' => $newNonWithdrawable
+        'balance' => $newBalance
     ]);
 } catch (Exception $e) {
     $conn->rollback();
