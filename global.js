@@ -616,7 +616,7 @@
   };
 
   function getLangPref() {
-    return localStorage.getItem(LANG_KEY) || "en";
+    return localStorage.getItem(LANG_KEY) || "bn";
   }
 
   var MONTH_NAMES = {
