@@ -387,7 +387,7 @@
 
       "index.dailyTournaments": "Daily (Scrims) Tournaments",
       "index.paidTournaments": "Today's Paid (Qualify) Tournaments",
-      "index.topTeams": "September Top Teams",
+      "index.topTeams": "{month} Top Teams",
       "index.viewAll": "View All →",
       "index.seeOther": "See other teams ↓",
       "index.vipOnly": "ONLY FOR",
@@ -567,7 +567,7 @@
 
       "index.dailyTournaments": "দৈনিক (স্ক্রিম) টুর্নামেন্ট",
       "index.paidTournaments": "আজকের পেইড (কোয়ালিফাই) টুর্নামেন্ট",
-      "index.topTeams": "সেপ্টেম্বরের শীর্ষ দল",
+      "index.topTeams": "{month}ের শীর্ষ দল",
       "index.viewAll": "সব দেখুন →",
       "index.seeOther": "অন্যান্য দল দেখুন ↓",
       "index.vipOnly": "শুধুমাত্র",
@@ -589,13 +589,28 @@
     return localStorage.getItem(LANG_KEY) || "en";
   }
 
+  var MONTH_NAMES = {
+    en: ["January","February","March","April","May","June","July","August","September","October","November","December"],
+    bn: ["জানুয়ারি","ফেব্রুয়ারি","মার্চ","এপ্রিল","মে","জুন","জুলাই","আগস্ট","সেপ্টেম্বর","অক্টোবর","নভেম্বর","ডিসেম্বর"]
+  };
+  function currentMonthName(lang) {
+    var names = MONTH_NAMES[lang] || MONTH_NAMES.en;
+    return names[new Date().getMonth()];
+  }
+
   function applyLanguage(lang) {
     var dict = translations[lang] || translations.en;
     document.documentElement.setAttribute("lang", lang === "bn" ? "bn" : "en");
 
     document.querySelectorAll("[data-i18n]").forEach(function (el) {
       var key = el.getAttribute("data-i18n");
-      if (dict[key] != null) el.textContent = dict[key];
+      if (dict[key] != null) {
+        var text = dict[key];
+        if (text.indexOf("{month}") !== -1) {
+          text = text.replace("{month}", currentMonthName(lang === "bn" ? "bn" : "en"));
+        }
+        el.textContent = text;
+      }
     });
     document.querySelectorAll("[data-i18n-placeholder]").forEach(function (el) {
       var key = el.getAttribute("data-i18n-placeholder");
