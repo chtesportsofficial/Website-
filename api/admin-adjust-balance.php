@@ -185,10 +185,10 @@ try {
     $stmt = $conn->prepare(
         "UPDATE wallet_users
          SET $column = $column + ?,
-             balance = withdrawable_balance + non_withdrawable_balance + ?
+             balance = withdrawable_balance + non_withdrawable_balance
          WHERE email = ?"
     );
-    $stmt->bind_param('dds', $delta, $delta, $targetEmail);
+    $stmt->bind_param('ds', $delta, $targetEmail);
     $stmt->execute();
 
     if ($stmt->affected_rows === 0) {
