@@ -136,6 +136,8 @@
 .result-rank-badge.r2{background:#232833;color:#c9cfdb;border-color:#3a4150}
 .result-rank-badge.r3{background:#33220f;color:#e0a370;border-color:#4d3417}
 .result-name{font-size:11px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.result-name-wrap{display:flex;flex-direction:column;gap:2px;overflow:hidden;min-width:0}
+.result-name-wrap .team-uid{align-self:flex-start}
 .result-row input{padding:7px;font-size:10px}
 .result-updown{display:flex;flex-direction:column;gap:2px}
 .result-updown button{border:1px solid #293650;background:#101725;color:#e8ebf2;border-radius:6px;width:28px;height:15px;font-size:9px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center}
@@ -932,7 +934,7 @@ async function openResults(lobbyId){
   $('lrmTitle').textContent=currentLobbyForResults?`Result — ${fmtLobbyDate(currentLobbyForResults.lobby_date)} ${currentLobbyForResults.time_label}`:'Enter Result';
   $('resultsList').innerHTML='<div class="loading">Loading...</div>'; openM('lrm');
   const [teamsRes,resultsRes]=await Promise.all([
-    sb.from('lobby_teams').select('*').eq('lobby_id',lobbyId).eq('confirmation_status','confirmed').order('team_name'),
+    sb.from('lobby_teams').select('*, profiles(user_number)').eq('lobby_id',lobbyId).eq('confirmation_status','confirmed').order('team_name'),
     sb.from('lobby_results').select('*').eq('lobby_id',lobbyId)
   ]);
   if(teamsRes.error||resultsRes.error){$('resultsList').innerHTML='<div class="empty">Could not load result data.</div>';console.error(teamsRes.error||resultsRes.error);return;}
@@ -968,13 +970,17 @@ function updatePrizeLocks(){
   });
 }
 function renderResultRows(teams,rMap){
-  $('resultsList').innerHTML=teams.length?teams.map((tm,i)=>{const r=rMap.get(tm.id)||{};return `<div class="result-row" data-team="${tm.id}">
+  $('resultsList').innerHTML=teams.length?teams.map((tm,i)=>{
+    const r=rMap.get(tm.id)||{};
+    const uidBadge=tm.profiles?.user_number ? `<span class="team-uid">UID #${tm.profiles.user_number}</span>` : `<span class="team-uid guest">Guest</span>`;
+    return `<div class="result-row" data-team="${tm.id}" data-submitted-by="${tm.submitted_by||''}" data-credited="${r.prize_credited?'true':'false'}">
       <div class="result-rank-badge ${rankBadgeClass(i)}">${i+1}</div>
-      <div class="result-name">${esc(tm.team_name)}</div>
+      <div class="result-name-wrap"><div class="result-name">${esc(tm.team_name)}</div>${uidBadge}</div>
       <input type="number" class="resPrize" placeholder="৳" min="0" value="${r.prize_won??0}">
       <input type="number" class="resPoints" placeholder="PTS" min="0" value="${r.total_points??''}">
       <div class="result-updown"><button type="button" ${i===0?'disabled':''} onclick="moveResultRow('${tm.id}',-1)">▲</button><button type="button" ${i===teams.length-1?'disabled':''} onclick="moveResultRow('${tm.id}',1)">▼</button></div>
-    </div>`;}).join(''):'<div class="empty">No confirmed teams for this lobby.</div>';
+    </div>`;
+  }).join(''):'<div class="empty">No confirmed teams for this lobby.</div>';
   updatePrizeLocks();
 }
 function moveResultRow(teamId,dir){
@@ -1027,8 +1033,50 @@ async function saveResults(){
 }
 async function saveResultsAndComplete(){
   const ok=await saveResults(); if(ok===false||ok===undefined)return;
+  await creditPrizes();
   await setLobbyStatus(currentLobbyForResults.id,'completed');
   closeM('lrm');
+}
+// Adds each row's prize money to the winner's WITHDRAWABLE balance (prize
+// money — unlike deposits, which go to non-withdrawable — is meant to be
+// cashed out). Guarded so a prize is never credited twice: only rows with
+// a real signed-in user (data-submitted-by set — guests/manually-added
+// teams have no wallet), a prize > 0, and data-credited="false" are sent.
+// On success those rows are flagged prize_credited=true in lobby_results
+// so re-opening/re-saving this lobby's results later won't re-credit them.
+async function creditPrizes(){
+  const rows=[...document.querySelectorAll('#resultsList .result-row')];
+  const toCredit=rows.filter(row=>{
+    const uid=row.dataset.submittedBy;
+    const already=row.dataset.credited==='true';
+    const prize=+row.querySelector('.resPrize').value||0;
+    return uid && !already && prize>0;
+  });
+  if(!toCredit.length)return;
+
+  const credits=toCredit.map(row=>({
+    supabase_uid: row.dataset.submittedBy,
+    amount: +row.querySelector('.resPrize').value||0
+  }));
+
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){msg('Could not credit prize money — please sign in again.');return;}
+
+  try{
+    const res=await fetch('https://chteo-api.onrender.com/api/credit-prize.php',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({access_token:session.access_token,credits})
+    });
+    const j=await res.json();
+    if(!j.success){msg('Prize crediting failed: '+(j.message||'unknown error'));return;}
+  }catch(e){msg('Could not reach the wallet server — prize money was NOT credited. Try Complete again.');return;}
+
+  const lobbyId=currentLobbyForResults.id;
+  const updates=toCredit.map(row=>({lobby_id:lobbyId,team_id:row.dataset.team,prize_credited:true}));
+  const {error}=await sb.from('lobby_results').upsert(updates,{onConflict:'lobby_id,team_id'});
+  if(error){msg('Prize money was credited, but marking it as credited failed — check lobby_results manually: '+error.message);return;}
+  toCredit.forEach(row=>{row.dataset.credited='true';});
 }
 
 document.addEventListener('DOMContentLoaded', function(){
