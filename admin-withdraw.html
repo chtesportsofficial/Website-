@@ -293,7 +293,7 @@ function loadRequests(isBackground){
     renderState('Loading...');
   }
 
-  fetch('https://chteo-api.onrender.com/admin-withdraws-list.php', {
+  fetch('https://chteo-api.onrender.com/api/admin-withdraws-list.php', {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({ access_token: currentSession.access_token, status: currentTab })
@@ -382,7 +382,7 @@ function buildCard(req){
       approveBtn.textContent = action === 'approve' ? 'Approving...' : 'Approve';
       declineBtn.textContent = action === 'reject' ? 'Rejecting...' : 'Reject';
 
-      fetch('https://chteo-api.onrender.com/admin-review-withdraw.php', {
+      fetch('https://chteo-api.onrender.com/api/admin-review-withdraw.php', {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify({
