@@ -286,6 +286,24 @@
     color:var(--muted);
     margin-top:2px;
   }
+  .he-left{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .he-icon{
+    width:36px;height:36px;
+    border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;
+    flex-shrink:0;
+  }
+  .he-icon.deposit{background:rgba(34,197,94,0.12);color:var(--green);}
+  .he-icon.withdraw{background:rgba(239,68,68,0.12);color:var(--red);}
+  .he-icon.prize{background:rgba(255,122,26,0.12);color:var(--orange);}
+  .he-icon.other{background:rgba(138,147,166,0.12);color:var(--muted);}
+  .he-amount.deposit, .he-amount.prize{color:var(--green);}
+  .he-amount.withdraw{color:var(--red);}
   .he-status{
     font-size:11px;
     font-weight:700;
@@ -657,6 +675,16 @@ function escapeHtmlWallet(str){
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// Icons + labels for each transaction category. 'category' comes from the
+// backend (get-wallet-history.php), which normalizes deposit/withdraw/prize
+// (and falls back to 'other' for anything unrecognized).
+const HISTORY_CATEGORY_META = {
+  deposit:  { icon: '&#8600;', label: 'Deposit' },
+  withdraw: { icon: '&#8599;', label: 'Withdraw' },
+  prize:    { icon: '&#127942;', label: 'Prize' },
+  other:    { icon: '&#8635;', label: 'Adjustment' }
+};
+
 function renderHistory(entries){
   const area = document.getElementById('historyArea');
   if (!area) return;
@@ -665,10 +693,17 @@ function renderHistory(entries){
     return;
   }
   area.innerHTML = entries.map(function(e){
+    const cat = HISTORY_CATEGORY_META[e.category] ? e.category : 'other';
+    const meta = HISTORY_CATEGORY_META[cat];
+    const sign = (cat === 'withdraw') ? '-' : '+';
+    const sub = e.method ? (escapeHtmlWallet(e.method) + ' &middot; ') : '';
     return '<div class="history-entry">' +
       '<div class="he-left">' +
-        '<div class="he-amount">৳' + formatBDT(e.amount) + '</div>' +
-        '<div class="he-sub">' + escapeHtmlWallet(e.method) + ' &middot; ' + escapeHtmlWallet(formatDhakaTime(e.created_at)) + '</div>' +
+        '<div class="he-icon ' + cat + '">' + meta.icon + '</div>' +
+        '<div>' +
+          '<div class="he-amount ' + cat + '">' + sign + '৳' + formatBDT(e.amount) + '</div>' +
+          '<div class="he-sub">' + meta.label + ' &middot; ' + sub + escapeHtmlWallet(formatDhakaTime(e.created_at)) + '</div>' +
+        '</div>' +
       '</div>' +
       '<div class="he-status ' + escapeHtmlWallet(e.status) + '">' + escapeHtmlWallet(e.status).toUpperCase() + '</div>' +
     '</div>';
@@ -679,7 +714,7 @@ async function loadWalletHistory(){
   const token = await getSupabaseAccessToken();
   if (!token) return;
 
-  fetch('https://chteo-api.onrender.com/get-deposit-history.php', {
+  fetch('https://chteo-api.onrender.com/get-wallet-history.php', {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({ access_token: token })
