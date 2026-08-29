@@ -89,16 +89,27 @@ if ($profileResponse === false || $profileCode < 200 || $profileCode >= 300 || !
     exit;
 }
 
-/* Credit each winner. Prize money is withdrawable (unlike deposits). */
+/* Credit each winner. Prize money is withdrawable (unlike deposits).
+   Also logs a 'prize' row into wallet_transactions so it shows up in
+   the user's Recent Transactions / wallet history (get-wallet-history.php
+   already recognizes type = 'prize' via normalizeType()). */
 $conn->set_charset('utf8mb4');
 $conn->begin_transaction();
 
 try {
-    $stmt = $conn->prepare(
+    $updateStmt = $conn->prepare(
         "UPDATE wallet_users
          SET withdrawable_balance = withdrawable_balance + ?,
              balance = balance + ?
          WHERE supabase_uid = ?"
+    );
+    $lookupStmt = $conn->prepare(
+        "SELECT id FROM wallet_users WHERE supabase_uid = ? LIMIT 1"
+    );
+    $insertStmt = $conn->prepare(
+        "INSERT INTO wallet_transactions
+            (user_id, type, amount, description, status)
+         VALUES (?, 'prize', ?, 'Tournament prize', 'completed')"
     );
 
     $credited = [];
@@ -113,16 +124,30 @@ try {
             continue;
         }
 
-        $stmt->bind_param('dds', $amount, $amount, $uid);
-        $stmt->execute();
+        $updateStmt->bind_param('dds', $amount, $amount, $uid);
+        $updateStmt->execute();
 
-        if ($stmt->affected_rows > 0) {
+        if ($updateStmt->affected_rows > 0) {
+            // Resolve the integer wallet_users.id for the transactions log
+            // (wallet_transactions.user_id is int, NOT the supabase_uid string).
+            $lookupStmt->bind_param('s', $uid);
+            $lookupStmt->execute();
+            $row = $lookupStmt->get_result()->fetch_assoc();
+
+            if ($row) {
+                $walletUserId = (int)$row['id'];
+                $insertStmt->bind_param('id', $walletUserId, $amount);
+                $insertStmt->execute();
+            }
+
             $credited[] = ['supabase_uid' => $uid, 'amount' => $amount];
         } else {
             $skipped[] = $c; // no wallet_users row for this uid
         }
     }
-    $stmt->close();
+    $updateStmt->close();
+    $lookupStmt->close();
+    $insertStmt->close();
 
     if (!count($credited)) {
         throw new Exception('No wallet accounts found for the given users');
