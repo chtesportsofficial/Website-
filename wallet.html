@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wallet</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
+<style>
+  :root{
+    --bg:#0b0f19;
+    --card:#141a29;
+    --card-2:#171f33;
+    --border:#232c42;
+    --text:#ffffff;
+    --muted:#8a93a6;
+    --green:#22c55e;
+    --green-dark:#16a34a;
+    --orange:#ff7a1a;
+    --red:#ef4444;
+    --red-bg:#3a1620;
+    --red-border:#5c2430;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    font-family:'Segoe UI',Roboto,Arial,sans-serif;
+    color:var(--text);
+    display:flex;
+    justify-content:center;
+    padding:20px 0 60px;
+  }
+  .phone{
+    width:100%;
+    max-width:420px;
+    padding:0 16px;
+  }
+  .header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 4px 20px;
+  }
+  .header-left{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  .back-btn{
+    width:64px;height:64px;
+    border:none;
+    border-radius:20px;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--text);
+    background:var(--card);
+    cursor:pointer;
+    font-size:26px;
+  }
+  .header h1{
+    font-size:34px;
+    font-weight:800;
+    margin:0;
+    color:var(--text);
+  }
+  .uid-chip{
+    border:1px solid #1f4d3a;
+    color:#22c55e;
+    background:rgba(34,197,94,0.08);
+    padding:6px 12px;
+    border-radius:8px;
+    font-size:13px;
+    font-weight:600;
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:18px;
+    margin-bottom:14px;
+  }
+  .balance-card{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:var(--card-2);
+    border-color:var(--border);
+  }
+  .balance-label{
+    color:var(--muted);
+    font-size:13px;
+    letter-spacing:.5px;
+    margin-bottom:8px;
+  }
+  .balance-amount{
+    font-size:30px;
+    font-weight:700;
+  }
+  .wallet-icon{
+    width:56px;height:56px;
+    opacity:.55;
+  }
+  .split-card{
+    display:flex;
+  }
+  .split-item{
+    flex:1;
+    text-align:center;
+  }
+  .split-item .lbl{
+    color:var(--muted);
+    font-size:13px;
+    margin-bottom:8px;
+  }
+  .split-item .val{
+    font-size:20px;
+    font-weight:700;
+  }
+  .split-item.withdrawable .val{color:var(--green);}
+  .split-item.non-withdrawable .val{color:var(--orange);}
+  .divider-v{
+    width:1px;
+    background:var(--border);
+    margin:2px 14px;
+  }
+  .row-card{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .row-card .lbl{color:var(--muted);font-size:14px;}
+  .row-card .val{font-size:16px;font-weight:600;}
+
+  .prize-card{
+    padding:14px 16px;
+  }
+  .prize-title{
+    font-size:14px;
+    font-weight:600;
+    color:var(--muted);
+    margin-bottom:6px;
+  }
+  .prize-amount{
+    display:flex;
+    align-items:center;
+    font-size:22px;
+    font-weight:700;
+    line-height:1;
+    margin-bottom:4px;
+  }
+  .prize-amount .taka{
+    color:var(--text);
+    margin-right:2px;
+  }
+  .prize-sub{
+    color:var(--muted);
+    font-size:12px;
+  }
+
+  .toggle-row{
+    display:flex;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:6px;
+    margin-bottom:16px;
+    gap:6px;
+  }
+  .toggle-btn{
+    flex:1;
+    border:none;
+    border-radius:10px;
+    padding:14px 0;
+    font-size:15px;
+    font-weight:700;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    cursor:pointer;
+    background:transparent;
+    color:var(--text);
+    transition:.15s ease;
+  }
+  .toggle-btn.active-add{
+    background:var(--green);
+    color:#06210f;
+  }
+  .toggle-btn.active-withdraw{
+    background:var(--red);
+    color:#2c0a0a;
+  }
+
+  .panel{
+    display:none;
+  }
+  .panel.active{
+    display:block;
+  }
+
+  .min-withdraw-note{
+    color:var(--red);
+    font-size:13px;
+    font-weight:600;
+    margin-bottom:12px;
+  }
+  .field-label{
+    color:var(--muted);
+    font-size:13px;
+    margin:2px 0 8px;
+  }
+  input, select{
+    width:100%;
+    background:var(--card-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:16px 14px;
+    border-radius:10px;
+    font-size:15px;
+    margin-bottom:14px;
+    outline:none;
+    appearance:none;
+    -webkit-appearance:none;
+  }
+  input::placeholder{color:#6b7386;}
+  select{
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='%238a93a6' viewBox='0 0 16 16'><path d='M8 11L2 5h12z'/></svg>");
+    background-repeat:no-repeat;
+    background-position:right 14px center;
+    cursor:pointer;
+  }
+  .btn{
+    width:100%;
+    border:none;
+    border-radius:10px;
+    padding:16px 0;
+    font-size:16px;
+    font-weight:700;
+    cursor:pointer;
+    color:#fff;
+  }
+  .btn-deposit{
+    background:var(--green);
+    color:#06210f;
+  }
+  .btn-withdraw{
+    background:var(--red);
+  }
+
+  .history-title{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color:var(--muted);
+    font-size:13px;
+    letter-spacing:.5px;
+    margin:20px 4px 10px;
+  }
+  .history-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:30px 16px;
+    text-align:center;
+    color:var(--muted);
+    font-size:14px;
+  }
+  .history-entry{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:14px 16px;
+    margin-bottom:10px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+  }
+  .history-entry .he-left .he-amount{
+    font-size:16px;
+    font-weight:700;
+    color:var(--text);
+  }
+  .history-entry .he-left .he-sub{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:2px;
+  }
+  .he-left{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .he-icon{
+    width:36px;height:36px;
+    border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;
+    flex-shrink:0;
+  }
+  .he-icon.deposit{background:rgba(34,197,94,0.12);color:var(--green);}
+  .he-icon.withdraw{background:rgba(239,68,68,0.12);color:var(--red);}
+  .he-icon.prize{background:rgba(255,122,26,0.12);color:var(--orange);}
+  .he-icon.other{background:rgba(138,147,166,0.12);color:var(--muted);}
+  .he-amount.deposit, .he-amount.prize{color:var(--green);}
+  .he-amount.withdraw{color:var(--red);}
+  .he-status{
+    font-size:11px;
+    font-weight:700;
+    padding:4px 10px;
+    border-radius:8px;
+    white-space:nowrap;
+  }
+  .he-status.pending{background:rgba(255,122,26,0.12);color:var(--orange);}
+  .he-status.approved{background:rgba(34,197,94,0.12);color:var(--green);}
+  .he-status.rejected{background:rgba(239,68,68,0.12);color:var(--red);}
+
+  .modal-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.6);
+    z-index:1000;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .modal-overlay.active{
+    display:flex;
+  }
+  .modal-box{
+    width:100%;
+    max-width:360px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:26px 20px 20px;
+    text-align:center;
+  }
+  .modal-icon{
+    font-size:40px;
+    line-height:1;
+    margin-bottom:12px;
+  }
+  .modal-title{
+    font-size:18px;
+    font-weight:800;
+    margin-bottom:8px;
+    color:var(--text);
+  }
+  .modal-text{
+    font-size:14px;
+    color:var(--muted);
+    margin-bottom:18px;
+    line-height:1.5;
+  }
+  .modal-help{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:16px;
+    margin-bottom:6px;
+  }
+  .btn-whatsapp{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    background:transparent;
+    color:#25D366;
+    text-decoration:none;
+    font-size:13px;
+    font-weight:700;
+    padding:8px 14px;
+    border:1px solid #1f4d3a;
+    border-radius:999px;
+    width:auto;
+  }
+  .btn-modal-close{
+    background:var(--card-2);
+    color:var(--text);
+    border:1px solid var(--border);
+  }
+</style>
+<style>
+:root{
+  --bg: var(--g-bg);
+  --card: var(--g-surface);
+  --card-2: var(--g-surface-2);
+  --border: var(--g-border);
+  --text: var(--g-text);
+  --muted: var(--g-muted);
+}
+</style>
+
+</head>
+<body>
+<div class="phone">
+
+  <div class="header">
+    <div class="header-left">
+      <button class="back-btn" onclick="history.back()">&#8592;</button>
+      <h1 data-i18n="wallet.title">Wallet</h1>
+    </div>
+    <div class="uid-chip" id="uidChip">UID: #99</div>
+  </div>
+
+  <div class="card prize-card">
+    <div class="prize-title" data-i18n="wallet.totalPrize">Total Prize Won</div>
+    <div class="prize-amount"><span class="taka">৳</span>0</div>
+    <div class="prize-sub" data-i18n="wallet.totalPrizeSub">Total amount your team earned over its lifetime</div>
+  </div>
+
+  <div class="card balance-card">
+    <div>
+      <div class="balance-label" data-i18n="wallet.currentBalance">CURRENT BALANCE</div>
+      <div class="balance-amount" id="balanceAmount">৳0</div>
+    </div>
+    <svg class="wallet-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3 7a2 2 0 0 1 2-2h13a1 1 0 0 1 1 1v2H5" stroke="#8a93a6" stroke-width="1.5"/>
+      <rect x="3" y="7" width="18" height="12" rx="2" stroke="#8a93a6" stroke-width="1.5"/>
+      <circle cx="16" cy="13" r="1.6" fill="#8a93a6"/>
+    </svg>
+  </div>
+
+  <div class="card split-card">
+    <div class="split-item withdrawable">
+      <div class="lbl" data-i18n="wallet.withdrawable">Withdrawable</div>
+      <div class="val" id="withdrawableBalance">৳0</div>
+    </div>
+    <div class="divider-v"></div>
+    <div class="split-item non-withdrawable">
+      <div class="lbl" data-i18n="wallet.nonWithdrawable">Non-Withdrawable</div>
+      <div class="val" id="nonWithdrawableBalance">৳0</div>
+    </div>
+  </div>
+
+  <div class="toggle-row">
+    <button id="tabAdd" class="toggle-btn active-add" onclick="showPanel('add')">&#8600; <span data-i18n="wallet.addMoney">Add Money</span></button>
+    <button id="tabWithdraw" class="toggle-btn" onclick="showPanel('withdraw')">&#8599; <span data-i18n="wallet.withdraw">Withdraw</span></button>
+  </div>
+
+  <!-- ADD MONEY PANEL -->
+  <div id="panelAdd" class="panel active">
+    <div class="card">
+      <select id="depositMethod">
+        <option value="" disabled selected data-i18n="wallet.selectMethod">Select Payment Method</option>
+        <option value="bkash">Bkash</option>
+        <option value="nagad">Nagad</option>
+      </select>
+      <input type="number" id="depositAmount" placeholder="Enter the Amount" data-i18n-placeholder="wallet.enterAmount">
+      <input type="text" id="depositSenderNumber" placeholder="Your bKash/Nagad number (sent from)" data-i18n-placeholder="wallet.senderNumber">
+      <input type="text" id="depositTrxId" placeholder="Transaction ID" data-i18n-placeholder="wallet.trxId">
+      <div id="depositMsg" style="font-size:13px;margin-bottom:10px;"></div>
+      <button class="btn btn-deposit" id="depositSubmitBtn" data-i18n="wallet.deposit">Deposit</button>
+    </div>
+  </div>
+
+  <!-- WITHDRAW PANEL -->
+  <div id="panelWithdraw" class="panel">
+    <div class="card">
+      <div class="min-withdraw-note" data-i18n="wallet.minWithdraw">Minimum Withdraw: 50 BDT</div>
+      <select id="paymentMethod" onchange="updateNumberLabel()">
+        <option value="" disabled selected data-i18n="wallet.selectMethod">Select Payment Method</option>
+        <option value="Bkash">Bkash</option>
+        <option value="Nagad">Nagad</option>
+      </select>
+
+      <input type="number" id="withdrawAmount" min="50" step="0.01" placeholder="Enter your Amount" data-i18n-placeholder="wallet.enterAmount">
+
+      <input type="text" id="numberInput" placeholder="Enter your number" data-i18n-placeholder="wallet.enterNumber">
+
+      <div id="withdrawMsg" style="font-size:13px;margin-bottom:10px;"></div>
+      <button class="btn btn-withdraw" id="withdrawSubmitBtn" data-i18n="wallet.requestWithdraw">Request Withdraw</button>
+    </div>
+  </div>
+
+  <div class="history-title">&#8635; <span data-i18n="wallet.recentTx">RECENT TRANSACTIONS</span></div>
+  <div id="historyArea"><div class="history-card" data-i18n="wallet.noTx">No transactions yet.</div></div>
+
+</div>
+
+<!-- DEPOSIT RESULT MODAL -->
+<div id="depositModalOverlay" class="modal-overlay">
+  <div class="modal-box">
+    <div id="depositModalIcon" class="modal-icon"></div>
+    <div id="depositModalTitle" class="modal-title"></div>
+    <div id="depositModalText" class="modal-text"></div>
+    <button id="depositModalClose" class="btn btn-modal-close" data-i18n="wallet.ok">OK</button>
+    <div class="modal-help" data-i18n="wallet.whatsappHelp">Facing an issue or need faster approval?</div>
+    <a id="depositModalWhatsapp" class="btn-whatsapp" href="https://wa.me/8801989242505" target="_blank" rel="noopener">
+      <span>&#128222;</span> <span data-i18n="wallet.contactWhatsapp">Contact Admin on WhatsApp</span>
+    </a>
+  </div>
+</div>
+
+
+<script>
+function getProfile(){
+  try { return JSON.parse(localStorage.getItem('user_profile') || '{}'); }
+  catch(e){ return {}; }
+}
+function renderUid(){
+  const uidChip=document.getElementById('uidChip');
+  if(!uidChip) return;
+  const profile=getProfile();
+  const uid = profile.uid || localStorage.getItem('user_uid');
+  uidChip.textContent = 'UID: ' + (uid ? ('#' + uid) : '—');
+}
+renderUid();
+// Same reasoning as profile.html: global.js's Supabase sync can resolve
+// after this page has already rendered from cached/placeholder data.
+document.addEventListener('chteo:profile-synced', renderUid);
+
+function showPanel(which){
+  const panelAdd = document.getElementById('panelAdd');
+  const panelWithdraw = document.getElementById('panelWithdraw');
+  const tabAdd = document.getElementById('tabAdd');
+  const tabWithdraw = document.getElementById('tabWithdraw');
+
+  if(which === 'add'){
+    panelAdd.classList.add('active');
+    panelWithdraw.classList.remove('active');
+    tabAdd.classList.add('active-add');
+    tabWithdraw.classList.remove('active-withdraw');
+  } else {
+    panelWithdraw.classList.add('active');
+    panelAdd.classList.remove('active');
+    tabWithdraw.classList.add('active-withdraw');
+    tabAdd.classList.remove('active-add');
+  }
+}
+
+function updateNumberLabel(){
+  const method = document.getElementById('paymentMethod').value;
+  const input = document.getElementById('numberInput');
+  input.value = '';
+  input.placeholder = method ? ('Enter your ' + method + ' number') : 'Enter your number';
+}
+
+// Tracks the uid we last fetched balance for, so a repeat call with the
+// same uid (e.g. from the profile-synced event firing after the cached
+// load already succeeded) doesn't re-fetch unnecessarily.
+let _walletLastFetchedUid = null;
+const WALLET_CACHE_KEY = 'cached_balance';
+const WALLET_CACHE_UID_KEY = 'cached_balance_uid';
+
+// Bangladeshi/Indian digit grouping: last 3 digits together, then every
+// 2 digits after that — e.g. 10000000 -> "1,00,00,000" (1 crore).
+function formatBDT(amount){
+  const num = Number(amount);
+  if (isNaN(num)) return String(amount);
+  const isNegative = num < 0;
+  const parts = Math.abs(num).toString().split('.');
+  let intPart = parts[0];
+  const decPart = parts[1];
+
+  let formatted;
+  if (intPart.length <= 3) {
+    formatted = intPart;
+  } else {
+    const lastThree = intPart.slice(-3);
+    const rest = intPart.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ',');
+    formatted = rest + ',' + lastThree;
+  }
+  if (decPart) formatted += '.' + decPart;
+  return (isNegative ? '-' : '') + formatted;
+}
+
+// wallet_deposit_requests.created_at is stored in the server's UTC time;
+// convert explicitly to Asia/Dhaka for display.
+function formatDhakaTime(mysqlDatetime){
+  if (!mysqlDatetime) return '';
+  const isoUtc = mysqlDatetime.replace(' ', 'T') + 'Z';
+  const d = new Date(isoUtc);
+  if (isNaN(d.getTime())) return mysqlDatetime;
+  return d.toLocaleString('en-GB', {
+    timeZone: 'Asia/Dhaka',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit',
+    hour12: false
+  }).replace(',', '');
+}
+
+/* ============ Get Supabase access_token (for endpoints that verify it) ============
+   SECURITY NOTE: never send the raw `supabase_uid` to the backend as proof
+   of identity — anyone can edit localStorage and claim to be any uid. The
+   backend now verifies the real Supabase access_token instead, so this
+   page must send that token, not the uid.
+   Tries, in order:
+     1. A Supabase client already exposed by global.js (window.supabaseClient
+        or window.supabase, if it has .auth.getSession()).
+     2. The Supabase JS SDK's own default localStorage session key
+        (sb-<project-ref>-auth-token), which the SDK writes automatically
+        when persistSession is on (the default).
+   Returns a Promise<string|null>. */
+async function getSupabaseAccessToken(){
+  try {
+    const client = window.supabaseClient || window.supabase;
+    if (client && client.auth && typeof client.auth.getSession === 'function'){
+      const { data } = await client.auth.getSession();
+      if (data && data.session && data.session.access_token){
+        return data.session.access_token;
+      }
+    }
+  } catch (e){
+    console.warn('getSupabaseAccessToken: SDK getSession failed', e);
+  }
+
+  // Fallback: read the SDK's own persisted session directly.
+  try {
+    const key = Object.keys(localStorage).find(function(k){
+      return k.indexOf('-auth-token') !== -1 && k.indexOf('sb-') === 0;
+    });
+    if (key){
+      const raw = JSON.parse(localStorage.getItem(key));
+      const token = (raw && raw.access_token) || (raw && raw.currentSession && raw.currentSession.access_token);
+      if (token) return token;
+    }
+  } catch (e){
+    console.warn('getSupabaseAccessToken: localStorage fallback failed', e);
+  }
+
+  return null;
+}
+
+function loadWalletBalance(){
+  const profile = getProfile();
+  const uid = localStorage.getItem('supabase_uid') || profile.supabase_uid;
+  const balanceEl = document.getElementById('balanceAmount');
+  const withdrawableEl = document.getElementById('withdrawableBalance');
+  const nonWithdrawableEl = document.getElementById('nonWithdrawableBalance');
+  if(!uid || !balanceEl) return;
+
+  const cachedUid = localStorage.getItem(WALLET_CACHE_UID_KEY);
+  const cached = localStorage.getItem(WALLET_CACHE_KEY);
+  if(cached !== null && cachedUid === uid){
+    balanceEl.textContent = '৳' + formatBDT(cached);
+  } else {
+    balanceEl.textContent = '...';
+  }
+
+  if(uid === _walletLastFetchedUid) return;
+
+  fetch('https://chteo-api.onrender.com/api/get-balance.php?uid=' + encodeURIComponent(uid))
+    .then(res => res.json())
+    .then(data => {
+      _walletLastFetchedUid = uid;
+      if(data.success){
+        const total = Number(data.balance || 0);
+        const withdrawable = Number(data.withdrawable_balance || 0);
+        const nonWithdrawable = Number(data.non_withdrawable_balance || 0);
+
+        balanceEl.textContent = '৳' + formatBDT(total);
+        if(withdrawableEl) withdrawableEl.textContent = '৳' + formatBDT(withdrawable);
+        if(nonWithdrawableEl) nonWithdrawableEl.textContent = '৳' + formatBDT(nonWithdrawable);
+
+        localStorage.setItem(WALLET_CACHE_KEY, total);
+        localStorage.setItem(WALLET_CACHE_UID_KEY, uid);
+      } else {
+        balanceEl.textContent = '৳0';
+        if(withdrawableEl) withdrawableEl.textContent = '৳0';
+        if(nonWithdrawableEl) nonWithdrawableEl.textContent = '৳0';
+        localStorage.removeItem(WALLET_CACHE_KEY);
+        localStorage.removeItem(WALLET_CACHE_UID_KEY);
+      }
+    })
+    .catch(err => console.warn('Wallet balance load failed:', err));
+}
+loadWalletBalance();
+document.addEventListener('chteo:profile-synced', loadWalletBalance);
+
+/* ============ Recent Transactions (deposit request history) ============ */
+function escapeHtmlWallet(str){
+  return String(str == null ? '' : str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Icons + labels for each transaction category. 'category' comes from the
+// backend (get-wallet-history.php), which normalizes deposit/withdraw/prize
+// (and falls back to 'other' for anything unrecognized).
+const HISTORY_CATEGORY_META = {
+  deposit:  { icon: '&#8600;', label: 'Deposit' },
+  withdraw: { icon: '&#8599;', label: 'Withdraw' },
+  prize:    { icon: '&#127942;', label: 'Prize' },
+  other:    { icon: '&#8635;', label: 'Adjustment' }
+};
+
+function renderHistory(entries){
+  const area = document.getElementById('historyArea');
+  if (!area) return;
+  if (!entries || !entries.length){
+    area.innerHTML = '<div class="history-card">No transactions yet.</div>';
+    return;
+  }
+  area.innerHTML = entries.map(function(e){
+    const cat = HISTORY_CATEGORY_META[e.category] ? e.category : 'other';
+    const meta = HISTORY_CATEGORY_META[cat];
+    // Use the backend's explicit direction (credit/debit) for the sign/color,
+    // not the display category - an 'Adjustment' entry (category 'other')
+    // can still be a debit (e.g. a tournament entry fee) and must show '-'.
+    const isDebit = e.direction === 'debit';
+    const sign = isDebit ? '-' : '+';
+    const amountClass = isDebit ? 'withdraw' : cat; // reuse withdraw's red styling for any debit
+    const sub = e.method ? (escapeHtmlWallet(e.method) + ' &middot; ') : '';
+    return '<div class="history-entry">' +
+      '<div class="he-left">' +
+        '<div class="he-icon ' + cat + '">' + meta.icon + '</div>' +
+        '<div>' +
+          '<div class="he-amount ' + amountClass + '">' + sign + '৳' + formatBDT(e.amount) + '</div>' +
+          '<div class="he-sub">' + meta.label + ' &middot; ' + sub + escapeHtmlWallet(formatDhakaTime(e.created_at)) + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="he-status ' + escapeHtmlWallet(e.status) + '">' + escapeHtmlWallet(e.status).toUpperCase() + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+async function loadWalletHistory(){
+  const token = await getSupabaseAccessToken();
+  if (!token) return;
+
+  fetch('https://chteo-api.onrender.com/get-wallet-history.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ access_token: token })
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if (res && res.success){
+        renderHistory(res.history);
+      }
+    })
+    .catch(function(err){
+      console.warn('Wallet history load failed:', err);
+    });
+}
+loadWalletHistory();
+document.addEventListener('chteo:profile-synced', loadWalletHistory);
+
+/* ============ Deposit submission (manual bKash/Nagad review) ============ */
+function showDepositMsg(text, isError){
+  const el = document.getElementById('depositMsg');
+  if(!el) return;
+  el.textContent = text;
+  el.style.color = isError ? '#ef4444' : '#22c55e';
+}
+
+function showDepositModal(isSuccess, title, text){
+  document.getElementById('depositModalIcon').textContent = isSuccess ? '\u2705' : '\u26A0\uFE0F';
+  document.getElementById('depositModalTitle').textContent = title;
+  document.getElementById('depositModalText').textContent = text;
+  document.getElementById('depositModalOverlay').classList.add('active');
+}
+
+document.getElementById('depositModalClose').addEventListener('click', function(){
+  document.getElementById('depositModalOverlay').classList.remove('active');
+});
+
+document.getElementById('depositSubmitBtn').addEventListener('click', async function(){
+  const btn = document.getElementById('depositSubmitBtn');
+  const method = document.getElementById('depositMethod').value;
+  const amount = document.getElementById('depositAmount').value;
+  const senderNumber = document.getElementById('depositSenderNumber').value.trim();
+  const trxId = document.getElementById('depositTrxId').value.trim();
+
+  showDepositMsg('', false);
+
+  const accessToken = await getSupabaseAccessToken();
+  if(!accessToken){
+    showDepositMsg('Please sign in first.', true);
+    return;
+  }
+  if(!method){
+    showDepositMsg('Select a payment method.', true);
+    return;
+  }
+  if(!amount || Number(amount) <= 0){
+    showDepositMsg('Enter a valid amount.', true);
+    return;
+  }
+  if(!/^01[0-9]{9}$/.test(senderNumber)){
+    showDepositMsg('Enter a valid 11-digit number (01XXXXXXXXX).', true);
+    return;
+  }
+  if(!trxId || trxId.length < 6){
+    showDepositMsg('Enter a valid Transaction ID.', true);
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+
+  fetch('https://chteo-api.onrender.com/submit-deposit-request.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      access_token: accessToken,
+      method: method,
+      amount: amount,
+      sender_number: senderNumber,
+      trx_id: trxId
+    })
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      btn.disabled = false;
+      btn.textContent = 'Deposit';
+      if(res && res.status){
+        showDepositModal(
+          true,
+          'Request Submitted',
+          res.message || 'Your deposit request was submitted and will be reviewed by an admin shortly. Need it faster or have an issue? Message us on WhatsApp.'
+        );
+        document.getElementById('depositAmount').value = '';
+        document.getElementById('depositSenderNumber').value = '';
+        document.getElementById('depositTrxId').value = '';
+        document.getElementById('depositMethod').selectedIndex = 0;
+      } else {
+        showDepositModal(
+          false,
+          'Submission Failed',
+          (res && res.message) || 'Something went wrong submitting your deposit request. Please try again, or contact us on WhatsApp.'
+        );
+      }
+    })
+    .catch(function(err){
+      btn.disabled = false;
+      btn.textContent = 'Deposit';
+      showDepositModal(
+        false,
+        'Connection Error',
+        'Could not reach the server: ' + err.message + '. Please try again, or contact us on WhatsApp.'
+      );
+    });
+});
+
+/* ============ Withdraw request ============ */
+function showWithdrawMsg(text, isError){
+  const el = document.getElementById('withdrawMsg');
+  if(!el) return;
+  el.textContent = text;
+  el.style.color = isError ? '#ef4444' : '#22c55e';
+}
+
+document.getElementById('withdrawSubmitBtn').addEventListener('click', async function(){
+  const btn = document.getElementById('withdrawSubmitBtn');
+  const method = document.getElementById('paymentMethod').value;
+  const amount = Number(document.getElementById('withdrawAmount').value);
+  const accountNumber = document.getElementById('numberInput').value.trim();
+
+  showWithdrawMsg('', false);
+
+  const accessToken = await getSupabaseAccessToken();
+  if(!accessToken){
+    showWithdrawMsg('Please sign in first.', true);
+    return;
+  }
+  if(!method){
+    showWithdrawMsg('Select a payment method.', true);
+    return;
+  }
+  if(!amount || amount < 50){
+    showWithdrawMsg('Minimum withdraw is 50 BDT.', true);
+    return;
+  }
+  if(!/^01[0-9]{9}$/.test(accountNumber)){
+    showWithdrawMsg('Enter a valid 11-digit number (01XXXXXXXXX).', true);
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+
+  try{
+    const res = await fetch('https://chteo-api.onrender.com/api/submit-withdraw-request.php', {
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({
+        access_token: accessToken,
+        method: method,
+        amount: amount,
+        account_number: accountNumber
+      })
+    });
+    const data = await res.json();
+
+    if(data && data.success){
+      showWithdrawMsg(data.message || 'Withdrawal request submitted successfully.', false);
+      document.getElementById('withdrawAmount').value = '';
+      document.getElementById('numberInput').value = '';
+      document.getElementById('paymentMethod').selectedIndex = 0;
+      loadWalletBalance();
+    }else{
+      showWithdrawMsg((data && data.message) || 'Withdrawal request failed.', true);
+    }
+  }catch(err){
+    showWithdrawMsg('Could not reach the server. Please try again.', true);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Request Withdraw';
+  }
+});
+</script>
+
+</body>
+</html>
