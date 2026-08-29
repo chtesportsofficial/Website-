@@ -695,13 +695,18 @@ function renderHistory(entries){
   area.innerHTML = entries.map(function(e){
     const cat = HISTORY_CATEGORY_META[e.category] ? e.category : 'other';
     const meta = HISTORY_CATEGORY_META[cat];
-    const sign = (cat === 'withdraw') ? '-' : '+';
+    // Use the backend's explicit direction (credit/debit) for the sign/color,
+    // not the display category - an 'Adjustment' entry (category 'other')
+    // can still be a debit (e.g. a tournament entry fee) and must show '-'.
+    const isDebit = e.direction === 'debit';
+    const sign = isDebit ? '-' : '+';
+    const amountClass = isDebit ? 'withdraw' : cat; // reuse withdraw's red styling for any debit
     const sub = e.method ? (escapeHtmlWallet(e.method) + ' &middot; ') : '';
     return '<div class="history-entry">' +
       '<div class="he-left">' +
         '<div class="he-icon ' + cat + '">' + meta.icon + '</div>' +
         '<div>' +
-          '<div class="he-amount ' + cat + '">' + sign + '৳' + formatBDT(e.amount) + '</div>' +
+          '<div class="he-amount ' + amountClass + '">' + sign + '৳' + formatBDT(e.amount) + '</div>' +
           '<div class="he-sub">' + meta.label + ' &middot; ' + sub + escapeHtmlWallet(formatDhakaTime(e.created_at)) + '</div>' +
         '</div>' +
       '</div>' +

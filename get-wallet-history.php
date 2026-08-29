@@ -119,6 +119,16 @@ if (!$row) {
 }
 $userId = (int) $row['id'];
 
+function directionFor($type) {
+    // Real accounting direction, independent of display category - a 'debit'
+    // wallet_transactions row (e.g. a tournament entry fee) must show as a
+    // subtraction even though its display category is the generic
+    // "Adjustment" bucket, not "Withdraw".
+    $type = strtolower(trim((string) $type));
+    if ($type === 'debit') return 'debit';
+    return 'credit';
+}
+
 $history = [];
 
 // 1) Completed ledger entries: deposits, prizes, and manual admin adjustments
@@ -136,6 +146,7 @@ $res = $stmt->get_result();
 while ($r = $res->fetch_assoc()) {
     $history[] = [
         'category'   => normalizeType($r['type']),
+        'direction'  => directionFor($r['type']),
         'amount'     => $r['amount'],
         'method'     => $r['description'] ?: ucfirst($r['type']),
         'status'     => $r['status'] ?: 'approved',
@@ -159,6 +170,7 @@ $res = $stmt->get_result();
 while ($r = $res->fetch_assoc()) {
     $history[] = [
         'category'   => 'deposit',
+        'direction'  => 'credit',
         'amount'     => $r['amount'],
         'method'     => $r['method'],
         'status'     => $r['status'],
@@ -188,6 +200,7 @@ $res = $stmt->get_result();
 while ($r = $res->fetch_assoc()) {
     $history[] = [
         'category'   => 'withdraw',
+        'direction'  => 'debit',
         'amount'     => $r['amount'],
         'method'     => $r['method'],
         'status'     => $r['status'],
