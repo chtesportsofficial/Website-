@@ -682,7 +682,7 @@ const HISTORY_CATEGORY_META = {
   deposit:  { icon: '&#8600;', label: 'Deposit' },
   withdraw: { icon: '&#8599;', label: 'Withdraw' },
   prize:    { icon: '&#127942;', label: 'Prize' },
-  other:    { icon: '&#8635;', label: 'Adjustment' }
+  other:    { icon: '&#8595;', label: 'Transaction' }
 };
 
 function renderHistory(entries){
@@ -695,6 +695,9 @@ function renderHistory(entries){
   area.innerHTML = entries.map(function(e){
     const cat = HISTORY_CATEGORY_META[e.category] ? e.category : 'other';
     const meta = HISTORY_CATEGORY_META[cat];
+    // Tournament fees are debits, so show a debit arrow and the real description.
+    const isTournamentFee = e.direction === 'debit' && /tournament entry fee/i.test(String(e.description || ''));
+    const displayLabel = isTournamentFee ? 'Tournament entry fee' : meta.label;
     // Use the backend's explicit direction (credit/debit) for the sign/color,
     // not the display category - an 'Adjustment' entry (category 'other')
     // can still be a debit (e.g. a tournament entry fee) and must show '-'.
@@ -707,7 +710,7 @@ function renderHistory(entries){
         '<div class="he-icon ' + cat + '">' + meta.icon + '</div>' +
         '<div>' +
           '<div class="he-amount ' + amountClass + '">' + sign + '৳' + formatBDT(e.amount) + '</div>' +
-          '<div class="he-sub">' + meta.label + ' &middot; ' + sub + escapeHtmlWallet(formatDhakaTime(e.created_at)) + '</div>' +
+          '<div class="he-sub">' + displayLabel + ' &middot; ' + sub + escapeHtmlWallet(formatDhakaTime(e.created_at)) + '</div>' +
         '</div>' +
       '</div>' +
       '<div class="he-status ' + escapeHtmlWallet(e.status) + '">' + escapeHtmlWallet(e.status).toUpperCase() + '</div>' +
