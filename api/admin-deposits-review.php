@@ -151,9 +151,12 @@ try {
         $depositEmail = $reqRow['email'];
 
         $stmt = $conn->prepare(
-            "UPDATE wallet_users SET balance = balance + ? WHERE email = ?"
+            "UPDATE wallet_users
+             SET balance = balance + ?,
+                 non_withdrawable_balance = non_withdrawable_balance + ?
+             WHERE email = ?"
         );
-        $stmt->bind_param('ds', $amount, $depositEmail);
+        $stmt->bind_param('dds', $amount, $amount, $depositEmail);
         $stmt->execute();
 
         if ($stmt->affected_rows === 0) {
