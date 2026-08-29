@@ -627,6 +627,7 @@ async function saveTournament(){
   let p={
    section_id:$('section').value,title:$('title').value.trim(),banner_url:banner,
    entry_fee:+$('entry').value||0,default_slots:+$('slots').value||0,total_slots:+$('slots').value||0,
+    booked_slots: 0,
    prize_distribution:prizeDistribution,prize_pool:prizePool,
    format:$('format').value,match_type:$('matchType').value,game_mode:$('gameMode').value,
    vehicle_allowed:$('vehicle').value==='true',gun_skin_allowed:$('gunskin').value==='true',emote_allowed:$('emote').value==='true',
@@ -780,9 +781,9 @@ function renderLobbies(){
     return `
     <div class="lobby-item">
       <div class="lobby-top"><div class="lobby-date">${lobbyLabel(l)}</div>${badgeHtml}</div>
-      <div class="lobby-meta">${l.joined_count||0}/${l.total_slots||0} joined</div>
+      <div class="lobby-meta">${l.joined_count||0}/${l.total_slots||0} joined · ${Number(l.booked_slots)||0} booked</div>
       <div class="lobby-actions">
-        <button class="mini green" onclick="openTeams('${l.id}')">Teams</button>
+        <button class="mini green" onclick="openTeams('${l.id}')">Teams</button><button class="mini" onclick="setBookedSlots('${l.id}')">Booked</button>
         <button class="mini" onclick="openResults('${l.id}')">Enter Result</button>
         ${l.status==='cancelled'?`<button class="mini green" onclick="setLobbyStatus('${l.id}','upcoming')">On</button><button class="mini t-delete" onclick="deleteLobby('${l.id}')">Delete</button>`:`<button class="mini red" onclick="setLobbyStatus('${l.id}','cancelled')">Off</button>`}
       </div>
@@ -791,11 +792,29 @@ function renderLobbies(){
   $('lobbiesHistory').innerHTML=(history.length?history.map(l=>`
     <div class="lobby-item">
       <div class="lobby-top"><div class="lobby-date">${lobbyLabel(l)}</div><div class="lobby-status completed">✔ COMPLETED</div></div>
-      <div class="lobby-meta">${l.joined_count||0}/${l.total_slots||0} joined</div>
+      <div class="lobby-meta">${l.joined_count||0}/${l.total_slots||0} joined · ${Number(l.booked_slots)||0} booked</div>
       <div class="lobby-actions"><button class="mini green" onclick="openResults('${l.id}')">View Results</button></div>
     </div>`).join(''):'<div class="empty">No completed lobbies in the last 60 days.</div>')
     +(lobbiesShowingAll?'':`<button class="mini" style="width:100%;margin-top:8px" onclick="loadLobbies(currentLobbyTournament.id,{includeOlder:true})">Load older history</button>`);
 }
+
+async function setBookedSlots(lobbyId){
+  const lobby=lobbies.find(x=>x.id===lobbyId);
+  if(!lobby)return;
+  const max=Math.max(0,Number(lobby.total_slots)||0);
+  const current=Math.max(0,Number(lobby.booked_slots)||0);
+  const raw=prompt(`Booked / reserved slots (0-${max})`,String(current));
+  if(raw===null)return;
+  if(!/^\d+$/.test(raw.trim())){ msg('Enter a whole number.'); return; }
+  const value=Math.max(0,Math.min(max,parseInt(raw,10)));
+  const {error}=await sb.from('tournament_lobbies')
+    .update({booked_slots:value})
+    .eq('id',lobbyId);
+  if(error){ msg(error.message); return; }
+  lobby.booked_slots=value;
+  loadLobbies(currentLobbyTournament,{includeOlder:lobbiesShowingAll});
+}
+
 function addTimeInput(){
   const row=document.createElement('div');
   row.className='lobby-time-row';

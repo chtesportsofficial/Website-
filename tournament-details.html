@@ -241,7 +241,7 @@ function isJoinWindowClosed(l){
   return new Date()>=new Date(dt.getTime()+10*60000);
 }
 function lobbyIsFull(l){
-  const slots=l.total_slots||0,joined=l.joined_count||0;
+  const slots=l.total_slots||0,joined=lobbyDisplayJoined(l);
   return l.status==='full'||joined>=slots||isJoinWindowClosed(l);
 }
 let sessionUser=null, userProfile=null, walletBalance=null;
@@ -362,7 +362,7 @@ async function initUser(){
     const slots=l.total_slots||0,joined=l.joined_count||0;
     const full=lobbyIsFull(l);
     const pct=slots?Math.min(100,Math.round(joined/slots*100)):0;
-    const left=Math.max(slots-joined,0);
+    const left=lobbyDisplayLeft(l);
     // "8 PM" typed by admin -> "8 PM SLOT (35 BDT)" shown automatically,
     // using the tournament's own entry fee — no need to type the fee
     // into every lobby's time label.
@@ -619,6 +619,28 @@ function renderPaymentExtra(){
   }
 }
 
+
+async function decrementBookedSlotsAfterJoin(lobbyIds){
+  for(const lobbyId of lobbyIds){
+    const l=lobbyDataById[lobbyId];
+    if(!l)continue;
+    const booked=Math.max(0,Number(l.booked_slots)||0);
+    if(booked<=0)continue;
+    // Read the current value immediately before update so multiple admins
+    // share the same database-backed value.
+    const {data,error}=await sb.from('tournament_lobbies')
+      .select('booked_slots')
+      .eq('id',lobbyId)
+      .maybeSingle();
+    if(error||!data)continue;
+    const current=Math.max(0,Number(data.booked_slots)||0);
+    if(current<=0)continue;
+    await sb.from('tournament_lobbies')
+      .update({booked_slots:current-1})
+      .eq('id',lobbyId);
+  }
+}
+
 async function submitJoin(){
   const errBox=document.getElementById('jfError'); errBox.textContent='';
   const closedLobby=currentJoinLobbyIds.map(id=>lobbyDataById[id]).find(l=>l&&isJoinWindowClosed(l));
@@ -674,6 +696,9 @@ async function submitJoin(){
   }));
 
   const {error}=await sb.from('lobby_teams').insert(rows);
+  if(!error){
+    try{ await decrementBookedSlotsAfterJoin(currentJoinLobbyIds); }catch(e){ console.warn('Booked slot release failed:',e); }
+  }
 
   if(error){
     errBox.textContent='Could not submit: '+error.message;
