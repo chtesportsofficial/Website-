@@ -32,9 +32,14 @@ button{font-family:inherit;cursor:pointer}
 .section-title{font-weight:800;font-size:14px;letter-spacing:.03em;display:flex;align-items:center;gap:9px}
 .section-title .bar{width:4px;height:16px;border-radius:2px;background:linear-gradient(var(--fire),var(--green))}
 
-.filter-tabs{display:flex;gap:8px;padding:0 16px 14px;overflow-x:auto}
+.filter-tabs{display:flex;gap:8px;padding:0 16px 20px;overflow-x:auto}
 .filter-tab{flex:0 0 auto;padding:8px 16px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);color:var(--text-dim);font-size:11px;font-weight:700;white-space:nowrap}
 .filter-tab.active{background:linear-gradient(135deg,var(--fire),var(--fire-2));color:#241705;border-color:transparent}
+
+.month-nav{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.nav-arrow{width:30px;height:30px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);color:var(--text);font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.nav-arrow:disabled{opacity:.35}
+.month-nav .filter-tab{min-width:118px;text-align:center}
 
 .lb-card{margin:0 16px;background:linear-gradient(135deg,rgba(33,230,193,.08),rgba(19,24,38,.4));border:1px solid rgba(33,230,193,.25);border-radius:16px;padding:14px}
 .lb-list{padding-right:2px}
@@ -65,10 +70,12 @@ button{font-family:inherit;cursor:pointer}
 </div>
 
 <div class="filter-tabs" id="filterTabs">
-  <div class="filter-tab" data-range="today">Today</div>
-  <div class="filter-tab" data-range="week">This Week</div>
-  <div class="filter-tab active" data-range="month">This Month</div>
-  <div class="filter-tab" data-range="all">All Time</div>
+  <div class="month-nav">
+    <button class="nav-arrow" id="prevMonthBtn" aria-label="Previous month">‹</button>
+    <div class="filter-tab active" id="monthTab" data-view="month">This Month</div>
+    <button class="nav-arrow" id="nextMonthBtn" aria-label="Next month">›</button>
+  </div>
+  <div class="filter-tab" id="allTimeTab" data-view="all">All Time</div>
 </div>
 
 <div class="section" style="padding-top:0">
@@ -91,29 +98,33 @@ const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
 const SUPABASE_KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 function medalClass(i){return i===0?'gold':i===1?'silver':i===2?'bronze':'';}
-function rangeStart(range){
+function monthRange(offset){
   const now=new Date();
-  if(range==='today')return new Date(now.getFullYear(),now.getMonth(),now.getDate()).toISOString().slice(0,10);
-  if(range==='week'){const d=new Date(now);d.setDate(d.getDate()-d.getDay());return new Date(d.getFullYear(),d.getMonth(),d.getDate()).toISOString().slice(0,10);}
-  if(range==='month')return new Date(now.getFullYear(),now.getMonth(),1).toISOString().slice(0,10);
-  return null; // all time
+  const d=new Date(now.getFullYear(),now.getMonth()+offset,1);
+  const start=new Date(d.getFullYear(),d.getMonth(),1);
+  const end=new Date(d.getFullYear(),d.getMonth()+1,1);
+  return {
+    start:start.toISOString().slice(0,10),
+    end:end.toISOString().slice(0,10),
+    label:start.toLocaleString('en-US',{month:'long',year:'numeric'})
+  };
 }
 
 function start(){
   if(!window.supabase?.createClient){setTimeout(start,250);return}
   const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
   const listEl=document.getElementById('lbList');
-  const tabs=[...document.querySelectorAll('.filter-tab')];
+  const monthTab=document.getElementById('monthTab');
+  const allTimeTab=document.getElementById('allTimeTab');
+  const prevBtn=document.getElementById('prevMonthBtn');
+  const nextBtn=document.getElementById('nextMonthBtn');
 
-  async function load(range){
-    listEl.innerHTML='<div class="empty">Loading...</div>';
-    let q=sb.from('leaderboard_rows').select('team_name,owner_team_name,prize_won,points');
-    const from=rangeStart(range);
-    if(from)q=q.gte('lobby_date',from);
-    const {data,error}=await q;
-    if(error){listEl.innerHTML='<div class="empty">Could not load leaderboard.</div>';console.error(error);return}
+  let view='month';
+  let monthOffset=0;
+
+  async function render(rows){
     const totals=new Map();
-    (data||[]).forEach(r=>{
+    (rows||[]).forEach(r=>{
       // Group by the buyer's saved PROFILE team name (owner_team_name), not
       // the free-typed squad name on that particular slot entry (team_name).
       // Falls back to team_name only for old rows that predate owner_team_name.
@@ -133,13 +144,41 @@ function start(){
       </div>`).join('');
   }
 
-  tabs.forEach(t=>t.addEventListener('click',()=>{
-    tabs.forEach(x=>x.classList.remove('active'));
-    t.classList.add('active');
-    load(t.dataset.range);
-  }));
+  async function loadMonth(offset){
+    const {start:from,end:to,label}=monthRange(offset);
+    monthTab.textContent=label;
+    nextBtn.disabled=offset>=0;
+    listEl.innerHTML='<div class="empty">Loading...</div>';
+    const {data,error}=await sb.from('leaderboard_rows')
+      .select('team_name,owner_team_name,prize_won,points')
+      .gte('lobby_date',from).lt('lobby_date',to);
+    if(error){listEl.innerHTML='<div class="empty">Could not load leaderboard.</div>';console.error(error);return}
+    render(data);
+  }
 
-  load('month');
+  async function loadAllTime(){
+    listEl.innerHTML='<div class="empty">Loading...</div>';
+    const {data,error}=await sb.from('leaderboard_rows')
+      .select('team_name,owner_team_name,prize_won,points');
+    if(error){listEl.innerHTML='<div class="empty">Could not load leaderboard.</div>';console.error(error);return}
+    render(data);
+  }
+
+  function setView(v){
+    view=v;
+    monthTab.classList.toggle('active',v==='month');
+    allTimeTab.classList.toggle('active',v==='all');
+    prevBtn.style.visibility=v==='month'?'visible':'hidden';
+    nextBtn.style.visibility=v==='month'?'visible':'hidden';
+    if(v==='month')loadMonth(monthOffset); else loadAllTime();
+  }
+
+  monthTab.addEventListener('click',()=>{ if(view!=='month')setView('month'); });
+  allTimeTab.addEventListener('click',()=>setView('all'));
+  prevBtn.addEventListener('click',()=>{ monthOffset--; if(view==='month')loadMonth(monthOffset); });
+  nextBtn.addEventListener('click',()=>{ if(monthOffset<0){monthOffset++; if(view==='month')loadMonth(monthOffset);} });
+
+  setView('month');
 }
 start();
 </script>
