@@ -257,6 +257,7 @@ function lobbyIsFull(l){
 let sessionUser=null, userProfile=null, walletBalance=null;
 let selectedLobbies=new Set(), lobbyDataById={};
 let lobbyTeamCounts={};
+let copiedTeamData=null;
 
 async function initUser(){
   try{
@@ -369,10 +370,13 @@ async function initUser(){
   });
 
   lobbyBox.innerHTML=lobbies.map(l=>{
-    const slots=l.total_slots||0,joined=lobbyDisplayJoined(l);
+    const slots=l.total_slots||0;
     const full=lobbyIsFull(l);
-    const pct=slots?Math.min(100,Math.round(joined/slots*100)):0;
-    const left=lobbyDisplayLeft(l);
+    // A lobby whose join window has ended is shown as FULL in every
+    // occupancy indicator, matching the existing FULL button behavior.
+    const joined=full?slots:lobbyDisplayJoined(l);
+    const pct=full?100:(slots?Math.min(100,Math.round(joined/slots*100)):0);
+    const left=full?0:lobbyDisplayLeft(l);
     // "8 PM" typed by admin -> "8 PM SLOT (35 BDT)" shown automatically,
     // using the tournament's own entry fee — no need to type the fee
     // into every lobby's time label.
@@ -516,29 +520,19 @@ function renderTeamBlocks(){
     `;
     return;
   }
-  const allKeys=[];
-  currentJoinLobbyIds.forEach(id=>{
-    const c=getTeamCount(id);
-    for(let i=1;i<=c;i++)allKeys.push({lobbyId:id,index:i,key:id+'__'+i});
-  });
   wrap.innerHTML=currentJoinLobbyIds.map(id=>{
     const l=lobbyDataById[id]||{};
-    const label=`${esc(l.time_label||'')} ${esc(l.lobby_date||'')}`.trim();
     const c=getTeamCount(id);
     let blocks='';
     for(let i=1;i<=c;i++){
       const key=id+'__'+i;
-      const otherKeys=allKeys.filter(k=>k.key!==key);
-      const copyBtns=otherKeys.map(k=>{
-        const ol=lobbyDataById[k.lobbyId]||{};
-        const sameLobby=k.lobbyId===id;
-        const olabel=sameLobby?`টিম ${k.index}`:`${esc(ol.time_label||'')} ${esc(ol.lobby_date||'')}`.trim()+(getTeamCount(k.lobbyId)>1?` টিম ${k.index}`:'');
-        return `<button type="button" class="jf-copy-btn" onclick="copyTeamFrom('${key}','${k.key}')">📋 ${olabel} থেকে কপি</button>`;
-      }).join('');
       blocks+=`<div class="jf-team-block" data-key="${key}">
-        ${(c>1||otherKeys.length)?`<div class="jf-team-block-head">
-          <b>${c>1?'টিম '+i:''}</b>
-          ${otherKeys.length?`<div class="jf-copy-wrap">${copyBtns}</div>`:''}
+        ${c>1?`<div class="jf-team-block-head">
+          <b>টিম ${i}</b>
+          <div class="jf-copy-wrap">
+            <button type="button" class="jf-copy-btn" onclick="copyTeam('${key}')">📋 Copy</button>
+            <button type="button" class="jf-copy-btn" onclick="pasteTeam('${key}')">📥 Paste</button>
+          </div>
         </div>`:''}
         <div class="jf-label">Team name *</div>
         <input class="jf-input" id="jfTeamName_${key}" placeholder="Team Alpha">
@@ -548,14 +542,42 @@ function renderTeamBlocks(){
     }
     return blocks;
   }).join('');
+
 }
-function copyTeamFrom(targetKey,sourceKey){
-  if(!sourceKey)return;
-  const srcTeam=document.getElementById('jfTeamName_'+sourceKey)?.value||'';
-  const srcPlayer=document.getElementById('jfPlayerName_'+sourceKey)?.value||'';
-  document.getElementById('jfTeamName_'+targetKey).value=srcTeam;
-  document.getElementById('jfPlayerName_'+targetKey).value=srcPlayer;
+function copyTeam(key){
+  const team=document.getElementById('jfTeamName_'+key)?.value||'';
+  const player=document.getElementById('jfPlayerName_'+key)?.value||'';
+  copiedTeamData={team,player};
+  try{ navigator.clipboard.writeText(team+' | '+player).catch(()=>{}); }catch(e){}
+  const btns=document.querySelectorAll('.jf-copy-btn');
+  btns.forEach(b=>{
+    if(b.textContent.includes('Copy')){
+      const old=b.textContent;
+      b.textContent='✓ Copied';
+      setTimeout(()=>{b.textContent=old;},900);
+    }
+  });
 }
+async function pasteTeam(key){
+  if(!copiedTeamData){
+    // If clipboard contains plain text in "Team | Player" form, allow it;
+    // otherwise tell the user to press Copy first.
+    try{
+      const clip=await navigator.clipboard.readText();
+      const parts=clip.split('|');
+      if(parts.length>=2)copiedTeamData={team:parts[0].trim(),player:parts.slice(1).join('|').trim()};
+    }catch(e){}
+  }
+  if(!copiedTeamData){
+    alert('আগে একটি টিমের Copy বাটনে চাপ দিন।');
+    return;
+  }
+  const teamInput=document.getElementById('jfTeamName_'+key);
+  const playerInput=document.getElementById('jfPlayerName_'+key);
+  if(teamInput)teamInput.value=copiedTeamData.team;
+  if(playerInput)playerInput.value=copiedTeamData.player;
+}
+
 function collectTeamData(){
   const allSingleCount=currentJoinLobbyIds.every(id=>getTeamCount(id)===1);
   const same=allSingleCount && currentJoinLobbyIds.length>1 && document.getElementById('jfSameTeam').checked;
