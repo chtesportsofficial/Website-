@@ -627,7 +627,6 @@ async function saveTournament(){
   let p={
    section_id:$('section').value,title:$('title').value.trim(),banner_url:banner,
    entry_fee:+$('entry').value||0,default_slots:+$('slots').value||0,total_slots:+$('slots').value||0,
-    booked_slots: 0,
    prize_distribution:prizeDistribution,prize_pool:prizePool,
    format:$('format').value,match_type:$('matchType').value,game_mode:$('gameMode').value,
    vehicle_allowed:$('vehicle').value==='true',gun_skin_allowed:$('gunskin').value==='true',emote_allowed:$('emote').value==='true',

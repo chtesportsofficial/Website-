@@ -240,6 +240,16 @@ function isJoinWindowClosed(l){
   if(!dt)return false;
   return new Date()>=new Date(dt.getTime()+10*60000);
 }
+function lobbyDisplayJoined(l){
+  const total=Math.max(0,Number(l.total_slots)||0);
+  const actual=Math.max(0,Number(l.joined_count)||0);
+  const booked=Math.max(0,Number(l.booked_slots)||0);
+  return Math.min(total,actual+booked);
+}
+function lobbyDisplayLeft(l){
+  const total=Math.max(0,Number(l.total_slots)||0);
+  return Math.max(0,total-lobbyDisplayJoined(l));
+}
 function lobbyIsFull(l){
   const slots=l.total_slots||0,joined=lobbyDisplayJoined(l);
   return l.status==='full'||joined>=slots||isJoinWindowClosed(l);
