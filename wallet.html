@@ -832,7 +832,7 @@ document.getElementById('withdrawSubmitBtn').addEventListener('click', async fun
   btn.textContent = 'Submitting...';
 
   try{
-    const res = await fetch('https://chteo-api.onrender.com/submit-withdraw-request.php', {
+    const res = await fetch('https://chteo-api.onrender.com/api/submit-withdraw-request.php', {
       method:'POST',
       headers:{'Content-Type':'text/plain'},
       body:JSON.stringify({
