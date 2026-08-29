@@ -61,7 +61,8 @@ try {
 
     if ($action === 'approve') {
         // Lock the user's wallet row too, then credit the balance.
-        $stmt = $conn->prepare("SELECT balance FROM wallet_users WHERE id = ? FOR UPDATE");
+        $stmt = $conn->prepare("SELECT balance, withdrawable_balance, non_withdrawable_balance
+             FROM wallet_users WHERE id = ? FOR UPDATE");
         $stmt->bind_param('i', $req['user_id']);
         $stmt->execute();
         $wallet = $stmt->get_result()->fetch_assoc();
@@ -72,10 +73,30 @@ try {
         }
 
         $balance_before = (float)$wallet['balance'];
-        $balance_after = $balance_before + (float)$req['amount'];
+        $withdrawable_before = (float)$wallet['withdrawable_balance'];
+        $non_withdrawable_before = (float)$wallet['non_withdrawable_balance'];
 
-        $stmt = $conn->prepare("UPDATE wallet_users SET balance = ? WHERE id = ?");
-        $stmt->bind_param('di', $balance_after, $req['user_id']);
+        $deposit_amount = (float)$req['amount'];
+
+        // Deposits are non-withdrawable.
+        $withdrawable_after = $withdrawable_before;
+        $non_withdrawable_after = $non_withdrawable_before + $deposit_amount;
+        $balance_after = $balance_before + $deposit_amount;
+
+        $stmt = $conn->prepare(
+            "UPDATE wallet_users
+             SET balance = ?,
+                 withdrawable_balance = ?,
+                 non_withdrawable_balance = ?
+             WHERE id = ?"
+        );
+        $stmt->bind_param(
+            'dddi',
+            $balance_after,
+            $withdrawable_after,
+            $non_withdrawable_after,
+            $req['user_id']
+        );
         $stmt->execute();
         $stmt->close();
 
