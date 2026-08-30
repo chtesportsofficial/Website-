@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHTEO — User Management</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --navy-1:#1b2140;
+    --navy-2:#2a3266;
+    --navy-3:#333c7a;
+    --white:#ffffff;
+    --ink:#1b2140;
+    --muted:#7a7f9a;
+    --line:#e2e3ee;
+    --accent:#3557ff;
+    --accent-dark:#2846e0;
+    --error:#e5484d;
+    --success:#1c7c4d;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    background:
+      radial-gradient(circle at 12% 0%, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 40%),
+      linear-gradient(160deg, var(--navy-1) 0%, var(--navy-2) 55%, var(--navy-3) 100%);
+    color:var(--ink);
+  }
+
+  /* ---------- Gate views (checking / denied) ---------- */
+  .gate{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .gate-card{
+    width:100%;
+    max-width:380px;
+    background:var(--white);
+    border-radius:24px;
+    padding:36px 30px;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,0.45);
+    text-align:center;
+  }
+  .gate-card h1{ font-size:18px; font-weight:800; margin:0 0 8px; }
+  .gate-card p{ font-size:13.5px; color:var(--muted); line-height:1.6; margin:0 0 22px; }
+  .gate-btn{
+    width:100%;
+    padding:13px;
+    border:none;
+    border-radius:10px;
+    background:var(--accent);
+    color:#fff;
+    font-size:14.5px;
+    font-weight:700;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .gate-btn:hover{ background:var(--accent-dark); }
+  .spinner{
+    width:32px; height:32px;
+    border:3px solid rgba(255,255,255,0.25);
+    border-top-color:#fff;
+    border-radius:50%;
+    margin:0 auto 16px;
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .gate-text{ color:rgba(255,255,255,0.75); font-size:14px; }
+
+  /* ---------- Page ---------- */
+  .app{ display:none; }
+  .app.active{ display:block; }
+
+  .topbar{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:18px 28px;
+    background:rgba(255,255,255,0.04);
+    border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+  .back-btn{
+    width:38px; height:38px; border-radius:10px;
+    background:rgba(255,255,255,0.08);
+    border:none; color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; flex-shrink:0;
+  }
+  .back-btn:hover{ background:rgba(255,255,255,0.15); }
+  .topbar .title{ color:#fff; font-weight:800; font-size:15.5px; }
+
+  .content{
+    max-width:1080px;
+    margin:0 auto;
+    padding:28px 24px 60px;
+  }
+
+  .stats-card{
+    background:var(--white);
+    border-radius:20px;
+    padding:22px 24px;
+    box-shadow:0 20px 44px -22px rgba(0,0,0,0.35);
+    margin-bottom:22px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:18px;
+    flex-wrap:wrap;
+  }
+  .stats-main .label{ font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; }
+  .stats-main .value{ font-size:34px; font-weight:800; margin-top:4px; line-height:1; }
+  .stats-graph{ flex:1; min-width:120px; max-width:220px; height:56px; }
+  .stats-graph svg{ width:100%; height:100%; display:block; }
+  .stats-side{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .stats-side .row{
+    display:flex;
+    align-items:baseline;
+    justify-content:flex-end;
+    gap:10px;
+    min-width:100px;
+  }
+  .stats-side .row .k{ font-size:13px; color:var(--muted); font-weight:600; }
+  .stats-side .row .v{ font-size:18px; font-weight:800; }
+  .stats-side .row.today .v{ color:var(--success); }
+
+  /* ---------- Filter pills ---------- */
+  .filter-row{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-bottom:14px;
+  }
+  .filter-pill{
+    padding:8px 18px;
+    border-radius:20px;
+    border:1px solid var(--line);
+    background:var(--white);
+    color:var(--ink);
+    font-size:13px;
+    font-weight:800;
+    font-family:inherit;
+    cursor:pointer;
+  }
+  .filter-pill:hover{ border-color:var(--accent); }
+  .filter-pill.active{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:#fff;
+  }
+
+  .panel{
+    background:var(--white);
+    border-radius:20px;
+    padding:22px 22px 8px;
+    box-shadow:0 20px 44px -22px rgba(0,0,0,0.35);
+    margin-bottom:22px;
+  }
+  .panel-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:16px;
+    flex-wrap:wrap;
+  }
+  .panel-head h2{ font-size:16px; font-weight:800; margin:0; }
+  .search-box{
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:9px 13px;
+    font-size:13.5px;
+    font-family:inherit;
+    outline:none;
+    min-width:200px;
+  }
+  .search-box:focus{ border-color:var(--accent); }
+
+  /* ---------- User list cards ---------- */
+  .user-card{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:12px 8px;
+    border-bottom:1px solid var(--line);
+    cursor:pointer;
+    text-decoration:none;
+    color:inherit;
+  }
+  .user-card:last-child{ border-bottom:none; }
+  .user-card:hover{ background:#f7f8fc; }
+  .user-avatar{
+    width:44px; height:44px;
+    border-radius:50%;
+    background:var(--navy-2);
+    color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800;
+    font-size:14px;
+    flex-shrink:0;
+    overflow:hidden;
+  }
+  .user-avatar img{ width:100%; height:100%; object-fit:cover; }
+  .user-info{ flex:1; min-width:0; }
+  .user-name{
+    font-weight:800;
+    font-size:14.5px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .user-email{
+    font-size:12.5px;
+    color:var(--muted);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .user-meta{
+    font-size:11.5px;
+    color:var(--muted);
+    margin-top:2px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .badge{
+    padding:5px 12px;
+    border-radius:20px;
+    font-size:11px;
+    font-weight:800;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .badge-admin{ background:rgba(53,87,255,0.12); color:var(--accent); }
+  .badge-user{ background:rgba(28,124,77,0.12); color:var(--success); }
+  .badge-blocked{ background:rgba(229,72,77,0.12); color:var(--error); }
+  .badge-owner{ background:rgba(180,120,0,0.13); color:#b47800; }
+
+  .empty-note{
+    text-align:center;
+    color:var(--muted);
+    font-size:13.5px;
+    padding:30px 10px;
+  }
+  .load-note{
+    text-align:center;
+    color:var(--muted);
+    font-size:13px;
+    padding:16px;
+  }
+</style>
+</head>
+<body>
+
+  <!-- CHECKING SESSION -->
+  <div class="gate" id="gate-checking">
+    <div>
+      <div class="spinner"></div>
+      <div class="gate-text">Checking access...</div>
+    </div>
+  </div>
+
+  <!-- ACCESS DENIED -->
+  <div class="gate" id="gate-denied" style="display:none;">
+    <div class="gate-card">
+      <h1>Access denied</h1>
+      <p>You don't have admin access to this page.</p>
+      <button class="gate-btn" onclick="window.location.href='admin-panel.html'">Back to admin panel</button>
+    </div>
+  </div>
+
+  <!-- PAGE -->
+  <div class="app" id="app">
+    <div class="topbar">
+      <button class="back-btn" onclick="window.location.href='admin-panel.html'" aria-label="Back">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </button>
+      <div class="title">User Management</div>
+    </div>
+
+    <div class="content">
+      <div class="stats-card">
+        <div class="stats-main">
+          <div class="label">Total users</div>
+          <div class="value" id="stat-total">—</div>
+        </div>
+        <div class="stats-graph" id="stat-graph"></div>
+        <div class="stats-side">
+          <div class="row">
+            <span class="k">7 days</span>
+            <span class="v" id="stat-week">—</span>
+          </div>
+          <div class="row today">
+            <span class="k">Today</span>
+            <span class="v" id="stat-today">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>All users</h2>
+          <input type="text" class="search-box" id="user-search" placeholder="Search users..." oninput="renderUsers()">
+        </div>
+        <div class="filter-row" id="filter-row">
+          <button class="filter-pill active" data-filter="all" onclick="setFilter('all')">All</button>
+          <button class="filter-pill" data-filter="admin" onclick="setFilter('admin')">Admin</button>
+          <button class="filter-pill" data-filter="user" onclick="setFilter('user')">User</button>
+          <button class="filter-pill" data-filter="blocked" onclick="setFilter('blocked')">Blocked</button>
+        </div>
+        <div id="users-list"></div>
+        <div class="load-note" id="users-loading">Loading users...</div>
+        <div class="empty-note" id="users-empty" style="display:none;">No users found.</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const SUPABASE_URL = 'https://myfficbwcbgbxbdqjexv.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+
+let supabaseClient;
+try {
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} catch(e){
+  document.getElementById('gate-checking').innerHTML =
+    '<div class="gate-text">Supabase init error: ' + e.message + '</div>';
+}
+
+let allUsers = [];
+let activeFilter = 'all';
+
+function setFilter(f){
+  activeFilter = f;
+  document.querySelectorAll('.filter-pill').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === f);
+  });
+  renderUsers();
+}
+
+function roleKey(u){
+  if(u.is_banned) return 'blocked';
+  if(u.is_owner) return 'admin'; // owner counts under admin filter too
+  if(u.is_admin) return 'admin';
+  return 'user';
+}
+
+function showGate(name){
+  document.getElementById('gate-checking').style.display = name === 'checking' ? 'flex' : 'none';
+  document.getElementById('gate-denied').style.display = name === 'denied' ? 'flex' : 'none';
+  document.getElementById('app').classList.toggle('active', name === 'app');
+}
+
+function initials(name){
+  if(!name) return '?';
+  const parts = name.trim().split(/\s+/).slice(0, 2);
+  return parts.map(w => w[0]).join('').toUpperCase();
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, m => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[m]));
+}
+
+function renderStats(){
+  document.getElementById('stat-total').textContent = allUsers.length;
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  let today = 0, week = 0;
+  allUsers.forEach(u => {
+    if(!u.created_at) return;
+    const d = new Date(u.created_at);
+    if(d >= startOfToday) today++;
+    if(d >= weekAgo) week++;
+  });
+
+  document.getElementById('stat-today').textContent = today;
+  document.getElementById('stat-week').textContent = week;
+
+  renderGraph();
+}
+
+function renderGraph(){
+  const graphEl = document.getElementById('stat-graph');
+  const days = 7;
+  const now = new Date();
+  const counts = new Array(days).fill(0);
+
+  allUsers.forEach(u => {
+    if(!u.created_at) return;
+    const d = new Date(u.created_at);
+    const diffDays = Math.floor((now - d) / (24 * 60 * 60 * 1000));
+    if(diffDays >= 0 && diffDays < days){
+      counts[days - 1 - diffDays]++;
+    }
+  });
+
+  const w = 200, h = 56, pad = 6;
+  const max = Math.max(1, ...counts);
+  const stepX = (w - pad * 2) / (days - 1);
+
+  const points = counts.map((c, i) => {
+    const x = pad + i * stepX;
+    const y = h - pad - (c / max) * (h - pad * 2);
+    return [x, y];
+  });
+
+  const pathD = points.map((p, i) => (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+  const last = points[points.length - 1];
+
+  graphEl.innerHTML = `
+    <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+      <path d="${pathD}" fill="none" stroke="#3557ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="5" fill="#3557ff"/>
+    </svg>
+  `;
+}
+
+function renderUsers(){
+  const search = document.getElementById('user-search').value.trim().toLowerCase();
+  // Users naturally type the UID as it's displayed, e.g. "#2" — but
+  // user_number in the DB is just the bare number (2), so strip a
+  // leading "#" before matching or the UID search never hits.
+  const searchUid = search.replace(/^#/, '');
+  const list = document.getElementById('users-list');
+  const empty = document.getElementById('users-empty');
+
+  if(allUsers.length === 0){
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    empty.textContent = 'No users found.';
+    return;
+  }
+
+  let filtered = activeFilter === 'all'
+    ? allUsers
+    : allUsers.filter(u => roleKey(u) === activeFilter);
+
+  if(search){
+    filtered = filtered.filter(u =>
+      String(u.full_name ?? '').toLowerCase().includes(search) ||
+      String(u.email ?? '').toLowerCase().includes(search) ||
+      String(u.whatsapp ?? '').toLowerCase().includes(search) ||
+      String(u.user_number ?? '').toLowerCase().includes(searchUid)
+    );
+  }
+
+  if(filtered.length === 0){
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    empty.textContent = activeFilter === 'all'
+      ? 'No users match your search.'
+      : 'No users match this filter.';
+    return;
+  }
+  empty.style.display = 'none';
+
+  list.innerHTML = filtered.map(u => {
+    // Team name shows as "----" when the user hasn't set one yet.
+    const name = u.full_name ? escapeHtml(u.full_name) : '----';
+    const email = escapeHtml(u.email ?? '—');
+    const avatarInner = u.avatar_url
+      ? `<img src="${escapeHtml(u.avatar_url)}" alt="">`
+      : escapeHtml(initials(u.full_name || u.email));
+
+    let badge = '<span class="badge badge-user">User</span>';
+    if(u.is_banned) badge = '<span class="badge badge-blocked">Blocked</span>';
+    else if(u.is_owner) badge = '<span class="badge badge-owner">Owner</span>';
+    else if(u.is_admin) badge = '<span class="badge badge-admin">Admin</span>';
+
+    const uid = u.user_number != null ? ('#' + escapeHtml(u.user_number)) : '#—';
+    const whatsapp = escapeHtml(u.whatsapp || '—');
+
+    return `
+      <a class="user-card" href="user-detail.html?uid=${encodeURIComponent(u.id)}">
+        <div class="user-avatar">${avatarInner}</div>
+        <div class="user-info">
+          <div class="user-name">${name}</div>
+          <div class="user-email">${email}</div>
+          <div class="user-meta">${uid} &nbsp;·&nbsp; ${whatsapp}</div>
+        </div>
+        ${badge}
+      </a>
+    `;
+  }).join('');
+}
+
+async function loadUsers(){
+  const { data, error } = await supabaseClient
+    .from('profiles')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  document.getElementById('users-loading').style.display = 'none';
+
+  if(error){
+    document.getElementById('users-empty').style.display = 'block';
+    document.getElementById('users-empty').textContent =
+      'Could not load users: ' + error.message;
+    return;
+  }
+
+  allUsers = data || [];
+  renderStats();
+  renderUsers();
+}
+
+async function checkAccess(){
+  showGate('checking');
+  const { data: { session } } = await supabaseClient.auth.getSession();
+
+  if(!session){
+    window.location.href = 'admin-panel.html';
+    return;
+  }
+
+  const { data: profile, error: profileErr } = await supabaseClient
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', session.user.id)
+    .single();
+
+  if(profileErr || !profile || !profile.is_admin){
+    showGate('denied');
+    return;
+  }
+
+  showGate('app');
+  loadUsers();
+}
+
+checkAccess();
+</script>
+
+</body>
+</html>

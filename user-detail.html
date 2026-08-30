@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHTEO — User Details</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --navy-1:#1b2140;
+    --navy-2:#2a3266;
+    --navy-3:#333c7a;
+    --white:#ffffff;
+    --ink:#1b2140;
+    --muted:#7a7f9a;
+    --line:#e2e3ee;
+    --accent:#3557ff;
+    --accent-dark:#2846e0;
+    --error:#e5484d;
+    --success:#1c7c4d;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    background:
+      radial-gradient(circle at 12% 0%, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 40%),
+      linear-gradient(160deg, var(--navy-1) 0%, var(--navy-2) 55%, var(--navy-3) 100%);
+    color:var(--ink);
+  }
+  .gate{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .gate-card{
+    width:100%;
+    max-width:380px;
+    background:var(--white);
+    border-radius:24px;
+    padding:36px 30px;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,0.45);
+    text-align:center;
+  }
+  .gate-card h1{ font-size:18px; font-weight:800; margin:0 0 8px; }
+  .gate-card p{ font-size:13.5px; color:var(--muted); line-height:1.6; margin:0 0 22px; }
+  .gate-btn{
+    width:100%; padding:13px; border:none; border-radius:10px;
+    background:var(--accent); color:#fff; font-size:14.5px; font-weight:700;
+    cursor:pointer; font-family:inherit;
+  }
+  .gate-btn:hover{ background:var(--accent-dark); }
+  .spinner{
+    width:32px; height:32px;
+    border:3px solid rgba(255,255,255,0.25);
+    border-top-color:#fff;
+    border-radius:50%;
+    margin:0 auto 16px;
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .gate-text{ color:rgba(255,255,255,0.75); font-size:14px; }
+
+  .app{ display:none; }
+  .app.active{ display:block; }
+
+  .topbar{
+    display:flex; align-items:center; gap:14px;
+    padding:18px 24px;
+    background:rgba(255,255,255,0.04);
+    border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+  .back-btn{
+    width:38px; height:38px; border-radius:10px;
+    background:rgba(255,255,255,0.08);
+    border:none; color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; flex-shrink:0;
+  }
+  .back-btn:hover{ background:rgba(255,255,255,0.15); }
+  .topbar h1{ color:#fff; font-size:16px; font-weight:800; margin:0; }
+
+  .content{ max-width:480px; margin:0 auto; padding:22px 18px 54px; }
+
+  /* Single combined profile card */
+  .profile-card{
+    background:var(--white);
+    border-radius:22px;
+    padding:16px 14px 10px;
+    box-shadow:0 20px 44px -22px rgba(0,0,0,0.35);
+    margin-bottom:14px;
+    position:relative;
+  }
+  .admin-corner{
+    position:absolute; top:12px; right:12px;
+    display:inline-flex; align-items:center; gap:5px;
+    padding:5px 9px; border-radius:999px;
+    background:rgba(53,87,255,0.10); color:var(--accent);
+    border:1px solid rgba(53,87,255,0.18);
+    box-shadow:0 4px 12px rgba(0,0,0,.06);
+    font-size:9px; font-weight:900; letter-spacing:.04em;
+  }
+  .admin-corner.user{
+    background:rgba(28,124,77,0.10); color:var(--success);
+    border-color:rgba(28,124,77,0.18);
+  }
+  .admin-corner.blocked{
+    background:rgba(229,72,77,0.10); color:var(--error);
+    border-color:rgba(229,72,77,0.18);
+  }
+  .admin-corner.owner{
+    background:rgba(180,120,0,0.12); color:#b47800;
+    border-color:rgba(180,120,0,0.28);
+  }
+  .admin-dot{
+    width:7px;height:7px;border-radius:50%;
+    background:currentColor;
+    box-shadow:0 0 0 3px rgba(53,87,255,.08);
+  }
+  .country-pill{
+    display:flex; align-items:center; gap:7px;
+    background:#eef0f7;
+    border-radius:20px;
+    padding:6px 11px;
+    font-size:10.5px; font-weight:800;
+    letter-spacing:0.4px; text-transform:uppercase;
+    color:var(--ink);
+    max-width:180px;
+  }
+  .location-inline{
+    display:flex; align-items:center; gap:5px;
+    color:var(--muted); font-size:10.5px; font-weight:800;
+    text-transform:uppercase; letter-spacing:.3px;
+    min-width:0;
+  }
+  .location-inline .loc-dot{
+    color:#24b66f; display:inline-flex; align-items:center;
+  }
+  .head-meta{
+    display:flex; align-items:center; gap:8px; margin-top:7px;
+    flex-wrap:wrap; min-width:0;
+  }
+  .head-meta .sep{ color:#d8dbea; font-weight:900; }
+  .country-pill span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .flag-dot{
+    width:13px; height:13px; border-radius:50%; flex-shrink:0;
+    background:#046a38; position:relative; overflow:hidden;
+  }
+  .flag-dot::after{
+    content:""; position:absolute; width:6px; height:6px; border-radius:50%;
+    background:#c8102e; top:50%; left:46%; transform:translate(-50%,-50%);
+  }
+
+  .card-head{
+    display:flex; align-items:center; gap:12px;
+    padding-right:92px;
+  }
+  .avatar-lg{
+    width:62px; height:62px;
+    border-radius:50%;
+    background:var(--navy-2);
+    color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:22px;
+    overflow:hidden; flex-shrink:0;
+  }
+  .avatar-lg img{ width:100%; height:100%; object-fit:cover; }
+  .head-text{ min-width:0; }
+  .card-head .name{
+    font-size:18px; font-weight:900; line-height:1.2;
+    overflow-wrap:anywhere;
+  }
+  .card-head .email{
+    font-size:12.5px; color:var(--muted); margin-top:2px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .status-row{ display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
+  .badge{
+    padding:4px 11px; border-radius:20px;
+    font-size:11px; font-weight:800;
+  }
+  .badge-admin{ background:rgba(53,87,255,0.12); color:var(--accent); }
+  .badge-user{ background:rgba(28,124,77,0.12); color:var(--success); }
+  .badge-blocked{ background:rgba(229,72,77,0.12); color:var(--error); }
+
+  .slogan-box{
+    background:#f4f5fb;
+    border-radius:12px;
+    padding:10px 12px;
+    margin-top:12px;
+    font-size:13px; color:var(--muted);
+    overflow-wrap:anywhere;
+  }
+
+  .section-label{
+    font-size:10.5px; font-weight:800; text-transform:uppercase;
+    letter-spacing:0.5px; color:var(--muted);
+    margin:18px 2px 2px;
+  }
+
+  .info-list{ margin-top:4px; }
+  .info-row{
+    display:flex; align-items:center; gap:10px;
+    padding:9px 0; border-bottom:1px solid var(--line);
+  }
+  .info-row:last-child{ border-bottom:none; }
+  .icon-chip{
+    width:32px; height:32px; border-radius:9px; flex-shrink:0;
+    background:rgba(28,124,77,0.1); color:var(--success);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .info-text{ flex:1; min-width:0; }
+  .info-label{
+    font-size:9.5px; font-weight:800; text-transform:uppercase;
+    letter-spacing:0.3px; color:var(--muted);
+  }
+  .info-value{
+    font-size:13px; font-weight:750; margin-top:1px;
+    overflow-wrap:anywhere;
+  }
+  .copy-btn{
+    width:34px; height:34px; border-radius:9px; flex-shrink:0;
+    background:var(--line); border:none; color:var(--muted);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .copy-btn:hover{ background:#d7d9ea; }
+
+
+  .other-card{
+    background:var(--white);
+    border-radius:18px;
+    padding:12px;
+    box-shadow:0 14px 30px -20px rgba(0,0,0,.28);
+    margin-top:14px;
+  }
+  .other-heading{
+    display:flex; align-items:center; gap:7px;
+    font-size:10px; font-weight:900;
+    text-transform:uppercase; letter-spacing:.5px;
+    color:var(--ink); margin:0 2px 8px;
+  }
+  .other-heading-bar{
+    width:4px;height:15px;border-radius:999px;background:var(--success);
+  }
+  .other-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+  .other-item{
+    display:flex;align-items:center;gap:8px;min-width:0;
+    padding:8px;border-radius:11px;background:#f6f7fb;
+  }
+  .other-item .icon-chip{width:28px;height:28px;border-radius:8px;}
+  .other-item .icon-chip svg{width:14px;height:14px;}
+  .other-item .info-label{font-size:8px;}
+  .other-item .info-value{
+    font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  @media(max-width:360px){.other-grid{grid-template-columns:1fr;}}
+  .actions-row{ display:flex; gap:10px; margin-top:16px; }
+  .action-btn{
+    flex:1; padding:13px; border-radius:12px; border:1px solid var(--line);
+    background:var(--white); font-size:13.5px; font-weight:700;
+    cursor:pointer; font-family:inherit;
+  }
+  .action-btn.make-admin{ color:var(--accent); border-color:rgba(53,87,255,0.35); }
+  .action-btn.block{ color:var(--error); border-color:rgba(229,72,77,0.35); }
+  .action-btn:disabled{ opacity:0.5; cursor:not-allowed; }
+
+  .toast{
+    position:fixed; bottom:24px; left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--ink); color:#fff; padding:11px 18px; border-radius:10px;
+    font-size:13px; font-weight:600; opacity:0; pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease; z-index:10;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+.confirm-overlay{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(8,12,25,.62);backdrop-filter:blur(5px)}.confirm-overlay.show{display:flex}.confirm-box{width:min(360px,100%);background:#fff;border-radius:22px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.28);text-align:center}.confirm-icon{width:54px;height:54px;border-radius:16px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;background:#eef2ff;color:#315edb;font-size:24px;font-weight:800}.confirm-title{margin:0;color:#17203a;font-size:19px;font-weight:800}.confirm-text{margin:8px 0 18px;color:#70798d;font-size:14px;line-height:1.45}.confirm-actions{display:flex;gap:10px}.confirm-actions button{flex:1;border:0;border-radius:13px;padding:12px 10px;font-size:14px;font-weight:800;cursor:pointer}.confirm-cancel{background:#eef1f7;color:#536078}.confirm-ok{background:#315edb;color:#fff}.confirm-ok.danger{background:#d85a5a}
+
+  /* ── Adjust Balance card ── */
+  .adj-card{
+    background:var(--white);
+    border-radius:18px;
+    padding:14px;
+    box-shadow:0 14px 30px -20px rgba(0,0,0,.28);
+    margin-top:14px;
+  }
+  .adj-heading{
+    display:flex;align-items:center;gap:7px;
+    font-size:10px;font-weight:900;
+    text-transform:uppercase;letter-spacing:.5px;
+    color:var(--ink);margin:0 2px 12px;
+  }
+  .adj-heading-bar{width:4px;height:15px;border-radius:999px;background:var(--accent);}
+  .adj-toggle{display:flex;gap:8px;margin-bottom:10px;}
+  .adj-toggle button{
+    flex:1;padding:9px 0;border-radius:10px;
+    border:1px solid var(--line);
+    background:#f6f7fb;color:var(--muted);
+    font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;
+    transition:background .15s,color .15s,border-color .15s;
+  }
+  .adj-toggle button.active-add{
+    background:rgba(28,124,77,0.12);color:var(--success);
+    border-color:rgba(28,124,77,0.35);
+  }
+  .adj-toggle button.active-remove{
+    background:rgba(229,72,77,0.12);color:var(--error);
+    border-color:rgba(229,72,77,0.35);
+  }
+  .adj-input{
+    width:100%;padding:10px 12px;border-radius:10px;
+    border:1px solid var(--line);background:#f6f7fb;
+    color:var(--ink);font-size:14px;font-family:inherit;
+    margin-bottom:8px;
+  }
+  .adj-input:focus{outline:none;border-color:var(--accent);}
+  .adj-submit{
+    width:100%;padding:12px;border-radius:10px;border:none;
+    background:var(--accent);color:#fff;
+    font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;
+  }
+  .adj-submit:disabled{opacity:0.5;cursor:not-allowed;}
+  .adj-msg{font-size:13px;text-align:center;padding:7px 0 2px;min-height:22px;font-weight:600;}
+  .adj-msg.ok{color:var(--success);}
+  .adj-msg.err{color:var(--error);}
+  /* ── end Adjust Balance ── */
+</style>
+</head>
+<body>
+
+  <div class="gate" id="gate-checking">
+    <div><div class="spinner"></div><div class="gate-text">Checking access...</div></div>
+  </div>
+
+  <div class="gate" id="gate-denied" style="display:none;">
+    <div class="gate-card">
+      <h1>Access denied</h1>
+      <p>You don't have admin access to view this page.</p>
+      <button class="gate-btn" onclick="window.location.href='admin-panel.html'">Back to admin panel</button>
+    </div>
+  </div>
+
+  <div class="gate" id="gate-notfound" style="display:none;">
+    <div class="gate-card">
+      <h1>User not found</h1>
+      <p>This user doesn't exist or couldn't be loaded.</p>
+      <button class="gate-btn" onclick="window.location.href='admin-panel.html'">Back to admin panel</button>
+    </div>
+  </div>
+
+  <div class="app" id="app">
+    <div class="topbar">
+      <button class="back-btn" onclick="window.location.href='admin-panel.html'" aria-label="Back">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </button>
+      <h1>User details</h1>
+    </div>
+
+    <div class="content">
+      <div class="profile-card">
+        <div class="admin-corner" id="adminCorner"><span class="admin-dot"></span><span id="roleText">USER</span></div>
+
+        <div class="card-head">
+          <div class="avatar-lg" id="avatarLg"></div>
+          <div class="head-text">
+            <div class="name" id="nameEl">----</div>
+            <div class="head-meta">
+              <div class="country-pill" id="countryPill" style="display:none;"><span class="flag-dot"></span><span id="countryPillText"></span></div>
+              <span class="sep" id="metaSep" style="display:none;">•</span>
+              <div class="location-inline" id="locationInline" style="display:none;"><span class="loc-dot">⌖</span><span id="locationText">----</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="slogan-box" id="sloganBox" style="display:none;"></div>
+
+        <!-- Wallet balance row -->
+        <div class="info-row" id="balanceRow" style="display:none;">
+          <div class="icon-chip" style="background:rgba(53,87,255,0.1);color:var(--accent);">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8L2 7h20l-6-4Z"/><path d="M12 12v4"/><path d="M10 14h4"/></svg>
+          </div>
+          <div class="info-text">
+            <div class="info-label">WALLET BALANCE</div>
+            <div class="info-value" id="balanceVal">Loading...</div>
+          </div>
+        </div>
+
+        <div class="info-list" id="detailsList"></div>
+
+      </div>
+
+      <div class="other-card" id="otherSection" style="display:none;">
+        <div class="other-heading"><span class="other-heading-bar"></span><span>OTHER DETAILS</span></div>
+        <div class="other-grid" id="otherList"></div>
+      </div>
+
+      <div class="actions-row">
+        <button class="action-btn make-admin" id="adminToggleBtn">Make Admin</button>
+        <button class="action-btn block" id="banToggleBtn">Block User</button>
+      </div>
+      <div style="margin-top:10px;">
+        <button class="action-btn" id="adjOpenBtn" onclick="adjOpen()" style="width:100%;color:var(--accent);border-color:rgba(53,87,255,0.35);display:none;">
+          💰 Adjust Balance
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Adjust Balance Modal ── -->
+  <div id="adjOverlay" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(8,12,25,.65);backdrop-filter:blur(5px);align-items:flex-end;justify-content:center;">
+    <div id="adjModal" style="width:100%;max-width:480px;background:#fff;border-radius:24px 24px 0 0;padding:22px 20px 36px;box-shadow:0 -20px 60px rgba(0,0,0,.28);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-size:15px;font-weight:900;color:var(--ink);">Adjust Balance</div>
+        <button onclick="adjClose()" style="width:32px;height:32px;border-radius:8px;border:none;background:#f0f1f7;color:var(--muted);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
+      </div>
+      <div style="background:#f6f7fb;border-radius:12px;padding:10px 14px;margin-bottom:14px;text-align:center;">
+        <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);">Current Balance</div>
+        <div style="font-size:22px;font-weight:900;color:var(--accent);margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px;" id="adjModalBalance">
+          <span id="adjBalSpinner" style="width:16px;height:16px;border:2px solid rgba(53,87,255,0.25);border-top-color:var(--accent);border-radius:50%;display:inline-block;animation:spin .8s linear infinite;flex-shrink:0;"></span>
+          <span id="adjBalText"></span>
+        </div>
+        <div style="display:flex;justify-content:center;gap:18px;margin-top:7px;font-size:11px;">
+          <span style="color:var(--success);">Withdrawable: <b id="adjWithdrawableText">৳0</b></span>
+          <span style="color:#b47800;">Non-Withdrawable: <b id="adjNonWithdrawableText">৳0</b></span>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button id="adj-btn-add" onclick="adjSetType('add')" style="flex:1;padding:10px 0;border-radius:10px;border:1px solid rgba(28,124,77,0.35);background:rgba(28,124,77,0.12);color:var(--success);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">+ Add</button>
+        <button id="adj-btn-remove" onclick="adjSetType('remove')" style="flex:1;padding:10px 0;border-radius:10px;border:1px solid var(--line);background:#f6f7fb;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">− Remove</button>
+      </div>
+      <input id="adj-amount" type="number" min="1" placeholder="Amount (৳)" style="width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--line);background:#f6f7fb;color:var(--ink);font-size:14px;font-family:inherit;margin-bottom:8px;" />
+      <select id="adj-balance-type" style="width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--line);background:#f6f7fb;color:var(--ink);font-size:14px;font-family:inherit;margin-bottom:12px;">
+        <option value="" disabled selected>Select balance type</option>
+        <option value="withdrawable">Withdrawable</option>
+        <option value="non_withdrawable">Non-Withdrawable</option>
+      </select>
+      <button id="adj-submit-btn" onclick="adjSubmit()" style="width:100%;padding:13px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Apply Adjustment</button>
+      <div id="adj-msg" style="font-size:13px;font-weight:600;text-align:center;padding:8px 0 0;min-height:22px;"></div>
+    </div>
+  </div>
+  <!-- ── end Adjust Balance Modal ── -->
+
+  <div class="toast" id="toast"></div>
+
+
+<div class="confirm-overlay" id="confirmOverlay" aria-hidden="true"><div class="confirm-box" role="dialog" aria-modal="true" aria-labelledby="confirmTitle"><div class="confirm-icon" id="confirmIcon">?</div><h3 class="confirm-title" id="confirmTitle">Are you sure?</h3><div class="confirm-text" id="confirmText"></div><div class="confirm-actions"><button type="button" class="confirm-cancel" id="confirmCancel">Cancel</button><button type="button" class="confirm-ok" id="confirmOk">Confirm</button></div></div></div>
+<script>
+const SUPABASE_URL = 'https://myfficbwcbgbxbdqjexv.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+
+const params = new URLSearchParams(window.location.search);
+const targetUid = params.get('uid');
+
+let supabaseClient;
+try {
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} catch(e){
+  document.getElementById('gate-checking').innerHTML =
+    '<div class="gate-text">Supabase init error: ' + e.message + '</div>';
+}
+
+let targetProfile = null;
+
+function showGate(name){
+  document.getElementById('gate-checking').style.display = name === 'checking' ? 'flex' : 'none';
+  document.getElementById('gate-denied').style.display = name === 'denied' ? 'flex' : 'none';
+  document.getElementById('gate-notfound').style.display = name === 'notfound' ? 'flex' : 'none';
+  document.getElementById('app').classList.toggle('active', name === 'app');
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, m => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[m]));
+}
+
+function initials(name){
+  if(!name) return '?';
+  return name.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+}
+
+// Fields already covered elsewhere on the page (avatar/name/badges,
+// the country pill, the slogan box) — never listed in either row list.
+const ALWAYS_HIDDEN = new Set(['id', 'full_name', 'avatar_url', 'is_admin', 'is_banned', 'is_owner', 'bio', 'country', 'slogan', 'location', 'user_serial', 'user_serial_number', 'serial', 'user_serial_no']);
+
+// Everything below follows the requested serial:
+// UID, WhatsApp, Email, Location -> main info list (photo/team name/
+// slogan/country are already shown above in the card head/slogan box)
+// Referral code, Joined, Last updated, User Serial -> "Other details"
+const PROFILE_FIELDS = [
+  ['user_number', 'UID', v => v != null ? ('#' + v) : null],
+  ['whatsapp', 'WhatsApp'],
+  ['email', 'Email'],
+];
+const OTHER_FIELDS = [
+  ['referral', 'Referral code'],
+  ['created_at', 'Joined', v => v ? new Date(v).toLocaleString() : null],
+  ['updated_at', 'Last updated', v => v ? new Date(v).toLocaleString() : null],
+];
+
+// Small icon per field key, shown in the icon-chip next to each row.
+// Falls back to a generic dot icon for anything not listed (referral
+// codes, timestamps, and any future/unexpected column).
+const ICONS = {
+  user_number: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+  email: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>',
+  whatsapp: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>',
+  location: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
+  referral: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 7v6c0 5 4 9 9 9s9-4 9-9V7l-9-5Z"/></svg>',
+  created_at: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+  updated_at: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>',
+  default: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>'
+};
+
+async function checkAccess(){
+  showGate('checking');
+
+  if(!targetUid){
+    showGate('notfound');
+    return;
+  }
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session){
+    window.location.href = 'admin-panel.html';
+    return;
+  }
+
+  const { data: me, error: meErr } = await supabaseClient
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', session.user.id)
+    .single();
+
+  if(meErr || !me || !me.is_admin){
+    showGate('denied');
+    return;
+  }
+
+  await loadTarget();
+}
+
+async function loadTarget(){
+  const { data, error } = await supabaseClient
+    .from('profiles')
+    .select('*')
+    .eq('id', targetUid)
+    .single();
+
+  if(error || !data){
+    showGate('notfound');
+    return;
+  }
+
+  targetProfile = data;
+  renderTarget();
+  showGate('app');
+}
+
+function renderTarget(){
+  const p = targetProfile;
+
+  document.getElementById('nameEl').textContent = p.full_name ? p.full_name : '----';
+
+  const avatarLg = document.getElementById('avatarLg');
+  avatarLg.innerHTML = p.avatar_url
+    ? `<img src="${escapeHtml(p.avatar_url)}" alt="">`
+    : escapeHtml(initials(p.full_name || p.email));
+
+  const adminCorner = document.getElementById('adminCorner');
+  const roleText = document.getElementById('roleText');
+  if(adminCorner){
+    adminCorner.classList.remove('user','blocked','owner');
+    if(p.is_banned){ adminCorner.classList.add('blocked'); roleText.textContent = 'BLOCKED'; }
+    else if(p.is_owner){ adminCorner.classList.add('owner'); roleText.textContent = 'OWNER'; }
+    else if(p.is_admin){ roleText.textContent = 'ADMIN'; }
+    else { adminCorner.classList.add('user'); roleText.textContent = 'USER'; }
+  }
+
+  const countryPill = document.getElementById('countryPill');
+  const locationInline = document.getElementById('locationInline');
+  const metaSep = document.getElementById('metaSep');
+  if(p.country){
+    document.getElementById('countryPillText').textContent = p.country;
+    countryPill.style.display = 'flex';
+  } else { countryPill.style.display = 'none'; }
+  if(p.location){
+    document.getElementById('locationText').textContent = p.location;
+    locationInline.style.display = 'flex';
+    metaSep.style.display = p.country ? 'inline' : 'none';
+  } else {
+    locationInline.style.display = 'none';
+    metaSep.style.display = 'none';
+  }
+
+  // Slogan box, under the avatar/name
+  const sloganBox = document.getElementById('sloganBox');
+  if(p.slogan){
+    sloganBox.textContent = p.slogan;
+    sloganBox.style.display = 'block';
+  } else {
+    sloganBox.style.display = 'none';
+  }
+
+  function buildRows(fieldList){
+    const rows = [];
+    fieldList.forEach(([key, label, transform]) => {
+      let val = p[key];
+      if(val === null || val === undefined || val === '') return;
+      if(transform) val = transform(val);
+      if(val === null || val === undefined || val === '') return;
+      rows.push([key, label, val]);
+    });
+    return rows;
+  }
+
+  const profileRows = buildRows(PROFILE_FIELDS);
+  const otherRows = buildRows(OTHER_FIELDS);
+
+  // Any field not explicitly placed above and not always-hidden still
+  // shows up, so nothing silently disappears if the table gains a
+  // new column later — it lands in "Other details".
+  const placedKeys = new Set([...PROFILE_FIELDS, ...OTHER_FIELDS].map(f => f[0]));
+  Object.keys(p).forEach(key => {
+    if(ALWAYS_HIDDEN.has(key) || placedKeys.has(key) || (key === 'user_serial' || key === 'user_serial_number' || key === 'serial' || key === 'user_serial_no') || key === 'location') return;
+    const val = p[key];
+    if(val === null || val === undefined || val === '') return;
+    otherRows.push([key, key, val]);
+  });
+
+  const rowsHtml = (rows, compact=false) => rows.map(([key, label, val]) => compact ? `
+    <div class="other-item">
+      <div class="icon-chip">${ICONS[key] || ICONS.default}</div>
+      <div class="info-text">
+        <div class="info-label">${escapeHtml(label)}</div>
+        <div class="info-value">${escapeHtml(val)}</div>
+      </div>
+    </div>
+  ` : `
+    <div class="info-row">
+      <div class="icon-chip">${ICONS[key] || ICONS.default}</div>
+      <div class="info-text">
+        <div class="info-label">${escapeHtml(label)}</div>
+        <div class="info-value">${escapeHtml(val)}</div>
+      </div>
+      ${key === 'user_number' ? `<button class="copy-btn" data-copy="${escapeHtml(val)}" aria-label="Copy"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>` : ''}
+    </div>
+  `).join('');
+
+  document.getElementById('detailsList').innerHTML = rowsHtml(profileRows);
+  document.getElementById('otherList').innerHTML = rowsHtml(otherRows, true);
+  document.getElementById('otherSection').style.display = otherRows.length ? 'block' : 'none';
+
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      navigator.clipboard.writeText(btn.dataset.copy).then(() => showToast('Copied.')).catch(() => {});
+    });
+  });
+
+  const adminBtn = document.getElementById('adminToggleBtn');
+  if(p.is_owner){
+    adminBtn.style.display = 'none';
+  } else {
+    adminBtn.style.display = '';
+    adminBtn.textContent = p.is_admin ? 'Remove Admin' : 'Make Admin';
+  }
+  const banBtn = document.getElementById('banToggleBtn');
+  if(p.is_owner){
+    banBtn.style.display = 'none';
+  } else {
+    banBtn.style.display = '';
+    banBtn.textContent = p.is_banned ? 'Unblock User' : 'Block User';
+  }
+
+  // Show Adjust Balance button
+  document.getElementById('adjOpenBtn').style.display = 'block';
+}
+
+async function toggleField(field, currentVal, btnEl){
+  if(targetProfile.is_owner){
+    showToast('Owner-এর profile পরিবর্তন করা যাবে না।');
+    return;
+  }
+  btnEl.disabled = true;
+  const { error } = await supabaseClient
+    .from('profiles')
+    .update({ [field]: !currentVal })
+    .eq('id', targetUid);
+
+  btnEl.disabled = false;
+
+  if(error){
+    showToast('Could not update: ' + error.message);
+    return;
+  }
+  targetProfile[field] = !currentVal;
+  renderTarget();
+  showToast('Updated.');
+}
+
+const confirmOverlay=document.getElementById('confirmOverlay'),confirmTitle=document.getElementById('confirmTitle'),confirmText=document.getElementById('confirmText'),confirmOk=document.getElementById('confirmOk'),confirmCancel=document.getElementById('confirmCancel'),confirmIcon=document.getElementById('confirmIcon');let confirmAction=null;
+function askConfirmation(title,message,action,danger=false){confirmTitle.textContent=title;confirmText.textContent=message;confirmIcon.textContent=danger?'!':'?';confirmOk.textContent='Yes, continue';confirmOk.classList.toggle('danger',danger);confirmAction=action;confirmOverlay.classList.add('show');confirmOverlay.setAttribute('aria-hidden','false')}
+function closeConfirmation(){confirmOverlay.classList.remove('show');confirmOverlay.setAttribute('aria-hidden','true');confirmAction=null}
+confirmCancel.addEventListener('click',closeConfirmation);confirmOverlay.addEventListener('click',e=>{if(e.target===confirmOverlay)closeConfirmation()});confirmOk.addEventListener('click',async()=>{const action=confirmAction;closeConfirmation();if(action)await action()});
+document.getElementById('adminToggleBtn').addEventListener('click',function(){const makeAdmin=!targetProfile.is_admin;askConfirmation(makeAdmin?'Make Admin?':'Remove Admin?',makeAdmin?'Are you sure you want to make this user an admin?':'Are you sure you want to remove admin access from this user?',()=>toggleField('is_admin',!!targetProfile.is_admin,document.getElementById('adminToggleBtn')),false)});
+document.getElementById('banToggleBtn').addEventListener('click',function(){const blockUser=!targetProfile.is_banned;askConfirmation(blockUser?'Block User?':'Unblock User?',blockUser?'Are you sure you want to block this user?':'Are you sure you want to unblock this user?',()=>toggleField('is_banned',!!targetProfile.is_banned,document.getElementById('banToggleBtn')),blockUser)});
+
+/* ── Adjust Balance logic ── */
+let _adjType = 'add';
+
+function adjOpen(){
+  document.getElementById('adj-amount').value = '';
+  document.getElementById('adj-balance-type').value = '';
+  document.getElementById('adj-msg').textContent = '';
+  document.getElementById('adj-msg').style.color = '';
+  document.getElementById('adjBalText').textContent = '';
+  document.getElementById('adjBalSpinner').style.display = 'inline-block';
+  adjSetType('add');
+  document.getElementById('adjOverlay').style.display = 'flex';
+
+  // Fetch balance fresh when modal opens
+  supabaseClient.auth.getSession().then(function(r){
+    const session = r.data && r.data.session;
+    if(!session) return;
+    fetch('https://chteo-api.onrender.com/api/admin-user-detail.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ access_token: session.access_token, user_id: targetUid })
+    })
+    .then(function(res){ return res.json(); })
+    .then(function(data){
+      document.getElementById('adjBalSpinner').style.display = 'none';
+      if(data && data.success && data.user){
+        const bal = data.user.balance !== null ? '৳' + data.user.balance : '৳0';
+        const wb = Number(data.user.withdrawable_balance || 0);
+        const nwb = Number(data.user.non_withdrawable_balance || 0);
+        document.getElementById('adjBalText').textContent = bal;
+        document.getElementById('adjWithdrawableText').textContent = '৳' + wb;
+        document.getElementById('adjNonWithdrawableText').textContent = '৳' + nwb;
+        document.getElementById('balanceVal').textContent = bal;
+        document.getElementById('balanceRow').style.display = 'flex';
+      } else {
+        document.getElementById('adjBalText').textContent = '৳—';
+      }
+    })
+    .catch(function(){
+      document.getElementById('adjBalSpinner').style.display = 'none';
+      document.getElementById('adjBalText').textContent = '৳—';
+    });
+  });
+}
+
+function adjClose(){
+  document.getElementById('adjOverlay').style.display = 'none';
+}
+
+document.getElementById('adjOverlay').addEventListener('click', function(e){
+  if(e.target === this) adjClose();
+});
+
+function adjSetType(type){
+  _adjType = type;
+  const addBtn = document.getElementById('adj-btn-add');
+  const remBtn = document.getElementById('adj-btn-remove');
+  if(type === 'add'){
+    addBtn.style.background = 'rgba(28,124,77,0.12)';
+    addBtn.style.color = 'var(--success)';
+    addBtn.style.borderColor = 'rgba(28,124,77,0.35)';
+    remBtn.style.background = '#f6f7fb';
+    remBtn.style.color = 'var(--muted)';
+    remBtn.style.borderColor = 'var(--line)';
+  } else {
+    remBtn.style.background = 'rgba(229,72,77,0.12)';
+    remBtn.style.color = 'var(--error)';
+    remBtn.style.borderColor = 'rgba(229,72,77,0.35)';
+    addBtn.style.background = '#f6f7fb';
+    addBtn.style.color = 'var(--muted)';
+    addBtn.style.borderColor = 'var(--line)';
+  }
+}
+
+async function loadBalance(){
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session) return;
+  try {
+    const res = await fetch('https://chteo-api.onrender.com/api/admin-user-detail.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ access_token: session.access_token, user_id: targetUid })
+    });
+    const data = await res.json();
+    if(data && data.success && data.user){
+      const bal = data.user.balance !== null ? '৳' + data.user.balance : '৳0';
+      document.getElementById('balanceVal').textContent = bal;
+      document.getElementById('balanceRow').style.display = 'flex';
+    }
+  } catch(e){ /* silent fail */ }
+}
+
+async function adjSubmit(){
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session){ showToast('Session expired. Please log in again.'); return; }
+
+  const amount = parseFloat(document.getElementById('adj-amount').value);
+  const balanceType = document.getElementById('adj-balance-type').value;
+  const msgEl  = document.getElementById('adj-msg');
+  const btnEl  = document.getElementById('adj-submit-btn');
+
+  msgEl.textContent = '';
+  msgEl.style.color = '';
+
+  if(!amount || amount <= 0){ msgEl.style.color='var(--error)'; msgEl.textContent='Valid amount required.'; return; }
+  if(!balanceType){ msgEl.style.color='var(--error)'; msgEl.textContent='Please select a balance type.'; return; }
+
+  btnEl.disabled = true;
+  btnEl.textContent = 'Processing...';
+
+  try {
+    const res = await fetch('https://chteo-api.onrender.com/api/admin-adjust-balance.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        access_token: session.access_token,
+        user_id: targetUid,
+        email:   targetProfile.email,
+        amount:  amount,
+        type:    _adjType,
+        balance_type: balanceType
+      })
+    });
+    const data = await res.json();
+    btnEl.disabled = false;
+    btnEl.textContent = 'Apply Adjustment';
+    if(data && data.success){
+      const newBal = '৳' + data.new_balance;
+      msgEl.style.color = 'var(--success)';
+      msgEl.textContent = 'Done! New balance: ' + newBal;
+      document.getElementById('balanceVal').textContent = newBal;
+      document.getElementById('adjBalText').textContent = newBal;
+      document.getElementById('adjWithdrawableText').textContent = '৳' + Number(data.withdrawable_balance || 0);
+      document.getElementById('adjNonWithdrawableText').textContent = '৳' + Number(data.non_withdrawable_balance || 0);
+      document.getElementById('adj-amount').value = '';
+      document.getElementById('adj-balance-type').value = '';
+    } else {
+      msgEl.style.color = 'var(--error)';
+      msgEl.textContent = (data && data.message) || 'Something went wrong.';
+    }
+  } catch(err){
+    btnEl.disabled = false;
+    btnEl.textContent = 'Apply Adjustment';
+    msgEl.style.color = 'var(--error)';
+    msgEl.textContent = 'Network error: ' + err.message;
+  }
+}
+/* ── end Adjust Balance ── */
+
+checkAccess();
+</script>
+
+</body>
+</html>
