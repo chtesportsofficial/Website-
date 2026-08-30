@@ -140,7 +140,7 @@ async function guard(){
   try{
     const {data:{session},error}=await sb.auth.getSession();
     if(error) throw error;
-    if(!session){location.href='login.html';return false}
+    if(!session){location.href='chteo_auth.html';return false}
 
     const {data:p,error:pe}=await sb.from('profiles')
       .select('is_admin').eq('id',session.user.id).single();

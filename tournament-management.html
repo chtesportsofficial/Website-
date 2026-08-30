@@ -334,7 +334,7 @@ async function logActivity(action, category, targetType=null, targetId=null, tar
 
 async function admin(){
  const {data:{session}}=await sb.auth.getSession();
- if(!session){location.href='login.html';return false}
+ if(!session){location.href='chteo_auth.html';return false}
   currentAdminId=session.user.id;
  const {data:p,error}=await sb.from('profiles').select('is_admin,full_name,email').eq('id',session.user.id).single();
  if(error||!p?.is_admin){msg('Admin access required.');location.href='index.html';return false}

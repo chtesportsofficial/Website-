@@ -33,7 +33,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 function msg(x){alert(x)}
 async function admin(){
   const {data:{session}}=await sb.auth.getSession();
-  if(!session){location.href='login.html';return false}
+  if(!session){location.href='chteo_auth.html';return false}
   window.__sessionUserId=session.user.id;
   const {data:p,error}=await sb.from('profiles').select('is_admin').eq('id',session.user.id).single();
   if(error||!p?.is_admin){msg('Admin access required.');location.href='index.html';return false}
