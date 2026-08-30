@@ -144,6 +144,10 @@ try {
     // ---- Notify the admin Telegram group (CHTEO Withdraw Alerts) ----
     // Best-effort: if Telegram is slow/down, it must NOT break the
     // withdraw request response, so failures here are silently ignored.
+    // Time is shown in Bangladesh local time (Asia/Dhaka) — Render's
+    // server clock runs on UTC, so date() alone would show a time ~6
+    // hours behind what the admin actually sees on their phone.
+    $bdTime = (new DateTime('now', new DateTimeZone('Asia/Dhaka')))->format('d M Y, h:i A');
     $telegramText =
         "🟠 New Withdraw Request\n" .
         "Email: " . $email . "\n" .
@@ -151,7 +155,7 @@ try {
         "Account: " . $accountNumber . "\n" .
         "Amount: ৳" . number_format($amount, 2) . "\n" .
         "Request ID: " . $requestId . "\n" .
-        "Time: " . date('d M Y, h:i A');
+        "Time: " . $bdTime;
 
     $tgCh = curl_init("https://api.telegram.org/bot{$telegramBotToken}/sendMessage");
     curl_setopt_array($tgCh, [

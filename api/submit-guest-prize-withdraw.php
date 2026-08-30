@@ -193,7 +193,7 @@ try {
             "Amount: ৳" . number_format($s['amount'], 2) . "\n" .
             "Lobby: " . $s['lobby_id'] . " / Team: " . $s['team_id'] . "\n" .
             "Request ID: " . $s['request_id'] . "\n" .
-            "Time: " . date('d M Y, h:i A');
+            "Time: " . (new DateTime('now', new DateTimeZone('Asia/Dhaka')))->format('d M Y, h:i A');
         $tgCh = curl_init("https://api.telegram.org/bot{$telegramBotToken}/sendMessage");
         curl_setopt_array($tgCh, [
             CURLOPT_RETURNTRANSFER => true,
