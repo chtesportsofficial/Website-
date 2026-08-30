@@ -103,7 +103,7 @@ $conn->begin_transaction();
 
 try {
     $stmt = $conn->prepare(
-        "SELECT id, user_id, amount, status
+        "SELECT id, user_id, amount, status, is_guest
          FROM wallet_withdraw_requests
          WHERE id = ? LIMIT 1 FOR UPDATE"
     );
@@ -122,39 +122,45 @@ try {
 
     $amount = (float)$request['amount'];
     $userId = $request['user_id'];
+    $isGuest = !empty($request['is_guest']);
 
-    $stmt = $conn->prepare(
-        "SELECT id, withdrawable_balance, non_withdrawable_balance
-         FROM wallet_users
-         WHERE supabase_uid = ? LIMIT 1 FOR UPDATE"
-    );
-    $stmt->bind_param('s', $userId);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $wallet = $result->fetch_assoc();
-    $stmt->close();
-
-    if (!$wallet) {
-        throw new Exception('Wallet not found for this user');
-    }
-
-    $newWithdrawable = (float)$wallet['withdrawable_balance'];
-    $newNonWithdrawable = (float)$wallet['non_withdrawable_balance'];
-
-    /* The amount was reserved when the request was submitted.
-       Approval keeps it deducted; rejection returns it to withdrawable balance. */
-    if ($action === 'reject') {
-        $newWithdrawable += $amount;
-        $newBalance = $newWithdrawable + $newNonWithdrawable;
-
+    if (!$isGuest) {
         $stmt = $conn->prepare(
-            "UPDATE wallet_users
-             SET withdrawable_balance = ?, balance = ?
-             WHERE id = ?"
+            "SELECT id, withdrawable_balance, non_withdrawable_balance
+             FROM wallet_users
+             WHERE supabase_uid = ? LIMIT 1 FOR UPDATE"
         );
-        $stmt->bind_param('ddi', $newWithdrawable, $newBalance, $wallet['id']);
+        $stmt->bind_param('s', $userId);
         $stmt->execute();
+        $result = $stmt->get_result();
+        $wallet = $result->fetch_assoc();
         $stmt->close();
+
+        if (!$wallet) {
+            throw new Exception('Wallet not found for this user');
+        }
+
+        $newWithdrawable = (float)$wallet['withdrawable_balance'];
+        $newNonWithdrawable = (float)$wallet['non_withdrawable_balance'];
+
+        /* The amount was reserved when the request was submitted.
+           Approval keeps it deducted; rejection returns it to withdrawable balance.
+           Guest requests never reserved anything (no wallet exists), so this
+           refund step is skipped entirely for them — rejecting a guest request
+           just marks it rejected with no balance side-effects. */
+        if ($action === 'reject') {
+            $newWithdrawable += $amount;
+            $newBalance = $newWithdrawable + $newNonWithdrawable;
+
+            $stmt = $conn->prepare(
+                "UPDATE wallet_users
+                 SET withdrawable_balance = ?, balance = ?
+                 WHERE id = ?"
+            );
+            $stmt->bind_param('ddi', $newWithdrawable, $newBalance, $wallet['id']);
+            $stmt->execute();
+            $stmt->close();
+        }
     }
 
     $stmt = $conn->prepare(
