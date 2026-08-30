@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
+<style>
+  :root{
+    --bg: #0b0d10;
+    --card: #14171b;
+    --card-2: #1a1e23;
+    --border: #262b31;
+    --green: #22c55e;
+    --green-dim: rgba(34,197,94,0.12);
+    --purple: #a78bfa;
+    --purple-dim: rgba(167,139,250,0.12);
+    --text: #f4f5f7;
+    --muted: #9aa1ab;
+    --red: #ef4444;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    display:flex;
+    justify-content:center;
+    padding:20px 0 60px;
+  }
+  .phone{
+    width:100%;
+    max-width:420px;
+    padding:0 18px;
+  }
+  /* Top bar */
+  .topbar{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    margin-bottom:18px;
+  }
+  .back-btn{
+    width:44px;height:44px;
+    border-radius:12px;
+    background:var(--card);
+    border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    color:var(--text);
+  }
+  .topbar h1{
+    font-size:26px;
+    margin:0;
+    font-weight:800;
+  }
+
+  /* Compact professional profile card */
+  .id-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:14px;
+    margin-bottom:16px;
+    box-shadow:0 10px 28px rgba(0,0,0,.08);
+  }
+  .id-head{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .avatar{
+    width:64px;height:64px;
+    border-radius:50%;
+    background:var(--card-2);
+    border:1px solid var(--border);
+    position:relative;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+  }
+  .avatar svg{ width:52%; height:52%; opacity:.55; }
+  .avatar #avatarImg{
+    position:absolute;
+    inset:0;
+    width:100% !important;
+    height:100% !important;
+    border-radius:50%;
+    object-fit:cover;
+    z-index:1;
+  }
+  .id-head-text{
+    flex:1;
+    min-width:0;
+  }
+  .team-name{
+    font-size:20px;
+    font-weight:900;
+    letter-spacing:.01em;
+    margin:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .country-location{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    margin-top:7px;
+    min-width:0;
+    color:var(--muted);
+    font-size:10.5px;
+    font-weight:800;
+    letter-spacing:.035em;
+    text-transform:uppercase;
+  }
+  .country-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    background:var(--card-2);
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:5px 8px;
+    color:var(--text);
+    white-space:nowrap;
+  }
+  .flag-dot{
+    width:11px;height:11px;
+    border-radius:50%;
+    background:#0b3d1f;
+    position:relative;
+    overflow:hidden;
+    display:inline-block;
+    flex-shrink:0;
+  }
+  .flag-dot::after{
+    content:"";
+    position:absolute;
+    width:5px;height:5px;
+    border-radius:50%;
+    background:#c8102e;
+    top:50%;left:45%;
+    transform:translate(-50%,-50%);
+  }
+  .location-text{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .location-text svg{width:12px;height:12px;flex-shrink:0;color:var(--green);}
+  .meta-dot{color:var(--border);font-size:12px;}
+  .slogan-box{
+    margin-top:12px;
+    background:var(--card-2);
+    border:1px solid var(--border);
+    border-radius:13px;
+    padding:9px 11px;
+  }
+  .slogan-label{
+    display:none;
+  }
+  .slogan-text{
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.45;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+  .id-divider{
+    height:1px;
+    background:var(--border);
+    margin:12px 0 9px;
+  }
+  .info-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:7px;
+  }
+  .info-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:8px;
+    border-radius:11px;
+    background:var(--card-2);
+    min-width:0;
+  }
+  .info-row.wide{grid-column:1 / -1;}
+  .icon-chip{
+    width:29px;height:29px;
+    border-radius:9px;
+    background:var(--green-dim);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--green);
+    flex-shrink:0;
+  }
+  .icon-chip svg{width:14px;height:14px;}
+  .info-text{flex:1;min-width:0;}
+  .info-label{
+    font-size:9px;
+    color:var(--muted);
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    margin-bottom:1px;
+  }
+  .info-value{
+    font-size:12px;
+    font-weight:750;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .copy-btn{
+    width:25px;height:25px;
+    border-radius:8px;
+    background:transparent;
+    border:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--muted);
+    cursor:pointer;
+    flex-shrink:0;
+  }
+
+  /* Stats row */
+  .stats-row{
+    display:flex;
+    gap:10px;
+    margin:14px 0;
+  }
+  .stat-card{
+    flex:1;
+    border-radius:15px;
+    padding:12px;
+    position:relative;
+    overflow:hidden;
+    border:1px solid var(--border);
+  }
+  .stat-card.slot{
+    background:linear-gradient(160deg, rgba(34,197,94,0.10), rgba(34,197,94,0.02));
+    border-color:rgba(34,197,94,0.35);
+  }
+  .stat-card.rank{
+    background:linear-gradient(160deg, rgba(167,139,250,0.14), rgba(167,139,250,0.03));
+    border-color:rgba(167,139,250,0.35);
+  }
+  .stat-icon{
+    width:34px;height:34px;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:7px;
+  }
+  .slot .stat-icon{ background:var(--green-dim); color:var(--green); }
+  .rank .stat-icon{ background:var(--purple-dim); color:var(--purple); }
+  .stat-label{
+    font-size:9px;
+    font-weight:800;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    margin-bottom:4px;
+  }
+  .slot .stat-label{ color:var(--green); }
+  .rank .stat-label{ color:var(--purple); }
+  .stat-value{ font-size:22px; font-weight:900; }
+
+  /* Menu list */
+  .menu-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:4px 6px;
+    margin-bottom:18px;
+  }
+  .menu-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:14px 10px;
+    border-bottom:1px solid var(--border);
+    cursor:pointer;
+    text-decoration:none;
+    color:inherit;
+  }
+  .menu-row:last-child{ border-bottom:none; }
+  .menu-icon{
+    width:40px;height:40px;
+    border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .menu-icon.green{ background:var(--green-dim); color:var(--green); }
+  .menu-icon.orange{ background:rgba(245,158,11,0.14); color:#f5b342; }
+  .menu-icon.blue-grey{ background:rgba(99,132,190,0.16); color:#5b9bff; }
+  .menu-icon.blue{ background:rgba(59,130,246,0.14); color:#5b9bff; }
+  .menu-text{ flex:1; }
+  .menu-title{ font-size:15px; font-weight:800; }
+  .menu-sub{ font-size:12.5px; color:var(--muted); margin-top:2px; }
+  .chevron{ color:#6b7280; }
+
+  .logout-btn{
+    width:100%;
+    padding:16px;
+    border-radius:16px;
+    background:rgba(239,68,68,0.08);
+    border:1px solid rgba(239,68,68,0.45);
+    color:var(--red);
+    font-size:15px;
+    font-weight:800;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    cursor:pointer;
+  }
+
+  /* Logout confirm modal */
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.6);
+    backdrop-filter:blur(3px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    z-index:100;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s ease;
+  }
+  .modal-overlay.show{
+    opacity:1;
+    pointer-events:auto;
+  }
+  .modal-box{
+    width:100%;
+    max-width:340px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:26px 22px 20px;
+    text-align:center;
+    transform:translateY(10px) scale(0.97);
+    transition:transform .2s ease;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,0.6);
+  }
+  .modal-overlay.show .modal-box{
+    transform:translateY(0) scale(1);
+  }
+  .modal-icon{
+    width:56px;height:56px;
+    border-radius:50%;
+    background:rgba(239,68,68,0.12);
+    color:var(--red);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    margin:0 auto 16px;
+  }
+  .modal-title{
+    font-size:17px;
+    font-weight:800;
+    margin-bottom:8px;
+  }
+  .modal-text{
+    font-size:13.5px;
+    color:var(--muted);
+    line-height:1.5;
+    margin-bottom:22px;
+  }
+  .modal-actions{
+    display:flex;
+    gap:10px;
+  }
+  .modal-btn{
+    flex:1;
+    padding:13px;
+    border-radius:12px;
+    font-size:14.5px;
+    font-weight:700;
+    cursor:pointer;
+    border:1px solid var(--border);
+    background:var(--card-2);
+    color:var(--text);
+    font-family:inherit;
+  }
+  .modal-btn:active{ transform:scale(0.98); }
+  .modal-btn.danger{
+    background:var(--red);
+    border-color:var(--red);
+    color:#fff;
+  }
+</style>
+<style>
+:root{
+  --bg: var(--g-bg);
+  --card: var(--g-surface);
+  --card-2: var(--g-surface-2);
+  --border: var(--g-border);
+  --text: var(--g-text);
+  --muted: var(--g-muted);
+}
+</style>
+
+</head>
+<body>
+<div class="phone">
+
+  <div class="topbar">
+    <button class="back-btn" onclick="history.back()" aria-label="Go back">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <h1 data-i18n="profile.title">Profile</h1>
+  </div>
+
+  <div class="id-card">
+    <div class="id-head">
+      <div class="avatar" id="avatar">
+        <svg id="avatarPlaceholder" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+        <img id="avatarImg" alt="Profile picture" style="display:none;width:100%;height:100%;object-fit:cover;">
+      </div>
+
+      <div class="id-head-text">
+        <div class="team-name" id="teamName">Team Name</div>
+
+        <div class="country-location">
+          <span class="country-pill">
+            <span class="flag-dot"></span>
+            <span id="countryBadgeText">BANGLADESH</span>
+          </span>
+          <span class="meta-dot">•</span>
+          <span class="location-text">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+            <span id="location">----</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="slogan-box">
+      <div class="slogan-text" id="slogan">----</div>
+    </div>
+
+    <div class="id-divider"></div>
+
+    <div class="info-grid">
+      <div class="info-row">
+        <div class="icon-chip">
+          <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+        </div>
+        <div class="info-text">
+          <div class="info-label" data-i18n="profile.uid">UID</div>
+          <div class="info-value" id="uid">—</div>
+        </div>
+        <button class="copy-btn" id="copyBtn" type="button" onclick="copyValue('uid')" aria-label="Copy UID">
+          <svg id="copyIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+        </button>
+      </div>
+
+      <div class="info-row">
+        <div class="icon-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-4.1-1.1L3 20l1.1-5.4A8.5 8.5 0 1 1 21 11.5z"/></svg>
+        </div>
+        <div class="info-text">
+          <div class="info-label" data-i18n="profile.whatsapp">WhatsApp</div>
+          <div class="info-value" id="whatsapp">----</div>
+        </div>
+      </div>
+
+      <div class="info-row wide">
+        <div class="icon-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+        </div>
+        <div class="info-text">
+          <div class="info-label" data-i18n="profile.email">Email</div>
+          <div class="info-value" id="email">----</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card slot">
+      <div class="stat-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>
+      </div>
+      <div class="stat-label" data-i18n="profile.slotBought">Slot Bought</div>
+      <div class="stat-value" id="slotBought">0</div>
+    </div>
+    <div class="stat-card rank">
+      <div class="stat-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 5h3a2 2 0 0 1-2 4M7 5H4a2 2 0 0 0 2 4"/></svg>
+      </div>
+      <div class="stat-label" data-i18n="profile.teamRank">Team Rank</div>
+      <div class="stat-value" id="teamRank">--</div>
+    </div>
+  </div>
+
+  <div class="menu-card">
+    <a class="menu-row" id="adminPanelRow" href="admin-panel.html" style="display:none;">
+      <div class="menu-icon orange">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 3 7v6c0 5 4 9 9 9s9-4 9-9V7l-9-5Z"/></svg>
+      </div>
+      <div class="menu-text">
+        <div class="menu-title" data-i18n="profile.adminPanel">ADMIN PANEL</div>
+        <div class="menu-sub" data-i18n="profile.adminPanelSub">Manage users &amp; stats</div>
+      </div>
+      <svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+    </a>
+    <a class="menu-row" href="edit_profile.html">
+      <div class="menu-icon green">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+      </div>
+      <div class="menu-text">
+        <div class="menu-title" data-i18n="profile.editProfile">EDIT PROFILE</div>
+        <div class="menu-sub" data-i18n="profile.editProfileSub">Update your personal information</div>
+      </div>
+      <svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+    </a>
+    <a class="menu-row" href="settings.html">
+      <div class="menu-icon orange">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      </div>
+      <div class="menu-text">
+        <div class="menu-title" data-i18n="profile.settings">SETTINGS</div>
+        <div class="menu-sub" data-i18n="profile.settingsSub">Adjust your preferences</div>
+      </div>
+      <svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+    </a>
+    <a class="menu-row" href="feedback.html">
+      <div class="menu-icon blue-grey">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><circle cx="4" cy="12" r="2"/><circle cx="12" cy="10" r="2"/><circle cx="20" cy="14" r="2"/></svg>
+      </div>
+      <div class="menu-text">
+        <div class="menu-title" data-i18n="profile.feedback">FEEDBACK</div>
+        <div class="menu-sub" data-i18n="profile.feedbackSub">Send us your feedback</div>
+      </div>
+      <svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+    </a>
+    <a class="menu-row" href="about-us.html">
+      <div class="menu-icon blue">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      </div>
+      <div class="menu-text">
+        <div class="menu-title" data-i18n="profile.aboutUs">ABOUT US</div>
+        <div class="menu-sub" data-i18n="profile.aboutUsSub">Learn more about us</div>
+      </div>
+      <svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+    </a>
+  </div>
+
+  <button class="logout-btn" id="logoutBtn" type="button">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+    <span data-i18n="profile.logout">LOG OUT</span>
+  </button>
+
+</div>
+
+<div class="modal-overlay" id="logoutModal">
+  <div class="modal-box">
+    <div class="modal-icon">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+    </div>
+    <div class="modal-title" id="logoutModalTitle">Log out?</div>
+    <div class="modal-text" id="logoutModalText">Are you sure you want to log out of your account?</div>
+    <div class="modal-actions">
+      <button class="modal-btn" id="logoutCancelBtn" type="button">Cancel</button>
+      <button class="modal-btn danger" id="logoutConfirmBtn" type="button">Log out</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+function getProfile(){
+  try { return JSON.parse(localStorage.getItem('user_profile') || '{}'); }
+  catch(e){ return {}; }
+}
+
+function copyValue(id){
+  const el=document.getElementById(id);
+  if(!el) return;
+  const text=el.textContent.trim();
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn=document.getElementById('copyBtn');
+    if(btn) btn.style.color='#22c55e';
+    setTimeout(()=>{ if(btn) btn.style.color=''; },1000);
+  }).catch(()=>{});
+}
+
+function renderProfile(){
+  const profile=getProfile();
+
+  const uidEl=document.getElementById('uid');
+  if(uidEl) uidEl.textContent = profile.uid ? ('#' + profile.uid) : '—';
+
+  const teamNameEl=document.getElementById('teamName');
+  if(teamNameEl) teamNameEl.textContent = profile.teamName || 'Team Name';
+
+  const sloganEl=document.getElementById('slogan');
+  if(sloganEl){
+    sloganEl.textContent = profile.slogan ? ('#' + profile.slogan) : '----';
+  }
+
+  const whatsappEl=document.getElementById('whatsapp');
+  if(whatsappEl) whatsappEl.textContent = profile.whatsapp || '----';
+
+  const emailEl=document.getElementById('email');
+  if(emailEl) emailEl.textContent = profile.email || '----';
+
+  const countryEl=document.getElementById('countryBadgeText');
+  if(countryEl) countryEl.textContent = (profile.country || 'Bangladesh').toUpperCase();
+
+  const locationEl=document.getElementById('location');
+  if(locationEl) locationEl.textContent = profile.location || '----';
+
+  const adminRow=document.getElementById('adminPanelRow');
+  if(adminRow) adminRow.style.display = profile.isAdmin ? 'flex' : 'none';
+
+  const savedPicture=localStorage.getItem('profile_picture');
+  const avatarImg=document.getElementById('avatarImg');
+  const avatarPlaceholder=document.getElementById('avatarPlaceholder');
+
+  if(savedPicture && avatarImg){
+    avatarImg.src=savedPicture;
+    avatarImg.style.display='block';
+    if(avatarPlaceholder) avatarPlaceholder.style.display='none';
+  }else{
+    if(avatarImg) avatarImg.style.display='none';
+    if(avatarPlaceholder) avatarPlaceholder.style.display='';
+  }
+}
+
+renderProfile();
+
+// Re-render after global.js finishes its Supabase sync. The profile card
+// reads all editable fields from the same user_profile object used by
+// edit_profile.html, including location.
+document.addEventListener('chteo:profile-synced', renderProfile);
+
+/* ============ Slot Bought + Monthly Team Rank ============
+   Slot Bought: how many lobby_teams rows this user has submitted
+   (same table tournament-details.html inserts into when a user buys a
+   slot — submitted_by = the logged-in Supabase auth user id).
+   Team Rank: this user's PROFILE team's position in the current month's
+   leaderboard. Points are grouped by owner_team_name (the buyer's saved
+   profile team name at the time they bought the slot), not by the
+   free-typed squad name on that particular entry — so slots bought
+   under any typed team name still count toward the buyer's own team. */
+const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
+const SUPABASE_KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+
+async function loadSlotAndRank(){
+  try{
+    if(!window.supabase || !window.supabase.createClient) return;
+    const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session) return;
+    const uid=session.user.id;
+
+    const slotEl=document.getElementById('slotBought');
+    if(slotEl){
+      const {count,error}=await sb.from('lobby_teams').select('id',{count:'exact',head:true}).eq('submitted_by',uid);
+      if(!error) slotEl.textContent=count||0;
+    }
+
+    const rankEl=document.getElementById('teamRank');
+    const teamName=(getProfile().teamName||'').trim();
+    if(rankEl && teamName){
+      const now=new Date();
+      const monthStart=new Date(now.getFullYear(),now.getMonth(),1).toISOString().slice(0,10);
+      const {data,error}=await sb.from('leaderboard_rows').select('team_name,owner_team_name,points').gte('lobby_date',monthStart);
+      if(!error && data){
+        const totals=new Map();
+        data.forEach(r=>{
+          const key=(r.owner_team_name||r.team_name);
+          totals.set(key,(totals.get(key)||0)+(r.points||0));
+        });
+        const ranked=[...totals.entries()].sort((a,b)=>b[1]-a[1]);
+        const idx=ranked.findIndex(r=>r[0]===teamName);
+        rankEl.textContent=idx>=0?('#'+(idx+1)):'--';
+      }
+    }
+  }catch(e){ console.warn('Slot/rank load failed:',e); }
+}
+loadSlotAndRank();
+document.addEventListener('chteo:profile-synced', loadSlotAndRank);
+
+function getMsg(key, fallback){
+  try{
+    const lang = (window.CHTEO && window.CHTEO.getLangPref()) || 'en';
+    const dict = (window.CHTEO && window.CHTEO.translations[lang]) || {};
+    return dict[key] || fallback;
+  }catch(e){ return fallback; }
+}
+
+const logoutBtn=document.getElementById('logoutBtn');
+const logoutModal=document.getElementById('logoutModal');
+const logoutCancelBtn=document.getElementById('logoutCancelBtn');
+const logoutConfirmBtn=document.getElementById('logoutConfirmBtn');
+const logoutModalTitle=document.getElementById('logoutModalTitle');
+const logoutModalText=document.getElementById('logoutModalText');
+
+function openLogoutModal(){
+  if(logoutModalTitle) logoutModalTitle.textContent = getMsg('profile.logoutTitle','Log out?');
+  if(logoutModalText) logoutModalText.textContent = getMsg('profile.logoutConfirm','Are you sure you want to log out of your account?');
+  if(logoutModal) logoutModal.classList.add('show');
+}
+function closeLogoutModal(){
+  if(logoutModal) logoutModal.classList.remove('show');
+}
+
+if(logoutBtn){
+  logoutBtn.addEventListener('click', openLogoutModal);
+}
+if(logoutCancelBtn){
+  logoutCancelBtn.addEventListener('click', closeLogoutModal);
+}
+if(logoutModal){
+  logoutModal.addEventListener('click', function(e){
+    if(e.target === logoutModal) closeLogoutModal();
+  });
+}
+if(logoutConfirmBtn){
+  logoutConfirmBtn.addEventListener('click', function(){
+    // Only clear the logged-in/session flag. Keep the user's saved profile
+    // data (team name, slogan, email, whatsapp, picture) so it's still
+    // there the next time they sign back in.
+    localStorage.removeItem('chteo_logged_in');
+    window.location.href='chteo_auth.html';
+  });
+}
+</script>
+</body>
+</html>

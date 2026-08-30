@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
+<style>
+  :root{
+    --bg:#0b0f19;
+    --card:#141a29;
+    --border:#232c42;
+    --text:#ffffff;
+    --muted:#8a93a6;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    font-family:'Segoe UI',Roboto,Arial,sans-serif;
+    color:var(--text);
+    display:flex;
+    justify-content:center;
+    padding:20px 0 60px;
+  }
+  .phone{
+    width:100%;
+    max-width:460px;
+    padding:0 16px;
+  }
+
+  .header{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    padding:10px 4px 26px;
+  }
+  .back-btn{
+    width:56px;height:56px;
+    border:1px solid var(--border);
+    border-radius:16px;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--text);
+    background:transparent;
+    cursor:pointer;
+    font-size:22px;
+    flex-shrink:0;
+  }
+  .header h1{
+    font-size:28px;
+    font-weight:800;
+    letter-spacing:1px;
+    margin:0;
+    text-transform:uppercase;
+  }
+
+  .menu-list{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .menu-item{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:16px 18px;
+    cursor:pointer;
+    text-decoration:none;
+    color:var(--text);
+  }
+  .menu-icon{
+    width:44px;height:44px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+  }
+  .menu-icon.purple{background:rgba(139,92,246,0.18);}
+  .menu-icon.blue{background:rgba(59,130,246,0.18);}
+  .menu-icon.green{background:rgba(16,185,129,0.15);}
+  .menu-icon.orange{background:rgba(249,115,22,0.15);}
+  .menu-label{
+    flex:1;
+    font-size:16px;
+    font-weight:700;
+  }
+  .menu-arrow{
+    color:var(--muted);
+    flex-shrink:0;
+  }
+</style>
+<style>
+:root{
+  --bg: var(--g-bg);
+  --card: var(--g-surface);
+  --border: var(--g-border);
+  --text: var(--g-text);
+  --muted: var(--g-muted);
+}
+</style>
+
+</head>
+<body>
+<div class="phone">
+
+  <div class="header">
+    <button class="back-btn" onclick="history.back()">&#8592;</button>
+    <h1 data-i18n="settings.title">Settings</h1>
+  </div>
+
+  <div class="menu-list">
+
+    <a class="menu-item" href="notification.html">
+      <div class="menu-icon purple">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 3.5c-2.5 0-4.4 2-4.4 4.5v3.2c0 .6-.2 1.2-.6 1.7l-1 1.3c-.5.6-.1 1.5.7 1.5h10.6c.8 0 1.2-.9.7-1.5l-1-1.3c-.4-.5-.6-1.1-.6-1.7V8c0-2.5-1.9-4.5-4.4-4.5z" stroke="#a78bfa" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M10.3 18.5a1.8 1.8 0 0 0 3.4 0" stroke="#a78bfa" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="menu-label" data-i18n="settings.notification">Notification</div>
+      <svg class="menu-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M9 6l6 6-6 6" stroke="#8a93a6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+
+    <a class="menu-item" href="theme.html">
+      <div class="menu-icon blue">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16.5 3.5c1 0 2 .3 2.6 1 .7.6 1 1.6 1 2.6-2 1-4 2.5-5.6 4.1L11 14.7 9.3 13l3.5-3.5c1.6-1.6 3.1-3.6 4.1-5.6z" stroke="#60a5fa" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M9.3 13L6 16.3c-.5.5-2.6 1-3.3 1.1.1-.7.6-2.8 1.1-3.3L7 10.7" stroke="#60a5fa" stroke-width="1.6" stroke-linejoin="round"/>
+          <circle cx="7.5" cy="16.5" r="1" fill="#60a5fa"/>
+        </svg>
+      </div>
+      <div class="menu-label" data-i18n="settings.theme">Theme</div>
+      <svg class="menu-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M9 6l6 6-6 6" stroke="#8a93a6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+
+    <a class="menu-item" href="language-select.html">
+      <div class="menu-icon green">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="8" stroke="#34d399" stroke-width="1.6"/>
+          <ellipse cx="12" cy="12" rx="3.4" ry="8" stroke="#34d399" stroke-width="1.6"/>
+          <path d="M4 12h16" stroke="#34d399" stroke-width="1.6"/>
+        </svg>
+      </div>
+      <div class="menu-label" data-i18n="settings.language">Language</div>
+      <svg class="menu-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M9 6l6 6-6 6" stroke="#8a93a6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+
+    <a class="menu-item" href="change-password.html">
+      <div class="menu-icon orange">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="6" y="11" width="12" height="8" rx="2" stroke="#fb923c" stroke-width="1.6"/>
+          <path d="M8.5 11V8.5a3.5 3.5 0 0 1 7 0V11" stroke="#fb923c" stroke-width="1.6" stroke-linecap="round"/>
+          <circle cx="12" cy="15" r="1.3" fill="#fb923c"/>
+        </svg>
+      </div>
+      <div class="menu-label" data-i18n="settings.changePassword">Change Password</div>
+      <svg class="menu-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M9 6l6 6-6 6" stroke="#8a93a6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+
+  </div>
+
+</div>
+</body>
+</html>
