@@ -350,7 +350,12 @@ function buildCard(req){
         (isPending ? '' : statusChip(req.status)) +
       '</div>' +
     '</div>' +
-    '<div class="req-row"><span class="lbl">User</span><span class="val"><a href="user-detail.html?uid=' + encodeURIComponent(req.supabase_uid || '') + '" style="color:inherit;text-decoration:underline;">' + escapeHtml(req.email) + '</a></span></div>' +
+    '<div class="req-row"><span class="lbl">User</span><span class="val">' +
+      (req.is_guest
+        ? '<span class="req-method" style="background:rgba(255,122,26,0.12);color:var(--orange);">Guest</span>'
+        : '<a href="user-detail.html?uid=' + encodeURIComponent(req.supabase_uid || '') + '" style="color:inherit;text-decoration:underline;">' + escapeHtml(req.email) + '</a>') +
+    '</span></div>' +
+    (req.is_guest && req.guest_note ? '<div class="req-row"><span class="lbl">Prize</span><span class="val">' + escapeHtml(req.guest_note) + '</span></div>' : '') +
     '<div class="req-row"><span class="lbl">Account Number</span><span class="val">' + escapeHtml(req.account_number) + '</span></div>' +
     '<div class="req-row"><span class="lbl">Submitted</span><span class="val">' + escapeHtml(formatDhakaTime(req.created_at)) + '</span></div>' +
     (req.reviewed_at ? '<div class="req-row"><span class="lbl">Reviewed</span><span class="val">' + escapeHtml(formatDhakaTime(req.reviewed_at)) + '</span></div>' : '') +
