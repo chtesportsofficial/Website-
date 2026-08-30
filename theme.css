@@ -1,0 +1,186 @@
+/* =========================================================
+   CHT ESP ORG — theme.css
+   Global design tokens + Dark/Light theme + Bottom Navigation
+   + Footer + responsive helpers, shared by every page.
+   Link this BEFORE each page's own <style> block so page-specific
+   styles keep overriding these defaults exactly as before.
+   ========================================================= */
+
+/* ---------- 1. Global color tokens ---------- */
+:root{
+  --g-bg:#0a0d13;
+  --g-surface:#141a29;
+  --g-surface-2:#171f33;
+  --g-border:#232c42;
+  --g-text:#f2f3f7;
+  --g-muted:#8a93a6;
+  --g-accent:#22c55e;
+  --g-danger:#ef4444;
+  --safe-bottom:env(safe-area-inset-bottom, 0px);
+}
+html[data-theme="light"]{
+  --g-bg:#f4f6fb;
+  --g-surface:#ffffff;
+  --g-surface-2:#eef1f7;
+  --g-border:#dde2ec;
+  --g-text:#12141a;
+  --g-muted:#606a7d;
+  --g-accent:#16a34a;
+  --g-danger:#dc2626;
+}
+
+/* Smooth theme switching */
+html{transition:background-color .2s ease;}
+body, .card, .bottomnav, .app-footer{transition:background-color .2s ease, color .2s ease, border-color .2s ease;}
+
+/* ---------- 1b. Kill the native mobile "tap highlight" ----------
+   On touch devices, tapping a link/card/button paints a translucent
+   grey/black highlight over it. If the tap navigates to another page
+   before the highlight has faded, and the user then presses Back, some
+   mobile browsers restore the previous page from cache with that
+   highlight (or a lingering :hover/:active paint) still stuck on the
+   element — it looks like the box "went black" and won't come back to
+   normal. Removing the native highlight (each page still shows its own
+   :active press-down feedback) fixes this without changing any layout,
+   color, or theme. */
+html, body{ -webkit-tap-highlight-color:transparent; }
+a, button, [role="button"], .navitem, .card, .support-card, .menu-row,
+.info-row, .back-btn, .icon-btn, .support-fab, input, select, textarea{
+  -webkit-tap-highlight-color:transparent;
+}
+
+/* ---------- 2. Base page spacing so fixed nav never covers content ---------- */
+body{
+  padding-bottom:calc(112px + var(--safe-bottom)) !important;
+}
+html[data-page="chteo_auth"] body,
+body.no-bottomnav{
+  padding-bottom:0 !important;
+}
+
+/* ---------- 3. Global Bottom Navigation ---------- */
+.bottomnav{
+  position:fixed;
+  left:12px;right:12px;bottom:calc(12px + var(--safe-bottom));
+  display:flex;justify-content:space-around;align-items:flex-start;
+  background:rgba(19,24,38,.94);
+  backdrop-filter:blur(16px);
+  border:1px solid var(--g-border);
+  border-radius:20px;
+  padding:12px 4px 10px;
+  z-index:500;
+  box-shadow:0 12px 32px rgba(0,0,0,.45);
+}
+html[data-theme="light"] .bottomnav{
+  background:rgba(255,255,255,.92);
+  box-shadow:0 12px 32px rgba(20,30,60,.12);
+}
+.bottomnav .navitem{
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  color:var(--g-muted);
+  padding:2px 6px;flex:1;min-width:0;
+  text-decoration:none;
+  background:none;border:none;font-family:inherit;cursor:pointer;
+}
+.bottomnav .navitem.active{ color:var(--g-accent); }
+.bottomnav .navitem svg{width:21px;height:21px;}
+.bottomnav .navitem .lbl{font-size:8.5px;font-weight:700;white-space:nowrap;}
+
+/* Small round thumbnail of the user's saved profile picture, shown in the
+   Profile nav item instead of the generic person icon once they've set one. */
+.bottomnav .navitem .nav-avatar{
+  width:21px;height:21px;
+  border-radius:50%;
+  object-fit:cover;
+  border:1.5px solid var(--g-muted);
+  display:block;
+}
+.bottomnav .navitem.has-avatar.active .nav-avatar{
+  border-color:var(--g-accent);
+}
+.bottomnav .support-item{margin-top:-24px;}
+.bottomnav .support-fab{
+  width:52px;height:52px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--g-bg);
+  border:2px solid var(--g-border);
+  box-shadow:none;
+  font-size:22px;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+/* Only glow when the Support page is the CURRENT page (nav item has .active) */
+.bottomnav .navitem.active .support-fab{
+  border-color:var(--g-accent);
+  box-shadow:0 0 16px rgba(34,224,138,.45);
+}
+
+@media(min-width:701px){
+  .bottomnav{
+    left:50%;right:auto;transform:translateX(-50%);
+    width:min(620px,calc(100% - 48px));
+    bottom:calc(20px + var(--safe-bottom));
+  }
+}
+@media(min-width:1024px){
+  .bottomnav{
+    width:min(480px,calc(100% - 48px));
+    bottom:calc(24px + var(--safe-bottom));
+  }
+}
+
+/* ---------- 4. Global Footer ---------- */
+.app-footer.global-footer{
+  text-align:center;
+  font-size:10.5px;
+  color:var(--g-muted);
+  padding:18px 16px calc(130px + var(--safe-bottom));
+  margin-top:8px;
+}
+/* When a page already renders its own .app-footer above the nav (e.g. index.html),
+   don't add the huge bottom gap twice. */
+.phone .app-footer.global-footer,
+.screen .app-footer.global-footer{
+  padding-bottom:calc(130px + var(--safe-bottom));
+}
+
+/* ---------- 5. Generic responsive shell ---------- */
+/* Most pages set their own fixed max-width (e.g. 380-460px) inline in a
+   <style> block that is placed AFTER this stylesheet in <head>, so on an
+   unconditional (non-media-query) selector of equal specificity that inline
+   rule always wins the cascade — even inside these @media blocks once they
+   match. The !important flags below are required so the site actually
+   widens on tablet/desktop instead of staying pinned to a narrow mobile
+   column with large empty gutters either side. */
+@media(min-width:701px){
+  .phone,.screen{ max-width:620px !important; }
+}
+@media(min-width:1024px){
+  .phone,.screen{ max-width:760px !important; padding-left:28px !important; padding-right:28px !important; }
+}
+@media(min-width:1440px){
+  .phone,.screen{ max-width:860px !important; }
+}
+
+/* On wide viewports the centered column would otherwise float on a flat,
+   empty background. Give desktop/tablet visitors a subtle backdrop so the
+   page still feels intentional rather than "broken mobile layout". */
+@media(min-width:701px){
+  body{
+    background:
+      radial-gradient(60% 40% at 50% 0%, color-mix(in srgb, var(--g-accent) 6%, transparent), transparent 70%),
+      var(--g-bg);
+  }
+}
+
+/* Language switcher small helper (used on language-select.html trigger elsewhere too) */
+.lang-toggle-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--g-surface);
+  border:1px solid var(--g-border);
+  color:var(--g-text);
+  border-radius:10px;
+  padding:8px 12px;
+  font-size:12.5px;
+  font-weight:700;
+  cursor:pointer;
+}
