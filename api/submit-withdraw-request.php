@@ -17,8 +17,14 @@ $supabaseUrl = 'https://myfficbwcbgbxbdqjexv.supabase.co';
 $supabaseAnonKey = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
 
 // ---- Telegram notification config (CHTEO Withdraw Alerts group) ----
-$telegramBotToken = '8946675932:AAHxGR-v1JoGVDmpKJYnpqriKpF7swjSKkE';
-$telegramChatId   = '-5433914490';
+// Reads from Render Environment Variables so the bot token/chat id are
+// never exposed in the GitHub repo. TELEGRAM_BOT_TOKEN is shared with the
+// deposit notifier; TELEGRAM_WITHDRAW_CHAT_ID is separate from the
+// deposit group's TELEGRAM_CHAT_ID since they post to different groups.
+// Falls back to the previous hardcoded values if the env vars aren't set,
+// so this keeps working even before they're added on Render.
+$telegramBotToken = getenv('TELEGRAM_BOT_TOKEN') ?: '8946675932:AAHxGR-v1JoGVDmpKJYnpqriKpF7swjSKkE';
+$telegramChatId   = getenv('TELEGRAM_WITHDRAW_CHAT_ID') ?: '-5433914490';
 
 $MIN_WITHDRAW = 50.00;
 
