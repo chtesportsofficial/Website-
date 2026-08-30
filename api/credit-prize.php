@@ -90,13 +90,19 @@ if ($profileResponse === false || $profileCode < 200 || $profileCode >= 300 || !
 }
 
 /* Credit each winner. Prize money is withdrawable (unlike deposits).
-   Also logs a 'prize' row into wallet_transactions so it shows up in
-   the user's Recent Transactions / wallet history (get-wallet-history.php
-   already recognizes type = 'prize' via normalizeType()). */
+   A wallet_prize_credits row (reference = prize_<lobby_id>_<team_id>,
+   UNIQUE) is inserted FIRST for each winner; if that insert fails with
+   a duplicate-key error, this exact prize was already credited before
+   (double-click / concurrent request / re-save), so it's skipped WITHOUT
+   touching the balance. The uniqueness is enforced by MySQL itself, so
+   double-crediting is impossible even under a race between two requests. */
 $conn->set_charset('utf8mb4');
 $conn->begin_transaction();
 
 try {
+    $refStmt = $conn->prepare(
+        "INSERT INTO wallet_prize_credits (reference, user_id, amount) VALUES (?, ?, ?)"
+    );
     $updateStmt = $conn->prepare(
         "UPDATE wallet_users
          SET withdrawable_balance = withdrawable_balance + ?,
@@ -108,8 +114,8 @@ try {
     );
     $insertStmt = $conn->prepare(
         "INSERT INTO wallet_transactions
-            (user_id, type, amount, description, status)
-         VALUES (?, 'prize', ?, 'Tournament prize', 'completed')"
+            (user_id, type, amount, description, status, reference)
+         VALUES (?, 'prize', ?, 'Tournament prize', 'completed', ?)"
     );
 
     $credited = [];
@@ -118,38 +124,66 @@ try {
     foreach ($credits as $c) {
         $uid = isset($c['supabase_uid']) ? trim($c['supabase_uid']) : '';
         $amount = isset($c['amount']) ? (float)$c['amount'] : 0;
+        $lobbyId = isset($c['lobby_id']) ? trim((string)$c['lobby_id']) : '';
+        $teamId = isset($c['team_id']) ? trim((string)$c['team_id']) : '';
 
-        if ($uid === '' || $amount <= 0) {
+        if ($uid === '' || $amount <= 0 || $lobbyId === '' || $teamId === '') {
             $skipped[] = $c;
             continue;
         }
 
+        // Resolve the integer wallet_users.id first (needed for the
+        // prize_credits row and the transactions log).
+        $lookupStmt->bind_param('s', $uid);
+        $lookupStmt->execute();
+        $row = $lookupStmt->get_result()->fetch_assoc();
+        if (!$row) {
+            $skipped[] = $c; // no wallet_users row for this uid
+            continue;
+        }
+        $walletUserId = (int)$row['id'];
+        $reference = 'prize_' . $lobbyId . '_' . $teamId;
+
+        // Atomically claim this exact prize. Duplicate => already credited.
+        $ok = false;
+        $errno = 0;
+        try {
+            $refStmt->bind_param('sid', $reference, $walletUserId, $amount);
+            $ok = $refStmt->execute();
+            if (!$ok) {
+                $errno = $conn->errno;
+            }
+        } catch (\Throwable $ex) {
+            $ok = false;
+            $errno = (int)$ex->getCode();
+        }
+
+        if (!$ok) {
+            if ($errno === 1062) {
+                $skipped[] = $c + ['reason' => 'already credited'];
+                continue;
+            }
+            throw new Exception('Could not reserve prize reference: ' . $conn->error);
+        }
+
+        // Reference claimed — safe to actually move the money now.
         $updateStmt->bind_param('dds', $amount, $amount, $uid);
         $updateStmt->execute();
 
         if ($updateStmt->affected_rows > 0) {
-            // Resolve the integer wallet_users.id for the transactions log
-            // (wallet_transactions.user_id is int, NOT the supabase_uid string).
-            $lookupStmt->bind_param('s', $uid);
-            $lookupStmt->execute();
-            $row = $lookupStmt->get_result()->fetch_assoc();
-
-            if ($row) {
-                $walletUserId = (int)$row['id'];
-                $insertStmt->bind_param('id', $walletUserId, $amount);
-                $insertStmt->execute();
-            }
-
+            $insertStmt->bind_param('ids', $walletUserId, $amount, $reference);
+            $insertStmt->execute();
             $credited[] = ['supabase_uid' => $uid, 'amount' => $amount];
         } else {
-            $skipped[] = $c; // no wallet_users row for this uid
+            $skipped[] = $c; // shouldn't happen since lookup just found the row
         }
     }
+    $refStmt->close();
     $updateStmt->close();
     $lookupStmt->close();
     $insertStmt->close();
 
-    if (!count($credited)) {
+    if (!count($credited) && !count($skipped)) {
         throw new Exception('No wallet accounts found for the given users');
     }
 
