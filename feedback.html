@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feedback</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
+<style>
+  :root{
+    --bg:#0b0f19;
+    --card:#141a29;
+    --card-2:#171f33;
+    --border:#232c42;
+    --text:#ffffff;
+    --muted:#8a93a6;
+    --blue:#6366f1;
+    --green:#22c55e;
+    --red:#ef4444;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    font-family:'Segoe UI',Roboto,Arial,sans-serif;
+    color:var(--text);
+    display:flex;
+    justify-content:center;
+    padding:20px 0 60px;
+  }
+  .phone{
+    width:100%;
+    max-width:420px;
+    padding:0 16px;
+    position:relative;
+  }
+
+  .header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    padding:10px 4px 22px;
+  }
+  .header-left{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  .back-btn{
+    width:56px;height:56px;
+    border:none;
+    border-radius:18px;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--text);
+    background:var(--card-2);
+    border:1px solid var(--border);
+    cursor:pointer;
+    font-size:22px;
+  }
+  .header h1{
+    font-size:28px;
+    font-weight:800;
+    margin:0;
+  }
+  .my-feedback-btn{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    background:var(--card-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:12px;
+    padding:10px 14px;
+    font-size:13px;
+    font-weight:700;
+    text-decoration:none;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .my-feedback-btn:hover{ border-color:var(--blue); }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    margin-bottom:16px;
+  }
+
+  .textarea-wrap{
+    padding:16px;
+    position:relative;
+  }
+  textarea{
+    width:100%;
+    min-height:220px;
+    background:transparent;
+    border:none;
+    outline:none;
+    resize:none;
+    color:var(--text);
+    font-size:15px;
+    font-family:inherit;
+    line-height:1.5;
+  }
+  textarea::placeholder{color:var(--muted);}
+  .char-count{
+    text-align:right;
+    color:var(--muted);
+    font-size:13px;
+    margin-top:6px;
+  }
+
+  .section-label{
+    color:var(--muted);
+    font-size:14px;
+    margin:2px 4px 10px;
+  }
+
+  .upload-box{
+    border:1.5px dashed #3a4360;
+    border-radius:14px;
+    padding:36px 20px;
+    text-align:center;
+    cursor:pointer;
+    background:var(--card);
+    transition:.15s ease;
+  }
+  .upload-box:hover{
+    border-color:var(--blue);
+  }
+  .upload-icon{
+    width:64px;height:64px;
+    border-radius:50%;
+    background:var(--card-2);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    margin:0 auto 16px;
+  }
+  .upload-text{
+    color:var(--blue);
+    font-size:17px;
+    font-weight:600;
+    margin-bottom:6px;
+  }
+  .upload-sub{
+    color:var(--muted);
+    font-size:13px;
+  }
+  #fileInput{
+    display:none;
+  }
+
+  .preview-wrap{
+    display:none;
+    margin-top:16px;
+    position:relative;
+  }
+  .preview-wrap.active{
+    display:block;
+  }
+  .preview-wrap img{
+    width:100%;
+    max-height:260px;
+    object-fit:cover;
+    border-radius:12px;
+    display:block;
+  }
+  .remove-preview{
+    position:absolute;
+    top:10px;
+    right:10px;
+    width:32px;height:32px;
+    border-radius:50%;
+    background:rgba(0,0,0,0.6);
+    border:none;
+    color:#fff;
+    font-size:16px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .info-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:16px;
+  }
+  .info-row + .info-row{
+    border-top:1px solid var(--border);
+  }
+  .info-icon{
+    width:36px;height:36px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+  }
+  .info-icon.shield{background:rgba(34,197,94,0.12);}
+  .info-icon.clock{background:rgba(99,102,241,0.15);}
+  .info-row p{
+    margin:0;
+    font-size:14.5px;
+    color:var(--text);
+  }
+
+  .submit-btn{
+    width:100%;
+    border:none;
+    border-radius:12px;
+    padding:18px 0;
+    font-size:17px;
+    font-weight:700;
+    color:#fff;
+    background:var(--red);
+    cursor:pointer;
+  }
+  .submit-btn:active{
+    transform:scale(0.99);
+  }
+
+  /* floating toast */
+  .toast{
+    position:fixed;
+    left:50%;
+    bottom:40px;
+    transform:translateX(-50%) translateY(20px);
+    background:#16a34a;
+    color:#ffffff;
+    padding:14px 22px;
+    border-radius:12px;
+    font-size:14.5px;
+    font-weight:600;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.4);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease;
+    z-index:999;
+    max-width:90%;
+    white-space:nowrap;
+  }
+  .toast.show{
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
+  }
+  .toast.error{
+    background:#7c1c2b;
+    white-space:normal;
+    text-align:center;
+  }
+
+  .submit-btn:disabled{
+    opacity:.6;
+    cursor:not-allowed;
+  }
+</style>
+<style>
+:root{
+  --bg: var(--g-bg);
+  --card: var(--g-surface);
+  --card-2: var(--g-surface-2);
+  --border: var(--g-border);
+  --text: var(--g-text);
+  --muted: var(--g-muted);
+}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <div class="header">
+    <div class="header-left">
+      <button class="back-btn" type="button" onclick="history.back()">&#8249;</button>
+      <h1>Feedback</h1>
+    </div>
+    <a class="my-feedback-btn" href="my-feedback.html">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>
+      My Feedback
+    </a>
+  </div>
+
+  <div class="card textarea-wrap">
+    <textarea id="feedbackText" maxlength="1000" placeholder="Please describe your problem or suggestion in detail. It will help us improve your experience."></textarea>
+    <div class="char-count"><span id="charCount">0</span>/1000</div>
+  </div>
+
+  <div class="section-label">Attach Screenshot (Optional)</div>
+
+  <div class="upload-box" id="uploadBox">
+    <div class="upload-icon">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 16V4M12 4L7 9M12 4L17 9" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="upload-text">Upload Screenshot</div>
+    <div class="upload-sub">JPG, PNG up to 5MB</div>
+
+    <div class="preview-wrap" id="previewWrap">
+      <img id="previewImg" src="" alt="Screenshot preview">
+      <button class="remove-preview" id="removePreview" type="button">&#10005;</button>
+    </div>
+  </div>
+  <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+
+  <div class="card" style="margin-top:16px;">
+    <div class="info-row">
+      <div class="info-icon shield">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2l7 3v6c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V5l7-3z" stroke="#22c55e" stroke-width="1.6" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <p>Your feedback is important to us.</p>
+    </div>
+    <div class="info-row">
+      <div class="info-icon clock">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="8.5" stroke="#6366f1" stroke-width="1.6"/>
+          <path d="M12 7.5V12l3 2" stroke="#6366f1" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <p>We will review your feedback and get back to you soon.</p>
+    </div>
+  </div>
+
+  <button class="submit-btn" id="submitBtn">Submit Feedback</button>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const uploadBox = document.getElementById('uploadBox');
+  const fileInput = document.getElementById('fileInput');
+  const previewWrap = document.getElementById('previewWrap');
+  const previewImg = document.getElementById('previewImg');
+  const removePreview = document.getElementById('removePreview');
+  const feedbackText = document.getElementById('feedbackText');
+  const charCount = document.getElementById('charCount');
+  const submitBtn = document.getElementById('submitBtn');
+  const toast = document.getElementById('toast');
+
+  uploadBox.addEventListener('click', (e) => {
+    if(e.target === removePreview) return;
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      previewImg.src = e.target.result;
+      previewWrap.classList.add('active');
+    };
+    reader.readAsDataURL(file);
+  });
+
+  removePreview.addEventListener('click', (e) => {
+    e.stopPropagation();
+    fileInput.value = '';
+    previewImg.src = '';
+    previewWrap.classList.remove('active');
+  });
+
+  feedbackText.addEventListener('input', () => {
+    charCount.textContent = feedbackText.value.length;
+  });
+
+  function showToast(msg, type){
+    toast.innerHTML = msg;
+    toast.classList.remove('error');
+    if(type === 'error') toast.classList.add('error');
+    toast.classList.add('show');
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  submitBtn.addEventListener('click', async () => {
+    const text = feedbackText.value.trim();
+    if(!text){
+      showToast('Please describe your problem or suggestion before submitting.', 'error');
+      feedbackText.focus();
+      return;
+    }
+
+    if(!(window.CHTEO && window.CHTEO.getSupabaseClient)){
+      showToast('Could not connect to the server. Please try again shortly.', 'error');
+      return;
+    }
+
+    const originalLabel = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+
+    window.CHTEO.getSupabaseClient(async function(client){
+      try{
+        const { data: userRes, error: userErr } = await client.auth.getUser();
+        const user = userRes && userRes.user;
+        if(userErr || !user){
+          showToast('Could not verify your account. Please log in again.', 'error');
+          return;
+        }
+
+        let screenshotUrl = null;
+        const file = fileInput.files[0];
+        if(file){
+          try{
+            // Path must start with the user's own id — same "own folder"
+            // RLS pattern used for the avatars bucket in edit_profile.html.
+            const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+            const path = user.id + '/' + Date.now() + '_' + safeName;
+            const { error: uploadErr } = await client.storage
+              .from('feedback')
+              .upload(path, file, { contentType: file.type || 'image/jpeg' });
+            if(uploadErr){
+              showToast('Could not upload screenshot: ' + uploadErr.message, 'error');
+              return;
+            }
+            const { data: urlData } = client.storage.from('feedback').getPublicUrl(path);
+            screenshotUrl = urlData.publicUrl;
+          }catch(err){
+            showToast('Could not upload screenshot. Please try again.', 'error');
+            return;
+          }
+        }
+
+        const { error: insertErr } = await client.from('feedback').insert({
+          user_id: user.id,
+          message: text,
+          screenshot_url: screenshotUrl
+        });
+        if(insertErr){
+          showToast('Could not submit feedback: ' + insertErr.message, 'error');
+          return;
+        }
+
+        showToast('&#10003; Thanks for your feedback!');
+        feedbackText.value = '';
+        charCount.textContent = 0;
+        fileInput.value = '';
+        previewImg.src = '';
+        previewWrap.classList.remove('active');
+      }catch(err){
+        showToast('Something went wrong. Please try again.', 'error');
+      }finally{
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalLabel;
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
