@@ -259,7 +259,7 @@
   <div class="mh"><b id="lrmTitle">Enter Result</b><button type="button" onclick="closeM('lrm')">×</button></div>
   <div class="results-toolbar"><button type="button" onclick="sortResultsByPoints()">↕ Sort by points</button></div>
   <div id="resultsList"><div class="loading">Loading...</div></div>
-  <div class="modal-actions results-actions"><button type="button" onclick="saveResults()">Save Results</button><button type="button" class="primary" onclick="saveResultsAndComplete()">Complete</button></div>
+  <div class="modal-actions results-actions"><button type="button" id="saveResultsBtn" onclick="saveResults()">Save Results</button><button type="button" class="primary" id="completeResultsBtn" onclick="saveResultsAndComplete()">Complete</button></div>
 </div></div>
 
 <div class="confirm" id="confirm"><div class="confirm-card"><div class="confirm-icon">!</div><div class="confirm-title" id="confirmTitle">Are you sure?</div><div class="confirm-text" id="confirmText"></div><div class="confirm-actions"><button type="button" onclick="closeConfirm()">Cancel</button><button type="button" class="danger" id="confirmOk">Continue</button></div></div></div>
@@ -1031,11 +1031,25 @@ async function saveResults(){
   await logActivity('lobby_results_saved','tournament','tournament_lobby',lobbyId,currentLobbyForResults?`${fmtLobbyDate(currentLobbyForResults.lobby_date)} ${currentLobbyForResults.time_label}`:null,{narration:'saved results for the lobby.'});
   return true;
 }
+let resultsSubmitting=false;
 async function saveResultsAndComplete(){
-  const ok=await saveResults(); if(ok===false||ok===undefined)return;
-  await creditPrizes();
-  await setLobbyStatus(currentLobbyForResults.id,'completed');
-  closeM('lrm');
+  if(resultsSubmitting)return; // ignore extra clicks while a request is in flight
+  resultsSubmitting=true;
+  const btn=$('completeResultsBtn'), saveBtn=$('saveResultsBtn');
+  const origText=btn.textContent;
+  btn.disabled=true; btn.textContent='Processing...';
+  if(saveBtn)saveBtn.disabled=true;
+  try{
+    const ok=await saveResults(); if(ok===false||ok===undefined)return;
+    const warning=await creditPrizes();
+    await setLobbyStatus(currentLobbyForResults.id,'completed');
+    closeM('lrm');
+    msg(warning?('Lobby completed. '+warning):'Lobby completed and prizes credited.');
+  }finally{
+    resultsSubmitting=false;
+    btn.disabled=false; btn.textContent=origText;
+    if(saveBtn)saveBtn.disabled=false;
+  }
 }
 // Adds each row's prize money to the winner's WITHDRAWABLE balance (prize
 // money — unlike deposits, which go to non-withdrawable — is meant to be
@@ -1046,13 +1060,32 @@ async function saveResultsAndComplete(){
 // so re-opening/re-saving this lobby's results later won't re-credit them.
 async function creditPrizes(){
   const rows=[...document.querySelectorAll('#resultsList .result-row')];
+
+  // Rows with a prize but NO linked account (guests / manually-added teams
+  // — no data-submitted-by) have nowhere to receive the money digitally.
+  // Flag these so the admin knows to pay them outside the wallet system,
+  // instead of silently dropping the prize with no trace.
+  const noWallet=rows.filter(row=>{
+    const uid=row.dataset.submittedBy;
+    const prize=+row.querySelector('.resPrize').value||0;
+    return !uid && prize>0;
+  });
+  const noWalletWarning=noWallet.length
+    ? 'No wallet account for: '+noWallet.map(row=>{
+        const nameEl=row.querySelector('.result-name');
+        const name=nameEl?nameEl.textContent.trim():('team '+row.dataset.team);
+        const prize=+row.querySelector('.resPrize').value||0;
+        return name+' (৳'+prize+')';
+      }).join(', ')+' — pay these manually, the wallet system has no account to credit.'
+    : '';
+
   const toCredit=rows.filter(row=>{
     const uid=row.dataset.submittedBy;
     const already=row.dataset.credited==='true';
     const prize=+row.querySelector('.resPrize').value||0;
     return uid && !already && prize>0;
   });
-  if(!toCredit.length)return;
+  if(!toCredit.length)return noWalletWarning;
 
   const lobbyId=currentLobbyForResults.id;
   const credits=toCredit.map(row=>({
@@ -1063,7 +1096,7 @@ async function creditPrizes(){
   }));
 
   const {data:{session}}=await sb.auth.getSession();
-  if(!session){msg('Could not credit prize money — please sign in again.');return;}
+  if(!session){msg('Could not credit prize money — please sign in again.');return noWalletWarning;}
 
   try{
     const res=await fetch('https://chteo-api.onrender.com/api/credit-prize.php',{
@@ -1072,13 +1105,14 @@ async function creditPrizes(){
       body:JSON.stringify({access_token:session.access_token,credits})
     });
     const j=await res.json();
-    if(!j.success){msg('Prize crediting failed: '+(j.message||'unknown error'));return;}
-  }catch(e){msg('Could not reach the wallet server — prize money was NOT credited. Try Complete again.');return;}
+    if(!j.success){msg('Prize crediting failed: '+(j.message||'unknown error'));return noWalletWarning;}
+  }catch(e){msg('Could not reach the wallet server — prize money was NOT credited. Try Complete again.');return noWalletWarning;}
 
   const updates=toCredit.map(row=>({lobby_id:lobbyId,team_id:row.dataset.team,prize_credited:true}));
   const {error}=await sb.from('lobby_results').upsert(updates,{onConflict:'lobby_id,team_id'});
-  if(error){msg('Prize money was credited, but marking it as credited failed — check lobby_results manually: '+error.message);return;}
+  if(error){msg('Prize money was credited, but marking it as credited failed — check lobby_results manually: '+error.message);return noWalletWarning;}
   toCredit.forEach(row=>{row.dataset.credited='true';});
+  return noWalletWarning;
 }
 
 document.addEventListener('DOMContentLoaded', function(){
