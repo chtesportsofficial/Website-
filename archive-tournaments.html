@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Archived Tournaments — CHT ESP ORG</title>
+<style>
+body{margin:0;background:#0a0d13;color:#f2f3f7;font-family:Inter,system-ui,sans-serif}.wrap{max-width:760px;margin:auto;padding:18px 15px 100px}.head{display:flex;gap:12px;align-items:center;margin-bottom:16px}.back{color:#fff;text-decoration:none;font-size:26px}h1{font-size:20px;margin:0}.sub{font-size:11px;color:#8992a6;margin-top:3px}.panel{background:#141a29;border:1px solid #263047;border-radius:17px;padding:13px}.ph{display:flex;justify-content:space-between;align-items:center}.ph b{font-size:13px}.count{color:#8c96aa;font-size:10px}.item{display:grid;grid-template-columns:82px 1fr;gap:10px;background:#181f30;border:1px solid #29344c;border-radius:14px;padding:10px;margin-top:8px}.thumb{width:82px;height:62px;border-radius:9px;object-fit:cover;background:#101522;border:1px solid #29344c}.content{min-width:0}.name{font-weight:800;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.meta{font-size:10px;color:#929caf;line-height:1.5;margin-top:4px}.row{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}button{position:relative;z-index:100;pointer-events:auto;touch-action:manipulation;cursor:pointer;border:1px solid #263047;background:#141a29;color:#fff;border-radius:10px;padding:8px 10px;font-weight:800;font-size:9px}.green{color:#62e58a}.red{color:#ff7777}.archive{color:#f3c86b}.empty{text-align:center;color:#8992a6;font-size:11px;padding:25px 10px}
+.confirm-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:9999;align-items:center;justify-content:center;padding:18px}.confirm-modal.open{display:flex}.confirm-box{width:min(360px,100%);background:#171d2b;border:1px solid #313d56;border-radius:22px;padding:20px;box-shadow:0 20px 60px #000b}.confirm-icon{width:46px;height:46px;border-radius:14px;background:#3a1f28;color:#ff6f7e;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:12px}.confirm-title{font-size:16px;font-weight:900}.confirm-text{font-size:11px;line-height:1.6;color:#929caf;margin-top:6px}.confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}.confirm-cancel{background:#222b3c}.confirm-delete{background:#ef4b5b;border-color:#ef4b5b;color:white}.confirm-restore{background:#25d366;border-color:#25d366;color:#06120a}.restore-icon{background:#193b2b;color:#62e58a}.restore-box{border-color:#315441}
+@media(max-width:520px){.item{grid-template-columns:76px 1fr}.thumb{width:76px;height:58px}.row{display:grid;grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="head">
+    <a class="back" href="tournament-management.html">‹</a>
+    <div><h1>Archived Tournaments</h1><div class="sub">Archived tournaments are hidden from the Homepage.</div></div>
+  </div>
+  <section class="panel">
+    <div class="ph"><b>Archive</b><span class="count" id="count">0</span></div>
+    <div id="list"><div class="empty">Loading...</div></div>
+  </section>
+</main>
+<div class="confirm-modal" id="confirmDelete"><div class="confirm-box"><div class="confirm-icon">🗑</div><div class="confirm-title">Delete archived tournament?</div><div class="confirm-text">This tournament will be permanently deleted. This cannot be undone.</div><div class="confirm-actions"><button class="confirm-cancel" id="confirmCancel">Cancel</button><button class="confirm-delete" id="confirmOk">Delete</button></div></div></div>
+<div class="confirm-modal" id="confirmRestore"><div class="confirm-box restore-box"><div class="confirm-icon restore-icon">↻</div><div class="confirm-title">Restore tournament?</div><div class="confirm-text" id="restoreText">This tournament will be restored to the active tournament list.</div><div class="confirm-actions"><button class="confirm-cancel" id="restoreCancel">Cancel</button><button class="confirm-restore" id="restoreOk">Restore</button></div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
+const KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+const sb=window.supabase.createClient(SUPABASE_URL,KEY);
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+function msg(x){alert(x)}
+async function admin(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){location.href='login.html';return false}
+  window.__sessionUserId=session.user.id;
+  const {data:p,error}=await sb.from('profiles').select('is_admin').eq('id',session.user.id).single();
+  if(error||!p?.is_admin){msg('Admin access required.');location.href='index.html';return false}
+  const {data:prof}=await sb.from('profiles').select('full_name,email').eq('id',session.user.id).single();
+  window.__currentAdminName=prof?.full_name||prof?.email||'Admin';
+  return true;
+}
+async function load(){
+  const {data,error}=await sb.from('tournaments').select('*,tournament_sections(name)').eq('status','archived').order('created_at',{ascending:false});
+  if(error){console.error(error);$('list').innerHTML='<div class="empty">Could not load archived tournaments.</div>';return}
+  const rows=data||[];
+  window.__archivedRows=rows;
+  $('count').textContent=rows.length;
+  window.__archivedRows=rows;
+  $('list').innerHTML=rows.length?rows.map(t=>`<div class="item">
+    ${t.banner_url?`<img class="thumb" src="${esc(t.banner_url)}" alt="">`:'<div class="thumb"></div>'}
+    <div class="content"><div class="name">${esc(t.title)}</div>
+    <div class="meta">Entry ৳${t.entry_fee||0} · Prize ৳${t.prize_pool||0} · Slots ${t.total_slots||0}</div>
+    <div class="row"><button class="green" onclick="restore('${t.id}')">Restore</button><button class="red" onclick="removeItem('${t.id}')">Delete</button></div></div>
+  </div>`).join(''):'<div class="empty">No archived tournaments.</div>';
+}
+let pendingRestore=null;
+function restore(id){
+  const t=(window.__archivedRows||[]).find(x=>x.id===id);
+  pendingRestore=id;
+  $('restoreText').textContent=`Restore “${t?.title||'this tournament'}” to the active tournament list?`;
+  $('confirmRestore').classList.add('open');
+}
+async function confirmRestoreNow(){
+  if(!pendingRestore)return;
+  const id=pendingRestore; pendingRestore=null; $('confirmRestore').classList.remove('open');
+  const {error}=await sb.from('tournaments').update({status:'unpublished',show_on_homepage:false}).eq('id',id);
+  if(error)return msg(error.message);
+  const t=(window.__archivedRows||[]).find(x=>x.id===id);
+  const title=t?.title||'this tournament';
+  const adminName=(window.__currentAdminName||'Admin');
+  const {error:logErr}=await sb.from('activity_logs').insert({admin_id:window.__sessionUserId||null,admin_name:adminName,category:'tournament',action:'tournament_restored',target_type:'tournament',target_id:id,target_name:title,details:{narration:`restored the tournament ${title}.`,highlight_targets:[title]},status:'success',user_agent:navigator.userAgent});
+  if(logErr){console.error('Activity log failed:',logErr);msg('Restored, but the log entry failed: '+logErr.message);}
+  await load();
+}
+let pendingDelete=null;
+function removeItem(id){pendingDelete=id;$('confirmDelete').classList.add('open')}
+async function confirmDeleteNow(){if(!pendingDelete)return;const id=pendingDelete;pendingDelete=null;$('confirmDelete').classList.remove('open');const {error}=await sb.from('tournaments').delete().eq('id',id);if(error)return msg(error.message);await load()}
+document.getElementById('confirmCancel').addEventListener('click',()=>{$('confirmDelete').classList.remove('open');pendingDelete=null});document.getElementById('confirmOk').addEventListener('click',confirmDeleteNow);document.getElementById('restoreCancel').addEventListener('click',()=>{$('confirmRestore').classList.remove('open');pendingRestore=null});document.getElementById('restoreOk').addEventListener('click',confirmRestoreNow);(async()=>{if(await admin())await load()})();
+</script>
+</body>
+</html>
