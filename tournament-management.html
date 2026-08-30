@@ -16,6 +16,7 @@
 .modal{display:none;position:fixed;inset:0;background:#000b;z-index:9999;align-items:flex-end;backdrop-filter:blur(4px)}.modal.open{display:flex}.box{width:100%;max-height:92vh;max-height:92dvh;overflow:auto;background:#0c111b;border:1px solid #293650;border-radius:22px 22px 0 0;padding:0 17px 17px}.mh{display:flex;justify-content:space-between;align-items:center;padding:17px 0 13px;position:sticky;top:0;z-index:20;background:#0c111b}.mh b{font-size:14px}.mh button{width:34px;height:34px;border-radius:10px;border:1px solid #293650;background:#151d2c;color:#fff;font-size:20px}label{display:block;color:#8d98ab;font-size:9px;font-weight:900;margin:9px 0 5px}input,select,textarea{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-radius:11px;padding:10px;font-size:11px}textarea{min-height:80px;resize:vertical}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}.modal-actions button{border:1px solid #293650;background:#151d2c;color:#fff;border-radius:11px;padding:11px;font-weight:900}.modal-actions .primary{background:#22c55e;color:#06120a;border-color:#22c55e}
 #ltm{align-items:flex-start}#ltm .box{border-radius:0 0 22px 22px}
 .confirm{display:none;position:fixed;inset:0;z-index:10000;background:#000a;align-items:center;justify-content:center;padding:20px}.confirm.open{display:flex}.confirm-card{width:min(360px,100%);background:#141a29;border:1px solid #2c3851;border-radius:20px;padding:20px;box-shadow:0 25px 70px #0008}.confirm-icon{width:44px;height:44px;border-radius:14px;background:#2b1720;color:#ff6575;display:grid;place-items:center;font-size:20px;margin-bottom:12px}.confirm-title{font-size:15px;font-weight:900}.confirm-text{font-size:10px;color:#929caf;line-height:1.5;margin-top:6px}.confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}.confirm-actions button{border:1px solid #293650;background:#111827;color:#fff;border-radius:11px;padding:11px;font-weight:900}.confirm-actions .danger{background:#e5485a;border-color:#e5485a}
+.confirm-icon.success{background:#123321;color:#22c55e}
 .dragging{opacity:.45}.drag-over{outline:1px dashed #36df7a;outline-offset:2px}
 
 /* ===== Management UI refinements ===== */
@@ -262,10 +263,12 @@
   <div class="mh"><b id="lrmTitle">Enter Result</b><button type="button" onclick="closeM('lrm')">×</button></div>
   <div class="results-toolbar"><button type="button" onclick="sortResultsByPoints()">↕ Sort by points</button></div>
   <div id="resultsList"><div class="loading">Loading...</div></div>
-  <div class="modal-actions results-actions"><button type="button" id="saveResultsBtn" onclick="saveResults()">Save Results</button><button type="button" class="primary" id="completeResultsBtn" onclick="saveResultsAndComplete()">Complete</button></div>
+  <div class="modal-actions results-actions"><button type="button" id="saveResultsBtn" onclick="saveResultsClick()">Save Results</button><button type="button" class="primary" id="completeResultsBtn" onclick="saveResultsAndComplete()">Complete</button></div>
 </div></div>
 
 <div class="confirm" id="confirm"><div class="confirm-card"><div class="confirm-icon">!</div><div class="confirm-title" id="confirmTitle">Are you sure?</div><div class="confirm-text" id="confirmText"></div><div class="confirm-actions"><button type="button" onclick="closeConfirm()">Cancel</button><button type="button" class="danger" id="confirmOk">Continue</button></div></div></div>
+
+<div class="confirm" id="infoModal"><div class="confirm-card"><div class="confirm-icon" id="infoIcon">✓</div><div class="confirm-title" id="infoTitle">Done</div><div class="confirm-text" id="infoText"></div><div class="confirm-actions" style="grid-template-columns:1fr"><button type="button" onclick="closeM('infoModal')">OK</button></div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -301,7 +304,15 @@ function closeM(id){
   window.scrollTo(0,savedScrollY);
  }
 }
-function msg(x){alert(x)}
+function msg(x,type){
+  if(!type)type=/fail|error|could not|denied|invalid|blocked|not found|missing|required/i.test(String(x))?'warn':'success';
+  const icon=$('infoIcon');
+  icon.textContent=type==='warn'?'!':'✓';
+  icon.className='confirm-icon'+(type==='warn'?'':' success');
+  $('infoTitle').textContent=type==='warn'?'Notice':'Done';
+  $('infoText').textContent=x;
+  openM('infoModal');
+}
 function askConfirm(title,text,action,danger=true){
   $('confirmTitle').textContent=title;$('confirmText').textContent=text;
   openM('confirm');
@@ -1056,6 +1067,22 @@ async function saveResults(){
   return true;
 }
 let resultsSubmitting=false;
+async function saveResultsClick(){
+  if(resultsSubmitting)return; // ignore extra clicks while a request is in flight
+  resultsSubmitting=true;
+  const saveBtn=$('saveResultsBtn'), completeBtn=$('completeResultsBtn');
+  const origText=saveBtn.textContent;
+  saveBtn.disabled=true; saveBtn.textContent='Saving...';
+  if(completeBtn)completeBtn.disabled=true;
+  try{
+    const ok=await saveResults();
+    if(ok===true)msg('Results saved.');
+  }finally{
+    resultsSubmitting=false;
+    saveBtn.disabled=false; saveBtn.textContent=origText;
+    if(completeBtn)completeBtn.disabled=false;
+  }
+}
 async function saveResultsAndComplete(){
   if(resultsSubmitting)return; // ignore extra clicks while a request is in flight
   resultsSubmitting=true;
