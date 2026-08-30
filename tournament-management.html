@@ -1054,9 +1054,12 @@ async function creditPrizes(){
   });
   if(!toCredit.length)return;
 
+  const lobbyId=currentLobbyForResults.id;
   const credits=toCredit.map(row=>({
     supabase_uid: row.dataset.submittedBy,
-    amount: +row.querySelector('.resPrize').value||0
+    amount: +row.querySelector('.resPrize').value||0,
+    lobby_id: lobbyId,
+    team_id: row.dataset.team
   }));
 
   const {data:{session}}=await sb.auth.getSession();
@@ -1072,7 +1075,6 @@ async function creditPrizes(){
     if(!j.success){msg('Prize crediting failed: '+(j.message||'unknown error'));return;}
   }catch(e){msg('Could not reach the wallet server — prize money was NOT credited. Try Complete again.');return;}
 
-  const lobbyId=currentLobbyForResults.id;
   const updates=toCredit.map(row=>({lobby_id:lobbyId,team_id:row.dataset.team,prize_credited:true}));
   const {error}=await sb.from('lobby_results').upsert(updates,{onConflict:'lobby_id,team_id'});
   if(error){msg('Prize money was credited, but marking it as credited failed — check lobby_results manually: '+error.message);return;}
