@@ -160,6 +160,7 @@ try {
         throw new Exception('Wallet account not found for this user');
     }
 
+    $walletUserId = (int)$walletRow['id'];
     $currentWithdrawable = (float)$walletRow['withdrawable_balance'];
     $currentNonWithdrawable = (float)$walletRow['non_withdrawable_balance'];
     $currentBalance = $currentWithdrawable + $currentNonWithdrawable;
@@ -223,6 +224,35 @@ try {
         $newWithdrawable = (float)$row['withdrawable_balance'];
         $newNonWithdrawable = (float)$row['non_withdrawable_balance'];
     }
+    $stmt->close();
+
+    // ---- Also log into wallet_transactions so this shows up in the user's
+    //      Recent Transactions / wallet history (get-wallet-history.php).
+    //      'debit' on remove -> shown as a minus and as "Adjustment"
+    //      (normalizeType() falls through to 'other' for anything besides
+    //      deposit/prize/withdraw, and directionFor() only treats 'debit'
+    //      as a subtraction). 'adjustment' on add -> also "Adjustment", but
+    //      shown as a plus since it isn't the literal string 'debit'.
+    $txnType = $type === 'add' ? 'adjustment' : 'debit';
+    $txnDescription = 'Admin balance adjustment (' .
+        ($balanceType === 'withdrawable' ? 'Withdrawable' : 'Non-withdrawable') .
+        ')';
+
+    $stmt = $conn->prepare(
+        "INSERT INTO wallet_transactions
+            (user_id, type, amount, balance_before, balance_after, description, status)
+         VALUES (?, ?, ?, ?, ?, ?, 'completed')"
+    );
+    $stmt->bind_param(
+        'isddds',
+        $walletUserId,
+        $txnType,
+        $amount,
+        $currentBalance,
+        $newBalance,
+        $txnDescription
+    );
+    $stmt->execute();
     $stmt->close();
 
     $conn->commit();

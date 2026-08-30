@@ -93,12 +93,14 @@ try {
         exit;
     }
 
-    // Tournament fees can use the whole wallet. Consume withdrawable funds first,
-    // then non-withdrawable funds, while keeping the two balances and total in sync.
-    $fromWithdrawable = min((float)$withdrawableBalance, $amount);
-    $fromNonWithdrawable = $amount - $fromWithdrawable;
-    $newWithdrawable = (float)$withdrawableBalance - $fromWithdrawable;
+    // Tournament fees can use the whole wallet. Consume non-withdrawable
+    // (deposit) funds first, then withdrawable (prize) funds, so prize
+    // money isn't spent before deposit money is used up. Keeps the two
+    // balances and total in sync.
+    $fromNonWithdrawable = min((float)$nonWithdrawableBalance, $amount);
+    $fromWithdrawable = $amount - $fromNonWithdrawable;
     $newNonWithdrawable = (float)$nonWithdrawableBalance - $fromNonWithdrawable;
+    $newWithdrawable = (float)$withdrawableBalance - $fromWithdrawable;
     $newBalance = $newWithdrawable + $newNonWithdrawable;
 
     $upd = $conn->prepare(
