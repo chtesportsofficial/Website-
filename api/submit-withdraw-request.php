@@ -16,6 +16,10 @@ require_once __DIR__ . '/../db.php';
 $supabaseUrl = 'https://myfficbwcbgbxbdqjexv.supabase.co';
 $supabaseAnonKey = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
 
+// ---- Telegram notification config (CHTEO Withdraw Alerts group) ----
+$telegramBotToken = '8946675932:AAHxGR-v1JoGVDmpKJYnpqriKpF7swjSKkE';
+$telegramChatId   = '-5433914490';
+
 $MIN_WITHDRAW = 50.00;
 
 $data = json_decode(file_get_contents('php://input'), true);
@@ -130,6 +134,32 @@ try {
     $stmt->close();
 
     $conn->commit();
+
+    // ---- Notify the admin Telegram group (CHTEO Withdraw Alerts) ----
+    // Best-effort: if Telegram is slow/down, it must NOT break the
+    // withdraw request response, so failures here are silently ignored.
+    $telegramText =
+        "🟠 New Withdraw Request\n" .
+        "Email: " . $email . "\n" .
+        "Method: " . $method . "\n" .
+        "Account: " . $accountNumber . "\n" .
+        "Amount: ৳" . number_format($amount, 2) . "\n" .
+        "Request ID: " . $requestId . "\n" .
+        "Time: " . date('d M Y, h:i A');
+
+    $tgCh = curl_init("https://api.telegram.org/bot{$telegramBotToken}/sendMessage");
+    curl_setopt_array($tgCh, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 10,
+        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => http_build_query([
+            'chat_id' => $telegramChatId,
+            'text'    => $telegramText
+        ])
+    ]);
+    @curl_exec($tgCh);
+    curl_close($tgCh);
 
     echo json_encode([
         'success' => true,
