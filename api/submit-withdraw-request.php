@@ -158,8 +158,13 @@ try {
             'text'    => $telegramText
         ])
     ]);
-    @curl_exec($tgCh);
+    $tgResponse = curl_exec($tgCh);
+    $tgError = curl_error($tgCh);
     curl_close($tgCh);
+    error_log('Telegram withdraw notify response: ' . var_export($tgResponse, true));
+    if ($tgError) {
+        error_log('Telegram withdraw notify curl error: ' . $tgError);
+    }
 
     echo json_encode([
         'success' => true,
