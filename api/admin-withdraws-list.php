@@ -95,7 +95,7 @@ if ($profileResponse === false || $profileCode < 200 || $profileCode >= 300 || !
 $conn->set_charset('utf8mb4');
 
 $stmt = $conn->prepare(
-    "SELECT id, user_id, email, amount, method, account_number, status, admin_note, created_at, reviewed_at
+    "SELECT id, user_id, email, amount, method, account_number, status, admin_note, created_at, reviewed_at, is_guest, guest_note
      FROM wallet_withdraw_requests
      WHERE status = ?
      ORDER BY created_at DESC"
@@ -116,7 +116,9 @@ while ($row = $result->fetch_assoc()) {
         'status' => $row['status'],
         'admin_note' => $row['admin_note'],
         'created_at' => $row['created_at'],
-        'reviewed_at' => $row['reviewed_at']
+        'reviewed_at' => $row['reviewed_at'],
+        'is_guest' => !empty($row['is_guest']),
+        'guest_note' => $row['guest_note']
     ];
 }
 $stmt->close();
