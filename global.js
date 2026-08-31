@@ -116,7 +116,10 @@
           if (!session || !session.access_token) { resolve(null); return; }
           fetch(WALLET_SYNC_URL, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": "Bearer " + session.access_token
+            },
             body: JSON.stringify({ access_token: session.access_token })
           })
             .then(function (r) { return r.json(); })
