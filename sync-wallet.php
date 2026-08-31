@@ -16,6 +16,79 @@ $supabaseAnonKey = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
 
 /*
 |--------------------------------------------------------------------------
+| Referral Resolution Helper
+|--------------------------------------------------------------------------
+| Takes a referral code like "#2" (the number is profiles.user_number),
+| looks up that profile's Supabase auth UUID via the Supabase REST API
+| (using the service key, since this runs before any wallet_users row
+| exists for the new user), then maps that UUID to a wallet_users.id.
+| Returns null if the code is missing/malformed, the profile doesn't
+| exist, or the referrer has no wallet_users row yet.
+*/
+
+function resolveReferrerWalletId($referralCode, $supabaseUrl, $serviceKey, $conn) {
+
+    if (empty($referralCode) || empty($serviceKey)) {
+        return null;
+    }
+
+    if (!preg_match('/^#(\d+)$/', trim($referralCode), $m)) {
+        return null;
+    }
+
+    $userNumber = (int)$m[1];
+
+    $ch = curl_init(
+        $supabaseUrl . '/rest/v1/profiles?user_number=eq.' . $userNumber . '&select=id'
+    );
+
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => [
+            'apikey: ' . $serviceKey,
+            'Authorization: Bearer ' . $serviceKey,
+        ],
+        CURLOPT_TIMEOUT => 10
+    ]);
+
+    $resp = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($resp === false || $httpCode !== 200) {
+        return null;
+    }
+
+    $rows = json_decode($resp, true);
+
+    if (!is_array($rows) || empty($rows[0]['id'])) {
+        return null;
+    }
+
+    $referrerSupabaseUid = $rows[0]['id'];
+
+    $stmt = $conn->prepare(
+        "SELECT id FROM wallet_users WHERE supabase_uid = ? LIMIT 1"
+    );
+
+    if (!$stmt) {
+        return null;
+    }
+
+    $stmt->bind_param("s", $referrerSupabaseUid);
+    $stmt->execute();
+
+    $res = $stmt->get_result();
+    $row = $res->fetch_assoc();
+
+    $stmt->close();
+
+    return $row ? (int)$row['id'] : null;
+}
+
+
+/*
+|--------------------------------------------------------------------------
 | Get Authorization Header
 |--------------------------------------------------------------------------
 */
@@ -154,6 +227,23 @@ if (
 
 /*
 |--------------------------------------------------------------------------
+| Get Referral Code (only matters for brand-new users, resolved below)
+|--------------------------------------------------------------------------
+*/
+
+$referralCode = '';
+
+if (
+    isset($user['user_metadata']) &&
+    is_array($user['user_metadata']) &&
+    !empty($user['user_metadata']['referral'])
+) {
+    $referralCode = $user['user_metadata']['referral'];
+}
+
+
+/*
+|--------------------------------------------------------------------------
 | MySQL Connection Check
 |--------------------------------------------------------------------------
 */
@@ -277,6 +367,16 @@ else {
 
     $status = 'active';
 
+    // Resolve the referral code (e.g. "#2") to the referrer's
+    // wallet_users.id, if possible. Only relevant here since
+    // referred_by is set once at creation and never changed after.
+    $referrerWalletId = resolveReferrerWalletId(
+        $referralCode,
+        $supabaseUrl,
+        getenv('SUPABASE_SERVICE_KEY'),
+        $conn
+    );
+
 
     $stmt = $conn->prepare(
         "INSERT INTO wallet_users
@@ -286,6 +386,8 @@ else {
             email,
             password,
             balance,
+            bonus_balance,
+            referred_by,
             role,
             status
         )
@@ -296,6 +398,8 @@ else {
             ?,
             NULL,
             0.00,
+            0.00,
+            ?,
             'user',
             'active'
         )"
@@ -317,10 +421,11 @@ else {
 
 
     $stmt->bind_param(
-        "sss",
+        "sssi",
         $supabaseUid,
         $name,
-        $email
+        $email,
+        $referrerWalletId
     );
 
 
