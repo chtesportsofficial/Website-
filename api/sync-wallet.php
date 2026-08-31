@@ -2,84 +2,143 @@
 
 header('Content-Type: application/json; charset=utf-8');
 
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Headers: Content-Type, Accept, X-Requested-With');
-header('Access-Control-Allow-Methods: POST, OPTIONS');
+/*
+|--------------------------------------------------------------------------
+| Debug Logger (writes directly to stderr — bypasses PHP's error_log ini
+| destination, which on some Render/Docker setups goes to a local file
+| instead of the container's stdout/stderr that Render actually captures)
+|--------------------------------------------------------------------------
+*/
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(204);
-    exit;
+$GLOBALS['__referral_debug'] = [];
+
+function debug_log($message) {
+    file_put_contents('php://stderr', $message . PHP_EOL, FILE_APPEND);
+    $GLOBALS['__referral_debug'][] = $message;
 }
 
+debug_log('[referral-debug] SCRIPT-ENTRY ' . date('Y-m-d H:i:s'));
 
-// ======================================================
-// DATABASE
-// ======================================================
+require_once "../db.php";
 
-require_once __DIR__ . '/../db.php';
-
-
-// ======================================================
-// SUPABASE CONFIG
-// ======================================================
+/*
+|--------------------------------------------------------------------------
+| Supabase Configuration
+|--------------------------------------------------------------------------
+*/
 
 $supabaseUrl = 'https://myfficbwcbgbxbdqjexv.supabase.co';
-
 $supabaseAnonKey = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
 
 
-// ======================================================
-// ONLY POST
-// ======================================================
+/*
+|--------------------------------------------------------------------------
+| Referral Resolution Helper
+|--------------------------------------------------------------------------
+| Takes a referral code like "#18" (the number is profiles.user_number —
+| confirmed via global.js: the UID shown to users, and the code
+| refer-earn.html shares, is always row.user_number, NEVER
+| wallet_users.id). Looks up that profile's Supabase auth UUID via the
+| Supabase REST API (using the service key, since this runs before any
+| wallet_users row exists for the new user), then maps that UUID to a
+| wallet_users.id. Returns null if the code is missing/malformed, the
+| profile doesn't exist, or the referrer has no wallet_users row yet
+| (i.e. they've never signed in / synced their own wallet).
+*/
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+function resolveReferrerWalletId($referralCode, $supabaseUrl, $serviceKey, $conn) {
 
-    http_response_code(405);
+    debug_log('[referral-debug] raw referralCode=' . var_export($referralCode, true));
 
-    echo json_encode([
-        'success' => false,
-        'message' => 'POST request required'
+    if (empty($referralCode) || empty($serviceKey)) {
+        debug_log('[referral-debug] bail: empty referralCode or empty serviceKey (serviceKey set? ' . (empty($serviceKey) ? 'NO' : 'yes') . ')');
+        return null;
+    }
+
+    if (!preg_match('/^#(\d+)$/', trim($referralCode), $m)) {
+        debug_log('[referral-debug] bail: regex did not match trimmed code="' . trim($referralCode) . '"');
+        return null;
+    }
+
+    $userNumber = (int)$m[1];
+    debug_log('[referral-debug] resolved userNumber=' . $userNumber);
+
+    $ch = curl_init(
+        $supabaseUrl . '/rest/v1/profiles?user_number=eq.' . $userNumber . '&select=id'
+    );
+
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => [
+            'apikey: ' . $serviceKey,
+            'Authorization: Bearer ' . $serviceKey,
+        ],
+        CURLOPT_TIMEOUT => 10
     ]);
 
-    exit;
+    $resp = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+
+    debug_log('[referral-debug] supabase profiles lookup httpCode=' . $httpCode . ' curlErr=' . $curlErr . ' resp=' . substr((string)$resp, 0, 300));
+
+    if ($resp === false || $httpCode !== 200) {
+        debug_log('[referral-debug] bail: supabase lookup failed');
+        return null;
+    }
+
+    $rows = json_decode($resp, true);
+
+    if (!is_array($rows) || empty($rows[0]['id'])) {
+        debug_log('[referral-debug] bail: no matching profile row for user_number=' . $userNumber);
+        return null;
+    }
+
+    $referrerSupabaseUid = $rows[0]['id'];
+    debug_log('[referral-debug] referrerSupabaseUid=' . $referrerSupabaseUid);
+
+    $stmt = $conn->prepare(
+        "SELECT id FROM wallet_users WHERE supabase_uid = ? LIMIT 1"
+    );
+
+    if (!$stmt) {
+        debug_log('[referral-debug] bail: prepare failed: ' . $conn->error);
+        return null;
+    }
+
+    $stmt->bind_param("s", $referrerSupabaseUid);
+    $stmt->execute();
+
+    $res = $stmt->get_result();
+    $row = $res->fetch_assoc();
+
+    $stmt->close();
+
+    if (!$row) {
+        debug_log('[referral-debug] bail: no wallet_users row for supabase_uid=' . $referrerSupabaseUid . ' (referrer has not synced their wallet yet)');
+        return null;
+    }
+
+    debug_log('[referral-debug] SUCCESS: referrerWalletId=' . $row['id']);
+    return (int)$row['id'];
 }
 
 
-// ======================================================
-// READ JSON BODY
-// ======================================================
+/*
+|--------------------------------------------------------------------------
+| Get Authorization Header
+|--------------------------------------------------------------------------
+*/
 
-$rawInput = file_get_contents('php://input');
+$headers = function_exists('getallheaders') ? getallheaders() : [];
 
-$data = json_decode($rawInput, true);
+$authorization =
+    $headers['Authorization']
+    ?? $headers['authorization']
+    ?? ($_SERVER['HTTP_AUTHORIZATION'] ?? '');
 
-
-// ======================================================
-// GET ACCESS TOKEN
-// ======================================================
-
-$accessToken = '';
-
-if (is_array($data) && !empty($data['access_token'])) {
-
-    $accessToken = trim($data['access_token']);
-
-}
-
-
-// Also support normal form POST
-if ($accessToken === '' && !empty($_POST['access_token'])) {
-
-    $accessToken = trim($_POST['access_token']);
-
-}
-
-
-// ======================================================
-// CHECK TOKEN
-// ======================================================
-
-if ($accessToken === '') {
+if (!preg_match('/Bearer\s+(.+)/i', $authorization, $matches)) {
 
     http_response_code(401);
 
@@ -91,104 +150,77 @@ if ($accessToken === '') {
     exit;
 }
 
+$accessToken = trim($matches[1]);
 
-// ======================================================
-// VERIFY USER WITH SUPABASE
-// ======================================================
 
-$ch = curl_init(
-    rtrim($supabaseUrl, '/') . '/auth/v1/user'
-);
+/*
+|--------------------------------------------------------------------------
+| Get User From Supabase
+|--------------------------------------------------------------------------
+*/
+
+$ch = curl_init($supabaseUrl . '/auth/v1/user');
 
 curl_setopt_array($ch, [
-
     CURLOPT_RETURNTRANSFER => true,
 
-    CURLOPT_TIMEOUT => 20,
-
-    CURLOPT_CONNECTTIMEOUT => 10,
-
     CURLOPT_HTTPHEADER => [
-
         'apikey: ' . $supabaseAnonKey,
-
         'Authorization: Bearer ' . $accessToken,
-
-        'Accept: application/json',
-
         'Content-Type: application/json'
+    ],
 
-    ]
-
+    CURLOPT_TIMEOUT => 15
 ]);
 
+$response = curl_exec($ch);
 
-$supabaseResponse = curl_exec($ch);
-
-
-if ($supabaseResponse === false) {
+if ($response === false) {
 
     $curlError = curl_error($ch);
 
     curl_close($ch);
 
-    http_response_code(502);
+    http_response_code(500);
 
     echo json_encode([
         'success' => false,
-        'message' => 'Could not connect to Supabase',
+        'message' => 'Supabase connection failed',
         'error' => $curlError
     ]);
 
     exit;
 }
 
-
-$supabaseHttpCode = curl_getinfo(
-    $ch,
-    CURLINFO_HTTP_CODE
-);
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
 curl_close($ch);
 
 
-// ======================================================
-// SUPABASE RESPONSE CHECK
-// ======================================================
-
-if (
-    $supabaseHttpCode < 200 ||
-    $supabaseHttpCode >= 300
-) {
+if ($httpCode !== 200) {
 
     http_response_code(401);
 
     echo json_encode([
         'success' => false,
-        'message' => 'Supabase user verification failed',
-        'http_code' => $supabaseHttpCode,
-        'supabase_response' => json_decode(
-            $supabaseResponse,
-            true
-        )
+        'message' => 'Invalid Supabase session',
+        'supabase_http_code' => $httpCode
     ]);
 
     exit;
 }
 
 
-// ======================================================
-// DECODE SUPABASE USER
-// ======================================================
+/*
+|--------------------------------------------------------------------------
+| Decode Supabase User
+|--------------------------------------------------------------------------
+*/
 
-$user = json_decode(
-    $supabaseResponse,
-    true
-);
-
+$user = json_decode($response, true);
 
 if (
-    !is_array($user) ||
+    !$user ||
     empty($user['id']) ||
     empty($user['email'])
 ) {
@@ -197,21 +229,22 @@ if (
 
     echo json_encode([
         'success' => false,
-        'message' => 'Supabase returned invalid user data'
+        'message' => 'Invalid Supabase user data'
     ]);
 
     exit;
 }
 
 
-$supabaseUid = trim($user['id']);
+$supabaseUid = $user['id'];
+$email       = $user['email'];
 
-$email = trim($user['email']);
 
-
-// ======================================================
-// GET USER NAME
-// ======================================================
+/*
+|--------------------------------------------------------------------------
+| Get User Name
+|--------------------------------------------------------------------------
+*/
 
 $name = '';
 
@@ -220,41 +253,40 @@ if (
     is_array($user['user_metadata'])
 ) {
 
-    if (
-        !empty($user['user_metadata']['full_name'])
-    ) {
+    if (!empty($user['user_metadata']['full_name'])) {
+        $name = $user['user_metadata']['full_name'];
+    }
 
-        $name = trim(
-            $user['user_metadata']['full_name']
-        );
-
-    } elseif (
-        !empty($user['user_metadata']['name'])
-    ) {
-
-        $name = trim(
-            $user['user_metadata']['name']
-        );
+    elseif (!empty($user['user_metadata']['name'])) {
+        $name = $user['user_metadata']['name'];
     }
 }
 
 
-// Fallback name
-if ($name === '') {
+/*
+|--------------------------------------------------------------------------
+| Get Referral Code (only matters for brand-new users, resolved below)
+|--------------------------------------------------------------------------
+*/
 
-    $name = explode('@', $email)[0];
+$referralCode = '';
 
+if (
+    isset($user['user_metadata']) &&
+    is_array($user['user_metadata']) &&
+    !empty($user['user_metadata']['referral'])
+) {
+    $referralCode = $user['user_metadata']['referral'];
 }
 
 
-// ======================================================
-// MYSQL CONNECTION CHECK
-// ======================================================
+/*
+|--------------------------------------------------------------------------
+| MySQL Connection Check
+|--------------------------------------------------------------------------
+*/
 
-if (
-    !isset($conn) ||
-    !($conn instanceof mysqli)
-) {
+if (!isset($conn) || !($conn instanceof mysqli)) {
 
     http_response_code(500);
 
@@ -267,28 +299,18 @@ if (
 }
 
 
-$conn->set_charset('utf8mb4');
-
-
-// ======================================================
-// FIND USER
-// ======================================================
+/*
+|--------------------------------------------------------------------------
+| Find Existing Wallet User
+|--------------------------------------------------------------------------
+*/
 
 $stmt = $conn->prepare(
-    "SELECT
-        id,
-        supabase_uid,
-        name,
-        email,
-        balance,
-        role,
-        status
+    "SELECT id, balance, role, status
      FROM wallet_users
-     WHERE supabase_uid = ?
-        OR email = ?
+     WHERE supabase_uid = ? OR email = ?
      LIMIT 1"
 );
-
 
 if (!$stmt) {
 
@@ -303,74 +325,58 @@ if (!$stmt) {
     exit;
 }
 
-
 $stmt->bind_param(
-    'ss',
+    "ss",
     $supabaseUid,
     $email
 );
 
-
-if (!$stmt->execute()) {
-
-    $error = $stmt->error;
-
-    $stmt->close();
-
-    http_response_code(500);
-
-    echo json_encode([
-        'success' => false,
-        'message' => 'Database query failed',
-        'error' => $error
-    ]);
-
-    exit;
-}
-
+$stmt->execute();
 
 $result = $stmt->get_result();
 
-$existingUser = $result->fetch_assoc();
+$row = $result->fetch_assoc();
 
 $stmt->close();
 
 
-// ======================================================
-// EXISTING USER
-// ======================================================
+/*
+|--------------------------------------------------------------------------
+| Existing User
+|--------------------------------------------------------------------------
+*/
 
-if ($existingUser) {
+if ($row) {
 
-    $walletId = (int)$existingUser['id'];
+    $walletId = (int)$row['id'];
 
-    $balance = (float)$existingUser['balance'];
+    $balance = (float)$row['balance'];
 
-    $role = !empty($existingUser['role'])
-        ? $existingUser['role']
+    $role = !empty($row['role'])
+        ? $row['role']
         : 'user';
 
-    $status = !empty($existingUser['status'])
-        ? $existingUser['status']
+    $status = !empty($row['status'])
+        ? $row['status']
         : 'active';
 
 
-    // Update latest Supabase information
+    /*
+    | Update Supabase UID / Name / Email
+    */
 
     $stmt = $conn->prepare(
         "UPDATE wallet_users
-         SET
-            supabase_uid = ?,
-            name = ?,
-            email = ?
+         SET supabase_uid = ?,
+             name = ?,
+             email = ?
          WHERE id = ?"
     );
-
 
     if ($stmt) {
 
         $stmt->bind_param(
-            'sssi',
+            "sssi",
             $supabaseUid,
             $name,
             $email,
@@ -385,9 +391,11 @@ if ($existingUser) {
 }
 
 
-// ======================================================
-// NEW USER
-// ======================================================
+/*
+|--------------------------------------------------------------------------
+| New User
+|--------------------------------------------------------------------------
+*/
 
 else {
 
@@ -396,6 +404,16 @@ else {
     $role = 'user';
 
     $status = 'active';
+
+    // Resolve the referral code (e.g. "#18") to the referrer's
+    // wallet_users.id, if possible. Only relevant here since
+    // referred_by is set once at creation and never changed after.
+    $referrerWalletId = resolveReferrerWalletId(
+        $referralCode,
+        $supabaseUrl,
+        getenv('SUPABASE_SERVICE_KEY'),
+        $conn
+    );
 
 
     $stmt = $conn->prepare(
@@ -406,6 +424,8 @@ else {
             email,
             password,
             balance,
+            bonus_balance,
+            referred_by,
             role,
             status
         )
@@ -416,6 +436,8 @@ else {
             ?,
             NULL,
             0.00,
+            0.00,
+            ?,
             'user',
             'active'
         )"
@@ -428,8 +450,9 @@ else {
 
         echo json_encode([
             'success' => false,
-            'message' => 'Insert prepare failed',
-            'error' => $conn->error
+            'message' => 'Database prepare failed',
+            'error' => $conn->error,
+            'referral_debug' => $GLOBALS['__referral_debug']
         ]);
 
         exit;
@@ -437,26 +460,26 @@ else {
 
 
     $stmt->bind_param(
-        'sss',
+        "sssi",
         $supabaseUid,
         $name,
-        $email
+        $email,
+        $referrerWalletId
     );
 
 
     if (!$stmt->execute()) {
 
-        $error = $stmt->error;
-
-        $stmt->close();
-
         http_response_code(500);
 
         echo json_encode([
             'success' => false,
-            'message' => 'Wallet user INSERT failed',
-            'error' => $error
+            'message' => 'Could not create wallet account',
+            'error' => $stmt->error,
+            'referral_debug' => $GLOBALS['__referral_debug']
         ]);
+
+        $stmt->close();
 
         exit;
     }
@@ -468,9 +491,11 @@ else {
 }
 
 
-// ======================================================
-// CHECK ACCOUNT STATUS
-// ======================================================
+/*
+|--------------------------------------------------------------------------
+| Check Account Status
+|--------------------------------------------------------------------------
+*/
 
 if ($status !== 'active') {
 
@@ -486,34 +511,28 @@ if ($status !== 'active') {
 }
 
 
-// ======================================================
-// SUCCESS
-// ======================================================
+/*
+|--------------------------------------------------------------------------
+| Success
+|--------------------------------------------------------------------------
+*/
 
 echo json_encode([
-
     'success' => true,
 
-    'message' => 'Wallet connected successfully',
+    'message' => 'User synced successfully',
 
     'user' => [
-
         'id' => $walletId,
-
         'supabase_uid' => $supabaseUid,
-
-        'name' => $name,
-
         'email' => $email,
-
+        'name' => $name,
         'balance' => $balance,
-
         'role' => $role,
-
         'status' => $status
+    ],
 
-    ]
-
+    'referral_debug' => $GLOBALS['__referral_debug']
 ]);
 
 exit;
