@@ -28,15 +28,20 @@ $supabaseAnonKey = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
 
 function resolveReferrerWalletId($referralCode, $supabaseUrl, $serviceKey, $conn) {
 
+    error_log('[referral-debug] raw referralCode=' . var_export($referralCode, true));
+
     if (empty($referralCode) || empty($serviceKey)) {
+        error_log('[referral-debug] bail: empty referralCode or empty serviceKey (serviceKey set? ' . (empty($serviceKey) ? 'NO' : 'yes') . ')');
         return null;
     }
 
     if (!preg_match('/^#(\d+)$/', trim($referralCode), $m)) {
+        error_log('[referral-debug] bail: regex did not match trimmed code="' . trim($referralCode) . '"');
         return null;
     }
 
     $userNumber = (int)$m[1];
+    error_log('[referral-debug] resolved userNumber=' . $userNumber);
 
     $ch = curl_init(
         $supabaseUrl . '/rest/v1/profiles?user_number=eq.' . $userNumber . '&select=id'
@@ -53,25 +58,32 @@ function resolveReferrerWalletId($referralCode, $supabaseUrl, $serviceKey, $conn
 
     $resp = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
     curl_close($ch);
 
+    error_log('[referral-debug] supabase profiles lookup httpCode=' . $httpCode . ' curlErr=' . $curlErr . ' resp=' . substr((string)$resp, 0, 300));
+
     if ($resp === false || $httpCode !== 200) {
+        error_log('[referral-debug] bail: supabase lookup failed');
         return null;
     }
 
     $rows = json_decode($resp, true);
 
     if (!is_array($rows) || empty($rows[0]['id'])) {
+        error_log('[referral-debug] bail: no matching profile row for user_number=' . $userNumber);
         return null;
     }
 
     $referrerSupabaseUid = $rows[0]['id'];
+    error_log('[referral-debug] referrerSupabaseUid=' . $referrerSupabaseUid);
 
     $stmt = $conn->prepare(
         "SELECT id FROM wallet_users WHERE supabase_uid = ? LIMIT 1"
     );
 
     if (!$stmt) {
+        error_log('[referral-debug] bail: prepare failed: ' . $conn->error);
         return null;
     }
 
@@ -83,7 +95,13 @@ function resolveReferrerWalletId($referralCode, $supabaseUrl, $serviceKey, $conn
 
     $stmt->close();
 
-    return $row ? (int)$row['id'] : null;
+    if (!$row) {
+        error_log('[referral-debug] bail: no wallet_users row for supabase_uid=' . $referrerSupabaseUid . ' (referrer has not synced their wallet yet)');
+        return null;
+    }
+
+    error_log('[referral-debug] SUCCESS: referrerWalletId=' . $row['id']);
+    return (int)$row['id'];
 }
 
 
