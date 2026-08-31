@@ -18,12 +18,15 @@ $supabaseAnonKey = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
 |--------------------------------------------------------------------------
 | Referral Resolution Helper
 |--------------------------------------------------------------------------
-| Takes a referral code like "#2" (the number is profiles.user_number),
-| looks up that profile's Supabase auth UUID via the Supabase REST API
-| (using the service key, since this runs before any wallet_users row
-| exists for the new user), then maps that UUID to a wallet_users.id.
-| Returns null if the code is missing/malformed, the profile doesn't
-| exist, or the referrer has no wallet_users row yet.
+| Takes a referral code like "#18" (the number is profiles.user_number —
+| confirmed via global.js: the UID shown to users, and the code
+| refer-earn.html shares, is always row.user_number, NEVER
+| wallet_users.id). Looks up that profile's Supabase auth UUID via the
+| Supabase REST API (using the service key, since this runs before any
+| wallet_users row exists for the new user), then maps that UUID to a
+| wallet_users.id. Returns null if the code is missing/malformed, the
+| profile doesn't exist, or the referrer has no wallet_users row yet
+| (i.e. they've never signed in / synced their own wallet).
 */
 
 function resolveReferrerWalletId($referralCode, $supabaseUrl, $serviceKey, $conn) {
@@ -385,7 +388,7 @@ else {
 
     $status = 'active';
 
-    // Resolve the referral code (e.g. "#2") to the referrer's
+    // Resolve the referral code (e.g. "#18") to the referrer's
     // wallet_users.id, if possible. Only relevant here since
     // referred_by is set once at creation and never changed after.
     $referrerWalletId = resolveReferrerWalletId(
