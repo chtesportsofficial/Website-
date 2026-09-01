@@ -1,11 +1,6 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-<!-- TEMP DEBUG: mobile console overlay to see the real network/CORS error.
-     Remove this script tag once the get-balance.php fetch bug is confirmed
-     and fixed. -->
-<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-<script>eruda.init();</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wallet</title>
@@ -633,10 +628,10 @@ async function getSupabaseAccessToken(){
 // a plain fetch() can also just hang indefinitely on a flaky connection.
 // AbortController gives us a hard cutoff so we always reach either
 // success or the retry/fallback path below, never stay stuck.
-function fetchWithTimeout(url, ms){
+function fetchWithTimeout(url, ms, options){
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
-  return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
+  return fetch(url, Object.assign({}, options, { signal: controller.signal })).finally(() => clearTimeout(timer));
 }
 
 // Render's free-tier backend sleeps after inactivity and can take
@@ -645,12 +640,17 @@ function fetchWithTimeout(url, ms){
 // script runs, so the wake-up starts immediately in the background —
 // by the time loadWalletBalance()'s real fetch goes out, the backend
 // has already had a head start waking up instead of starting cold.
-fetch('https://chteo-api.onrender.com/api/get-balance.php?uid=warmup', { mode: 'no-cors' }).catch(function(){});
+fetch('https://chteo-api.onrender.com/api/get-balance.php', {
+  method: 'POST',
+  headers: { 'Content-Type': 'text/plain' },
+  body: JSON.stringify({ access_token: '' }),
+  mode: 'no-cors'
+}).catch(function(){});
 
 const WALLET_BALANCE_TIMEOUT_MS = 20000;
 const WALLET_BALANCE_MAX_ATTEMPTS = 3;
 
-function loadWalletBalance(attempt){
+async function loadWalletBalance(attempt){
   attempt = attempt || 1;
   const profile = getProfile();
   const uid = localStorage.getItem('supabase_uid') || profile.supabase_uid;
@@ -671,7 +671,14 @@ function loadWalletBalance(attempt){
 
   if(uid === _walletLastFetchedUid) return;
 
-  fetchWithTimeout('https://chteo-api.onrender.com/api/get-balance.php?uid=' + encodeURIComponent(uid), WALLET_BALANCE_TIMEOUT_MS)
+  const accessToken = await getSupabaseAccessToken();
+  if(!accessToken) return; // not signed in yet — chteo:profile-synced will retry once session is ready
+
+  fetchWithTimeout('https://chteo-api.onrender.com/api/get-balance.php', WALLET_BALANCE_TIMEOUT_MS, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ access_token: accessToken })
+  })
     .then(res => res.json())
     .then(data => {
       _walletLastFetchedUid = uid;
@@ -703,12 +710,7 @@ function loadWalletBalance(attempt){
       } else if(cached !== null && cachedUid === uid){
         balanceEl.textContent = '৳' + formatBDT(cached);
       } else {
-        // TEMP DEBUG: show the real error under "Tap to retry" so we can
-        // see the actual failure reason from a screenshot, no DevTools
-        // needed. Remove this debug line once the root cause is fixed.
-        const debugMsg = (err && (err.name + ': ' + err.message)) || String(err);
-        balanceEl.innerHTML = '<span style="cursor:pointer;text-decoration:underline;" onclick="_walletLastFetchedUid=null;loadWalletBalance();">Tap to retry</span>' +
-          '<div style="font-size:11px;color:#ef4444;margin-top:6px;font-weight:400;text-decoration:none;">' + debugMsg.replace(/</g,'&lt;') + '</div>';
+        balanceEl.innerHTML = '<span style="cursor:pointer;text-decoration:underline;" onclick="_walletLastFetchedUid=null;loadWalletBalance();">Tap to retry</span>';
       }
     });
 }
