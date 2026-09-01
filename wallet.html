@@ -697,6 +697,20 @@ function loadWalletBalance(attempt){
 loadWalletBalance();
 document.addEventListener('chteo:profile-synced', function(){ _walletLastFetchedUid = null; loadWalletBalance(); });
 
+// Mobile browsers can restore this page from the back-forward cache
+// (bfcache) — e.g. user taps away to another page, then hits Back —
+// without re-running any of the script above. If the balance was still
+// mid-fetch (or stuck showing "...") at the moment they navigated away,
+// bfcache restore would otherwise freeze it there forever, since nothing
+// re-triggers loadWalletBalance(). Force a fresh fetch on every bfcache
+// restore so the balance is never left stale/stuck.
+window.addEventListener('pageshow', function(evt){
+  if (evt.persisted) {
+    _walletLastFetchedUid = null;
+    loadWalletBalance();
+  }
+});
+
 /* ============ Recent Transactions (deposit request history) ============ */
 function escapeHtmlWallet(str){
   return String(str == null ? '' : str)
@@ -920,6 +934,7 @@ document.getElementById('withdrawSubmitBtn').addEventListener('click', async fun
       document.getElementById('withdrawAmount').value = '';
       document.getElementById('numberInput').value = '';
       document.getElementById('paymentMethod').selectedIndex = 0;
+      _walletLastFetchedUid = null;
       loadWalletBalance();
     }else{
       showWithdrawMsg((data && data.message) || 'Withdrawal request failed.', true);
