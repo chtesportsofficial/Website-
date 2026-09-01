@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
+<!-- TEMP DEBUG -->
+<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+<script>eruda.init();</script>
+<!-- TEMP DEBUG: mobile console overlay to see the real network/CORS error. -->
+<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+<script>eruda.init();</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wallet</title>
@@ -710,7 +716,9 @@ async function loadWalletBalance(attempt){
       } else if(cached !== null && cachedUid === uid){
         balanceEl.textContent = '৳' + formatBDT(cached);
       } else {
-        balanceEl.innerHTML = '<span style="cursor:pointer;text-decoration:underline;" onclick="_walletLastFetchedUid=null;loadWalletBalance();">Tap to retry</span>';
+        const debugMsg = (err && (err.name + ': ' + err.message)) || String(err);
+        balanceEl.innerHTML = '<span style="cursor:pointer;text-decoration:underline;" onclick="_walletLastFetchedUid=null;loadWalletBalance();">Tap to retry</span>' +
+          '<div style="font-size:11px;color:#ef4444;margin-top:6px;font-weight:400;text-decoration:none;">' + debugMsg.replace(/</g,'&lt;') + '</div>';
       }
     });
 }
