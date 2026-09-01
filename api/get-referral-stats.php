@@ -20,8 +20,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-require_once __DIR__ . '/db.php';         // exposes $conn (mysqli)
-require_once __DIR__ . '/admin-auth.php'; // for verify_user_token()
+require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../admin-auth.php';
 $conn->set_charset('utf8mb4');
 
 function respond($success, $data = []) {
