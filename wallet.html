@@ -698,7 +698,12 @@ function loadWalletBalance(attempt){
       } else if(cached !== null && cachedUid === uid){
         balanceEl.textContent = '৳' + formatBDT(cached);
       } else {
-        balanceEl.innerHTML = '<span style="cursor:pointer;text-decoration:underline;" onclick="_walletLastFetchedUid=null;loadWalletBalance();">Tap to retry</span>';
+        // TEMP DEBUG: show the real error under "Tap to retry" so we can
+        // see the actual failure reason from a screenshot, no DevTools
+        // needed. Remove this debug line once the root cause is fixed.
+        const debugMsg = (err && (err.name + ': ' + err.message)) || String(err);
+        balanceEl.innerHTML = '<span style="cursor:pointer;text-decoration:underline;" onclick="_walletLastFetchedUid=null;loadWalletBalance();">Tap to retry</span>' +
+          '<div style="font-size:11px;color:#ef4444;margin-top:6px;font-weight:400;text-decoration:none;">' + debugMsg.replace(/</g,'&lt;') + '</div>';
       }
     });
 }
