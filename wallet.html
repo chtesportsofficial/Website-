@@ -646,7 +646,7 @@ function fetchWithTimeout(url, ms, options){
 // script runs, so the wake-up starts immediately in the background —
 // by the time loadWalletBalance()'s real fetch goes out, the backend
 // has already had a head start waking up instead of starting cold.
-fetch('https://chteo-api.onrender.com/api/get-balance.php', {
+fetch('https://chteo-api.onrender.com/api/wallet-status.php', {
   method: 'POST',
   headers: { 'Content-Type': 'text/plain' },
   body: JSON.stringify({ access_token: '' }),
@@ -680,7 +680,7 @@ async function loadWalletBalance(attempt){
   const accessToken = await getSupabaseAccessToken();
   if(!accessToken) return; // not signed in yet — chteo:profile-synced will retry once session is ready
 
-  fetchWithTimeout('https://chteo-api.onrender.com/api/get-balance.php', WALLET_BALANCE_TIMEOUT_MS, {
+  fetchWithTimeout('https://chteo-api.onrender.com/api/wallet-status.php', WALLET_BALANCE_TIMEOUT_MS, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({ access_token: accessToken })
