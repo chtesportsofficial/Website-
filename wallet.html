@@ -623,7 +623,22 @@ async function getSupabaseAccessToken(){
   return null;
 }
 
-function loadWalletBalance(){
+// Render's free-tier backend goes to sleep after inactivity — the first
+// request after that can take 30-50s to wake it up. Without a timeout,
+// a plain fetch() can also just hang indefinitely on a flaky connection.
+// AbortController gives us a hard cutoff so we always reach either
+// success or the retry/fallback path below, never stay stuck.
+function fetchWithTimeout(url, ms){
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
+const WALLET_BALANCE_TIMEOUT_MS = 20000;
+const WALLET_BALANCE_MAX_ATTEMPTS = 3;
+
+function loadWalletBalance(attempt){
+  attempt = attempt || 1;
   const profile = getProfile();
   const uid = localStorage.getItem('supabase_uid') || profile.supabase_uid;
   const balanceEl = document.getElementById('balanceAmount');
@@ -633,15 +648,17 @@ function loadWalletBalance(){
 
   const cachedUid = localStorage.getItem(WALLET_CACHE_UID_KEY);
   const cached = localStorage.getItem(WALLET_CACHE_KEY);
-  if(cached !== null && cachedUid === uid){
-    balanceEl.textContent = '৳' + formatBDT(cached);
-  } else {
-    balanceEl.textContent = '...';
+  if(attempt === 1){
+    if(cached !== null && cachedUid === uid){
+      balanceEl.textContent = '৳' + formatBDT(cached);
+    } else {
+      balanceEl.textContent = '...';
+    }
   }
 
   if(uid === _walletLastFetchedUid) return;
 
-  fetch('https://chteo-api.onrender.com/api/get-balance.php?uid=' + encodeURIComponent(uid))
+  fetchWithTimeout('https://chteo-api.onrender.com/api/get-balance.php?uid=' + encodeURIComponent(uid), WALLET_BALANCE_TIMEOUT_MS)
     .then(res => res.json())
     .then(data => {
       _walletLastFetchedUid = uid;
@@ -664,10 +681,21 @@ function loadWalletBalance(){
         localStorage.removeItem(WALLET_CACHE_UID_KEY);
       }
     })
-    .catch(err => console.warn('Wallet balance load failed:', err));
+    .catch(err => {
+      console.warn('Wallet balance load failed (attempt ' + attempt + '):', err);
+      // Retry a couple more times (server may just be waking up) before
+      // giving up — never leave the UI frozen on "..." like before.
+      if(attempt < WALLET_BALANCE_MAX_ATTEMPTS){
+        setTimeout(() => loadWalletBalance(attempt + 1), 4000);
+      } else if(cached !== null && cachedUid === uid){
+        balanceEl.textContent = '৳' + formatBDT(cached);
+      } else {
+        balanceEl.innerHTML = '<span style="cursor:pointer;text-decoration:underline;" onclick="_walletLastFetchedUid=null;loadWalletBalance();">Tap to retry</span>';
+      }
+    });
 }
 loadWalletBalance();
-document.addEventListener('chteo:profile-synced', loadWalletBalance);
+document.addEventListener('chteo:profile-synced', function(){ _walletLastFetchedUid = null; loadWalletBalance(); });
 
 /* ============ Recent Transactions (deposit request history) ============ */
 function escapeHtmlWallet(str){
