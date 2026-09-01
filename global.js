@@ -108,6 +108,16 @@
   // "Wallet user not found".
   var WALLET_SYNC_URL = "https://chteo-api.onrender.com/api/sync-wallet.php";
 
+  // Render's free-tier backend sleeps after inactivity and can take
+  // 30-50s+ to wake up on the first request. Fire a lightweight,
+  // fire-and-forget "warm-up" ping the moment global.js runs on ANY
+  // page (not just wallet.html) — so by the time a page actually
+  // needs the backend (balance, sync, deposit, withdraw...), it's
+  // already had a head start waking up instead of starting cold.
+  try {
+    fetch("https://chteo-api.onrender.com/api/get-balance.php?uid=warmup", { mode: "no-cors" }).catch(function () {});
+  } catch (e) {}
+
   function syncWallet() {
     return new Promise(function (resolve) {
       getSupabaseClient(function (client) {

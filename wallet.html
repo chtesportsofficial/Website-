@@ -634,6 +634,14 @@ function fetchWithTimeout(url, ms){
   return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
 }
 
+// Render's free-tier backend sleeps after inactivity and can take
+// 30-50s+ to wake up on the first request. Fire a lightweight,
+// fire-and-forget "warm-up" ping to the same host the moment this
+// script runs, so the wake-up starts immediately in the background —
+// by the time loadWalletBalance()'s real fetch goes out, the backend
+// has already had a head start waking up instead of starting cold.
+fetch('https://chteo-api.onrender.com/api/get-balance.php?uid=warmup', { mode: 'no-cors' }).catch(function(){});
+
 const WALLET_BALANCE_TIMEOUT_MS = 20000;
 const WALLET_BALANCE_MAX_ATTEMPTS = 3;
 
