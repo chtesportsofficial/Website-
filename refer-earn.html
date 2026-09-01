@@ -395,7 +395,7 @@
       </div>
       <div class="stat-text">
         <div class="stat-label" data-i18n="refer.totalCommissions">Total Commissions</div>
-        <div class="stat-value">৳0</div>
+        <div class="stat-value" id="statTotalCommissions">৳0</div>
         <div class="stat-sub" data-i18n="refer.totalCommissionsSub">Lifetime earnings from your referred friends</div>
       </div>
     </div>
@@ -411,7 +411,7 @@
           </svg>
         </div>
         <div class="stat-label" data-i18n="refer.registeredMembers">Registered Members</div>
-        <div class="stat-value">0</div>
+        <div class="stat-value" id="statRegisteredMembers">0</div>
         <div class="stat-sub" data-i18n="refer.registeredMembersSub">Members who registered and deposited</div>
       </div>
 
@@ -424,7 +424,7 @@
           </svg>
         </div>
         <div class="stat-label" data-i18n="refer.totalDeposit">Total Deposit Amount</div>
-        <div class="stat-value">৳0</div>
+        <div class="stat-value" id="statTotalDeposit">৳0</div>
         <div class="stat-sub" data-i18n="refer.totalDepositSub">Total deposit amount by your referred members</div>
       </div>
     </div>
@@ -536,7 +536,7 @@
             <th data-i18n="refer.colStatus">Status</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="commissionTableBody">
           <tr class="empty-row">
             <td colspan="6" data-i18n="refer.noCommissions">No commissions yet.</td>
           </tr>
@@ -544,7 +544,7 @@
       </table>
     </div>
 
-    <a href="#" class="view-all" data-i18n="refer.viewAll">View All</a>
+    <a href="#" class="view-all" id="viewAllLink" data-i18n="refer.viewAll">View All</a>
   </div>
 
 
@@ -697,6 +697,128 @@ async function shareMore(){
     }
   }
 }
+
+/* ---------------- Referral stats & commission history (real data) ----------------
+   Calls the chteo-api PHP backend (same host/pattern global.js already uses
+   for sync-wallet.php). Both endpoints need a Supabase access_token, which
+   we get the same way global.js's syncWallet() does — via the shared
+   Supabase client exposed on window.CHTEO. If the person isn't signed in,
+   the stat cards/table just stay on their placeholder zeros. */
+const WALLET_API_BASE = 'https://chteo-api.onrender.com/api/';
+
+function getAccessToken(){
+  return new Promise((resolve) => {
+    if(!window.CHTEO || !window.CHTEO.getSupabaseClient){ resolve(null); return; }
+    window.CHTEO.getSupabaseClient((client) => {
+      client.auth.getSession()
+        .then((res) => {
+          const session = res && res.data && res.data.session;
+          resolve(session && session.access_token ? session.access_token : null);
+        })
+        .catch(() => resolve(null));
+    });
+  });
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+
+function formatTaka(n){
+  const num = Number(n) || 0;
+  return '৳' + num.toLocaleString('en-US', { maximumFractionDigits: 2 });
+}
+
+function formatDate(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  if(isNaN(d)) return escapeHtml(iso);
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function statusPillStyle(status){
+  // "Held (6mo)" isn't withdrawable yet — show it in a different color
+  // from the default green "Completed"/"Withdrawable" pill so it's
+  // visually obvious at a glance.
+  if(status === 'Held (6mo)'){
+    return 'background:rgba(234,179,8,0.15);color:#eab308;';
+  }
+  return '';
+}
+
+async function loadReferralStats(token){
+  try{
+    const r = await fetch(WALLET_API_BASE + 'get-referral-stats.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ access_token: token })
+    });
+    const j = await r.json();
+    if(!j || !j.success) return; // stay on placeholder zeros, don't show a scary error
+
+    const totalCommissionsEl = document.getElementById('statTotalCommissions');
+    const registeredMembersEl = document.getElementById('statRegisteredMembers');
+    const totalDepositEl = document.getElementById('statTotalDeposit');
+    if(totalCommissionsEl) totalCommissionsEl.textContent = formatTaka(j.total_commissions);
+    if(registeredMembersEl) registeredMembersEl.textContent = j.registered_members || 0;
+    if(totalDepositEl) totalDepositEl.textContent = formatTaka(j.total_deposit_amount);
+  }catch(e){
+    console.warn('loadReferralStats failed —', e);
+  }
+}
+
+async function loadReferralHistory(token){
+  try{
+    const r = await fetch(WALLET_API_BASE + 'get-referral-history.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ access_token: token })
+    });
+    const j = await r.json();
+    if(!j || !j.success) return;
+
+    const tbody = document.getElementById('commissionTableBody');
+    const viewAll = document.getElementById('viewAllLink');
+    const rows = j.history || [];
+    if(!tbody || rows.length === 0) return; // keep the existing "No commissions yet." row
+
+    tbody.innerHTML = rows.map((row) => {
+      const phone = row.phone ? escapeHtml(maskPhone(row.phone)) : '—';
+      const pillStyle = statusPillStyle(row.status);
+      return '<tr>' +
+        '<td>' + formatDate(row.joining_date) + '</td>' +
+        '<td>' + escapeHtml(row.team_name) + '</td>' +
+        '<td>' + phone + '</td>' +
+        '<td>' + formatTaka(row.deposit_amount) + '</td>' +
+        '<td>' + formatTaka(row.commission_amount) + ' (' + row.commission_rate + '%)</td>' +
+        '<td><span class="status-pill" style="' + pillStyle + '">' + escapeHtml(row.status) + '</span></td>' +
+        '</tr>';
+    }).join('');
+
+    // The endpoint already returns the person's full history (no
+    // pagination), so everything is on-screen already — hide the
+    // "View All" link instead of pointing it at a dead "#" href.
+    if(viewAll) viewAll.style.display = 'none';
+  }catch(e){
+    console.warn('loadReferralHistory failed —', e);
+  }
+}
+
+function loadReferralData(){
+  getAccessToken().then((token) => {
+    if(!token) return; // not signed in yet — stats/table stay on placeholders
+    loadReferralStats(token);
+    loadReferralHistory(token);
+  });
+}
+
+loadReferralData();
+// Same reasoning as renderReferral() above: on first paint the Supabase
+// session may not have resolved yet, so re-run once global.js confirms
+// the person is actually signed in.
+document.addEventListener('chteo:profile-synced', loadReferralData);
 </script>
 
 </body>
