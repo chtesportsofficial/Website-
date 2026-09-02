@@ -685,7 +685,14 @@ async function loadWalletBalance(attempt){
     headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({ access_token: accessToken })
   })
-    .then(res => res.json())
+    .then(res => res.text())
+    .then(text => {
+      // Tolerate a leading BOM/stray byte/whitespace before the JSON
+      // (e.g. a UTF-8 BOM accidentally saved before "<?php" in the
+      // backend file) instead of letting res.json() hard-fail on it.
+      const start = text.indexOf('{');
+      return JSON.parse(start >= 0 ? text.slice(start) : text);
+    })
     .then(data => {
       _walletLastFetchedUid = uid;
       if(data.success){
