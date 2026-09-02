@@ -687,6 +687,15 @@ async function loadWalletBalance(attempt){
   })
     .then(res => res.text())
     .then(text => {
+      // If the backend PHP isn't actually executing for this route (wrong
+      // Render service type, failed deploy, etc.) the server sends back
+      // the literal, unexecuted get-balance.php source instead of JSON.
+      // Detect that specific case early and fail with a clear, actionable
+      // message instead of a confusing "Bad control character in JSON"
+      // parse error.
+      if (/^\s*<\?php/.test(text)) {
+        throw new Error('Backend is not executing PHP for this endpoint (server misconfiguration) — got raw source instead of JSON.');
+      }
       // Tolerate a leading BOM/stray byte/whitespace before the JSON
       // (e.g. a UTF-8 BOM accidentally saved before "<?php" in the
       // backend file) instead of letting res.json() hard-fail on it.
