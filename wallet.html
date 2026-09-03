@@ -653,7 +653,7 @@ fetch('https://chteo-api.onrender.com/api/get-balance.php', {
   mode: 'no-cors'
 }).catch(function(){});
 
-const WALLET_BALANCE_TIMEOUT_MS = 20000;
+const WALLET_BALANCE_TIMEOUT_MS = 60000;
 const WALLET_BALANCE_MAX_ATTEMPTS = 3;
 
 async function loadWalletBalance(attempt){
@@ -680,10 +680,11 @@ async function loadWalletBalance(attempt){
   const accessToken = await getSupabaseAccessToken();
   if(!accessToken) return; // not signed in yet — chteo:profile-synced will retry once session is ready
 
-  fetchWithTimeout('https://chteo-api.onrender.com/api/get-balance.php', WALLET_BALANCE_TIMEOUT_MS, {
+  fetchWithTimeout('https://chteo-api.onrender.com/api/get-balance.php?v=2', WALLET_BALANCE_TIMEOUT_MS, {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ access_token: accessToken })
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'access_token=' + encodeURIComponent(accessToken),
+    mode: 'cors'
   })
     .then(res => res.text())
     .then(text => {
