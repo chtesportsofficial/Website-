@@ -115,7 +115,10 @@
   // needs the backend (balance, sync, deposit, withdraw...), it's
   // already had a head start waking up instead of starting cold.
   try {
-    fetch("https://chteo-api.onrender.com/api/get-balance.php?uid=warmup", { mode: "no-cors" }).catch(function () {});
+    fetch("https://chteo-api.onrender.com/api/get-balance.php", {
+    method: "OPTIONS",
+    mode: "cors"
+  }).catch(function () {});
   } catch (e) {}
 
   function syncWallet() {
