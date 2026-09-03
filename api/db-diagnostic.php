@@ -1,82 +1,123 @@
 <?php
-// Temporary wallet DB diagnostic. Remove after troubleshooting.
+// TEMPORARY CHTEO wallet diagnostic. Remove after fixing.
 ob_start();
-ini_set('display_errors','0');
+ini_set('display_errors', '0');
 error_reporting(E_ALL);
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
-function out($data,$status=200){
-    while(ob_get_level()>0) ob_end_clean();
+function out($data, $status=200) {
+    while (ob_get_level() > 0) ob_end_clean();
     http_response_code($status);
-    echo json_encode($data, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
+    echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
-if ($_SERVER['REQUEST_METHOD']==='OPTIONS') out(['success'=>true]);
 
-require_once __DIR__.'/../db.php';
-require_once __DIR__.'/../supabase-config.php';
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') out(['success'=>true]);
 
-$raw=file_get_contents('php://input');
-$input=json_decode($raw?:'{}',true);
-if(!is_array($input)) $input=[];
-$token=trim((string)($input['access_token']??''));
-if(!$token && !empty($_SERVER['HTTP_AUTHORIZATION']) && preg_match('/Bearer\s+(.+)/i',$_SERVER['HTTP_AUTHORIZATION'],$m)) $token=trim($m[1]);
-if(!$token) out(['success'=>false,'stage'=>'auth','message'=>'Access token missing'],401);
-
-$ctx=stream_context_create(['http'=>[
-    'method'=>'GET','timeout'=>12,'ignore_errors'=>true,
-    'header'=>"apikey: ".SUPABASE_ANON_KEY."\r\nAuthorization: Bearer ".$token."\r\nAccept: application/json\r\n"
-]]);
-$resp=@file_get_contents(SUPABASE_URL.'/auth/v1/user',false,$ctx);
-$status=0;
-if(!empty($http_response_header)) foreach($http_response_header as $h){ if(preg_match('#^HTTP/\\S+\\s+(\\d+)#',$h,$m)){ $status=(int)$m[1]; break; }}
-$user=json_decode((string)$resp,true);
-if($status!==200 || !is_array($user) || empty($user['id'])) out(['success'=>false,'stage'=>'auth','message'=>'Invalid or expired session','supabase_http_code'=>$status],401);
-$uid=(string)$user['id'];
-
-if(!isset($conn) || !($conn instanceof mysqli)) out(['success'=>false,'stage'=>'db_connection','message'=>'mysqli connection unavailable'],500);
-
-$checks=[];
-$checks['connection']= ['ok'=>($conn->ping()===true)];
-
-$r=$conn->query("SHOW TABLES LIKE 'wallet_users'");
-$checks['wallet_users_table']=['ok'=>($r!==false && $r->num_rows>0)];
-if($r) $r->free();
-
-$needed=['id','supabase_uid','email','balance','withdrawable_balance','non_withdrawable_balance'];
-$columns=[];
-$r=$conn->query("SHOW COLUMNS FROM wallet_users");
-if($r){ while($row=$r->fetch_assoc()) $columns[]=$row['Field']; $r->free(); }
-$checks['columns']=[];
-foreach($needed as $c) $checks['columns'][$c]=in_array($c,$columns,true);
-
-if($checks['wallet_users_table']['ok']){
-    $stmt=$conn->prepare('SELECT id,balance,withdrawable_balance,non_withdrawable_balance FROM wallet_users WHERE supabase_uid = ? LIMIT 1');
-    if(!$stmt){
-        $checks['user_query']=['ok'=>false,'error'=>$conn->error];
-    } else {
-        $stmt->bind_param('s',$uid);
-        if(!$stmt->execute()){
-            $checks['user_query']=['ok'=>false,'error'=>$stmt->error];
-        } else {
-            $stmt->bind_result($id,$balance,$withdrawable,$nonWithdrawable);
-            if($stmt->fetch()){
-                $checks['user_query']=['ok'=>true,'user_id'=>(int)$id,'balance'=>(float)$balance,'withdrawable_balance'=>(float)$withdrawable,'non_withdrawable_balance'=>(float)$nonWithdrawable];
-            } else {
-                $checks['user_query']=['ok'=>true,'found'=>false,'message'=>'No wallet_users row for this Supabase UID'];
-            }
-        }
-        $stmt->close();
-    }
+// Safe endpoint test.
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    out([
+        'success'=>true,
+        'stage'=>'endpoint',
+        'message'=>'CHTEO diagnostic endpoint is live',
+        'service'=>'chteo-api',
+        'php'=>PHP_VERSION
+    ]);
 }
 
-$all=true;
-foreach($checks as $k=>$v){
-    if($k==='columns'){ foreach($v as $ok) if(!$ok) $all=false; }
-    elseif(isset($v['ok']) && !$v['ok']) $all=false;
+$raw = file_get_contents('php://input');
+$body = json_decode($raw ?: '{}', true);
+$token = is_array($body) ? trim((string)($body['access_token'] ?? '')) : '';
+
+if (!$token && !empty($_SERVER['HTTP_AUTHORIZATION']) &&
+    preg_match('/Bearer\s+(.+)/i', $_SERVER['HTTP_AUTHORIZATION'], $m)) {
+    $token = trim($m[1]);
 }
 
-out(['success'=>true,'database_ok'=>$all,'supabase_uid'=>$uid,'checks'=>$checks]);
+if (!$token) out(['success'=>false,'stage'=>'auth','message'=>'Access token missing'],401);
+
+require_once __DIR__ . '/../db.php';
+
+if (!isset($conn) || !($conn instanceof mysqli) || $conn->connect_errno) {
+    out(['success'=>false,'stage'=>'db','message'=>'Database connection failed'],500);
+}
+
+$supabaseUrl = defined('SUPABASE_URL') ? SUPABASE_URL : '';
+if (!$supabaseUrl) out(['success'=>false,'stage'=>'supabase','message'=>'SUPABASE_URL is not configured'],500);
+
+$anon = defined('SUPABASE_ANON_KEY') ? SUPABASE_ANON_KEY : '';
+$ctx = stream_context_create([
+    'http'=>[
+        'method'=>'GET',
+        'header'=>"Authorization: Bearer {$token}\r\napikey: {$anon}\r\n",
+        'ignore_errors'=>true,
+        'timeout'=>10
+    ]
+]);
+
+$resp = @file_get_contents(rtrim($supabaseUrl,'/').'/auth/v1/user', false, $ctx);
+$user = $resp !== false ? json_decode($resp, true) : null;
+
+if (!is_array($user) || empty($user['id'])) {
+    out(['success'=>false,'stage'=>'supabase','message'=>'Supabase rejected the access token'],401);
+}
+
+$uid = $user['id'];
+
+$tableCheck = $conn->query("SHOW TABLES LIKE 'wallet_users'");
+if (!$tableCheck || $tableCheck->num_rows === 0) {
+    out(['success'=>false,'stage'=>'table','message'=>'wallet_users table not found']);
+}
+
+$required = ['id','supabase_uid','email','balance','withdrawable_balance','non_withdrawable_balance'];
+$cols = [];
+$r = $conn->query("SHOW COLUMNS FROM wallet_users");
+if ($r) while ($row=$r->fetch_assoc()) $cols[]=$row['Field'];
+
+$missing = array_values(array_diff($required,$cols));
+if ($missing) {
+    out([
+        'success'=>false,
+        'stage'=>'columns',
+        'message'=>'Required wallet_users columns are missing',
+        'missing_columns'=>$missing,
+        'found_columns'=>$cols
+    ]);
+}
+
+$stmt = $conn->prepare(
+    "SELECT id,email,balance,withdrawable_balance,non_withdrawable_balance
+     FROM wallet_users WHERE supabase_uid=? LIMIT 1"
+);
+if (!$stmt) out(['success'=>false,'stage'=>'query','message'=>'Could not prepare wallet query'],500);
+
+$stmt->bind_param('s',$uid);
+$stmt->execute();
+$stmt->bind_result($id,$email,$balance,$withdrawable,$nonWithdrawable);
+
+if (!$stmt->fetch()) {
+    $stmt->close();
+    out([
+        'success'=>false,
+        'stage'=>'user',
+        'message'=>'No wallet_users row found for this Supabase user'
+    ]);
+}
+$stmt->close();
+
+out([
+    'success'=>true,
+    'stage'=>'complete',
+    'message'=>'Wallet database check passed',
+    'user'=>[
+        'id'=>(int)$id,
+        'email'=>$email,
+        'balance'=>(float)$balance,
+        'withdrawable_balance'=>(float)$withdrawable,
+        'non_withdrawable_balance'=>(float)$nonWithdrawable
+    ]
+]);
+?>
