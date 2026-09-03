@@ -5,7 +5,7 @@ ini_set('display_errors', '0');
 error_reporting(E_ALL);
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
 function json_out($data, $status = 200) {
@@ -32,12 +32,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') json_out(['success'=>true]);
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../supabase-config.php';
 
-$raw = file_get_contents('php://input');
-$input = json_decode($raw ?: '{}', true);
-if (!is_array($input)) $input = [];
-// Also accept CORS-safelisted application/x-www-form-urlencoded requests.
-if (empty($input) && !empty($_POST)) {
-    $input = $_POST;
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $input = $_GET;
+} else {
+    $raw = file_get_contents('php://input');
+    $input = json_decode($raw ?: '{}', true);
+    if (!is_array($input)) $input = [];
+    // Also accept CORS-safelisted application/x-www-form-urlencoded requests.
+    if (empty($input) && !empty($_POST)) {
+        $input = $_POST;
+    }
 }
 
 $token = '';
