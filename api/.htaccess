@@ -1,8 +1,9 @@
 RewriteEngine On
 
-# Pass Authorization header to PHP
+# Keep Authorization header available to PHP
 RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
+# CORS
 <IfModule mod_headers.c>
     Header always set Access-Control-Allow-Origin "*"
     Header always set Access-Control-Allow-Methods "GET, POST, OPTIONS"
@@ -14,4 +15,5 @@ RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 RewriteCond %{REQUEST_METHOD} OPTIONS
 RewriteRule ^ - [R=204,L]
 
+# Disable PHP error output
 php_flag display_errors Off
