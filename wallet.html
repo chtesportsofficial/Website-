@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
+<!-- TEMP DEBUG -->
+<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+<script>eruda.init();</script>
+<!-- TEMP DEBUG: mobile console overlay to see the real network/CORS error. -->
+<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+<script>eruda.init();</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wallet</title>
@@ -642,7 +648,7 @@ function fetchWithTimeout(url, ms, options){
 // has already had a head start waking up instead of starting cold.
 fetch('https://chteo-api.onrender.com/api/get-balance.php', {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+  headers: { 'Content-Type': 'text/plain' },
   body: JSON.stringify({ access_token: '' }),
   mode: 'no-cors'
 }).catch(function(){});
@@ -676,7 +682,7 @@ async function loadWalletBalance(attempt){
 
   fetchWithTimeout('https://chteo-api.onrender.com/api/get-balance.php', WALLET_BALANCE_TIMEOUT_MS, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({ access_token: accessToken })
   })
     .then(res => res.text())
@@ -732,18 +738,7 @@ async function loadWalletBalance(attempt){
       }
     });
 }
-document.addEventListener('DOMContentLoaded', async function(){
-  // Make sure the MySQL wallet_users row exists before reading balance.
-  // global.js exposes the same authenticated Supabase session through CHTEO.
-  try {
-    if (window.CHTEO && typeof window.CHTEO.syncWallet === 'function') {
-      await window.CHTEO.syncWallet();
-    }
-  } catch (e) {
-    console.warn('Wallet sync before balance failed:', e);
-  }
-  loadWalletBalance();
-});
+loadWalletBalance();
 document.addEventListener('chteo:profile-synced', function(){ _walletLastFetchedUid = null; loadWalletBalance(); });
 
 // Mobile browsers can restore this page from the back-forward cache
