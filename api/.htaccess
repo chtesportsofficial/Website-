@@ -1,9 +1,6 @@
 RewriteEngine On
 
-# Keep Authorization header available to PHP
-RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
-
-# CORS
+# CORS headers
 <IfModule mod_headers.c>
     Header always set Access-Control-Allow-Origin "*"
     Header always set Access-Control-Allow-Methods "GET, POST, OPTIONS"
@@ -11,9 +8,12 @@ RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
     Header always set Access-Control-Max-Age "86400"
 </IfModule>
 
-# Handle CORS preflight
+# Handle OPTIONS / CORS preflight
 RewriteCond %{REQUEST_METHOD} OPTIONS
 RewriteRule ^ - [R=204,L]
 
-# Disable PHP error output
+# Pass Authorization header to PHP
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+# Disable PHP errors from appearing in API response
 php_flag display_errors Off
