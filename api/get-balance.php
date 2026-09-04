@@ -51,7 +51,29 @@ if (!empty($input['access_token'])) {
 if (!$token && !empty($_SERVER['HTTP_AUTHORIZATION'])) {
     if (preg_match('/Bearer\s+(.+)/i', $_SERVER['HTTP_AUTHORIZATION'], $m)) $token = trim($m[1]);
 }
-if (!$token) json_out(['success'=>false,'message'=>'Access token missing'], 401);
+$callback = isset($input['callback']) ? trim((string)$input['callback']) : '';
+// JSONP mode is used by the GitHub Pages wallet to avoid browser CORS failures.
+// Restrict callback to a safe JavaScript identifier only.
+$jsonp = ($callback !== '' && preg_match('/^[A-Za-z_$][A-Za-z0-9_$]*$/', $callback));
+function jsonp_out($data, $callback, $status = 200) {
+    if (!headers_sent()) {
+        http_response_code($status);
+        header('Content-Type: application/javascript; charset=utf-8');
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    }
+    while (ob_get_level() > 0) ob_end_clean();
+    echo $callback . '(' . json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . ');';
+    exit;
+}
+if ($jsonp) {
+    // From this point, replace json_out() responses with JSONP responses.
+    // Keep a small closure so the existing DB/auth code can remain unchanged.
+    $jsonOut = function($data, $status = 200) use ($callback) { jsonp_out($data, $callback, $status); };
+} else {
+    $jsonOut = function($data, $status = 200) { json_out($data, $status); };
+}
+
+if (!$token) $jsonOut(['success'=>false,'message'=>'Access token missing'], 401);
 
 // Verify the Supabase access token without relying on the PHP cURL extension.
 $ctx = stream_context_create(['http' => [
@@ -69,16 +91,16 @@ if (!empty($http_response_header)) {
 }
 $user = json_decode((string)$resp, true);
 if ($status !== 200 || !is_array($user) || empty($user['id'])) {
-    json_out(['success'=>false,'message'=>'Invalid or expired session'], 401);
+    $jsonOut(['success'=>false,'message'=>'Invalid or expired session'], 401);
 }
 
 $uid = (string)$user['id'];
 $stmt = $conn->prepare('SELECT id, balance, withdrawable_balance, non_withdrawable_balance FROM wallet_users WHERE supabase_uid = ? LIMIT 1');
-if (!$stmt) json_out(['success'=>false,'message'=>'Database query error'], 500);
+if (!$stmt) $jsonOut(['success'=>false,'message'=>'Database query error'], 500);
 $stmt->bind_param('s', $uid);
 if (!$stmt->execute()) {
     $stmt->close();
-    json_out(['success'=>false,'message'=>'Database query failed'], 500);
+    $jsonOut(['success'=>false,'message'=>'Database query failed'], 500);
 }
 $stmt->bind_result($user_id, $balance, $withdrawableBalance, $nonWithdrawableBalance);
 if ($stmt->fetch()) {
