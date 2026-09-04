@@ -291,8 +291,11 @@ async function fetchWalletBalance(){
   if(!sessionUser)return;
   walletBalanceLoading=true;
   walletBalanceError=false;
-  // Render free-tier services can cold-start slowly — retry once before giving up.
-  for(let attempt=0;attempt<2;attempt++){
+  // Render free-tier services can cold-start slowly (30-60s) — retry a few
+  // times with growing delays before giving up.
+  const delays=[0,3000,6000,10000];
+  for(let attempt=0;attempt<delays.length;attempt++){
+    if(delays[attempt])await new Promise(r=>setTimeout(r,delays[attempt]));
     try{
       const res=await fetch('https://chteo-api.onrender.com/api/get-balance.php?uid='+encodeURIComponent(sessionUser.id));
       const j=await res.json();
@@ -307,7 +310,6 @@ async function fetchWalletBalance(){
     }catch(e){
       walletBalance=null;
       walletBalanceError=true;
-      if(attempt===0)await new Promise(r=>setTimeout(r,1500));
     }
   }
   walletBalanceLoading=false;
