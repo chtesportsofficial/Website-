@@ -154,7 +154,9 @@
   .jf-qty-btn{background:none;border:none;color:var(--text);width:28px;height:28px;font-size:15px;font-family:inherit;cursor:pointer;}
   .jf-qty-btn:disabled{color:var(--text-dim);cursor:not-allowed;}
   .jf-qty-val{display:inline-block;min-width:22px;text-align:center;font-size:12.5px;font-weight:700;}
-  .auto-booking-note{font-size:10px;font-weight:800;opacity:.72;margin-left:6px}
+<style>
+.auto-booking-note{font-size:10px;font-weight:800;opacity:.72;margin-left:6px}
+</style>
 </style>
 </head>
 <body>
@@ -281,50 +283,10 @@ function lobbyIsFull(l){
   const slots=l.total_slots||0,joined=lobbyDisplayJoined(l);
   return l.status==='full'||joined>=slots||isJoinWindowClosed(l);
 }
-let sessionUser=null, userProfile=null, walletBalance=null, walletBalanceError=false, walletBalanceLoading=false;
+let sessionUser=null, userProfile=null, walletBalance=null;
 let selectedLobbies=new Set(), lobbyDataById={};
 let lobbyTeamCounts={};
 
-async function fetchWalletBalance(){
-  if(!sessionUser)return;
-  walletBalanceLoading=true;
-  walletBalanceError=false;
-  // Render free-tier services can cold-start slowly (30-60s) — retry a few
-  // times with growing delays before giving up. Cumulative wait before the
-  // last attempt fires is ~54s, so a full cold start gets covered.
-  const delays=[0,3000,6000,10000,15000,20000];
-  for(let attempt=0;attempt<delays.length;attempt++){
-    if(delays[attempt])await new Promise(r=>setTimeout(r,delays[attempt]));
-    try{
-      const res=await fetch('https://chteo-api.onrender.com/api/get-balance.php?uid='+encodeURIComponent(sessionUser.id));
-      let j=null, parseErr=null;
-      try{ j=await res.json(); }catch(pe){ parseErr=pe; }
-      if(!res.ok||parseErr||!j){
-        console.error('[wallet-balance] attempt',attempt,'HTTP',res.status,res.statusText,parseErr?('JSON parse failed: '+parseErr.message):'',!parseErr&&j?('body: '+JSON.stringify(j)):'');
-      }
-      if(j&&j.success){
-        walletBalance=Number(j.balance)||0;
-        walletBalanceError=false;
-        walletBalanceLoading=false;
-        if(document.getElementById('jfPaymentOptions'))renderPaymentOptions();
-        return;
-      }
-      if(j&&!j.success)console.error('[wallet-balance] attempt',attempt,'API returned failure:',j.message||j);
-      walletBalance=null;
-      walletBalanceError=true;
-    }catch(e){
-      console.error('[wallet-balance] attempt',attempt,'network/fetch error:',e.message||e);
-      walletBalance=null;
-      walletBalanceError=true;
-    }
-  }
-  walletBalanceLoading=false;
-  if(document.getElementById('jfPaymentOptions'))renderPaymentOptions();
-}
-async function retryWalletBalance(){
-  await fetchWalletBalance();
-  renderPaymentOptions();
-}
 async function initUser(){
   try{
     const {data:{session}}=await sb.auth.getSession();
@@ -332,11 +294,15 @@ async function initUser(){
     sessionUser=session.user;
     const {data:p}=await sb.from('profiles').select('whatsapp,user_number').eq('id',sessionUser.id).single();
     userProfile=p||null;
-    // Don't await — balance can take up to ~54s to resolve (cold-start
-    // retries) and must not block the tournament page from rendering.
-    // It updates walletBalance/walletBalanceLoading in place and
-    // renderPaymentOptions() re-reads those when the join form opens.
-    fetchWalletBalance();
+    try{
+      const res=await fetch('https://chteo-api.onrender.com/api/get-balance.php',{
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+        body:'access_token='+encodeURIComponent(session.access_token)
+      });
+      const j=await res.json();
+      walletBalance=(j&&j.success)?Number(j.balance)||0:null;
+    }catch(e){walletBalance=null;}
   }catch(e){/* not logged in — guest flow still works */}
 }
 
@@ -595,14 +561,17 @@ function renderTeamBlocks(){
     let blocks='';
     for(let i=1;i<=c;i++){
       const key=id+'__'+i;
-      const showHead=(c>1||allKeys.length>1);
+      const otherKeys=allKeys.filter(k=>k.key!==key);
+      const copyBtns=otherKeys.map(k=>{
+        const ol=lobbyDataById[k.lobbyId]||{};
+        const sameLobby=k.lobbyId===id;
+        const olabel=sameLobby?`টিম ${k.index}`:`${esc(ol.time_label||'')} ${esc(ol.lobby_date||'')}`.trim()+(getTeamCount(k.lobbyId)>1?` টিম ${k.index}`:'');
+        return `<button type="button" class="jf-copy-btn" onclick="copyTeamFrom('${key}','${k.key}')">📋 ${olabel} থেকে কপি</button>`;
+      }).join('');
       blocks+=`<div class="jf-team-block" data-key="${key}">
-        ${showHead?`<div class="jf-team-block-head">
+        ${(c>1||otherKeys.length)?`<div class="jf-team-block-head">
           <b>${c>1?'টিম '+i:''}</b>
-          <div class="jf-copy-wrap">
-            <button type="button" class="jf-copy-btn" onclick="copyTeamData('${key}')">📋 কপি</button>
-            <button type="button" class="jf-copy-btn" onclick="pasteTeamData('${key}')">📥 পেস্ট</button>
-          </div>
+          ${otherKeys.length?`<div class="jf-copy-wrap">${copyBtns}</div>`:''}
         </div>`:''}
         <div class="jf-label">Team name *</div>
         <input class="jf-input" id="jfTeamName_${key}" placeholder="Team Alpha">
@@ -613,16 +582,12 @@ function renderTeamBlocks(){
     return blocks;
   }).join('');
 }
-let teamClipboard=null;
-function copyTeamData(sourceKey){
+function copyTeamFrom(targetKey,sourceKey){
+  if(!sourceKey)return;
   const srcTeam=document.getElementById('jfTeamName_'+sourceKey)?.value||'';
   const srcPlayer=document.getElementById('jfPlayerName_'+sourceKey)?.value||'';
-  teamClipboard={teamName:srcTeam,playerName:srcPlayer};
-}
-function pasteTeamData(targetKey){
-  if(!teamClipboard)return;
-  document.getElementById('jfTeamName_'+targetKey).value=teamClipboard.teamName;
-  document.getElementById('jfPlayerName_'+targetKey).value=teamClipboard.playerName;
+  document.getElementById('jfTeamName_'+targetKey).value=srcTeam;
+  document.getElementById('jfPlayerName_'+targetKey).value=srcPlayer;
 }
 function collectTeamData(){
   const allSingleCount=currentJoinLobbyIds.every(id=>getTeamCount(id)===1);
@@ -645,7 +610,6 @@ function collectTeamData(){
   for(const id of currentJoinLobbyIds){
     const c=getTeamCount(id);
     const l=lobbyDataById[id]||{};
-    const seenInLobby=[];
     for(let i=1;i<=c;i++){
       const key=id+'__'+i;
       const teamName=(document.getElementById('jfTeamName_'+key)?.value||'').trim();
@@ -653,9 +617,6 @@ function collectTeamData(){
       const label=`${l.time_label||''} ${l.lobby_date||''}`.trim()+(c>1?` টিম ${i}`:'');
       if(!teamName)return{error:`Team name is required for ${label}.`};
       if(!playerName)return{error:`Player name is required for ${label}.`};
-      const dupKey=(teamName+'||'+playerName).toLowerCase();
-      if(seenInLobby.includes(dupKey))return{error:`একই টিম নাম ও একই প্লেয়ার নাম দিয়ে একই স্লটে দুইবার এন্ট্রি দেওয়া যাবে না (${label})। টিম নাম একই রেখে প্লেয়ার নাম আলাদা দিলে সমস্যা নেই।`};
-      seenInLobby.push(dupKey);
       if(!ownerTeamName)ownerTeamName=teamName;
       entries.push({lobbyId:id,teamName,playerName,ownerTeamName});
     }
@@ -678,12 +639,8 @@ function renderPaymentOptions(){
     html+=`<label class="jf-pay-opt ${enough?'':'disabled'}"><input type="radio" name="jfPay" value="balance" ${enough?'checked':'disabled'} onchange="renderPaymentExtra()"><span class="pay-icon">💰</span><span class="pay-text"><b>Pay ৳${fee} from balance</b><span>Wallet balance: ৳${walletBalance}</span></span></label>`;
   }
   html+=`<label class="jf-pay-opt disabled" onclick="event.preventDefault();showManualComingSoon();"><input type="radio" name="jfPay" value="manual" disabled><span class="pay-icon">📱</span><span class="pay-text"><b>Pay via bKash/Nagad</b><span>শীঘ্রই আসছে</span></span></label>`;
-  if(!sessionUser){
+  if(!canPayBalance){
     html+=`<div class="jf-note">স্লট বুক করতে আগে লগইন করুন এবং ওয়ালেট ব্যালেন্স থেকে পে করুন।</div>`;
-  }else if(walletBalanceLoading){
-    html+=`<div class="jf-note">ব্যালেন্স লোড হচ্ছে…</div>`;
-  }else if(walletBalanceError){
-    html+=`<div class="jf-note">ব্যালেন্স লোড করা যায়নি (নেটওয়ার্ক/সার্ভার সমস্যা)। <button type="button" class="jf-copy-btn" onclick="retryWalletBalance()">🔄 আবার চেষ্টা করুন</button></div>`;
   }else if(!enough){
     html+=`<div class="jf-note">ব্যালেন্স যথেষ্ট নয় — স্লট বুক করতে ওয়ালেটে টাকা যোগ করুন।</div>`;
   }
