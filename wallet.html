@@ -668,79 +668,69 @@ async function loadWalletBalance(attempt){
   const cachedUid = localStorage.getItem(WALLET_CACHE_UID_KEY);
   const cached = localStorage.getItem(WALLET_CACHE_KEY);
   if(attempt === 1){
-    if(cached !== null && cachedUid === uid){
-      balanceEl.textContent = '৳' + formatBDT(cached);
-    } else {
-      balanceEl.textContent = '...';
-    }
+    balanceEl.textContent = (cached !== null && cachedUid === uid) ? '৳' + formatBDT(cached) : '...';
   }
-
   if(uid === _walletLastFetchedUid) return;
 
   const accessToken = await getSupabaseAccessToken();
-  if(!accessToken) return; // not signed in yet — chteo:profile-synced will retry once session is ready
+  if(!accessToken) return;
 
-  // First use a simple GET request. GET is a CORS-safelisted method and avoids
-  // browser preflight problems that can surface as the unhelpful
-  // "TypeError: Failed to fetch" on some mobile browsers.
-  const balanceUrl = 'https://chteo-api.onrender.com/api/get-balance.php?v=3&access_token=' + encodeURIComponent(accessToken);
-  fetchWithTimeout(balanceUrl, WALLET_BALANCE_TIMEOUT_MS, {
-    method: 'GET',
-    mode: 'cors',
-    cache: 'no-store'
-  })
-    .then(res => res.text())
-    .then(text => {
-      // If the backend PHP isn't actually executing for this route (wrong
-      // Render service type, failed deploy, etc.) the server sends back
-      // the literal, unexecuted get-balance.php source instead of JSON.
-      // Detect that specific case early and fail with a clear, actionable
-      // message instead of a confusing "Bad control character in JSON"
-      // parse error.
-      if (/^\s*<\?php/.test(text)) {
-        throw new Error('Backend is not executing PHP for this endpoint (server misconfiguration) — got raw source instead of JSON.');
-      }
-      // Tolerate a leading BOM/stray byte/whitespace before the JSON
-      // (e.g. a UTF-8 BOM accidentally saved before "<?php" in the
-      // backend file) instead of letting res.json() hard-fail on it.
-      const start = text.indexOf('{');
-      return JSON.parse(start >= 0 ? text.slice(start) : text);
-    })
-    .then(data => {
-      _walletLastFetchedUid = uid;
-      if(data.success){
-        const total = Number(data.balance || 0);
-        const withdrawable = Number(data.withdrawable_balance || 0);
-        const nonWithdrawable = Number(data.non_withdrawable_balance || 0);
+  // Use JSONP here deliberately. The wallet page is hosted on GitHub Pages
+  // while the API is on Render. JSONP avoids browser CORS/preflight failures
+  // entirely for this read-only balance request.
+  const callbackName = '__chteoWalletBalance_' + Date.now() + '_' + Math.floor(Math.random()*100000);
+  const script = document.createElement('script');
+  let finished = false;
+  const cleanup = () => {
+    if(finished) return;
+    finished = true;
+    try { delete window[callbackName]; } catch(e) { window[callbackName] = undefined; }
+    if(script.parentNode) script.parentNode.removeChild(script);
+  };
+  const timer = setTimeout(() => {
+    cleanup();
+    const err = new Error('Wallet API request timed out');
+    if(attempt < WALLET_BALANCE_MAX_ATTEMPTS) setTimeout(() => loadWalletBalance(attempt + 1), 4000);
+    else if(cached !== null && cachedUid === uid) balanceEl.textContent = '৳' + formatBDT(cached);
+    else balanceEl.innerHTML = '<span style="cursor:pointer;text-decoration:underline;" onclick="_walletLastFetchedUid=null;loadWalletBalance();">Tap to retry</span><div style="font-size:11px;color:#ef4444;margin-top:6px;font-weight:400;">TypeError: ' + err.message + '</div>';
+  }, 60000);
 
-        balanceEl.textContent = '৳' + formatBDT(total);
-        if(withdrawableEl) withdrawableEl.textContent = '৳' + formatBDT(withdrawable);
-        if(nonWithdrawableEl) nonWithdrawableEl.textContent = '৳' + formatBDT(nonWithdrawable);
+  window[callbackName] = function(data){
+    if(finished) return;
+    clearTimeout(timer);
+    finished = true;
+    try { delete window[callbackName]; } catch(e) { window[callbackName] = undefined; }
+    if(script.parentNode) script.parentNode.removeChild(script);
+    _walletLastFetchedUid = uid;
+    if(data && data.success){
+      const total = Number(data.balance || 0);
+      const withdrawable = Number(data.withdrawable_balance || 0);
+      const nonWithdrawable = Number(data.non_withdrawable_balance || 0);
+      balanceEl.textContent = '৳' + formatBDT(total);
+      if(withdrawableEl) withdrawableEl.textContent = '৳' + formatBDT(withdrawable);
+      if(nonWithdrawableEl) nonWithdrawableEl.textContent = '৳' + formatBDT(nonWithdrawable);
+      localStorage.setItem(WALLET_CACHE_KEY, total);
+      localStorage.setItem(WALLET_CACHE_UID_KEY, uid);
+    } else {
+      balanceEl.textContent = '৳0';
+      if(withdrawableEl) withdrawableEl.textContent = '৳0';
+      if(nonWithdrawableEl) nonWithdrawableEl.textContent = '৳0';
+      localStorage.removeItem(WALLET_CACHE_KEY);
+      localStorage.removeItem(WALLET_CACHE_UID_KEY);
+    }
+  };
 
-        localStorage.setItem(WALLET_CACHE_KEY, total);
-        localStorage.setItem(WALLET_CACHE_UID_KEY, uid);
-      } else {
-        balanceEl.textContent = '৳0';
-        if(withdrawableEl) withdrawableEl.textContent = '৳0';
-        if(nonWithdrawableEl) nonWithdrawableEl.textContent = '৳0';
-        localStorage.removeItem(WALLET_CACHE_KEY);
-        localStorage.removeItem(WALLET_CACHE_UID_KEY);
-      }
-    })
-    .catch(err => {
-      console.warn('Wallet balance load failed (attempt ' + attempt + '):', err);
-      // Retry a couple more times (server may just be waking up) before
-      // giving up — never leave the UI frozen on "..." like before.
-      if(attempt < WALLET_BALANCE_MAX_ATTEMPTS){
-        setTimeout(() => loadWalletBalance(attempt + 1), 4000);
-      } else if(cached !== null && cachedUid === uid){
-        balanceEl.textContent = '৳' + formatBDT(cached);
-      } else {
-        const debugMsg = (err && (err.name + ': ' + err.message)) || String(err);
-        balanceEl.innerHTML = '<span style="cursor:pointer;text-decoration:underline;" onclick="_walletLastFetchedUid=null;loadWalletBalance();">Tap to retry</span>' +
-          '<div style="font-size:11px;color:#ef4444;margin-top:6px;font-weight:400;text-decoration:none;">' + debugMsg.replace(/</g,'&lt;') + '</div>';
-      }
-    });
+  script.onerror = function(){
+    clearTimeout(timer);
+    cleanup();
+    const err = new Error('Wallet API could not be reached');
+    if(attempt < WALLET_BALANCE_MAX_ATTEMPTS) setTimeout(() => loadWalletBalance(attempt + 1), 4000);
+    else if(cached !== null && cachedUid === uid) balanceEl.textContent = '৳' + formatBDT(cached);
+    else balanceEl.innerHTML = '<span style="cursor:pointer;text-decoration:underline;" onclick="_walletLastFetchedUid=null;loadWalletBalance();">Tap to retry</span><div style="font-size:11px;color:#ef4444;margin-top:6px;font-weight:400;">TypeError: ' + err.message + '</div>';
+  };
+
+  script.src = 'https://chteo-api.onrender.com/api/get-balance.php?callback=' + encodeURIComponent(callbackName) + '&access_token=' + encodeURIComponent(accessToken) + '&v=4';
+  document.head.appendChild(script);
 }
 loadWalletBalance();
 document.addEventListener('chteo:profile-synced', function(){ _walletLastFetchedUid = null; loadWalletBalance(); });
