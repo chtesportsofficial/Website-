@@ -1,17 +1,5 @@
 RewriteEngine On
 
-# CORS headers
-<IfModule mod_headers.c>
-    Header always set Access-Control-Allow-Origin "*"
-    Header always set Access-Control-Allow-Methods "GET, POST, OPTIONS"
-    Header always set Access-Control-Allow-Headers "Content-Type, Authorization, Accept"
-    Header always set Access-Control-Max-Age "86400"
-</IfModule>
-
-# Handle OPTIONS / CORS preflight
-RewriteCond %{REQUEST_METHOD} OPTIONS
-RewriteRule ^ - [R=204,L]
-
 # Pass Authorization header to PHP
 RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
