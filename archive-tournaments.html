@@ -49,7 +49,7 @@ async function load(){
   $('count').textContent=rows.length;
   window.__archivedRows=rows;
   $('list').innerHTML=rows.length?rows.map(t=>`<div class="item">
-    ${t.banner_url?`<img class="thumb" src="${esc(t.banner_url)}" alt="">`:'<div class="thumb"></div>'}
+    ${t.banner_url?`<img class="thumb" loading="lazy" src="${esc(t.banner_url)}" alt="">`:'<div class="thumb"></div>'}
     <div class="content"><div class="name">${esc(t.title)}</div>
     <div class="meta">Entry ৳${t.entry_fee||0} · Prize ৳${t.prize_pool||0} · Slots ${t.total_slots||0}</div>
     <div class="row"><button class="green" onclick="restore('${t.id}')">Restore</button><button class="red" onclick="removeItem('${t.id}')">Delete</button></div></div>

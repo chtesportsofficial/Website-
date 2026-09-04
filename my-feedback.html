@@ -224,7 +224,7 @@ function render(rows){
       <div class="fb-message">${escHtml(f.message)}</div>
 
       ${f.screenshot_url ? `
-        <img class="fb-shot" src="${escHtml(f.screenshot_url)}" alt="Your screenshot"
+        <img class="fb-shot" loading="lazy" src="${escHtml(f.screenshot_url)}" alt="Your screenshot"
              onclick="openLightbox('${escHtml(f.screenshot_url)}')">
       ` : ''}
 
