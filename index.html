@@ -456,7 +456,7 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
 <div class="topbar">
   <div class="brand">
     <div class="brand-mark">
-      <img src="https://raw.githubusercontent.com/chtesportsofficial/Chteo_img/refs/heads/main/CHTEO%20(1).png" alt="CHT ESP ORG LOGO">
+      <img src="https://cdn.jsdelivr.net/gh/chtesportsofficial/Chteo_img@main/CHTEO%20(1).png" alt="CHT ESP ORG LOGO">
     </div>
     <div class="brand-name">CHT ESP ORG</div>
   </div>
@@ -555,7 +555,7 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
         });
       }
       const groups=(data||[]).map(s=>({s,ts:orderForSection(s.id,(s.tournaments||[]).filter(t=>t.status==='published'&&t.show_on_homepage===true))})).filter(x=>x.ts.length);
-      root.innerHTML=groups.map(x=>'<section class="dyn-section"><div class="dyn-head"><div class="dyn-title"><span class="bar"></span>'+esc(x.s.name)+'</div></div><div class="dyn-scroll">'+x.ts.map((t,i)=>'<article class="dyn-card" data-index="'+(i+1)+'">'+(t.banner_url?'<img class="dyn-banner" src="'+esc(t.banner_url)+'" alt="">':'')+'<div class="dyn-body"><a class="dyn-cta" aria-label="Open tournament" href="tournament-details.html?id='+encodeURIComponent(t.id)+'"><span>VIEW DETAILS</span><span class="arrow">›</span></a></div></article>').join('')+'</div></section>').join('');
+      root.innerHTML=groups.map(x=>'<section class="dyn-section"><div class="dyn-head"><div class="dyn-title"><span class="bar"></span>'+esc(x.s.name)+'</div></div><div class="dyn-scroll">'+x.ts.map((t,i)=>'<article class="dyn-card" data-index="'+(i+1)+'">'+(t.banner_url?'<img class="dyn-banner" loading="lazy" src="'+esc(t.banner_url)+'" alt="">':'')+'<div class="dyn-body"><a class="dyn-cta" aria-label="Open tournament" href="tournament-details.html?id='+encodeURIComponent(t.id)+'"><span>VIEW DETAILS</span><span class="arrow">›</span></a></div></article>').join('')+'</div></section>').join('');
     }
     load();
   }
@@ -821,7 +821,38 @@ window.addEventListener('pageshow', function(event){
   const CACHE_KEY = 'cached_balance';
   const CACHE_UID_KEY = 'cached_balance_uid';
 
-  function loadTopBalance(){
+  // Same token lookup wallet.html uses — get-balance.php only accepts a
+  // real Supabase access_token, it never reads a "uid" query param, so
+  // the fetch below has to send the token or the server always replies
+  // {success:false} and this code used to overwrite the balance with 0.
+  async function getSupabaseAccessToken(){
+    try {
+      const client = window.supabaseClient || window.supabase;
+      if (client && client.auth && typeof client.auth.getSession === 'function'){
+        const { data } = await client.auth.getSession();
+        if (data && data.session && data.session.access_token){
+          return data.session.access_token;
+        }
+      }
+    } catch (e){
+      console.warn('getSupabaseAccessToken: SDK getSession failed', e);
+    }
+    try {
+      const key = Object.keys(localStorage).find(function(k){
+        return k.indexOf('-auth-token') !== -1 && k.indexOf('sb-') === 0;
+      });
+      if (key){
+        const raw = JSON.parse(localStorage.getItem(key));
+        const token = (raw && raw.access_token) || (raw && raw.currentSession && raw.currentSession.access_token);
+        if (token) return token;
+      }
+    } catch (e){
+      console.warn('getSupabaseAccessToken: localStorage fallback failed', e);
+    }
+    return null;
+  }
+
+  async function loadTopBalance(){
     let profile = {};
     try { profile = JSON.parse(localStorage.getItem('user_profile') || '{}'); } catch(e){}
     const uid = localStorage.getItem('supabase_uid') || profile.supabase_uid;
@@ -843,9 +874,16 @@ window.addEventListener('pageshow', function(event){
 
     if(uid === lastFetchedUid) return;
 
+    const accessToken = await getSupabaseAccessToken();
+    if(!accessToken) return; // not logged in yet — leave the cached/placeholder number alone
+
     // Then quietly refresh from the server in the background and correct
     // the number if it changed (stale-while-revalidate).
-    fetch('https://chteo-api.onrender.com/api/get-balance.php?uid=' + encodeURIComponent(uid))
+    fetch('https://chteo-api.onrender.com/api/get-balance.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        body: 'access_token=' + encodeURIComponent(accessToken)
+      })
       .then(res => res.json())
       .then(data => {
         lastFetchedUid = uid;
@@ -853,13 +891,14 @@ window.addEventListener('pageshow', function(event){
           el.textContent = data.balance;
           localStorage.setItem(CACHE_KEY, data.balance);
           localStorage.setItem(CACHE_UID_KEY, uid);
-        } else {
-          // No wallet row yet (e.g. brand-new signup, sync not done) —
-          // show 0 rather than leaving a stale/wrong number on screen.
+        } else if (data.message === 'Wallet user not found') {
+          // Genuinely no wallet row yet (brand-new signup, sync not done).
           el.textContent = '0';
           localStorage.removeItem(CACHE_KEY);
           localStorage.removeItem(CACHE_UID_KEY);
         }
+        // Any other failure (expired/invalid token, server hiccup) — leave
+        // whatever number is already on screen instead of blanking it to 0.
       })
       .catch(err => console.warn('Top balance load failed:', err));
   }
