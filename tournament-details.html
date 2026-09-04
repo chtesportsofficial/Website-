@@ -290,8 +290,9 @@ async function fetchWalletBalance(){
   walletBalanceLoading=true;
   walletBalanceError=false;
   // Render free-tier services can cold-start slowly (30-60s) — retry a few
-  // times with growing delays before giving up.
-  const delays=[0,3000,6000,10000];
+  // times with growing delays before giving up. Cumulative wait before the
+  // last attempt fires is ~54s, so a full cold start gets covered.
+  const delays=[0,3000,6000,10000,15000,20000];
   for(let attempt=0;attempt<delays.length;attempt++){
     if(delays[attempt])await new Promise(r=>setTimeout(r,delays[attempt]));
     try{
