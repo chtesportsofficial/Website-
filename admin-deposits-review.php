@@ -3,12 +3,15 @@
 // Called by admin.html when an admin clicks Approve/Decline on a request.
 // Approve: atomically credits wallet_users.balance + logs wallet_transactions,
 //          then credits referral commission to the depositor's referrer (if any):
-//            - 10% on the depositor's FIRST ever approved deposit (withdrawable),
-//              plus the depositor themselves gets +10% bonus (non-withdrawable)
-//            - 5% on every deposit after that (withdrawable, but subject to a
-//              6-month hold before it can be withdrawn — enforced at withdrawal
-//              time by checking referral_commissions.created_at, no extra column
-//              needed)
+//            - 10% on the depositor's FIRST ever approved deposit (withdrawable
+//              immediately), plus the depositor themselves gets +10% bonus
+//              (non-withdrawable)
+//            - 5% on every deposit after that (withdrawable immediately, no
+//              hold), but ONLY for 6 months from the depositor's own join
+//              date (wallet_users.created_at — set once at signup, this is
+//              the "referred" date). After 6 months from when the friend
+//              joined, the referrer stops earning on that friend's deposits,
+//              no matter how many more deposits they make.
 // Decline: just marks the request rejected with the admin's note.
 
 header('Access-Control-Allow-Origin: *');
@@ -68,7 +71,7 @@ try {
 
     if ($action === 'approve') {
         // Lock the user's wallet row too, then credit the balance.
-        $stmt = $conn->prepare("SELECT balance, withdrawable_balance, non_withdrawable_balance, referred_by
+        $stmt = $conn->prepare("SELECT balance, withdrawable_balance, non_withdrawable_balance, referred_by, created_at
              FROM wallet_users WHERE id = ? FOR UPDATE");
         $stmt->bind_param('i', $req['user_id']);
         $stmt->execute();
@@ -85,6 +88,17 @@ try {
 
         $deposit_amount = (float)$req['amount'];
         $referred_by = $wallet['referred_by'] ? (int)$wallet['referred_by'] : null;
+
+        // Referral commissions on repeat deposits only run for 6 months
+        // from the FRIEND's own join date (wallet_users.created_at is set
+        // once at signup and never changes — that's the "referred" date).
+        // After 6 months, the referrer stops earning on this friend's
+        // deposits no matter how many more they make. The first-deposit
+        // 10% bonus is unaffected — it only ever fires once, right after
+        // signup, so it's always within the window in practice.
+        $referred_join_date = new DateTime($wallet['created_at']);
+        $sixMonthsAfterJoin = (clone $referred_join_date)->modify('+6 months');
+        $within_commission_window = (new DateTime() <= $sixMonthsAfterJoin);
 
         /*
         |----------------------------------------------------------------
@@ -163,7 +177,7 @@ try {
         | Referral commission to the referrer (if any)
         |----------------------------------------------------------------
         */
-        if ($referred_by) {
+        if ($referred_by && ($is_first_deposit || $within_commission_window)) {
 
             $commission_rate = $is_first_deposit ? 10 : 5;
             $commission_amount = round($deposit_amount * ($commission_rate / 100), 2);
