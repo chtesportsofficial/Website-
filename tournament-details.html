@@ -557,17 +557,14 @@ function renderTeamBlocks(){
     let blocks='';
     for(let i=1;i<=c;i++){
       const key=id+'__'+i;
-      const otherKeys=allKeys.filter(k=>k.key!==key);
-      const copyBtns=otherKeys.map(k=>{
-        const ol=lobbyDataById[k.lobbyId]||{};
-        const sameLobby=k.lobbyId===id;
-        const olabel=sameLobby?`টিম ${k.index}`:`${esc(ol.time_label||'')} ${esc(ol.lobby_date||'')}`.trim()+(getTeamCount(k.lobbyId)>1?` টিম ${k.index}`:'');
-        return `<button type="button" class="jf-copy-btn" onclick="copyTeamFrom('${key}','${k.key}')">📋 ${olabel} থেকে কপি</button>`;
-      }).join('');
+      const showHead=(c>1||allKeys.length>1);
       blocks+=`<div class="jf-team-block" data-key="${key}">
-        ${(c>1||otherKeys.length)?`<div class="jf-team-block-head">
+        ${showHead?`<div class="jf-team-block-head">
           <b>${c>1?'টিম '+i:''}</b>
-          ${otherKeys.length?`<div class="jf-copy-wrap">${copyBtns}</div>`:''}
+          <div class="jf-copy-wrap">
+            <button type="button" class="jf-copy-btn" onclick="copyTeamData('${key}')">📋 কপি</button>
+            <button type="button" class="jf-copy-btn" onclick="pasteTeamData('${key}')">📥 পেস্ট</button>
+          </div>
         </div>`:''}
         <div class="jf-label">Team name *</div>
         <input class="jf-input" id="jfTeamName_${key}" placeholder="Team Alpha">
@@ -578,12 +575,16 @@ function renderTeamBlocks(){
     return blocks;
   }).join('');
 }
-function copyTeamFrom(targetKey,sourceKey){
-  if(!sourceKey)return;
+let teamClipboard=null;
+function copyTeamData(sourceKey){
   const srcTeam=document.getElementById('jfTeamName_'+sourceKey)?.value||'';
   const srcPlayer=document.getElementById('jfPlayerName_'+sourceKey)?.value||'';
-  document.getElementById('jfTeamName_'+targetKey).value=srcTeam;
-  document.getElementById('jfPlayerName_'+targetKey).value=srcPlayer;
+  teamClipboard={teamName:srcTeam,playerName:srcPlayer};
+}
+function pasteTeamData(targetKey){
+  if(!teamClipboard)return;
+  document.getElementById('jfTeamName_'+targetKey).value=teamClipboard.teamName;
+  document.getElementById('jfPlayerName_'+targetKey).value=teamClipboard.playerName;
 }
 function collectTeamData(){
   const allSingleCount=currentJoinLobbyIds.every(id=>getTeamCount(id)===1);
