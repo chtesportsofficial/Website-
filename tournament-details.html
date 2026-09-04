@@ -302,6 +302,7 @@ async function fetchWalletBalance(){
         walletBalance=Number(j.balance)||0;
         walletBalanceError=false;
         walletBalanceLoading=false;
+        if(document.getElementById('jfPaymentOptions'))renderPaymentOptions();
         return;
       }
       walletBalance=null;
@@ -312,6 +313,7 @@ async function fetchWalletBalance(){
     }
   }
   walletBalanceLoading=false;
+  if(document.getElementById('jfPaymentOptions'))renderPaymentOptions();
 }
 async function retryWalletBalance(){
   await fetchWalletBalance();
@@ -324,7 +326,11 @@ async function initUser(){
     sessionUser=session.user;
     const {data:p}=await sb.from('profiles').select('whatsapp,user_number').eq('id',sessionUser.id).single();
     userProfile=p||null;
-    await fetchWalletBalance();
+    // Don't await — balance can take up to ~54s to resolve (cold-start
+    // retries) and must not block the tournament page from rendering.
+    // It updates walletBalance/walletBalanceLoading in place and
+    // renderPaymentOptions() re-reads those when the join form opens.
+    fetchWalletBalance();
   }catch(e){/* not logged in — guest flow still works */}
 }
 
