@@ -683,27 +683,29 @@ async function loadWalletBalance(attempt){
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(
-      () => controller.abort(),
-      WALLET_BALANCE_TIMEOUT_MS
-    );
+    const timer = setTimeout(() => controller.abort(), WALLET_BALANCE_TIMEOUT_MS);
+
+    // application/x-www-form-urlencoded is a CORS "simple request":
+    // no Authorization header and no JSON preflight are needed.
+    const body = new URLSearchParams();
+    body.set('access_token', accessToken);
 
     const response = await fetch(
       'https://chteo-api.onrender.com/api/get-balance.php?v=' + Date.now(),
       {
         method: 'POST',
         mode: 'cors',
+        cache: 'no-store',
+        credentials: 'omit',
         headers: {
-          'Content-Type': 'text/plain'
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
         },
-        body: JSON.stringify({
-          access_token: accessToken
-        }),
+        body: body.toString(),
         signal: controller.signal
       }
     );
 
-    clearTimeout(timeout);
+    clearTimeout(timer);
 
     const text = await response.text();
 
@@ -742,24 +744,18 @@ async function loadWalletBalance(attempt){
     localStorage.setItem(WALLET_CACHE_UID_KEY, uid);
 
   } catch(err) {
-
     console.warn(
       'Wallet balance failed, attempt ' + attempt + ':',
       err
     );
 
     if(attempt < WALLET_BALANCE_MAX_ATTEMPTS){
-
       setTimeout(function(){
         loadWalletBalance(attempt + 1);
       }, 3000);
-
     } else if(cached !== null && cachedUid === uid){
-
       balanceEl.textContent = '৳' + formatBDT(cached);
-
     } else {
-
       balanceEl.innerHTML =
         '<span style="cursor:pointer;text-decoration:underline;" ' +
         'onclick="_walletLastFetchedUid=null;loadWalletBalance();">' +
@@ -780,13 +776,6 @@ document.addEventListener('chteo:profile-synced', function(){
   loadWalletBalance();
 });
 
-// Mobile browsers can restore this page from the back-forward cache
-// (bfcache) — e.g. user taps away to another page, then hits Back —
-// without re-running any of the script above. If the balance was still
-// mid-fetch (or stuck showing "...") at the moment they navigated away,
-// bfcache restore would otherwise freeze it there forever, since nothing
-// re-triggers loadWalletBalance(). Force a fresh fetch on every bfcache
-// restore so the balance is never left stale/stuck.
 window.addEventListener('pageshow', function(evt){
   if (evt.persisted) {
     _walletLastFetchedUid = null;
