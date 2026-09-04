@@ -706,6 +706,11 @@ async function archive(id){askConfirm('Archive tournament?','The tournament will
 let currentLobbyTournament=null, lobbies=[], lobbyTeamsCache=[], currentLobbyForTeams=null, currentLobbyForResults=null;
 
 function fmtLobbyDate(d){try{return new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short'});}catch(e){return d;}}
+// Formats a Date as YYYY-MM-DD using its LOCAL day/month/year — never
+// toISOString() for date-only comparisons, since that converts to UTC
+// and can silently shift the "date" by several hours for BDT (UTC+6)
+// admins right around local midnight.
+function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function lobbyDot(s){return {upcoming:'○',live:'●',full:'●',completed:'✔',cancelled:'○'}[s]||'○';}
 // A 'live' lobby (its scheduled time has passed) shows "MATCH ON" for the
 // first hour after start (typical match length), then "PENDING" from then
@@ -728,6 +733,12 @@ function parseLobbyDateTime(lobbyDate,timeLabel){
   if(!m)return null;
   let h=(+m[1])%12; if(/pm/i.test(m[3]))h+=12;
   const d=new Date(lobbyDate+'T00:00:00'); d.setHours(h,+m[2],0,0);
+  // A "12:00 AM" slot is deliberately entered under the evening's own
+  // date (e.g. the 4th's late-night slot, alongside that day's 8/9 PM
+  // ones) so it still displays/groups as "04 Sept" — but 12:00 AM is
+  // the real start of the NEXT calendar day, so the actual match
+  // moment used for live/pending/completed timing is one day later.
+  if(h===0) d.setDate(d.getDate()+1);
   return d;
 }
 // No cron/edge function on this stack, so status transitions happen on the
@@ -739,13 +750,18 @@ function parseLobbyDateTime(lobbyDate,timeLabel){
 // manual "✔ Complete" click, same as before.
 async function applyAutoStatusUpdates(list){
   const now=new Date();
-  const todayStr=now.toISOString().slice(0,10);
+  const todayStr=ymd(now);
   const toLive=[],toCompleted=[];
   list.forEach(l=>{
     if(!['upcoming','live','full'].includes(l.status))return;
-    if(l.lobby_date<todayStr){toCompleted.push(l.id);l.status='completed';return;}
-    if(l.lobby_date===todayStr&&l.status==='upcoming'){
-      const dt=parseLobbyDateTime(l.lobby_date,l.time_label);
+    const dt=parseLobbyDateTime(l.lobby_date,l.time_label);
+    // effDateStr is the real day the match falls on — same as lobby_date
+    // for ordinary times, but one day later for a "12:00 AM" slot (see
+    // parseLobbyDateTime). Capacity-based labels ("Batch 1") don't parse
+    // to a time, so dt is null and this falls back to lobby_date as before.
+    const effDateStr=dt?ymd(dt):l.lobby_date;
+    if(effDateStr<todayStr){toCompleted.push(l.id);l.status='completed';return;}
+    if(effDateStr===todayStr&&l.status==='upcoming'){
       if(dt&&dt<=now){toLive.push(l.id);l.status='live';}
     }
   });
@@ -756,7 +772,7 @@ async function applyAutoStatusUpdates(list){
 function openLobbies(tid){
   currentLobbyTournament=tournaments.find(x=>x.id===tid); if(!currentLobbyTournament)return;
   $('lbmTitle').textContent=currentLobbyTournament.title+' — Lobbies';
-  $('lobbyDate').value=new Date().toISOString().slice(0,10);
+  $('lobbyDate').value=ymd(new Date());
   $('lobbyTimes').innerHTML='<div class="lobby-time-row"><input type="time" step="3600" class="lobbyTimeInput"></div>';
   openM('lbm'); loadLobbies(tid);
 }
@@ -772,7 +788,7 @@ async function loadLobbies(tid,opts){
     // keeps the panel fast as completed history piles up over months.
     // Nothing is deleted — "Load older history" below fetches the rest.
     const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-60);
-    q=q.gte('lobby_date',cutoff.toISOString().slice(0,10));
+    q=q.gte('lobby_date',ymd(cutoff));
   }
   const {data,error}=await q;
   if(error){$('lobbiesActive').innerHTML='<div class="empty">Could not load lobbies.</div>';console.error(error);return;}
