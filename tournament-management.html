@@ -240,7 +240,7 @@
   <div class="sub-panel-head"><b>Active</b></div>
   <div id="lobbiesActive"><div class="loading">Loading...</div></div>
 
-  <div class="sub-panel-head"><b>History (Completed)</b></div>
+  <div class="sub-panel-head"><b>History (Completed)</b><button type="button" class="mini" id="showHistoryBtn">Show History</button></div>
   <div id="lobbiesHistory"></div>
 </div></div>
 
@@ -1211,9 +1211,28 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('cancelSmBtn').addEventListener('click', function(){closeM('sm')});
   document.getElementById('saveTournamentBtn').addEventListener('click', saveTournament);
   document.getElementById('saveSectionBtn').addEventListener('click', saveSection);
+  document.getElementById('showHistoryBtn').addEventListener('click', function(){
+    if(!currentLobbyTournament)return;
+    location.href='lobby-history.html?tid='+encodeURIComponent(currentLobbyTournament.id);
+  });
 });
 
-(async()=>{if(await admin())await load()})();
+(async()=>{
+  if(!await admin())return;
+  await load();
+  // Deep link from lobby-history.html's "View Results" button: jump
+  // straight to the results modal for one lobby instead of making the
+  // admin re-open the tournament and click through to find it.
+  const params=new URLSearchParams(location.search);
+  const jumpTid=params.get('tid'), jumpLobby=params.get('lobby');
+  if(jumpTid&&jumpLobby){
+    currentLobbyTournament=tournaments.find(x=>x.id===jumpTid);
+    if(currentLobbyTournament){
+      await loadLobbies(jumpTid,{includeOlder:true});
+      openResults(jumpLobby);
+    }
+  }
+})();
 </script>
 
 </body>
