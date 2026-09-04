@@ -297,7 +297,11 @@ async function fetchWalletBalance(){
     if(delays[attempt])await new Promise(r=>setTimeout(r,delays[attempt]));
     try{
       const res=await fetch('https://chteo-api.onrender.com/api/get-balance.php?uid='+encodeURIComponent(sessionUser.id));
-      const j=await res.json();
+      let j=null, parseErr=null;
+      try{ j=await res.json(); }catch(pe){ parseErr=pe; }
+      if(!res.ok||parseErr||!j){
+        console.error('[wallet-balance] attempt',attempt,'HTTP',res.status,res.statusText,parseErr?('JSON parse failed: '+parseErr.message):'',!parseErr&&j?('body: '+JSON.stringify(j)):'');
+      }
       if(j&&j.success){
         walletBalance=Number(j.balance)||0;
         walletBalanceError=false;
@@ -305,9 +309,11 @@ async function fetchWalletBalance(){
         if(document.getElementById('jfPaymentOptions'))renderPaymentOptions();
         return;
       }
+      if(j&&!j.success)console.error('[wallet-balance] attempt',attempt,'API returned failure:',j.message||j);
       walletBalance=null;
       walletBalanceError=true;
     }catch(e){
+      console.error('[wallet-balance] attempt',attempt,'network/fetch error:',e.message||e);
       walletBalance=null;
       walletBalanceError=true;
     }
