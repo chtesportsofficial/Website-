@@ -280,6 +280,11 @@
       "settings.language": "Language",
       "settings.changePassword": "Change Password",
 
+      "drawer.announcements": "Announcements",
+      "drawer.language": "Language",
+      "drawer.theme": "Theme",
+      "drawer.chatAdmin": "Chat with admin",
+
       "password.title": "Change Password",
       "password.current": "Current Password",
       "password.currentPh": "Enter current password",
@@ -461,6 +466,11 @@
       "settings.theme": "থিম",
       "settings.language": "ভাষা",
       "settings.changePassword": "পাসওয়ার্ড পরিবর্তন",
+
+      "drawer.announcements": "ঘোষণা",
+      "drawer.language": "ভাষা",
+      "drawer.theme": "থিম",
+      "drawer.chatAdmin": "অ্যাডমিনের সাথে চ্যাট",
 
       "password.title": "পাসওয়ার্ড পরিবর্তন",
       "password.current": "বর্তমান পাসওয়ার্ড",

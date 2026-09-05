@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Tournament Details — CHT ESP ORG</title>
+<script src="global.js" defer></script>
 <style>
   :root{
     --bg:#0b0e1a;
@@ -21,6 +22,18 @@
     --fire-2:#ffb703;
     --fire-grad:linear-gradient(135deg,var(--fire-1),var(--fire-2));
     --live:#ff3b5c;
+  }
+  /* Light mode override — global.js sets data-theme on <html> from the
+     user's saved preference; this page's own palette above only covers
+     dark mode, so without this block "Light" did nothing here at all. */
+  html[data-theme="light"]{
+    --bg:#f4f6fb;
+    --card:#ffffff;
+    --card-2:#eef1f7;
+    --border:rgba(18,20,26,0.10);
+    --text:#12141a;
+    --text-dim:#8a93a6;
+    --text-mid:#606a7d;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   body{
