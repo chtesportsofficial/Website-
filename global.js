@@ -706,7 +706,7 @@
     "profile.html": "profile"
   };
   // Pages that intentionally have no bottom nav (full-screen auth flow)
-  var NO_NAV_PAGES = { "chteo_auth.html": true };
+  var NO_NAV_PAGES = { "chteo_auth.html": true, "tournament-details.html": true };
 
   function currentPageFile() {
     var path = window.location.pathname.split("/").pop();
