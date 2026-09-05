@@ -48,18 +48,20 @@
     gap:14px;
   }
   .back-btn{
-    width:64px;height:64px;
-    border:none;
-    border-radius:20px;
-    display:flex;align-items:center;justify-content:center;
-    color:var(--text);
+    width:44px;height:44px;
+    border-radius:12px;
     background:var(--card);
+    border:1px solid var(--border);
+    color:var(--text);
+    display:flex;align-items:center;justify-content:center;
     cursor:pointer;
-    font-size:26px;
+  }
+  .back-btn svg{
+    width:20px;height:20px;
   }
   .header h1{
-    font-size:34px;
-    font-weight:800;
+    font-size:19px;
+    font-weight:750;
     margin:0;
     color:var(--text);
   }
@@ -398,7 +400,11 @@
 
   <div class="header">
     <div class="header-left">
-      <button class="back-btn" onclick="history.back()">&#8592;</button>
+      <button class="back-btn" type="button" onclick="history.back()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </button>
       <h1 data-i18n="wallet.title">Wallet</h1>
     </div>
     <div class="uid-chip" id="uidChip">UID: #99</div>
