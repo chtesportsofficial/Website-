@@ -116,6 +116,11 @@
 
   .popup-overlay{display:none;position:fixed;inset:0;background:rgba(4,4,10,0.72);backdrop-filter:blur(2px);z-index:999;align-items:flex-end;justify-content:center;}
   .popup-overlay.open{display:flex;}
+  /* This info popup (rules/point system, and the bKash "coming soon" note)
+     can be opened while the Join lobby form is already open — it must
+     stack above it, not behind it, since both share the same base
+     .popup-overlay z-index and DOM order alone would put joinOverlay on top. */
+  #popupOverlay{z-index:1001;}
   .popup-box{width:100%;max-width:420px;max-height:82vh;max-height:82dvh;overflow-y:auto;background:var(--card-2);border:1px solid rgba(255,255,255,0.1);border-bottom:none;border-radius:20px 20px 0 0;padding:0;box-shadow:0 -12px 40px rgba(0,0,0,.5);animation:sheetUp .22s ease;}
   @keyframes sheetUp{from{transform:translateY(16px);opacity:0;}to{transform:translateY(0);opacity:1;}}
   @media (prefers-reduced-motion:reduce){.popup-box{animation:none;}}
@@ -218,7 +223,7 @@
       <div class="jf-label">Payment method *</div>
       <div id="jfPaymentOptions"></div>
       <div id="jfPaymentExtra"></div>
-      <div class="jf-note">Your slot stays pending until the admin verifies payment and confirms it (instant if paid from balance).</div>
+      <div class="jf-note">অ্যাডমিন পেমেন্ট ভেরিফাই ও কনফার্ম না করা পর্যন্ত আপনার স্লট পেন্ডিং থাকবে (ব্যালেন্স থেকে পে করলে সাথে সাথে কনফার্ম হবে)।</div>
       <div class="jf-error" id="jfError"></div>
       <button type="button" class="jf-submit" id="jfSubmitBtn" onclick="submitJoin()">Submit</button>
     </div>
@@ -516,16 +521,46 @@ function clearSelection(){
   updateSelectBar();
 }
 
+// Locks/unlocks background scroll while any full-screen overlay is open.
+// Without this, touch-scrolling inside the modal's own scroll area can
+// bubble through to the page behind it (common on Android WebView/Chrome),
+// so the tournament list keeps scrolling underneath the open popup.
+let scrollLockCount=0, scrollLockY=0;
+function lockBodyScroll(){
+  if(scrollLockCount===0){
+    scrollLockY=window.scrollY;
+    document.body.style.position='fixed';
+    document.body.style.top='-'+scrollLockY+'px';
+    document.body.style.left='0';
+    document.body.style.right='0';
+    document.body.style.width='100%';
+  }
+  scrollLockCount++;
+}
+function unlockBodyScroll(){
+  scrollLockCount=Math.max(0,scrollLockCount-1);
+  if(scrollLockCount===0){
+    document.body.style.position='';
+    document.body.style.top='';
+    document.body.style.left='';
+    document.body.style.right='';
+    document.body.style.width='';
+    window.scrollTo(0,scrollLockY);
+  }
+}
+
 let popupOnClose=null;
 function openPopup(title,html,onClose){
   document.getElementById('popupTitle').textContent=title;
   document.getElementById('popupBody').innerHTML=html;
   document.getElementById('popupOverlay').classList.add('open');
   popupOnClose=onClose||null;
+  lockBodyScroll();
 }
 function closePopup(){
   document.getElementById('popupOverlay').classList.remove('open');
   if(popupOnClose){const fn=popupOnClose;popupOnClose=null;fn();}
+  unlockBodyScroll();
 }
 document.getElementById('popupOverlay').addEventListener('click',function(e){
   if(e.target===this)closePopup();
@@ -583,6 +618,7 @@ function openJoinFormMulti(){
   document.getElementById('jfSubmitBtn').disabled=false;
   document.getElementById('jfSubmitBtn').textContent='Submit';
   document.getElementById('joinOverlay').classList.add('open');
+  lockBodyScroll();
 }
 function renderLobbyChips(){
   document.getElementById('jfLobbyChips').innerHTML=currentJoinLobbyIds.map(id=>{
@@ -598,9 +634,9 @@ function renderTeamBlocks(){
   if(same){
     wrap.innerHTML=`
       <div class="jf-label">Team name *</div>
-      <input class="jf-input" id="jfTeamName" placeholder="Team Alpha">
+      <input class="jf-input" id="jfTeamName" placeholder="আপনার টিমের নাম লিখুন">
       <div class="jf-label">Player name *</div>
-      <input class="jf-input" id="jfPlayerName" placeholder="In-game name">
+      <input class="jf-input" id="jfPlayerName" placeholder="যেই প্লেয়ার রুমে এন্ট্রি করাবে তার গেম নাম দিন">
     `;
     return;
   }
@@ -626,9 +662,9 @@ function renderTeamBlocks(){
           </div>
         </div>`:''}
         <div class="jf-label">Team name *</div>
-        <input class="jf-input" id="jfTeamName_${key}" placeholder="Team Alpha">
+        <input class="jf-input" id="jfTeamName_${key}" placeholder="আপনার টিমের নাম লিখুন">
         <div class="jf-label">Player name *</div>
-        <input class="jf-input" id="jfPlayerName_${key}" placeholder="In-game name">
+        <input class="jf-input" id="jfPlayerName_${key}" placeholder="যেই প্লেয়ার রুমে এন্ট্রি করাবে তার গেম নাম দিন">
       </div>`;
     }
     return blocks;
@@ -685,6 +721,7 @@ function collectTeamData(){
 }
 function closeJoinForm(){
   document.getElementById('joinOverlay').classList.remove('open');
+  unlockBodyScroll();
 }
 document.getElementById('joinOverlay').addEventListener('click',function(e){
   if(e.target===this)closeJoinForm();
@@ -720,7 +757,7 @@ function renderPaymentExtra(){
   const box=document.getElementById('jfPaymentExtra');
   if(sel==='balance'){
     const fee=(Number(currentTournament?.entry_fee)||0)*(totalEntryCount()||1);
-    box.innerHTML=`<div class="jf-note">৳${fee} will be deducted from your wallet balance immediately on submit${totalEntryCount()>1?` (${totalEntryCount()} entries)`:''}.</div>`;
+    box.innerHTML=`<div class="jf-note">সাবমিট করলেই আপনার ওয়ালেট ব্যালেন্স থেকে ৳${fee} কেটে নেওয়া হবে${totalEntryCount()>1?` (${totalEntryCount()}টি এন্ট্রি)`:''}।</div>`;
   }else{
     box.innerHTML='';
   }
