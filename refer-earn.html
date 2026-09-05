@@ -40,27 +40,27 @@
     display:flex;
     align-items:center;
     justify-content:space-between;
-    padding:10px 4px 20px;
+    padding:8px 4px 16px;
   }
   .header-left{
     display:flex;
     align-items:center;
-    gap:14px;
+    gap:11px;
   }
   .back-btn{
-    width:64px;height:64px;
-    border:none;
-    border-radius:20px;
+    width:40px;height:40px;
+    border-radius:12px;
     display:flex;align-items:center;justify-content:center;
     color:var(--text);
-    background:var(--card);
+    background:var(--card-2);
+    border:1px solid var(--border);
     cursor:pointer;
-    font-size:26px;
+    font-size:18px;
     flex-shrink:0;
   }
   .header h1{
-    font-size:34px;
-    font-weight:800;
+    font-size:19px;
+    font-weight:750;
     margin:0;
     color:var(--text);
   }
@@ -69,38 +69,38 @@
   .card{
     background:var(--card);
     border:1px solid var(--border);
-    border-radius:16px;
-    padding:18px;
-    margin-bottom:16px;
+    border-radius:13px;
+    padding:13px;
+    margin-bottom:12px;
   }
 
   /* ---------- stat cards ---------- */
   .stats-row{
     display:flex;
     flex-direction:column;
-    gap:12px;
-    margin-bottom:16px;
+    gap:10px;
+    margin-bottom:12px;
   }
   .stats-bottom-row{
     display:flex;
-    gap:12px;
+    gap:10px;
   }
   .stat-card{
     flex:1;
     background:var(--card);
     border:1px solid var(--border);
-    border-radius:16px;
-    padding:16px 14px;
+    border-radius:13px;
+    padding:12px 11px;
   }
   .stat-card.hero{
     display:flex;
     align-items:center;
-    gap:16px;
-    padding:18px 20px;
+    gap:12px;
+    padding:13px 15px;
   }
   .stat-card.hero .stat-icon{
     margin-bottom:0;
-    width:52px;height:52px;
+    width:40px;height:40px;
     flex-shrink:0;
   }
   .stat-card.hero .stat-text{
@@ -108,48 +108,48 @@
     min-width:0;
   }
   .stat-card.hero .stat-value{
-    font-size:24px;
-    margin-bottom:4px;
+    font-size:19px;
+    margin-bottom:3px;
   }
   .stat-icon{
-    width:42px;height:42px;
-    border-radius:12px;
+    width:34px;height:34px;
+    border-radius:10px;
     display:flex;
     align-items:center;
     justify-content:center;
-    margin-bottom:12px;
+    margin-bottom:9px;
   }
   .stat-icon.purple{background:rgba(124,108,240,0.15);}
   .stat-icon.green{background:rgba(34,197,94,0.15);}
   .stat-icon.blue{background:rgba(56,138,240,0.15);}
   .stat-label{
     color:var(--muted);
-    font-size:12.5px;
-    margin-bottom:6px;
+    font-size:11.5px;
+    margin-bottom:5px;
   }
   .stat-value{
-    font-size:19px;
+    font-size:16px;
     font-weight:800;
-    margin-bottom:6px;
+    margin-bottom:5px;
   }
   .stat-sub{
     color:var(--muted);
-    font-size:11.5px;
+    font-size:10.5px;
     line-height:1.4;
   }
 
   /* ---------- action rows (link / code / share) ---------- */
   .action-block{
     display:flex;
-    gap:14px;
-    padding:16px 0;
+    gap:11px;
+    padding:12px 0;
   }
   .action-block + .action-block{
     border-top:1px solid var(--border);
   }
   .action-icon{
-    width:42px;height:42px;
-    border-radius:12px;
+    width:34px;height:34px;
+    border-radius:10px;
     background:rgba(124,108,240,0.15);
     display:flex;
     align-items:center;
@@ -161,40 +161,40 @@
     min-width:0;
   }
   .action-title{
-    font-size:16px;
+    font-size:14.5px;
     font-weight:700;
-    margin-bottom:3px;
+    margin-bottom:2px;
   }
   .action-sub{
     color:var(--muted);
-    font-size:13px;
-    margin-bottom:12px;
+    font-size:12px;
+    margin-bottom:9px;
   }
   .input-row{
     display:flex;
-    gap:10px;
+    gap:8px;
   }
   .input-row input{
     flex:1;
     background:var(--card-2);
     border:1px solid var(--border);
     color:var(--text);
-    padding:13px 14px;
-    border-radius:10px;
-    font-size:14px;
+    padding:10px 12px;
+    border-radius:9px;
+    font-size:13px;
     outline:none;
     min-width:0;
   }
   .copy-btn{
     display:flex;
     align-items:center;
-    gap:6px;
+    gap:5px;
     background:var(--purple);
     border:none;
     color:#fff;
-    padding:0 16px;
-    border-radius:10px;
-    font-size:14px;
+    padding:0 13px;
+    border-radius:9px;
+    font-size:13px;
     font-weight:700;
     cursor:pointer;
     white-space:nowrap;
@@ -204,18 +204,18 @@
   .share-icons{
     display:flex;
     flex-wrap:wrap;
-    gap:10px;
+    gap:8px;
   }
   .share-btn{
     display:flex;
     align-items:center;
-    gap:8px;
+    gap:6px;
     background:var(--card-2);
     border:1px solid var(--border);
     color:var(--text);
-    padding:10px 14px;
-    border-radius:10px;
-    font-size:13.5px;
+    padding:8px 11px;
+    border-radius:9px;
+    font-size:12.5px;
     font-weight:600;
     cursor:pointer;
   }
@@ -252,15 +252,15 @@
   thead th{
     text-align:left;
     color:var(--muted);
-    font-size:12.5px;
+    font-size:11.5px;
     font-weight:600;
-    padding:12px 14px;
+    padding:9px 11px;
     background:var(--card-2);
     white-space:nowrap;
   }
   tbody td{
-    padding:14px;
-    font-size:13.5px;
+    padding:11px;
+    font-size:12.5px;
     border-top:1px solid var(--border);
     white-space:nowrap;
   }
@@ -292,15 +292,15 @@
   .rule-item{
     display:flex;
     align-items:flex-start;
-    gap:10px;
-    margin-bottom:12px;
-    font-size:14px;
+    gap:9px;
+    margin-bottom:9px;
+    font-size:13px;
     color:var(--text);
     line-height:1.5;
   }
   .rule-item:last-child{margin-bottom:0;}
   .rule-check{
-    width:20px;height:20px;
+    width:17px;height:17px;
     border-radius:50%;
     background:var(--purple);
     display:flex;
