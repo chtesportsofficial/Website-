@@ -250,6 +250,7 @@
     <label>Team Name *</label><input id="atTeamName" placeholder="Team name">
     <label>Player Name</label><input id="atPlayerName" placeholder="Player name">
     <label>WhatsApp Number *</label><input id="atWhatsapp" placeholder="01XXXXXXXXX" inputmode="tel">
+    <label>UID (only if they already have an account)</label><input id="atUid" placeholder="e.g. 42 — leave blank for Guest" inputmode="numeric">
     <div class="modal-actions">
       <button type="button" onclick="toggleAddTeamForm(false)">Cancel</button>
       <button type="button" class="primary" onclick="submitManualTeam()">Add Team</button>
@@ -902,14 +903,35 @@ function renderTeamsList(){
       <div class="team-meta">${playerName?'👤 '+playerName+' · ':''}${uidBadge} ${payBadge}</div>
       <div class="team-meta">${tm.contact_number?'📱 '+esc(tm.contact_number):''}${tm.payment_reference?' · Ref: '+esc(tm.payment_reference):''}</div>
       ${tm.confirmation_status==='pending'?`<div class="team-actions"><button class="mini green" onclick="setTeamStatus('${tm.id}','confirmed')">Confirm</button><button class="mini red" onclick="setTeamStatus('${tm.id}','rejected')">Reject</button></div>`:`<div class="team-actions"><button class="mini" onclick="setTeamStatus('${tm.id}','pending')">Reset</button></div>`}
+      ${!tm.profiles?.user_number?`<div class="team-actions"><button class="mini" onclick="linkTeamUid('${tm.id}')">Link UID</button></div>`:''}
     </div>`;
   }).join(''):'<div class="empty">No teams joined yet.</div>';
+}
+// Lets the admin retroactively attach a Guest team to a real account once
+// that player creates one — e.g. after the match, or once someone who
+// booked over WhatsApp finally signs up. Matches this team to the account
+// by UID (profiles.user_number), the same number shown as "UID #_"
+// elsewhere. From then on the team's points/prize count on that profile.
+async function linkTeamUid(teamId){
+  const tm=lobbyTeamsCache.find(t=>t.id===teamId);
+  if(!tm)return;
+  const input=prompt('Enter this player\'s UID (the number shown as "UID #_"):');
+  if(input===null)return;
+  const uid=input.trim();
+  if(!uid)return;
+  const {data:profile,error:pErr}=await sb.from('profiles').select('id,user_number').eq('user_number',uid).single();
+  if(pErr||!profile)return msg('No account found with UID #'+uid+'. Double check the number.');
+  const {error}=await sb.from('lobby_teams').update({submitted_by:profile.id}).eq('id',teamId);
+  if(error)return msg(error.message);
+  await logActivity('team_uid_linked','tournament','tournament_lobby',currentLobbyForTeams.id,tm.team_name,{narration:`linked UID #${profile.user_number} to team "${tm.team_name}" retroactively.`,highlight_targets:[tm.team_name]});
+  msg('Linked to UID #'+profile.user_number+'. Their points/prize will now count on their profile.');
+  await openTeams(currentLobbyForTeams.id);
 }
 function toggleAddTeamForm(show){
   const el=$('addTeamForm');
   const willShow=show===undefined?el.style.display==='none':show;
   el.style.display=willShow?'block':'none';
-  if(willShow){$('atTeamName').value='';$('atPlayerName').value='';$('atWhatsapp').value='';$('atTeamName').focus();}
+  if(willShow){$('atTeamName').value='';$('atPlayerName').value='';$('atWhatsapp').value='';$('atUid').value='';$('atTeamName').focus();}
 }
 // Manually-added teams usually represent a slot someone already booked over
 // WhatsApp (outside the app) before the admin got around to entering it here.
@@ -920,9 +942,19 @@ async function submitManualTeam(){
   const teamName=$('atTeamName').value.trim();
   const playerName=$('atPlayerName').value.trim();
   const whatsapp=$('atWhatsapp').value.trim();
+  const uidInput=$('atUid').value.trim();
   if(!teamName)return msg('Team name is required.');
   if(!whatsapp)return msg('WhatsApp number is required.');
   if(!currentLobbyForTeams)return;
+  // UID is optional — leaving it blank keeps the old "Guest" behavior
+  // (no wallet, no profile link). If a UID is typed, it must match a real
+  // account or we stop here, so a typo can't silently turn into a Guest.
+  let submittedBy=null;
+  if(uidInput){
+    const {data:profile,error:pErr}=await sb.from('profiles').select('id,user_number').eq('user_number',uidInput).single();
+    if(pErr||!profile)return msg('No account found with UID #'+uidInput+'. Leave UID blank to add as Guest instead.');
+    submittedBy=profile.id;
+  }
   const earliest=lobbyTeamsCache.length?Math.min(...lobbyTeamsCache.map(t=>new Date(t.joined_at).getTime())):Date.now();
   const joinedAt=new Date(earliest-1000).toISOString();
   const payload={
@@ -933,7 +965,8 @@ async function submitManualTeam(){
     payment_method:'manual',
     payment_reference:`Added by ${currentAdminName}`,
     confirmation_status:'confirmed',
-    joined_at:joinedAt
+    joined_at:joinedAt,
+    submitted_by:submittedBy
   };
   const {error}=await sb.from('lobby_teams').insert(payload);
   if(error)return msg(error.message);
@@ -998,7 +1031,7 @@ function renderResultRows(teams,rMap){
     const prizeVal=r.prize_won??0;
     return `<div class="result-row" data-team="${tm.id}" data-submitted-by="${tm.submitted_by||''}" data-credited="${r.prize_credited?'true':'false'}" data-guest="${isGuest?'1':'0'}">
       <div class="result-rank-badge ${rankBadgeClass(i)}">${i+1}</div>
-      <div class="result-name-wrap"><div class="result-name">${esc(tm.team_name)}</div>${uidBadge}</div>
+      <div class="result-name-wrap"><div class="result-name">${esc(tm.team_name)}</div>${uidBadge}${isGuest?`<button type="button" class="mini" style="margin-top:4px" onclick="linkResultUid('${tm.id}')">Link UID</button>`:''}</div>
       <input type="number" class="resPrize" placeholder="৳" min="0" value="${prizeVal}">
       <input type="number" class="resPoints" placeholder="PTS" min="0" value="${r.total_points??''}">
       <div class="result-updown"><button type="button" ${i===0?'disabled':''} onclick="moveResultRow('${tm.id}',-1)">▲</button><button type="button" ${i===teams.length-1?'disabled':''} onclick="moveResultRow('${tm.id}',1)">▼</button></div>
@@ -1010,6 +1043,23 @@ function renderResultRows(teams,rMap){
   }).join(''):'<div class="empty">No confirmed teams for this lobby.</div>';
   updatePrizeLocks();
   attachGuestPrizeToggles();
+}
+// Same UID-linking idea as linkTeamUid, but for the Results screen — this
+// is the screen completed/history lobbies actually open into (see the
+// lobby-history.html deep link below), so a Guest team from a finished
+// match still gets linkable once that player has an account.
+async function linkResultUid(teamId){
+  const input=prompt('Enter this player\'s UID (the number shown as "UID #_"):');
+  if(input===null)return;
+  const uid=input.trim();
+  if(!uid)return;
+  const {data:profile,error:pErr}=await sb.from('profiles').select('id,user_number').eq('user_number',uid).single();
+  if(pErr||!profile)return msg('No account found with UID #'+uid+'. Double check the number.');
+  const {error}=await sb.from('lobby_teams').update({submitted_by:profile.id}).eq('id',teamId);
+  if(error)return msg(error.message);
+  await logActivity('team_uid_linked','tournament','tournament_lobby',currentLobbyForResults.id,'',{narration:`linked UID #${profile.user_number} to a team retroactively (from Results).`});
+  msg('Linked to UID #'+profile.user_number+'. Their points/prize will now count on their profile.');
+  await openResults(currentLobbyForResults.id);
 }
 // Guest/manually-added teams have no wallet, so their prize can't be
 // credit-prize.php'd. Instead their bKash/Nagad box only appears once a
