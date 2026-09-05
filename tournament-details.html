@@ -43,8 +43,9 @@
   }
   .page{max-width:420px;margin:0 auto;padding:14px 14px 30px;}
   .header{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
-  .back{font-size:20px;color:var(--text-mid);text-decoration:none;line-height:1;}
-  .header h1{font-size:15px;font-weight:500;}
+  .back-btn{width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .back-btn svg{width:20px;height:20px}
+  .header h1{font-size:19px;font-weight:750;}
   .header .org{font-size:11px;color:var(--text-dim);margin-top:2px;}
 
   .banner{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:12px;margin-bottom:10px;background:#1f2740;}
@@ -141,6 +142,7 @@
   .jf-label:first-child{margin-top:0;}
   .jf-input{width:100%;background:var(--card);border:1px solid rgba(255,255,255,0.1);color:var(--text);border-radius:10px;padding:11px;font-size:12.5px;font-family:inherit;display:block;}
   .jf-input:focus{outline:none;border-color:var(--fire-2);}
+  .jf-input::placeholder{color:var(--text-dim);opacity:1;}
   .jf-player-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;}
   .jf-note{font-size:9.5px;color:var(--text-dim);margin-top:8px;line-height:1.6;}
   .jf-submit{background:var(--fire-grad);border:none;border-radius:11px;padding:12px;text-align:center;color:#241705;font-size:13.5px;font-weight:700;width:100%;cursor:pointer;font-family:inherit;margin-top:14px;letter-spacing:.02em;}
@@ -179,7 +181,11 @@
 <div class="page">
 
   <div class="header">
-    <a href="javascript:history.back()" class="back">‹</a>
+    <button class="back-btn" type="button" onclick="history.back()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+    </button>
     <div>
       <h1 id="hTitle">Loading...</h1>
     </div>
