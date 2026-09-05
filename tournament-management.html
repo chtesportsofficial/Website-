@@ -920,7 +920,7 @@ async function linkTeamUid(teamId){
   const uid=input.trim().replace(/[^0-9]/g,'');
   if(!uid)return;
   const {data:profile,error:pErr}=await sb.from('profiles').select('id,user_number').eq('user_number',uid).single();
-  if(pErr||!profile)return msg('No account found with UID #'+uid+'. Double check the number.');
+  if(pErr||!profile)return msg('No account found with UID #'+uid+'. Double check the number.','warn');
   const {error}=await sb.from('lobby_teams').update({submitted_by:profile.id}).eq('id',teamId);
   if(error)return msg(error.message);
   await logActivity('team_uid_linked','tournament','tournament_lobby',currentLobbyForTeams.id,tm.team_name,{narration:`linked UID #${profile.user_number} to team "${tm.team_name}" retroactively.`,highlight_targets:[tm.team_name]});
@@ -952,7 +952,7 @@ async function submitManualTeam(){
   let submittedBy=null;
   if(uidInput){
     const {data:profile,error:pErr}=await sb.from('profiles').select('id,user_number').eq('user_number',uidInput).single();
-    if(pErr||!profile)return msg('No account found with UID #'+uidInput+'. Leave UID blank to add as Guest instead.');
+    if(pErr||!profile)return msg('No account found with UID #'+uidInput+'. Leave UID blank to add as Guest instead.','warn');
     submittedBy=profile.id;
   }
   const earliest=lobbyTeamsCache.length?Math.min(...lobbyTeamsCache.map(t=>new Date(t.joined_at).getTime())):Date.now();
@@ -1054,7 +1054,7 @@ async function linkResultUid(teamId){
   const uid=input.trim().replace(/[^0-9]/g,'');
   if(!uid)return;
   const {data:profile,error:pErr}=await sb.from('profiles').select('id,user_number').eq('user_number',uid).single();
-  if(pErr||!profile)return msg('No account found with UID #'+uid+'. Double check the number.');
+  if(pErr||!profile)return msg('No account found with UID #'+uid+'. Double check the number.','warn');
   const {error}=await sb.from('lobby_teams').update({submitted_by:profile.id}).eq('id',teamId);
   if(error)return msg(error.message);
   await logActivity('team_uid_linked','tournament','tournament_lobby',currentLobbyForResults.id,'',{narration:`linked UID #${profile.user_number} to a team retroactively (from Results).`});
