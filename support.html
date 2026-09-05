@@ -24,9 +24,9 @@ button{font-family:inherit;cursor:pointer}
  overflow:hidden;position:relative
 }
 .topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--surface);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
-.icon-btn{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--surface);border:1px solid var(--line);color:var(--text-dim);flex-shrink:0}
-.icon-btn svg{width:19px;height:19px}
-.topbar h1{font-size:16px;font-weight:800;letter-spacing:.02em}
+.icon-btn{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--surface);border:1px solid var(--line);color:var(--text);flex-shrink:0}
+.icon-btn svg{width:20px;height:20px}
+.topbar h1{font-size:19px;font-weight:750;letter-spacing:.02em}
 
 .section{padding:26px 16px 4px}
 .headline{text-align:center;font-size:22px;font-weight:900;margin-bottom:8px}
@@ -76,9 +76,9 @@ button{font-family:inherit;cursor:pointer}
 <div class="app">
 
   <div class="topbar">
-    <div class="icon-btn" onclick="window.location.href='index.html'" style="cursor:pointer">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-    </div>
+    <button type="button" class="icon-btn" onclick="window.location.href='index.html'">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
     <h1 data-i18n="nav.support">Support</h1>
   </div>
 
