@@ -917,7 +917,7 @@ async function linkTeamUid(teamId){
   if(!tm)return;
   const input=prompt('Enter this player\'s UID (the number shown as "UID #_"):');
   if(input===null)return;
-  const uid=input.trim();
+  const uid=input.trim().replace(/[^0-9]/g,'');
   if(!uid)return;
   const {data:profile,error:pErr}=await sb.from('profiles').select('id,user_number').eq('user_number',uid).single();
   if(pErr||!profile)return msg('No account found with UID #'+uid+'. Double check the number.');
@@ -942,7 +942,7 @@ async function submitManualTeam(){
   const teamName=$('atTeamName').value.trim();
   const playerName=$('atPlayerName').value.trim();
   const whatsapp=$('atWhatsapp').value.trim();
-  const uidInput=$('atUid').value.trim();
+  const uidInput=$('atUid').value.trim().replace(/[^0-9]/g,'');
   if(!teamName)return msg('Team name is required.');
   if(!whatsapp)return msg('WhatsApp number is required.');
   if(!currentLobbyForTeams)return;
@@ -1051,7 +1051,7 @@ function renderResultRows(teams,rMap){
 async function linkResultUid(teamId){
   const input=prompt('Enter this player\'s UID (the number shown as "UID #_"):');
   if(input===null)return;
-  const uid=input.trim();
+  const uid=input.trim().replace(/[^0-9]/g,'');
   if(!uid)return;
   const {data:profile,error:pErr}=await sb.from('profiles').select('id,user_number').eq('user_number',uid).single();
   if(pErr||!profile)return msg('No account found with UID #'+uid+'. Double check the number.');

@@ -285,6 +285,15 @@
       "drawer.theme": "Theme",
       "drawer.chatAdmin": "Chat with admin",
 
+      "home.myTournaments": "My Tournaments",
+      "home.myTournamentsSub": "Track the ones you have joined",
+
+      "index.otherFeatures": "Other Features",
+      "index.idBuySell": "ID Buy/Sell Zone",
+      "index.findSquad": "Find Squad",
+      "index.findPlayers": "Find Players",
+      "index.dailyGiveaway": "Daily Giveaway",
+
       "password.title": "Change Password",
       "password.current": "Current Password",
       "password.currentPh": "Enter current password",
@@ -471,6 +480,15 @@
       "drawer.language": "ভাষা",
       "drawer.theme": "থিম",
       "drawer.chatAdmin": "অ্যাডমিনের সাথে চ্যাট",
+
+      "home.myTournaments": "আমার টুর্নামেন্ট",
+      "home.myTournamentsSub": "আপনি যেসবে অংশ নিয়েছেন",
+
+      "index.otherFeatures": "অন্যান্য ফিচার",
+      "index.idBuySell": "আইডি বাই/সেল জোন",
+      "index.findSquad": "স্কোয়াড খুঁজুন",
+      "index.findPlayers": "প্লেয়ার খুঁজুন",
+      "index.dailyGiveaway": "ডেইলি গিভঅ্যাওয়ে",
 
       "password.title": "পাসওয়ার্ড পরিবর্তন",
       "password.current": "বর্তমান পাসওয়ার্ড",
