@@ -10,8 +10,9 @@
 body{margin:0;background:linear-gradient(180deg,#080b12,#0b0f18 55%,#080b12);color:#f4f6fb;font-family:Inter,system-ui,-apple-system,sans-serif}
 .wrap{max-width:760px;margin:auto;padding:20px 14px 60px}
 .head{display:flex;gap:12px;align-items:center;margin-bottom:18px}
-.back{width:34px;height:34px;display:grid;place-items:center;color:#fff;text-decoration:none;font-size:22px;border:1px solid #202a40;border-radius:11px;background:#101625}
-.head h1{font-size:18px;margin:0;font-weight:900}
+.back-btn{width:44px;height:44px;border-radius:12px;background:var(--surface);border:1px solid var(--line);color:#f4f6fb;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.back-btn svg{width:20px;height:20px}
+.head h1{font-size:19px;margin:0;font-weight:750}
 .sub{font-size:10px;color:var(--muted);margin-top:4px}
 .filter-bar{display:flex;gap:8px;align-items:flex-end;background:#141b2b;border:1px solid #293650;border-radius:16px;padding:12px;margin-bottom:14px}
 .filter-bar>div{flex:1}
@@ -34,7 +35,7 @@ input,select{width:100%;background:#0f1521;border:1px solid #293650;color:#fff;b
 <body>
 <div class="wrap">
   <div class="head">
-    <a class="back" id="backLink" href="tournament-management.html">‹</a>
+    <button class="back-btn" type="button" onclick="history.back()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
     <div><h1 id="pageTitle">Lobby History</h1><div class="sub" id="pageSub">All completed lobbies</div></div>
   </div>
 
@@ -88,7 +89,6 @@ async function load(){
   if(!tid){$('historyList').innerHTML='<div class="empty">No tournament specified.</div>';return}
   const {data:t}=await sb.from('tournaments').select('title').eq('id',tid).single();
   if(t){$('pageTitle').textContent=t.title+' — History';$('pageSub').textContent='All completed lobbies';}
-  $('backLink').href='tournament-management.html?tid='+encodeURIComponent(tid);
 
   const {data,error}=await sb.from('tournament_lobbies').select('*')
     .eq('tournament_id',tid).eq('status','completed')
