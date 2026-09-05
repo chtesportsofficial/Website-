@@ -441,7 +441,11 @@ async function loadLeaderboard({ reset }){
 }
 
 function renderLeaderboard(data, reset){
-  const users = data.users || [];
+  // ৳0 balance wallets are excluded from the list itself — not useful to
+  // scroll past on either sort direction. Summary totals above still use
+  // data.total_wallets/total_balance (unfiltered, server-computed), so
+  // those numbers stay accurate regardless of this list-only filter.
+  const users = (data.users || []).filter(u => Number(u.balance) > 0);
 
   // Summary card always reflects the overall (unfiltered) totals.
   document.getElementById('totalCount').textContent = data.total_wallets ?? 0;
