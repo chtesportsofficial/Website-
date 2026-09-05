@@ -43,16 +43,16 @@
     padding:8px 4px 16px;
   }
   .back-btn{
-    width:40px;height:40px;
-    border:none;
+    width:44px;height:44px;
     border-radius:12px;
-    display:flex;align-items:center;justify-content:center;
-    color:var(--text);
-    background:var(--card-2);
+    background:var(--card);
     border:1px solid var(--border);
+    color:var(--text);
+    display:flex;align-items:center;justify-content:center;
     cursor:pointer;
-    font-size:18px;
-    flex-shrink:0;
+  }
+  .back-btn svg{
+    width:20px;height:20px;
   }
   .header h1{
     font-size:19px;
@@ -168,7 +168,11 @@
 <div class="phone">
 
   <div class="header">
-    <button class="back-btn" type="button" onclick="history.back()">&#8249;</button>
+    <button class="back-btn" type="button" onclick="history.back()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+    </button>
     <div>
       <h1>My Feedback</h1>
       <p>Track the status and replies to your submissions</p>
