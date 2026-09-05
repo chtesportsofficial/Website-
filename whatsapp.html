@@ -32,7 +32,7 @@
     align-items:center;
     gap:14px;
     padding: 18px 20px;
-    background: var(--card);
+    background: var(--bg);
     position: sticky;
     top:0;
     z-index: 10;
@@ -163,7 +163,10 @@
   }
 
   .combo-card{
-    padding: 22px 4px 14px;
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 22px 16px 14px;
     margin-bottom: 18px;
   }
   .combo-center{
@@ -225,7 +228,11 @@
   .mini-row .chevron svg{width:16px; height:16px;}
 
   footer{
-    display:none;
+    text-align:center;
+    color: var(--sub);
+    font-size:12px;
+    margin-top: 30px;
+    padding: 0 20px;
   }
 </style>
 </head>
@@ -237,7 +244,6 @@
   </button>
   <div>
     <h1>Join our WhatsApp</h1>
-    <p>CHT ESP ORG</p>
   </div>
 </header>
 
@@ -288,6 +294,7 @@
       </a>
     </div>
   </div>
+  <footer>©CHT ESP ORG. All Rights Reserved</footer>
 
 </main>
 
