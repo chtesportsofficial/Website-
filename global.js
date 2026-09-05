@@ -293,6 +293,9 @@
       "index.findSquad": "Find Squad",
       "index.findPlayers": "Find Players",
       "index.dailyGiveaway": "Daily Giveaway",
+      "index.gadgetZone": "GADGET ZONE",
+      "index.diamondTopUp": "DIAMOND TOP UP",
+      "index.vipModalTitle": "VIP Membership",
 
       "password.title": "Change Password",
       "password.current": "Current Password",
@@ -489,6 +492,9 @@
       "index.findSquad": "স্কোয়াড খুঁজুন",
       "index.findPlayers": "প্লেয়ার খুঁজুন",
       "index.dailyGiveaway": "ডেইলি গিভঅ্যাওয়ে",
+      "index.gadgetZone": "গ্যাজেট জোন",
+      "index.diamondTopUp": "ডায়মন্ড টপ-আপ",
+      "index.vipModalTitle": "ভিআইপি মেম্বারশিপ",
 
       "password.title": "পাসওয়ার্ড পরিবর্তন",
       "password.current": "বর্তমান পাসওয়ার্ড",
