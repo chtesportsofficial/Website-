@@ -47,9 +47,9 @@
   }
 
   .back-btn{
-    width:38px; height:38px;
+    width:44px; height:44px;
     border-radius:12px;
-    background:transparent;
+    background:var(--card);
     border:1px solid var(--card-border);
     display:flex; align-items:center; justify-content:center;
     color:var(--text-primary);
@@ -61,6 +61,7 @@
     .back-btn:hover{ background:#1a1c28; }
   }
   .back-btn:active{ transform:scale(0.94); }
+  .back-btn svg{ width:20px; height:20px; }
 
   .topbar h1{
     font-size:19px;
@@ -234,11 +235,11 @@
 
 <div class="screen">
   <div class="topbar">
-    <div class="back-btn" onclick="history.back()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="15 18 9 12 15 6"></polyline>
+    <button class="back-btn" type="button" onclick="history.back()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
       </svg>
-    </div>
+    </button>
     <h1 data-i18n="about.title">ABOUT US</h1>
   </div>
 
