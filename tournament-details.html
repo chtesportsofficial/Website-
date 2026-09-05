@@ -257,7 +257,12 @@ function parseLobbyDateTime(lobbyDate,timeLabel){
   const m=/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec((timeLabel||'').trim());
   if(!m)return null;
   let h=(+m[1])%12; if(/pm/i.test(m[3]))h+=12;
-  const d=new Date(lobbyDate+'T00:00:00'); d.setHours(h,+m[2],0,0);
+  const d=new Date(lobbyDate+'T00:00:00');
+  // 12 AM belongs to the tail end of the lobby's date (the night of that
+  // date rolling into the next calendar day), not the very start of it —
+  // so "05-09" at 12:00 AM is the night of the 5th, not the morning of it.
+  if(h===0) d.setDate(d.getDate()+1);
+  d.setHours(h,+m[2],0,0);
   return d;
 }
 function isJoinWindowClosed(l){
