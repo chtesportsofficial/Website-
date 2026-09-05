@@ -336,7 +336,7 @@ function updateTime(which){
 
 function getMsg(key, fallback){
   try{
-    var lang = (window.CHTEO && window.CHTEO.getLangPref()) || 'en';
+    var lang = (window.CHTEO && window.CHTEO.getLangPref()) || 'bn';
     var dict = (window.CHTEO && window.CHTEO.translations[lang]) || {};
     return dict[key] || fallback;
   }catch(e){ return fallback; }

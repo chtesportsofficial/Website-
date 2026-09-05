@@ -702,7 +702,7 @@ document.addEventListener('chteo:profile-synced', loadSlotAndRank);
 
 function getMsg(key, fallback){
   try{
-    const lang = (window.CHTEO && window.CHTEO.getLangPref()) || 'en';
+    const lang = (window.CHTEO && window.CHTEO.getLangPref()) || 'bn';
     const dict = (window.CHTEO && window.CHTEO.translations[lang]) || {};
     return dict[key] || fallback;
   }catch(e){ return fallback; }
