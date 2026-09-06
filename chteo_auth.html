@@ -832,6 +832,9 @@ async function handleCreate(){
   localStorage.setItem('chteo_logged_in', 'true');
   localStorage.setItem('chteo_ever_logged_in', 'true');
   localStorage.setItem('chteo_referral', referral);
+  // Tells profile.html "this account is brand new" so it can spotlight
+  // Edit Profile once — profile.html clears this flag right after showing it.
+  localStorage.setItem('chteo_just_signed_up', 'true');
 
   if(data.session){
     // Give the Supabase trigger (which inserts the profiles row on new

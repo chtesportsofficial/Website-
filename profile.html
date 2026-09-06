@@ -404,6 +404,14 @@
     border-color:var(--red);
     color:#fff;
   }
+  .profile-spotlight{position:fixed;inset:0;z-index:9998;display:none}
+  .spotlight-hole{position:fixed;border-radius:18px;box-shadow:0 0 0 9999px rgba(4,6,10,.55);transition:top .2s ease,left .2s ease,width .2s ease,height .2s ease;z-index:9998}
+  .spotlight-tip{position:fixed;z-index:9999;width:260px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:0 12px 30px rgba(0,0,0,.55)}
+  .spotlight-tip::after{content:"";position:absolute;top:-8px;left:26px;width:16px;height:16px;background:var(--card);border-left:1px solid var(--border);border-top:1px solid var(--border);transform:rotate(45deg)}
+  .spotlight-tip-text{font-size:12.5px;line-height:1.55;color:var(--text);margin-bottom:12px}
+  .spotlight-tip-actions{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .spotlight-skip{background:transparent;border:none;color:var(--muted);font-size:11.5px;font-weight:700;padding:9px 4px}
+  .spotlight-cta{flex:1;background:var(--green);border:none;color:#0b0d10;font-weight:800;font-size:11.5px;padding:10px 12px;border-radius:10px}
 </style>
 <style>
 :root{
@@ -521,7 +529,7 @@
       </div>
       <svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
     </a>
-    <a class="menu-row" href="edit_profile.html">
+    <a class="menu-row" href="edit_profile.html" id="editProfileRow">
       <div class="menu-icon green">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
       </div>
@@ -745,5 +753,72 @@ if(logoutConfirmBtn){
   });
 }
 </script>
+<div class="profile-spotlight" id="profileSpotlight">
+  <div class="spotlight-hole" id="spotlightHole"></div>
+  <div class="spotlight-tip" id="spotlightTip">
+    <div class="spotlight-tip-text">আপনার একাউন্ট তৈরি হয়েছে 🎉 এখন Edit Profile-এ গিয়ে আপনার তথ্য দিয়ে প্রোফাইলটা সম্পূর্ণ করে নিন।</div>
+    <div class="spotlight-tip-actions">
+      <button type="button" class="spotlight-skip" id="spotlightSkipBtn">Skip</button>
+      <button type="button" class="spotlight-cta" id="spotlightCtaBtn">Edit Profile</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  function $(id){return document.getElementById(id);}
+
+  function positionSpotlight(){
+    var target = $('editProfileRow');
+    if(!target) return;
+    var r = target.getBoundingClientRect();
+    var pad = 8;
+    var hole = $('spotlightHole');
+    hole.style.left = (r.left - pad) + 'px';
+    hole.style.top = (r.top - pad) + 'px';
+    hole.style.width = (r.width + pad * 2) + 'px';
+    hole.style.height = (r.height + pad * 2) + 'px';
+
+    var tip = $('spotlightTip');
+    var tipW = Math.min(260, window.innerWidth - 24);
+    tip.style.width = tipW + 'px';
+    var left = Math.min(window.innerWidth - tipW - 12, Math.max(12, r.left));
+    tip.style.left = left + 'px';
+    tip.style.top = (r.bottom + pad + 12) + 'px';
+  }
+
+  function dismiss(){
+    localStorage.removeItem('chteo_just_signed_up');
+    var el = $('profileSpotlight');
+    if(el) el.style.display = 'none';
+    window.removeEventListener('resize', positionSpotlight);
+  }
+
+  function init(){
+    // Only ever shown once, right after signup — chteo_auth.html sets this
+    // flag on successful account creation, and dismiss() (skip, tap, or
+    // navigating to Edit Profile) clears it for good.
+    if(localStorage.getItem('chteo_just_signed_up') !== 'true') return;
+    if(!$('editProfileRow')) return;
+
+    var el = $('profileSpotlight');
+    el.style.display = 'block';
+    positionSpotlight();
+    window.addEventListener('resize', positionSpotlight);
+
+    $('spotlightSkipBtn').addEventListener('click', function(e){ e.stopPropagation(); dismiss(); });
+    $('spotlightCtaBtn').addEventListener('click', function(e){ e.stopPropagation(); dismiss(); location.href='edit_profile.html'; });
+    $('spotlightHole').addEventListener('click', function(e){ e.stopPropagation(); dismiss(); location.href='edit_profile.html'; });
+    el.addEventListener('click', function(e){ if(e.target === el) dismiss(); });
+  }
+
+  // Profile card content (and the menu list below it) is rendered by
+  // global.js's Supabase sync, so wait a beat for that layout to settle
+  // before measuring editProfileRow's position.
+  if(document.readyState === 'complete') setTimeout(init, 300);
+  else window.addEventListener('load', function(){ setTimeout(init, 300); });
+})();
+</script>
+
 </body>
 </html>
