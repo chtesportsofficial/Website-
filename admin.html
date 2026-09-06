@@ -22,12 +22,21 @@
     --orange:#ff7a1a;
     --red:#ef4444;
   }
+  html{
+    background:var(--navy-2);
+  }
   *{box-sizing:border-box;}
-  body{
-    margin:0;
+  body::before{
+    content:'';
+    position:fixed;
+    inset:0;
+    z-index:-1;
     background:
       radial-gradient(circle at 12% 0%, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 40%),
       linear-gradient(160deg, var(--navy-1) 0%, var(--navy-2) 55%, var(--navy-3) 100%);
+  }
+  body{
+    margin:0;
     font-family:'Segoe UI',Roboto,Arial,sans-serif;
     color:var(--text);
     display:flex;
@@ -185,17 +194,17 @@
     <button class="back-btn" type="button" onclick="history.back()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </button>
-    <h1>Deposit Requests</h1>
+    <h1>ডিপোজিট রিকোয়েস্ট</h1>
   </div>
 
   <div class="tabs">
-    <button class="tab-btn active" data-status="pending" onclick="switchTab('pending')">Pending</button>
-    <button class="tab-btn" data-status="approved" onclick="switchTab('approved')">Approved</button>
-    <button class="tab-btn" data-status="rejected" onclick="switchTab('rejected')">Declined</button>
+    <button class="tab-btn active" data-status="pending" onclick="switchTab('pending')">পেন্ডিং</button>
+    <button class="tab-btn" data-status="approved" onclick="switchTab('approved')">অ্যাপ্রুভড</button>
+    <button class="tab-btn" data-status="rejected" onclick="switchTab('rejected')">বাতিল</button>
   </div>
 
   <div id="listArea">
-    <div class="state-box">Loading...</div>
+    <div class="state-box">লোডিং...</div>
   </div>
 
 </div>
@@ -206,6 +215,8 @@ const SB_KEY = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
 let sbClient = null;
 let currentTab = 'pending';
 let currentSession = null;
+const BN_TAB = {pending:'পেন্ডিং', approved:'অ্যাপ্রুভড', rejected:'বাতিল'};
+const BN_STATUS = {pending:'পেন্ডিং', approved:'অ্যাপ্রুভড', rejected:'বাতিল'};
 
 function getClient(cb){
   if (sbClient){ cb(sbClient); return; }
@@ -262,7 +273,7 @@ function formatDhakaTime(mysqlDatetime){
 }
 
 function statusChip(status){
-  return '<span class="status-chip status-' + status + '">' + status.toUpperCase() + '</span>';
+  return '<span class="status-chip status-' + status + '">' + (BN_STATUS[status] || status.toUpperCase()) + '</span>';
 }
 
 // Bangladeshi/Indian digit grouping: last 3 digits together, then every
@@ -298,7 +309,7 @@ function loadRequests(isBackground){
   // background auto-refreshes should swap the data in quietly so an
   // admin mid-click or mid-scroll isn't interrupted.
   if (!isBackground){
-    renderState('Loading...');
+    renderState('লোডিং...');
   }
 
   fetch('https://chteo-api.onrender.com/admin-deposits-list.php', {
@@ -311,12 +322,12 @@ function loadRequests(isBackground){
       _loadInFlight = false;
       if (!res || !res.success){
         if (!isBackground){
-          renderState(escapeHtml((res && res.message) || 'Failed to load requests.'));
+          renderState(escapeHtml((res && res.message) || 'রিকোয়েস্ট লোড করা যায়নি।'));
         }
         return;
       }
       if (!res.requests.length){
-        renderState('No ' + currentTab + ' requests.');
+        renderState('কোনো ' + (BN_TAB[currentTab] || currentTab) + ' রিকোয়েস্ট নেই।');
         return;
       }
       const listArea = document.getElementById('listArea');
@@ -328,7 +339,7 @@ function loadRequests(isBackground){
     .catch(function(err){
       _loadInFlight = false;
       if (!isBackground){
-        renderState('Could not connect: ' + escapeHtml(err.message));
+        renderState('কানেক্ট করা যায়নি: ' + escapeHtml(err.message));
       }
     });
 }
@@ -358,17 +369,17 @@ function buildCard(req){
         (isPending ? '' : statusChip(req.status)) +
       '</div>' +
     '</div>' +
-    '<div class="req-row"><span class="lbl">User ID</span><span class="val"><a href="user-detail.html?uid=' + encodeURIComponent(req.supabase_uid || '') + '" style="color:inherit;text-decoration:underline;">#' + escapeHtml(req.display_uid) + '</a></span></div>' +
-    '<div class="req-row"><span class="lbl">Sender Number</span><span class="val">' + escapeHtml(req.sender_number) + '</span></div>' +
-    '<div class="req-row"><span class="lbl">TrxID</span><span class="val">' + escapeHtml(req.trx_id) + '</span></div>' +
-    '<div class="req-row"><span class="lbl">Submitted</span><span class="val">' + escapeHtml(formatDhakaTime(req.created_at)) + '</span></div>' +
-    (req.admin_note ? '<div class="req-row"><span class="lbl">Note</span><span class="val">' + escapeHtml(req.admin_note) + '</span></div>' : '');
+    '<div class="req-row"><span class="lbl">ইউজার আইডি</span><span class="val"><a href="user-detail.html?uid=' + encodeURIComponent(req.supabase_uid || '') + '" style="color:inherit;text-decoration:underline;">#' + escapeHtml(req.display_uid) + '</a></span></div>' +
+    '<div class="req-row"><span class="lbl">সেন্ডার নম্বর</span><span class="val">' + escapeHtml(req.sender_number) + '</span></div>' +
+    '<div class="req-row"><span class="lbl">ট্রাঞ্জেকশন আইডি</span><span class="val">' + escapeHtml(req.trx_id) + '</span></div>' +
+    '<div class="req-row"><span class="lbl">সাবমিট করা হয়েছে</span><span class="val">' + escapeHtml(formatDhakaTime(req.created_at)) + '</span></div>' +
+    (req.admin_note ? '<div class="req-row"><span class="lbl">নোট</span><span class="val">' + escapeHtml(req.admin_note) + '</span></div>' : '');
 
   if (isPending){
     const noteInput = document.createElement('input');
     noteInput.type = 'text';
     noteInput.className = 'req-note';
-    noteInput.placeholder = 'Optional note (visible on decline)';
+    noteInput.placeholder = 'ঐচ্ছিক নোট (বাতিল করলে দেখা যাবে)';
     noteInput.addEventListener('focus', function(){ _isEditingNote = true; });
     noteInput.addEventListener('blur', function(){ _isEditingNote = false; });
     card.appendChild(noteInput);
@@ -378,17 +389,17 @@ function buildCard(req){
 
     const approveBtn = document.createElement('button');
     approveBtn.className = 'btn btn-approve';
-    approveBtn.textContent = 'Approve';
+    approveBtn.textContent = 'অ্যাপ্রুভ';
 
     const declineBtn = document.createElement('button');
     declineBtn.className = 'btn btn-decline';
-    declineBtn.textContent = 'Decline';
+    declineBtn.textContent = 'বাতিল';
 
     function review(action){
       approveBtn.disabled = true;
       declineBtn.disabled = true;
-      approveBtn.textContent = action === 'approve' ? 'Approving...' : 'Approve';
-      declineBtn.textContent = action === 'decline' ? 'Declining...' : 'Decline';
+      approveBtn.textContent = action === 'approve' ? 'অ্যাপ্রুভ হচ্ছে...' : 'অ্যাপ্রুভ';
+      declineBtn.textContent = action === 'decline' ? 'বাতিল হচ্ছে...' : 'বাতিল';
 
       fetch('https://chteo-api.onrender.com/admin-deposits-review.php', {
         method: 'POST',
@@ -406,19 +417,19 @@ function buildCard(req){
             _loadInFlight = false;
             loadRequests();
           } else {
-            alert((res && res.message) || 'Action failed.');
+            alert((res && res.message) || 'অ্যাকশন ফেইল হয়েছে।');
             approveBtn.disabled = false;
             declineBtn.disabled = false;
-            approveBtn.textContent = 'Approve';
-            declineBtn.textContent = 'Decline';
+            approveBtn.textContent = 'অ্যাপ্রুভ';
+            declineBtn.textContent = 'বাতিল';
           }
         })
         .catch(function(err){
-          alert('Could not connect: ' + err.message);
+          alert('কানেক্ট করা যায়নি: ' + err.message);
           approveBtn.disabled = false;
           declineBtn.disabled = false;
-          approveBtn.textContent = 'Approve';
-          declineBtn.textContent = 'Decline';
+          approveBtn.textContent = 'অ্যাপ্রুভ';
+          declineBtn.textContent = 'বাতিল';
         });
     }
 
@@ -438,7 +449,7 @@ getClient(function(sb){
   sb.auth.getSession().then(function(res){
     const session = res.data && res.data.session;
     if (!session){
-      renderState('Please sign in first.');
+      renderState('আগে সাইন ইন করো।');
       return;
     }
     currentSession = session;
@@ -448,7 +459,7 @@ getClient(function(sb){
         const profile = res.data;
         const isAdmin = profile && (profile.is_admin || profile.is_owner);
         if (!isAdmin){
-          renderState('Access denied — admin only.');
+          renderState('অ্যাক্সেস নেই — শুধু অ্যাডমিনদের জন্য।');
           return;
         }
         loadRequests();
