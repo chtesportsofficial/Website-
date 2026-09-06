@@ -426,76 +426,6 @@
   }
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
-/* ================= NOTICE MANAGEMENT ================= */
-.modal-card textarea{width:100%;min-height:130px;resize:vertical;padding:14px;border:1px solid #dfe3ea;border-radius:14px;font:inherit;font-size:15px;box-sizing:border-box;outline:none;background:#fff;color:#202535}
-.modal-card textarea:focus{border-color:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.12)}
-.notice-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-.notice-actions button{border:0;border-radius:12px;padding:12px 18px;font:inherit;font-weight:800;cursor:pointer}
-#send-notice-btn{background:#22c55e;color:#fff}
-#clear-notice-btn{background:#eef0f5;color:#202535}
-#remove-notice-btn{background:#ef4444;color:#fff}
-.notice-current{margin-top:14px;padding:14px;border:1px solid #dfe3ea;border-radius:14px;background:#f6f7fa}
-.notice-current .nc-label{font-size:12px;font-weight:800;color:#7b8190;text-transform:uppercase}
-.notice-current .nc-text{margin-top:5px;font-size:15px;font-weight:700;color:#202535;white-space:pre-wrap;word-break:break-word}
-.notice-current .nc-meta{margin-top:8px;font-size:12px;color:#7b8190}
-.notice-current .nc-title{font-weight:800;font-size:15px;color:#202535}
-.notice-current .nc-body{margin-top:3px;font-size:14px;color:#202535;white-space:pre-wrap;word-break:break-word}
-
-/* ---------- Notice modal ---------- */
-.modal-overlay{
-  display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(20,23,45,0.55);
-  align-items:center;
-  justify-content:center;
-  padding:20px;
-  z-index:50;
-  overscroll-behavior:contain;
-}
-.modal-overlay.show{ display:flex; }
-.modal-card{
-  width:100%;
-  max-width:480px;
-  max-height:90vh;
-  min-height:0;
-  overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
-  background:var(--white);
-  border-radius:22px;
-  padding:26px 24px 24px;
-  box-shadow:0 30px 60px -20px rgba(0,0,0,0.5);
-  overscroll-behavior:contain;
-}
-.modal-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  margin-bottom:18px;
-}
-.modal-head h2{ font-size:17px; font-weight:800; margin:0; }
-.modal-close{
-  width:32px; height:32px;
-  border:none;
-  border-radius:9px;
-  background:#f1f2f8;
-  color:var(--ink);
-  display:flex; align-items:center; justify-content:center;
-  cursor:pointer;
-  flex-shrink:0;
-}
-.modal-close:hover{ background:#e5e7f3; }
-.modal-card .field input{
-  width:100%;
-  border:1px solid var(--line);
-  border-radius:10px;
-  padding:11px 13px;
-  font-size:14px;
-  font-family:inherit;
-  outline:none;
-  box-sizing:border-box;
-}
-.modal-card .field input:focus{ border-color:var(--accent); }
 </style>
 </head>
 <body>
@@ -638,18 +568,18 @@
 
         <div class="menu-divider"></div>
 
-        <button type="button" class="menu-card menu-card-btn" id="open-notice-btn">
+        <a class="menu-card" href="send-notice.html">
           <div class="menu-icon menu-icon-notice">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           </div>
           <div class="menu-info">
             <div class="menu-title">Send Notice</div>
-            <div class="menu-sub" id="notice-menu-sub">Loading current notice...</div>
+            <div class="menu-sub">Post or update the site-wide notice</div>
           </div>
           <div class="menu-arrow">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
           </div>
-        </button>
+        </a>
 
         <div class="menu-divider"></div>
 
@@ -682,45 +612,6 @@
         </a>
       </div>
 
-    </div>
-  </div>
-
-  <!-- SEND NOTICE MODAL -->
-  <div class="modal-overlay" id="notice-modal-overlay">
-    <div class="modal-card">
-      <div class="modal-head">
-        <h2>Send Notice</h2>
-        <button class="modal-close" id="notice-modal-close" type="button" aria-label="Close">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-        </button>
-      </div>
-
-      <div class="field">
-        <label for="notice-title">Notice title</label>
-        <input type="text" id="notice-title" placeholder="e.g. Scheduled maintenance">
-      </div>
-      <div class="field">
-        <label for="notice-message">Notice message</label>
-        <textarea id="notice-message" placeholder="Write the notice that should appear on the homepage..."></textarea>
-      </div>
-      <div class="field">
-        <label for="notice-image">Notice image (optional)</label>
-        <input type="file" id="notice-image" accept="image/png,image/jpeg,image/webp">
-        <div id="notice-image-preview" style="display:none;margin-top:10px"></div>
-      </div>
-
-      <div class="notice-actions">
-        <button id="send-notice-btn" type="button">Send Notice</button>
-        <button id="clear-notice-btn" type="button">Clear</button>
-        <button id="remove-notice-btn" type="button">Remove Notice</button>
-      </div>
-
-      <div class="notice-current">
-        <div class="nc-label">Current Notice</div>
-        <div class="nc-text" id="current-notice-text">Loading...</div>
-        <img id="current-notice-image" alt="Current notice image" style="display:none;width:100%;max-height:220px;object-fit:contain;border-radius:12px;margin-top:10px;border:1px solid var(--line);background:#111722">
-        <div class="nc-meta" id="current-notice-meta"></div>
-      </div>
     </div>
   </div>
 
@@ -780,154 +671,7 @@ async function handleAdminLogin(){
   await checkAccess();
 }
 
-// ---------- Notice management ----------
-function formatNoticeDate(value){
-  if(!value) return '';
-  const d = new Date(value);
-  if(Number.isNaN(d.getTime())) return String(value);
-  return d.toLocaleString('en-BD',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});
-}
-
-// Notices are stored in the existing `message` text column. When a title
-// is given we save it as JSON ({title, body}) so no DB migration is
-// needed; plain-text notices saved before this change still work fine,
-// they just render with no title.
-function parseNoticeMessage(raw){
-  if(!raw) return {title:'', body:'', image:''};
-  try{
-    const obj=JSON.parse(raw);
-    if(obj && typeof obj==='object' && ('title' in obj || 'body' in obj)){
-      return {title:obj.title||'', body:obj.body||'', image:obj.image||''};
-    }
-  }catch(e){ /* not JSON — legacy plain-text notice */ }
-  return {title:'', body:raw, image:''};
-}
-
-function noticePreviewText(title,body){
-  const text=title||body;
-  if(!text) return 'No active notice';
-  return text.length>44 ? text.slice(0,44)+'…' : text;
-}
-
-async function getCurrentNotice(){
-  const textEl=document.getElementById('current-notice-text');
-  const metaEl=document.getElementById('current-notice-meta');
-  const subEl=document.getElementById('notice-menu-sub');
-  const imageEl=document.getElementById('current-notice-image');
-  try{
-    const {data,error}=await supabaseClient.from('site_notices')
-      .select('id,message,created_at,admin_name,is_active')
-      .eq('is_active',true).order('created_at',{ascending:false}).limit(1).maybeSingle();
-    if(error) throw error;
-    if(!data){
-      textEl.textContent='No Notice';
-      metaEl.textContent='';
-      if(subEl) subEl.textContent='No active notice';
-      return null;
-    }
-    const {title,body,image}=parseNoticeMessage(data.message);
-    textEl.innerHTML='';
-    if(imageEl){ if(image){ imageEl.src=image; imageEl.style.display='block'; } else { imageEl.removeAttribute('src'); imageEl.style.display='none'; } }
-    if(title){
-      const titleEl=document.createElement('div');
-      titleEl.className='nc-title';
-      titleEl.textContent=title;
-      textEl.appendChild(titleEl);
-    }
-    const bodyEl=document.createElement('div');
-    bodyEl.className='nc-body';
-    bodyEl.textContent=body || (title ? '' : 'No Notice');
-    textEl.appendChild(bodyEl);
-    metaEl.textContent='Admin — '+(data.admin_name||'Admin')+'  •  '+formatNoticeDate(data.created_at);
-    if(subEl) subEl.textContent=noticePreviewText(title,body);
-    return data;
-  }catch(e){
-    textEl.textContent='Could not load notice';
-    metaEl.textContent=e.message || '';
-    if(subEl) subEl.textContent='Could not load notice';
-    console.error(e);
-    return null;
-  }
-}
-
-async function getAdminName(){
-  const {data:{user}}=await supabaseClient.auth.getUser();
-  if(!user) return 'Admin';
-  const {data:profile}=await supabaseClient.from('profiles').select('full_name,email').eq('id',user.id).single();
-  return (profile && (profile.full_name || profile.email)) || user.email || 'Admin';
-}
-
-async function sendNotice(){
-  const titleInput=document.getElementById('notice-title');
-  const input=document.getElementById('notice-message');
-  const imageInput=document.getElementById('notice-image');
-  const btn=document.getElementById('send-notice-btn');
-  const title=titleInput.value.trim();
-  const message=input.value.trim();
-  if(!message){ showToast('Write a notice first.'); return; }
-  btn.disabled=true;
-  try{
-    const adminName=await getAdminName();
-    let image=''; const file=imageInput && imageInput.files ? imageInput.files[0] : null;
-    if(file){ const ext=(file.name.split('.').pop()||'jpg').toLowerCase(); const safe=['jpg','jpeg','png','webp'].includes(ext)?ext:'jpg'; const path='notice-'+crypto.randomUUID()+'.'+safe; const up=await supabaseClient.storage.from('tournament-banners').upload(path,file,{upsert:false,contentType:file.type}); if(up.error) throw up.error; image=supabaseClient.storage.from('tournament-banners').getPublicUrl(path).data.publicUrl; }
-    const payload=(title||image) ? JSON.stringify({title,body:message,image}) : message;
-    const {error:offError}=await supabaseClient.from('site_notices').update({is_active:false}).eq('is_active',true);
-    if(offError) throw offError;
-    const {error}=await supabaseClient.from('site_notices').insert({message:payload,is_active:true,admin_name:adminName});
-    if(error) throw error;
-    titleInput.value='';
-    input.value=''; if(imageInput) imageInput.value=''; const pp=document.getElementById('notice-image-preview'); if(pp){pp.innerHTML='';pp.style.display='none';}
-    showToast('Notice sent successfully.');
-    await getCurrentNotice();
-  }catch(e){
-    showToast('Notice failed: '+(e.message||'Unknown error'));
-    console.error(e);
-  }finally{ btn.disabled=false; }
-}
-
-async function removeNotice(){
-  const btn=document.getElementById('remove-notice-btn');
-  btn.disabled=true;
-  try{
-    const {error}=await supabaseClient.from('site_notices').update({is_active:false}).eq('is_active',true);
-    if(error) throw error;
-    document.getElementById('notice-title').value='';
-    document.getElementById('notice-message').value='';
-    showToast('Notice removed.');
-    await getCurrentNotice();
-  }catch(e){
-    showToast('Remove failed: '+(e.message||'Unknown error'));
-    console.error(e);
-  }finally{ btn.disabled=false; }
-}
-
-function openNoticeModal(){
-  document.getElementById('notice-modal-overlay').classList.add('show');
-  document.body.style.overflow='hidden';
-}
-function closeNoticeModal(){
-  document.getElementById('notice-modal-overlay').classList.remove('show');
-  document.body.style.overflow='';
-}
-
-function setupNoticeUI(){
-  document.getElementById('open-notice-btn').addEventListener('click',openNoticeModal);
-  document.getElementById('notice-modal-close').addEventListener('click',closeNoticeModal);
-  document.getElementById('notice-modal-overlay').addEventListener('click',(e)=>{
-    if(e.target.id==='notice-modal-overlay') closeNoticeModal();
-  });
-  document.addEventListener('keydown',(e)=>{
-    if(e.key==='Escape') closeNoticeModal();
-  });
-  const imageInput=document.getElementById('notice-image'); if(imageInput){ imageInput.addEventListener('change',()=>{const f=imageInput.files&&imageInput.files[0],p=document.getElementById('notice-image-preview');if(!p)return;if(!f){p.innerHTML='';p.style.display='none';return;}const u=URL.createObjectURL(f);p.innerHTML='<img src="'+u+'" style="width:100%;max-height:180px;object-fit:contain;border-radius:12px;border:1px solid var(--line)">';p.style.display='block';});}
-  document.getElementById('send-notice-btn').addEventListener('click',sendNotice);
-  document.getElementById('clear-notice-btn').addEventListener('click',()=>{
-    document.getElementById('notice-title').value='';
-    document.getElementById('notice-message').value='';
-  });
-  document.getElementById('remove-notice-btn').addEventListener('click',removeNotice);
-  getCurrentNotice();
-}
+// ---------- Notice management moved to send-notice.html ----------
 
 async function signOutAndReload(){
   await supabaseClient.auth.signOut();
@@ -956,7 +700,6 @@ async function checkAccess(){
   }
 
   showGate('app');
-  setupNoticeUI();
 }
 
 checkAccess();

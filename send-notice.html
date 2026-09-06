@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHTEO — Send Notice</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --navy-1:#1b2140;
+    --navy-2:#2a3266;
+    --navy-3:#333c7a;
+    --white:#ffffff;
+    --ink:#1b2140;
+    --muted:#7a7f9a;
+    --line:#e2e3ee;
+    --accent:#3557ff;
+    --card:rgba(255,255,255,0.08);
+    --border:rgba(255,255,255,0.14);
+    --text:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    background:
+      radial-gradient(circle at 12% 0%, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 40%),
+      linear-gradient(160deg, var(--navy-1) 0%, var(--navy-2) 55%, var(--navy-3) 100%);
+    color:var(--ink);
+  }
+
+  /* ---------- Gate views ---------- */
+  .gate{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+  .gate-card{ width:100%; max-width:380px; background:var(--white); border-radius:24px; padding:36px 30px; box-shadow:0 30px 60px -20px rgba(0,0,0,0.45); text-align:center; }
+  .gate-card h1{ font-size:18px; font-weight:800; margin:0 0 8px; }
+  .gate-card p{ font-size:13.5px; color:var(--muted); line-height:1.6; margin:0 0 22px; }
+  .gate-btn{ width:100%; padding:13px; border:none; border-radius:10px; background:var(--accent); color:#fff; font-size:14.5px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .gate-btn:hover{ background:#2846e0; }
+  .spinner{ width:32px; height:32px; border:3px solid rgba(255,255,255,0.25); border-top-color:#fff; border-radius:50%; margin:0 auto 16px; animation:spin .8s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .gate-text{ color:rgba(255,255,255,0.75); font-size:14px; }
+
+  /* ---------- Page ---------- */
+  .app{ display:none; }
+  .app.active{ display:block; }
+
+  .topbar{ display:flex; align-items:center; gap:12px; padding:18px 28px; background:transparent; }
+  .back-btn{
+    width:44px; height:44px;
+    border-radius:12px;
+    background:var(--card);
+    border:1px solid var(--border);
+    color:var(--text);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .back-btn svg{ width:20px; height:20px }
+  .header h1, .topbar h1{ font-size:19px; font-weight:750; margin:0; color:#fff; }
+
+  .content{ max-width:520px; margin:0 auto; padding:8px 20px 60px; }
+
+  .panel{
+    background:var(--white);
+    border-radius:20px;
+    padding:22px;
+    box-shadow:0 20px 44px -22px rgba(0,0,0,0.35);
+    margin-bottom:18px;
+  }
+  .panel h2{ font-size:16px; font-weight:800; margin:0 0 16px; }
+
+  .field{ text-align:left; margin-bottom:14px; }
+  .field label{ display:block; font-size:13px; font-weight:700; margin-bottom:6px; }
+  .field input, .field textarea{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:11px 13px;
+    font-size:14px;
+    font-family:inherit;
+    outline:none;
+    box-sizing:border-box;
+    background:#fff;
+    color:#202535;
+  }
+  .field textarea{ min-height:130px; resize:vertical; }
+  .field input:focus, .field textarea:focus{ border-color:var(--accent); }
+
+  .notice-actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+  .notice-actions button{ border:0; border-radius:12px; padding:12px 18px; font:inherit; font-weight:800; cursor:pointer; }
+  #send-notice-btn{ background:#22c55e; color:#fff; }
+  #clear-notice-btn{ background:#eef0f5; color:#202535; }
+  #remove-notice-btn{ background:#ef4444; color:#fff; }
+  .notice-actions button:disabled{ opacity:.6; cursor:not-allowed; }
+
+  .notice-current{ margin-top:16px; padding:14px; border:1px solid #dfe3ea; border-radius:14px; background:#f6f7fa; }
+  .notice-current .nc-label{ font-size:12px; font-weight:800; color:#7b8190; text-transform:uppercase; }
+  .notice-current .nc-title{ margin-top:6px; font-weight:800; font-size:15px; color:#202535; }
+  .notice-current .nc-body{ margin-top:3px; font-size:14px; color:#202535; white-space:pre-wrap; word-break:break-word; }
+  .notice-current .nc-meta{ margin-top:8px; font-size:12px; color:#7b8190; }
+
+  .toast{
+    position:fixed; bottom:24px; left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--ink); color:#fff;
+    padding:11px 18px; border-radius:10px;
+    font-size:13px; font-weight:600;
+    opacity:0; pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease;
+    z-index:999;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+  <!-- CHECKING SESSION -->
+  <div class="gate" id="gate-checking">
+    <div>
+      <div class="spinner"></div>
+      <div class="gate-text">Checking access...</div>
+    </div>
+  </div>
+
+  <!-- ACCESS DENIED -->
+  <div class="gate" id="gate-denied" style="display:none;">
+    <div class="gate-card">
+      <h1>Access denied</h1>
+      <p>You don't have admin access to this page.</p>
+      <button class="gate-btn" onclick="window.location.href='admin-panel.html'">Back to admin panel</button>
+    </div>
+  </div>
+
+  <!-- PAGE -->
+  <div class="app" id="app">
+    <div class="topbar">
+      <button class="back-btn" type="button" onclick="window.location.href='admin-panel.html'" aria-label="Back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </button>
+      <h1>Send Notice</h1>
+    </div>
+
+    <div class="content">
+      <div class="panel">
+        <h2>New notice</h2>
+
+        <div class="field">
+          <label for="notice-title">Notice title</label>
+          <input type="text" id="notice-title" placeholder="e.g. Scheduled maintenance">
+        </div>
+        <div class="field">
+          <label for="notice-message">Notice message</label>
+          <textarea id="notice-message" placeholder="Write the notice that should appear on the homepage..."></textarea>
+        </div>
+        <div class="field">
+          <label for="notice-image">Notice image (optional)</label>
+          <input type="file" id="notice-image" accept="image/png,image/jpeg,image/webp">
+          <div id="notice-image-preview" style="display:none;margin-top:10px"></div>
+        </div>
+
+        <div class="notice-actions">
+          <button id="send-notice-btn" type="button">Send Notice</button>
+          <button id="clear-notice-btn" type="button">Clear</button>
+          <button id="remove-notice-btn" type="button">Remove Notice</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Current active notice</h2>
+        <div class="notice-current">
+          <div class="nc-label">Live on homepage</div>
+          <div id="current-notice-text">Loading...</div>
+          <img id="current-notice-image" alt="Current notice image" style="display:none;width:100%;max-height:220px;object-fit:contain;border-radius:12px;margin-top:10px;border:1px solid var(--line)">
+          <div class="nc-meta" id="current-notice-meta"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://myfficbwcbgbxbdqjexv.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+
+let supabaseClient;
+try {
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} catch(e){
+  document.getElementById('gate-checking').innerHTML =
+    '<div class="gate-text">Supabase init error: ' + e.message + '</div>';
+}
+
+function showGate(name){
+  document.getElementById('gate-checking').style.display = name === 'checking' ? 'flex' : 'none';
+  document.getElementById('gate-denied').style.display = name === 'denied' ? 'flex' : 'none';
+  document.getElementById('app').classList.toggle('active', name === 'app');
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// Notices are stored in the existing `message` text column. When a title
+// is given we save it as JSON ({title, body, image}) so no DB migration is
+// needed; plain-text notices saved before this change still work fine.
+function parseNoticeMessage(raw){
+  if(!raw) return {title:'', body:'', image:''};
+  try{
+    const obj = JSON.parse(raw);
+    if(obj && typeof obj==='object' && ('title' in obj || 'body' in obj)){
+      return {title:obj.title||'', body:obj.body||'', image:obj.image||''};
+    }
+  }catch(e){ /* not JSON — legacy plain-text notice */ }
+  return {title:'', body:raw, image:''};
+}
+
+function formatNoticeDate(value){
+  if(!value) return '';
+  const d = new Date(value);
+  if(Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleString('en-BD',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});
+}
+
+async function getCurrentNotice(){
+  const textEl = document.getElementById('current-notice-text');
+  const metaEl = document.getElementById('current-notice-meta');
+  const imageEl = document.getElementById('current-notice-image');
+  try{
+    const { data, error } = await supabaseClient.from('site_notices')
+      .select('id,message,created_at,admin_name,is_active')
+      .eq('is_active', true).order('created_at', { ascending:false }).limit(1).maybeSingle();
+    if(error) throw error;
+    if(!data){
+      textEl.textContent = 'No active notice';
+      metaEl.textContent = '';
+      if(imageEl){ imageEl.removeAttribute('src'); imageEl.style.display = 'none'; }
+      return null;
+    }
+    const { title, body, image } = parseNoticeMessage(data.message);
+    textEl.innerHTML = '';
+    if(imageEl){ if(image){ imageEl.src = image; imageEl.style.display = 'block'; } else { imageEl.removeAttribute('src'); imageEl.style.display = 'none'; } }
+    if(title){
+      const titleEl = document.createElement('div');
+      titleEl.className = 'nc-title';
+      titleEl.textContent = title;
+      textEl.appendChild(titleEl);
+    }
+    const bodyEl = document.createElement('div');
+    bodyEl.className = 'nc-body';
+    bodyEl.textContent = body || (title ? '' : 'No active notice');
+    textEl.appendChild(bodyEl);
+    metaEl.textContent = 'Admin — ' + (data.admin_name || 'Admin') + '  •  ' + formatNoticeDate(data.created_at);
+    return data;
+  }catch(e){
+    textEl.textContent = 'Could not load notice';
+    metaEl.textContent = e.message || '';
+    console.error(e);
+    return null;
+  }
+}
+
+async function getAdminName(){
+  const { data:{ user } } = await supabaseClient.auth.getUser();
+  if(!user) return 'Admin';
+  const { data:profile } = await supabaseClient.from('profiles').select('full_name,email').eq('id', user.id).single();
+  return (profile && (profile.full_name || profile.email)) || user.email || 'Admin';
+}
+
+async function sendNotice(){
+  const titleInput = document.getElementById('notice-title');
+  const input = document.getElementById('notice-message');
+  const imageInput = document.getElementById('notice-image');
+  const btn = document.getElementById('send-notice-btn');
+  const title = titleInput.value.trim();
+  const message = input.value.trim();
+  if(!message){ showToast('Write a notice first.'); return; }
+  btn.disabled = true;
+  try{
+    const adminName = await getAdminName();
+    let image = '';
+    const file = imageInput && imageInput.files ? imageInput.files[0] : null;
+    if(file){
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const safe = ['jpg','jpeg','png','webp'].includes(ext) ? ext : 'jpg';
+      const path = 'notice-' + crypto.randomUUID() + '.' + safe;
+      const up = await supabaseClient.storage.from('tournament-banners').upload(path, file, { upsert:false, contentType:file.type });
+      if(up.error) throw up.error;
+      image = supabaseClient.storage.from('tournament-banners').getPublicUrl(path).data.publicUrl;
+    }
+    const payload = (title || image) ? JSON.stringify({ title, body:message, image }) : message;
+    const { error:offError } = await supabaseClient.from('site_notices').update({ is_active:false }).eq('is_active', true);
+    if(offError) throw offError;
+    const { error } = await supabaseClient.from('site_notices').insert({ message:payload, is_active:true, admin_name:adminName });
+    if(error) throw error;
+    titleInput.value = '';
+    input.value = '';
+    if(imageInput) imageInput.value = '';
+    const pp = document.getElementById('notice-image-preview');
+    if(pp){ pp.innerHTML = ''; pp.style.display = 'none'; }
+    showToast('Notice sent successfully.');
+    await getCurrentNotice();
+  }catch(e){
+    showToast('Notice failed: ' + (e.message || 'Unknown error'));
+    console.error(e);
+  }finally{ btn.disabled = false; }
+}
+
+async function removeNotice(){
+  const btn = document.getElementById('remove-notice-btn');
+  btn.disabled = true;
+  try{
+    const { error } = await supabaseClient.from('site_notices').update({ is_active:false }).eq('is_active', true);
+    if(error) throw error;
+    document.getElementById('notice-title').value = '';
+    document.getElementById('notice-message').value = '';
+    showToast('Notice removed.');
+    await getCurrentNotice();
+  }catch(e){
+    showToast('Remove failed: ' + (e.message || 'Unknown error'));
+    console.error(e);
+  }finally{ btn.disabled = false; }
+}
+
+function setupNoticeUI(){
+  const imageInput = document.getElementById('notice-image');
+  if(imageInput){
+    imageInput.addEventListener('change', () => {
+      const f = imageInput.files && imageInput.files[0];
+      const p = document.getElementById('notice-image-preview');
+      if(!p) return;
+      if(!f){ p.innerHTML = ''; p.style.display = 'none'; return; }
+      const u = URL.createObjectURL(f);
+      p.innerHTML = '<img src="' + u + '" style="width:100%;max-height:180px;object-fit:contain;border-radius:12px;border:1px solid var(--line)">';
+      p.style.display = 'block';
+    });
+  }
+  document.getElementById('send-notice-btn').addEventListener('click', sendNotice);
+  document.getElementById('clear-notice-btn').addEventListener('click', () => {
+    document.getElementById('notice-title').value = '';
+    document.getElementById('notice-message').value = '';
+  });
+  document.getElementById('remove-notice-btn').addEventListener('click', removeNotice);
+  getCurrentNotice();
+}
+
+async function checkAccess(){
+  showGate('checking');
+  const { data: { session } } = await supabaseClient.auth.getSession();
+
+  if(!session){
+    window.location.href = 'admin-panel.html';
+    return;
+  }
+
+  const { data: profile, error: profileErr } = await supabaseClient
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', session.user.id)
+    .single();
+
+  if(profileErr || !profile || !profile.is_admin){
+    showGate('denied');
+    return;
+  }
+
+  showGate('app');
+  setupNoticeUI();
+}
+
+checkAccess();
+</script>
+
+</body>
+</html>
