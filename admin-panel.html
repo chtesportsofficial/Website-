@@ -451,6 +451,8 @@
   justify-content:center;
   padding:20px;
   z-index:50;
+  overscroll-behavior:contain;
+  touch-action:none;
 }
 .modal-overlay.show{ display:flex; }
 .modal-card{
@@ -462,6 +464,8 @@
   border-radius:22px;
   padding:26px 24px 24px;
   box-shadow:0 30px 60px -20px rgba(0,0,0,0.5);
+  overscroll-behavior:contain;
+  touch-action:pan-y;
 }
 .modal-head{
   display:flex;
@@ -899,9 +903,11 @@ async function removeNotice(){
 
 function openNoticeModal(){
   document.getElementById('notice-modal-overlay').classList.add('show');
+  document.body.style.overflow='hidden';
 }
 function closeNoticeModal(){
   document.getElementById('notice-modal-overlay').classList.remove('show');
+  document.body.style.overflow='';
 }
 
 function setupNoticeUI(){
