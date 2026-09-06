@@ -8,6 +8,9 @@
 <script src="global.js" defer></script>
 <style>
   :root{
+    --navy-1:#1b2140;
+    --navy-2:#2a3266;
+    --navy-3:#333c7a;
     --bg:#0b0f19;
     --card:#141a29;
     --card-2:#171f33;
@@ -22,7 +25,9 @@
   *{box-sizing:border-box;}
   body{
     margin:0;
-    background:var(--bg);
+    background:
+      radial-gradient(circle at 12% 0%, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 40%),
+      linear-gradient(160deg, var(--navy-1) 0%, var(--navy-2) 55%, var(--navy-3) 100%);
     font-family:'Segoe UI',Roboto,Arial,sans-serif;
     color:var(--text);
     display:flex;
@@ -39,20 +44,21 @@
     align-items:center;
     gap:14px;
     padding:10px 4px 20px;
+    background:transparent;
   }
   .back-btn{
-    width:64px;height:64px;
-    border:none;
-    border-radius:20px;
-    display:flex;align-items:center;justify-content:center;
-    color:var(--text);
+    width:44px; height:44px;
+    border-radius:12px;
     background:var(--card);
-    cursor:pointer;
-    font-size:26px;
+    border:1px solid var(--border);
+    color:var(--text);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer
   }
-  .header h1{
-    font-size:28px;
-    font-weight:800;
+  .back-btn svg{ width:20px; height:20px }
+  .header h1, .topbar h1{
+    font-size:19px;
+    font-weight:750;
     margin:0;
   }
   .tabs{
@@ -176,7 +182,9 @@
 <div class="phone">
 
   <div class="header">
-    <button class="back-btn" onclick="history.back()">&#8592;</button>
+    <button class="back-btn" type="button" onclick="history.back()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
     <h1>Withdraw Requests</h1>
   </div>
 
