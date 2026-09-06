@@ -80,16 +80,7 @@ button{font-family:inherit;cursor:pointer}
 .feature-icon svg{width:22px;height:22px}
 .feature-label{font-size:12.5px;font-weight:700;text-align:center}
 .section-link{font-size:11.5px;color:var(--fire-2);font-weight:700}
-.tile-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:12px}
-.tile{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:linear-gradient(145deg,var(--surface-2),var(--surface));min-height:168px;display:block;text-decoration:none;color:inherit}
-.tile.hero{grid-row:span 2;min-height:348px}
-.tile::before{content:"";position:absolute;width:180px;height:180px;border-radius:50%;background:rgba(255,90,46,.22);right:-45px;top:-60px}
-.tile:nth-child(2)::before{background:rgba(33,230,193,.18)}
-.tile:nth-child(3)::before{background:rgba(255,138,61,.18)}
-.placeholder-icon{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:50px;opacity:.20}
-.scrim{position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,rgba(10,13,19,.94) 100%)}
-.tile-label{position:absolute;left:0;right:0;bottom:0;padding:12px 13px;display:flex;align-items:center;justify-content:space-between;gap:8px}
-.tile-label .t{font-weight:800;font-size:14px}.tile-label .sub{font-size:10.5px;color:var(--text-dim);margin-top:3px}
+.vip-card{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;align-items:center;padding-bottom:14px}
 .chevron{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.09);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .badge{position:absolute;top:10px;left:10px;font-weight:800;font-size:10px;padding:5px 9px;border-radius:999px;background:rgba(10,13,19,.65);border:1px solid rgba(34,224,138,.5);color:var(--green)}
 .prize-tag{position:absolute;top:10px;right:10px;font-weight:900;font-size:11px;color:#052e1c;background:linear-gradient(135deg,#7dffc0,var(--green));padding:7px 10px;border-radius:8px}
@@ -139,9 +130,6 @@ button{font-family:inherit;cursor:pointer}
   .section{padding:24px 24px 6px}
   .brand-name{font-size:16px}
   .section-title{font-size:15px}
-  .tile-grid{gap:14px}
-  .tile{min-height:200px}
-  .tile.hero{min-height:400px}
   .dscrim-card{flex:0 0 270px}
   .lb-card{padding:16px}
 }
@@ -150,9 +138,6 @@ button{font-family:inherit;cursor:pointer}
 @media(min-width:1024px){
   .topbar{padding:18px 40px}
   .section{padding:26px 40px 8px}
-  .tile-grid{grid-template-columns:repeat(4,1fr);gap:16px}
-  .tile.hero{grid-column:span 2;grid-row:span 1;min-height:280px}
-  .tile:not(.hero){min-height:220px}
   .hscroll{overflow-x:visible;flex-wrap:wrap}
   .dscrim-card{flex:1 1 280px;max-width:320px}
   .lb-list{max-height:none}
@@ -181,22 +166,16 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
 .badge.free-all{font-size:9.5px; padding:6px 10px; white-space:nowrap;}
 
 /* =========================
-   HERO VIP CHAMPIONSHIP CARD
+   VIP CHAMPIONSHIP CARD
+   Same content as before — restyled with the app's shared
+   surface/line/green tokens so it reads as one family with the
+   feature-card grid instead of a separately-designed component.
 ========================= */
-.tile.hero{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  background:#0d1420;
-  padding-bottom:14px;
-}
-.tile.hero::before{display:none}
 .hero-vip-header{
   width:100%;
-  min-height:58px;
-  background:#0d2b20;
-  border-bottom:2px solid #18b875;
-  border-radius:0 0 22px 22px;
+  min-height:52px;
+  background:var(--surface-2);
+  border-bottom:1px solid var(--line);
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -205,17 +184,17 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
 }
 .hero-vip-only{
   font-size:9.5px;
-  font-weight:800;
-  letter-spacing:1.2px;
-  color:#c9f6df;
+  font-weight:700;
+  letter-spacing:1.1px;
+  color:var(--text-dim);
   line-height:1.1;
 }
 .hero-vip-members{
   margin-top:3px;
-  font-size:15px;
-  font-weight:900;
-  letter-spacing:.4px;
-  color:#20dc8a;
+  font-size:14px;
+  font-weight:800;
+  letter-spacing:.3px;
+  color:var(--green);
   line-height:1.05;
 }
 .hero-vip-content{
@@ -225,33 +204,33 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
   align-items:center;
   justify-content:center;
   text-align:center;
-  padding:14px 12px;
+  padding:16px 12px;
 }
 .hero-vip-title{
   margin:0;
-  font-size:16.5px;
-  font-weight:900;
-  line-height:1.25;
+  font-size:16px;
+  font-weight:800;
+  line-height:1.3;
   letter-spacing:-.2px;
-  color:#f1f3f7;
+  color:var(--text);
   text-transform:uppercase;
 }
 .hero-vip-title span{
   display:inline-block;
   margin-top:2px;
-  font-size:16.5px;
-  color:#f1f3f7;
+  font-size:16px;
+  color:var(--green);
 }
 .hero-vip-button{
   width:86%;
-  min-height:38px;
+  min-height:40px;
   border-radius:12px;
-  border:1.6px solid #20dc8a;
-  background:#0d2b20;
-  color:#20dc8a;
-  font-size:11.5px;
-  font-weight:900;
-  letter-spacing:.3px;
+  border:1px solid var(--green);
+  background:var(--surface-2);
+  color:var(--green);
+  font-size:12.5px;
+  font-weight:700;
+  letter-spacing:.2px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -260,12 +239,12 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
   transition:background .2s ease, transform .15s ease, box-shadow .2s ease;
 }
 .hero-vip-button span{
-  font-size:15px;
+  font-size:14px;
   line-height:1;
 }
 .hero-vip-button:hover{
-  background:#123b2b;
-  box-shadow:0 0 12px rgba(32,220,138,.18);
+  background:var(--surface);
+  box-shadow:0 0 12px rgba(34,224,138,.18);
 }
 .hero-vip-button:active{
   transform:scale(.98);
@@ -654,19 +633,25 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
 </div>
 
 <div class="section">
-  <div class="tile-grid">
-    <div class="tile hero">
-      <div class="hero-vip-header">
-        <div class="hero-vip-only" data-i18n="index.vipOnly">ONLY FOR</div>
-        <div class="hero-vip-members" data-i18n="index.vipMembers">VIP MEMBERS</div>
-      </div>
-      <div class="hero-vip-content">
-        <h2 class="hero-vip-title">CHTEO<br>CHAMPIONSHIP<br><span>SSN - 1</span></h2>
-      </div>
-      <button class="hero-vip-button" onclick="openVipModal()"><span data-i18n="index.vipButton">BE A VIP MEMBER</span><span>›</span></button>
+  <div class="vip-card">
+    <div class="hero-vip-header">
+      <div class="hero-vip-only" data-i18n="index.vipOnly">ONLY FOR</div>
+      <div class="hero-vip-members" data-i18n="index.vipMembers">VIP MEMBERS</div>
     </div>
-    <a class="tile" href="gadget-zone.html"><div class="placeholder-icon">🎧</div><div class="scrim"></div><div class="tile-label"><div><div class="t" data-i18n="index.gadgetZone">GADGET ZONE</div></div></div></a>
-    <a class="tile" href="diamond-topup.html"><div class="placeholder-icon">💎</div><div class="scrim"></div><div class="tile-label"><div><div class="t" data-i18n="index.diamondTopUp">DIAMOND TOP UP</div></div></div></a>
+    <div class="hero-vip-content">
+      <h2 class="hero-vip-title">CHTEO<br>CHAMPIONSHIP<br><span>SSN - 1</span></h2>
+    </div>
+    <button class="hero-vip-button" onclick="openVipModal()"><span data-i18n="index.vipButton">BE A VIP MEMBER</span><span>›</span></button>
+  </div>
+  <div class="feature-grid" style="margin-top:10px">
+    <a class="feature-card" href="gadget-zone.html">
+      <div class="feature-icon" style="font-size:20px">🎧</div>
+      <div class="feature-label" data-i18n="index.gadgetZone">GADGET ZONE</div>
+    </a>
+    <a class="feature-card" href="diamond-topup.html">
+      <div class="feature-icon" style="font-size:20px">💎</div>
+      <div class="feature-label" data-i18n="index.diamondTopUp">DIAMOND TOP UP</div>
+    </a>
   </div>
 </div>
 
