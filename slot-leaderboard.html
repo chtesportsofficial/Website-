@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHTEO — Slot Leaderboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --navy-1:#1b2140; --navy-2:#2a3266; --navy-3:#333c7a;
+    --white:#ffffff; --ink:#1b2140; --muted:#7a7f9a; --line:#e2e3ee;
+    --accent:#3557ff; --accent-dark:#2846e0; --gold:#b47800;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh;
+    font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    background:radial-gradient(circle at 12% 0%, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 40%),
+      linear-gradient(160deg, var(--navy-1) 0%, var(--navy-2) 55%, var(--navy-3) 100%);
+    color:var(--ink);
+  }
+  .gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .gate-card{width:100%;max-width:380px;background:var(--white);border-radius:24px;padding:36px 30px;box-shadow:0 30px 60px -20px rgba(0,0,0,0.45);text-align:center;}
+  .gate-card h1{font-size:18px;font-weight:800;margin:0 0 8px;}
+  .gate-card p{font-size:13.5px;color:var(--muted);line-height:1.6;margin:0 0 22px;}
+  .gate-btn{width:100%;padding:13px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;}
+  .gate-btn:hover{background:var(--accent-dark);}
+  .spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,0.25);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .gate-text{color:#fff;font-size:13.5px;text-align:center;}
+
+  #app{display:none;max-width:640px;margin:0 auto;padding:20px 16px 60px;}
+  #app.active{display:block;}
+  .top-bar{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+  .back-btn{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,0.12);color:#fff;display:flex;align-items:center;justify-content:center;text-decoration:none;flex-shrink:0;}
+  .back-btn svg{width:20px;height:20px;}
+  .top-bar h1{color:#fff;font-size:19px;font-weight:750;margin:0;}
+  .top-bar p{color:rgba(255,255,255,0.65);font-size:12px;margin:2px 0 0;}
+
+  .filter-bar{display:flex;gap:8px;margin-bottom:16px;}
+  .filter-bar input{flex:1;padding:11px 13px;border-radius:12px;border:1px solid var(--line);font-size:13px;font-family:inherit;background:var(--white);}
+  .sort-btn{padding:11px 14px;border-radius:12px;border:none;background:rgba(255,255,255,0.14);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;}
+
+  .lb-row{display:flex;align-items:center;gap:12px;background:var(--white);border-radius:16px;padding:13px 14px;margin-bottom:8px;box-shadow:0 6px 18px rgba(20,20,35,0.08);}
+  .lb-rank{width:26px;flex-shrink:0;font-weight:800;font-size:13px;color:var(--muted);text-align:center;}
+  .lb-rank.top1{color:var(--gold);}
+  .lb-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--navy-3));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0;}
+  .lb-info{flex:1;min-width:0;}
+  .lb-name{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .lb-sub{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .lb-count{font-size:16px;font-weight:800;color:var(--accent);flex-shrink:0;}
+  .lb-count small{display:block;font-size:9.5px;font-weight:700;color:var(--muted);text-align:right;}
+
+  .empty,.loading{text-align:center;color:rgba(255,255,255,0.7);font-size:12.5px;padding:40px 20px;}
+  .load-more-btn{width:100%;padding:12px;border:none;border-radius:12px;background:rgba(255,255,255,0.14);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;margin-top:6px;}
+  .load-more-btn:disabled{opacity:0.5;}
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate-checking">
+  <div><div class="spinner"></div><div class="gate-text">Checking access…</div></div>
+</div>
+
+<div class="gate" id="gate-denied" style="display:none">
+  <div class="gate-card">
+    <h1>Access denied</h1>
+    <p>You don't have permission to view this page.</p>
+    <button class="gate-btn" onclick="location.href='admin-panel.html'">Back to Admin Panel</button>
+  </div>
+</div>
+
+<div id="app">
+  <div class="top-bar">
+    <a class="back-btn" href="admin-panel.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </a>
+    <div>
+      <h1>Slot Leaderboard</h1>
+      <p>Ranked by total slots bought (all-time)</p>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <input type="text" id="searchFilter" placeholder="Search by name, WhatsApp, or UID">
+    <button type="button" class="sort-btn" id="sortToggleBtn" onclick="toggleSort()">↓ Most first</button>
+  </div>
+
+  <div id="lbList"></div>
+  <div class="loading" id="listLoading">Loading…</div>
+  <div class="empty" id="listEmpty" style="display:none">No slot purchases found yet.</div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://myfficbwcbgbxbdqjexv.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+function showGate(name){
+  document.getElementById('gate-checking').style.display = name === 'checking' ? 'flex' : 'none';
+  document.getElementById('gate-denied').style.display = name === 'denied' ? 'flex' : 'none';
+  document.getElementById('app').classList.toggle('active', name === 'app');
+}
+function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])); }
+function initials(name){
+  if(!name) return '?';
+  return name.trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+}
+
+let allRanked = []; // [{uid, count, profile}]
+let sortAsc = false;
+
+async function checkAccessAndLoad(){
+  showGate('checking');
+  const { data:{ session } } = await sb.auth.getSession();
+  if(!session){ location.href='admin-panel.html'; return; }
+
+  const { data: me, error: meErr } = await sb.from('profiles').select('is_admin,is_owner').eq('id', session.user.id).single();
+  if(meErr || !me || !(me.is_admin || me.is_owner)){ showGate('denied'); return; }
+
+  showGate('app');
+  await loadAndAggregate();
+}
+
+async function loadAndAggregate(){
+  document.getElementById('listLoading').style.display='block';
+  document.getElementById('listEmpty').style.display='none';
+
+  // lobby_teams has one row per slot bought (submitted_by = buyer's uid).
+  // We only need submitted_by here to count — everything else about the
+  // slot itself (which tournament/date/time) lives on My Tournaments,
+  // this page is purely "who buys the most, ranked".
+  const { data, error } = await sb.from('lobby_teams').select('submitted_by').not('submitted_by','is',null);
+  if(error){
+    document.getElementById('listLoading').style.display='none';
+    document.getElementById('listEmpty').textContent = 'Could not load: ' + error.message;
+    document.getElementById('listEmpty').style.display='block';
+    return;
+  }
+
+  const counts = new Map();
+  (data||[]).forEach(r=>{ counts.set(r.submitted_by, (counts.get(r.submitted_by)||0)+1); });
+  const uids = [...counts.keys()];
+
+  if(!uids.length){
+    document.getElementById('listLoading').style.display='none';
+    document.getElementById('listEmpty').style.display='block';
+    return;
+  }
+
+  const { data: profiles } = await sb.from('profiles').select('id,full_name,whatsapp,user_number').in('id', uids);
+  const profileById = new Map((profiles||[]).map(p=>[p.id,p]));
+
+  allRanked = uids.map(uid=>({
+    uid,
+    count: counts.get(uid),
+    profile: profileById.get(uid) || {}
+  }));
+
+  render();
+  document.getElementById('listLoading').style.display='none';
+}
+
+function toggleSort(){
+  sortAsc = !sortAsc;
+  document.getElementById('sortToggleBtn').textContent = sortAsc ? '↑ Least first' : '↓ Most first';
+  render();
+}
+
+function render(){
+  const q = document.getElementById('searchFilter').value.trim().toLowerCase();
+  let rows = allRanked.filter(r=>{
+    if(!q) return true;
+    const p = r.profile;
+    return (p.full_name||'').toLowerCase().includes(q)
+        || (p.whatsapp||'').toLowerCase().includes(q)
+        || String(p.user_number||'').toLowerCase().includes(q)
+        || r.uid.toLowerCase().includes(q);
+  });
+  rows = rows.slice().sort((a,b)=> sortAsc ? a.count-b.count : b.count-a.count);
+
+  document.getElementById('listEmpty').style.display = rows.length ? 'none' : 'block';
+
+  document.getElementById('lbList').innerHTML = rows.map((r,i)=>{
+    const p = r.profile;
+    const name = p.full_name || 'Unknown user';
+    const sub = p.user_number ? ('UID #'+esc(p.user_number)) : (p.whatsapp ? esc(p.whatsapp) : r.uid.slice(0,8));
+    return `<a class="lb-row" href="user-detail.html?uid=${encodeURIComponent(r.uid)}" style="text-decoration:none;color:inherit">
+      <div class="lb-rank${i===0&&!sortAsc?' top1':''}">${i+1}</div>
+      <div class="lb-avatar">${esc(initials(name))}</div>
+      <div class="lb-info">
+        <div class="lb-name">${esc(name)}</div>
+        <div class="lb-sub">${sub}</div>
+      </div>
+      <div class="lb-count">${r.count}<small>slots</small></div>
+    </a>`;
+  }).join('');
+}
+
+document.getElementById('searchFilter').addEventListener('input', render);
+
+checkAccessAndLoad();
+</script>
+
+</body>
+</html>
