@@ -521,7 +521,7 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
     const root=document.getElementById('dynamicTournamentSections');
     async function load(){
       const {data,error}=await sb.from('tournament_sections')
-        .select('id,name,display_order,is_active,tournaments(id,title,banner_url,entry_fee,prize_pool,total_slots,status,show_on_homepage,created_at)')
+        .select('id,name,name_bn,display_order,is_active,tournaments(id,title,banner_url,entry_fee,prize_pool,total_slots,status,show_on_homepage,created_at)')
         .eq('is_active',true).order('display_order',{ascending:true});
       if(error){console.warn(error);root.innerHTML='';return}
       // Keep homepage tournament order exactly the same as the Tournament Management
@@ -545,19 +545,35 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
       // data-i18n. This maps the platform's own default section names to
       // Bangla when that's the active language; any section renamed to
       // something else by an admin just falls through unchanged.
-      const SECTION_NAME_BN = {
-        "Today's (Scrim) Tournaments": "আজকের (স্ক্রিম) টুর্নামেন্ট",
-        "Today's Paid (Qualify) Tournaments": "আজকের পেইড (কোয়ালিফাই) টুর্নামেন্ট",
-        "Upcoming Tournaments": "আসন্ন টুর্নামেন্ট"
-      };
-      function translateSectionName(name){
-        if(window.CHTEO && window.CHTEO.getLangPref && window.CHTEO.getLangPref()==='bn' && SECTION_NAME_BN[name]){
-          return SECTION_NAME_BN[name];
-        }
-        return name;
+      // Section names are typed by the admin in Tournament Management.
+      // name_bn is auto-translated and saved by the admin panel itself
+      // (via a translation API) at save time — nothing for the admin to
+      // type here. If a section predates that (name_bn is empty), fall
+      // back to this small word dictionary so common words still translate.
+      const SECTION_WORD_BN = [
+        ["Today's Paid (Qualify)", "আজকের পেইড (কোয়ালিফাই)"],
+        ["Today's (Scrim)", "আজকের (স্ক্রিম)"],
+        ["(Qualify)", "(কোয়ালিফাই)"],
+        ["(Scrim)", "(স্ক্রিম)"],
+        ["(Test)", "(টেস্ট)"],
+        ["Today's", "আজকের"],
+        ["Upcoming", "আসন্ন"],
+        ["Tournaments", "টুর্নামেন্ট"],
+        ["Tournament", "টুর্নামেন্ট"],
+        ["Paid", "পেইড"],
+        ["Qualify", "কোয়ালিফাই"],
+        ["Scrim", "স্ক্রিম"],
+        ["Test", "টেস্ট"]
+      ];
+      function translateSectionName(s){
+        if(!(window.CHTEO && window.CHTEO.getLangPref && window.CHTEO.getLangPref()==='bn')) return s.name;
+        if(s.name_bn) return s.name_bn;
+        let out=s.name;
+        SECTION_WORD_BN.forEach(([en,bn])=>{ out=out.split(en).join(bn); });
+        return out;
       }
       const groups=(data||[]).map(s=>({s,ts:orderForSection(s.id,(s.tournaments||[]).filter(t=>t.status==='published'&&t.show_on_homepage===true))})).filter(x=>x.ts.length);
-      root.innerHTML=groups.map(x=>'<section class="dyn-section"><div class="dyn-head"><div class="dyn-title"><span class="bar"></span>'+esc(translateSectionName(x.s.name))+'</div></div><div class="dyn-scroll">'+x.ts.map((t,i)=>'<article class="dyn-card" data-index="'+(i+1)+'">'+(t.banner_url?'<img class="dyn-banner" loading="lazy" src="'+esc(t.banner_url)+'" alt="">':'')+'<div class="dyn-body"><a class="dyn-cta" aria-label="Open tournament" href="tournament-details.html?id='+encodeURIComponent(t.id)+'"><span>VIEW DETAILS</span><span class="arrow">›</span></a></div></article>').join('')+'</div></section>').join('');
+      root.innerHTML=groups.map(x=>'<section class="dyn-section"><div class="dyn-head"><div class="dyn-title"><span class="bar"></span>'+esc(translateSectionName(x.s))+'</div></div><div class="dyn-scroll">'+x.ts.map((t,i)=>'<article class="dyn-card" data-index="'+(i+1)+'">'+(t.banner_url?'<img class="dyn-banner" loading="lazy" src="'+esc(t.banner_url)+'" alt="">':'')+'<div class="dyn-body"><a class="dyn-cta" aria-label="Open tournament" href="tournament-details.html?id='+encodeURIComponent(t.id)+'"><span>VIEW DETAILS</span><span class="arrow">›</span></a></div></article>').join('')+'</div></section>').join('');
     }
     load();
   }
