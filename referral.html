@@ -237,6 +237,65 @@
     font-size:15px;
   }
 
+  /* ---------- Referred-users modal ---------- */
+  .modal-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(20,23,45,0.55);
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:60;
+    overscroll-behavior:contain;
+  }
+  .modal-overlay.show{ display:flex; }
+  .modal-card{
+    width:100%;
+    max-width:460px;
+    max-height:85vh;
+    min-height:0;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    background:var(--white);
+    border-radius:22px;
+    padding:24px 22px;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,0.5);
+    overscroll-behavior:contain;
+  }
+  .modal-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:6px;
+  }
+  .modal-head h2{ font-size:16.5px; font-weight:800; margin:0; color:var(--ink); }
+  .modal-close{
+    width:32px; height:32px;
+    border:none;
+    border-radius:9px;
+    background:#f1f2f8;
+    color:var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .modal-close:hover{ background:#e5e7f3; }
+  .modal-sub{ font-size:12.5px; color:var(--muted); margin-bottom:16px; }
+  .referred-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    padding:11px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .referred-item:last-child{ border-bottom:none; }
+  .referred-item .ri-left .ri-uid{ font-weight:800; font-size:13.5px; color:var(--ink); }
+  .referred-item .ri-left .ri-email{ font-size:11.5px; color:var(--muted); margin-top:2px; }
+  .referred-item .ri-date{ font-size:11px; color:var(--muted); text-align:right; white-space:nowrap; }
+  .referred-empty{ text-align:center; color:var(--muted); font-size:13px; padding:20px 0; }
+
   @media (max-width:640px){
     .topbar{ padding:14px 16px; }
 
@@ -339,6 +398,20 @@
         </div>
         <div class="empty-note" id="leaderboard-empty" style="display:none;">No referral data yet.</div>
       </div>
+    </div>
+  </div>
+
+  <!-- REFERRED USERS MODAL -->
+  <div class="modal-overlay" id="referred-modal-overlay">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2 id="referred-modal-title">Referred users</h2>
+        <button class="modal-close" id="referred-modal-close" type="button" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-sub" id="referred-modal-sub"></div>
+      <div id="referred-modal-list"></div>
     </div>
   </div>
 
@@ -477,7 +550,7 @@ function renderLeaderboard(){
     const emailText = target && target.email ? target.email : 'Email not available';
 
     return `
-      <tr onclick="openUserDetail('${encodeURIComponent(code)}')" title="Open user details">
+      <tr onclick="openReferredList('${encodeURIComponent(code)}', '${encodeURIComponent(uidText)}', '${encodeURIComponent(emailText)}')" title="See who this user referred">
         <td data-label="#"><span class="rank-badge">${i + 1}</span></td>
         <td data-label="User" class="code-cell">
           ${escapeHtml(uidText)}
@@ -489,25 +562,55 @@ function renderLeaderboard(){
   }).join('');
 }
 
-function openUserDetail(code){
-  // The leaderboard code is the user's referral/serial code (for example #2).
-  // Find that exact profile from the already-loaded profiles, then open the
-  // existing user-detail page with its UID — the parameter expected there.
-  const normalized = decodeURIComponent(code).replace(/^#/, '').trim();
+function openReferredList(code, uidText, emailText){
+  const rawCode = decodeURIComponent(code);
+  const displayUid = decodeURIComponent(uidText);
+  const displayEmail = decodeURIComponent(emailText);
 
-  const target = allUsers.find(u => {
-    const number = u.user_number;
-    return number !== null && number !== undefined &&
-           String(number).trim() === normalized;
-  });
+  const referred = allUsers
+    .filter(u => u.referral === rawCode)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-  if(!target || !target.id){
-    showToast('User profile not found.');
-    return;
+  document.getElementById('referred-modal-title').textContent = 'Referred by ' + displayUid;
+  document.getElementById('referred-modal-sub').textContent =
+    displayEmail + '  •  ' + referred.length + ' user' + (referred.length === 1 ? '' : 's') + ' referred';
+
+  const listEl = document.getElementById('referred-modal-list');
+  if(referred.length === 0){
+    listEl.innerHTML = '<div class="referred-empty">No referred users found.</div>';
+  } else {
+    listEl.innerHTML = referred.map(u => {
+      const uid = u.user_number !== null && u.user_number !== undefined ? '#' + u.user_number : '#—';
+      const email = u.email || 'Email not available';
+      const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-BD', { day:'2-digit', month:'short', year:'numeric' }) : '';
+      return `
+        <div class="referred-item">
+          <div class="ri-left">
+            <div class="ri-uid">${escapeHtml(uid)}</div>
+            <div class="ri-email">${escapeHtml(email)}</div>
+          </div>
+          <div class="ri-date">${escapeHtml(joined)}</div>
+        </div>
+      `;
+    }).join('');
   }
 
-  window.location.href = 'user-detail.html?uid=' + encodeURIComponent(target.id);
+  document.getElementById('referred-modal-overlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
 }
+
+function closeReferredList(){
+  document.getElementById('referred-modal-overlay').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('referred-modal-close').addEventListener('click', closeReferredList);
+document.getElementById('referred-modal-overlay').addEventListener('click', (e) => {
+  if(e.target.id === 'referred-modal-overlay') closeReferredList();
+});
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape') closeReferredList();
+});
 
 function escapeHtml(str){
   return String(str).replace(/[&<>"']/g, m => ({
