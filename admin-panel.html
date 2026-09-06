@@ -20,6 +20,9 @@
     --accent-dark:#2846e0;
     --error:#e5484d;
     --success:#1c7c4d;
+    --card:rgba(255,255,255,0.08);
+    --border:rgba(255,255,255,0.14);
+    --text:#ffffff;
   }
   *{box-sizing:border-box;}
   body{
@@ -118,21 +121,23 @@
     align-items:center;
     justify-content:space-between;
     padding:18px 28px;
-    background:rgba(255,255,255,0.04);
-    border-bottom:1px solid rgba(255,255,255,0.08);
+    background:transparent;
+    border-bottom:none;
   }
   .topbar .brand{ display:flex; align-items:center; gap:10px; }
   .topbar .brand img{ width:30px; height:30px; border-radius:7px; }
   .topbar .brand span{ color:#fff; font-weight:800; font-size:15.5px; }
   .topbar .brand small{ color:rgba(255,255,255,0.5); font-size:11.5px; font-weight:600; margin-left:6px; }
   .back-btn{
-    width:38px; height:38px; border-radius:10px;
-    background:rgba(255,255,255,0.08);
-    border:none; color:#fff;
+    width:44px; height:44px;
+    border-radius:12px;
+    background:var(--card);
+    border:1px solid var(--border);
+    color:var(--text);
     display:flex; align-items:center; justify-content:center;
-    cursor:pointer; flex-shrink:0;
+    cursor:pointer
   }
-  .back-btn:hover{ background:rgba(255,255,255,0.15); }
+  .back-btn svg{ width:20px; height:20px }
   .signout-btn{
     background:rgba(255,255,255,0.08);
     color:#fff;
@@ -529,14 +534,13 @@
   <div class="app" id="app">
     <div class="topbar">
       <div class="brand">
-        <button class="back-btn" onclick="window.location.href='profile.html'" aria-label="Back">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        <button class="back-btn" type="button" onclick="history.back()" aria-label="Back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
         </button>
         <img src="https://cdn.jsdelivr.net/gh/chtesportsofficial/Chteo_img@main/CHTEO%20(1).png" alt="CHTEO logo">
         <span>CHTEO</span>
         <small>ADMIN PANEL</small>
       </div>
-      <button class="signout-btn" onclick="signOutAndReload()">Sign out</button>
     </div>
 
     <div class="content">
