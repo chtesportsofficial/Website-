@@ -16,10 +16,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
-  --bg:#0a0d13;--bg-alt:#0d1119;--surface:#131826;--surface-2:#171d2d;
-  --line:#232b3d;--fire:#ff5a2e;--fire-2:#ff8a3d;--green:#22e08a;
-  --cyan:#21e6c1;--text:#eef1f7;--text-dim:#8b93a9;--text-dimmer:#5b6379;
-  --danger:#ff3d5a;
+  --bg:var(--g-bg);--bg-alt:#0d1119;--surface:var(--g-surface);--surface-2:var(--g-surface-2);
+  --line:var(--g-border);--fire:#ff5a2e;--fire-2:#ff8a3d;--green:#22e08a;
+  --cyan:#21e6c1;--text:var(--g-text);--text-dim:var(--g-muted);--text-dimmer:#5b6379;
+  --danger:var(--g-danger);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
@@ -110,6 +110,7 @@ button{font-family:inherit;cursor:pointer}
 .dscrim-slots-grid span.filled{background:var(--danger);border-color:var(--danger)}
 .dscrim-cta{width:100%;padding:9px 0;border-radius:9px;border:none;font-weight:800;font-size:12px;background:linear-gradient(135deg,var(--tc),var(--tc2));color:#04141f}
 .lb-card{background:linear-gradient(135deg,rgba(33,230,193,.08),rgba(19,24,38,.4));border:1px solid rgba(33,230,193,.25);border-radius:16px;padding:14px}
+html[data-theme="light"] .lb-card{background:linear-gradient(135deg,rgba(33,230,193,.10),rgba(230,247,242,.65));border-color:rgba(20,150,120,.35)}
 .lb-list{max-height:174px;overflow-y:auto;scrollbar-width:thin;padding-right:2px}.lb-list::-webkit-scrollbar{width:4px}.lb-list::-webkit-scrollbar-thumb{background:var(--line);border-radius:10px}
 .lb-row{display:flex;align-items:center;gap:11px;padding:8px 2px}.lb-row+.lb-row{border-top:1px solid var(--line)}
 .lb-rank{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;background:var(--surface-2);color:var(--text-dim);flex-shrink:0}
@@ -567,7 +568,7 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
 <div class="section">
   <div class="section-head"><div class="section-title"><span class="bar"></span><span data-i18n="index.topTeams">This Month's Top Teams</span></div></div>
   <div class="lb-card">
-    <div class="lb-list" id="lbTopTeams"><div class="lb-row"><div class="lb-name" style="color:var(--text-dim)">Loading...</div></div></div>
+    <div class="lb-list" id="lbTopTeams"><div class="lb-row"><div class="lb-name" style="color:var(--text-dim)">লোডিং...</div></div></div>
     <a class="lb-see" href="leaderboard.html" data-i18n="index.seeOther">See other teams ↓</a>
   </div>
 </div>
@@ -593,8 +594,8 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
         totals.set(key,(totals.get(key)||0)+(r.points||0));
       });
       const ranked=[...totals.entries()].map(([team_name,points])=>({team_name,points})).filter(r=>r.points>0).sort((a,b)=>b.points-a.points).slice(0,10);
-      if(!ranked.length){box.innerHTML='<div class="lb-row"><div class="lb-name" style="color:var(--text-dim)">No results yet this month.</div></div>';return}
-      box.innerHTML=ranked.map((r,i)=>'<div class="lb-row"><div class="lb-rank '+medalClass(i)+'">'+(i+1)+'</div><div class="lb-avatar"></div><div class="lb-name">'+esc(r.team_name)+'<span class="s">Squad</span></div><div class="lb-amt">'+r.points+' PTS</div></div>').join('');
+      if(!ranked.length){box.innerHTML='<div class="lb-row"><div class="lb-name" style="color:var(--text-dim)">এই মাসে এখনো কোনো ফলাফল নেই।</div></div>';return}
+      box.innerHTML=ranked.map((r,i)=>'<div class="lb-row"><div class="lb-rank '+medalClass(i)+'">'+(i+1)+'</div><div class="lb-avatar"></div><div class="lb-name">'+esc(r.team_name)+'<span class="s">স্কোয়াড</span></div><div class="lb-amt">'+r.points+' পয়েন্ট</div></div>').join('');
     }
     load();
   }
