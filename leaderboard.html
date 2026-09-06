@@ -44,11 +44,15 @@ button{font-family:inherit;cursor:pointer}
 .month-nav .filter-tab{min-width:118px;text-align:center}
 
 .lb-card{margin:0 16px;background:linear-gradient(135deg,rgba(33,230,193,.08),rgba(19,24,38,.4));border:1px solid rgba(33,230,193,.25);border-radius:16px;padding:14px}
+html[data-theme="light"] .lb-card{background:linear-gradient(135deg,rgba(33,230,193,.10),rgba(230,247,242,.65));border-color:rgba(20,150,120,.35)}
 .lb-list{padding-right:2px}
 .lb-row{display:flex;align-items:center;gap:11px;padding:10px 2px}
 .lb-row+.lb-row{border-top:1px solid var(--line)}
 .lb-rank{width:24px;text-align:center;font-weight:900;font-size:13px;color:var(--text-dim)}
 .lb-rank.gold{color:#ffd35a}.lb-rank.silver{color:#cfd6e6}.lb-rank.bronze{color:#e0a06a}
+html[data-theme="light"] .lb-rank.gold{color:#b8860b}
+html[data-theme="light"] .lb-rank.silver{color:#5b6b85}
+html[data-theme="light"] .lb-rank.bronze{color:#a85f2a}
 .lb-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(145deg,#26344a,#111722);border:1px solid var(--line);flex-shrink:0}
 .lb-name{flex:1;font-size:12.5px;font-weight:700;display:flex;flex-direction:column;gap:2px}
 .lb-name .s{font-size:9px;font-weight:600;color:var(--text-dim)}
@@ -132,7 +136,7 @@ function start(){
       cur.points+=r.points||0; cur.prize+=Number(r.prize_won)||0;
       totals.set(key,cur);
     });
-    const ranked=[...totals.values()].sort((a,b)=>b.points-a.points);
+    const ranked=[...totals.values()].filter(r=>r.points>0).sort((a,b)=>b.points-a.points);
     if(!ranked.length){listEl.innerHTML='<div class="empty">এই সময়ের জন্য এখনো কোনো ফলাফল নেই।</div>';return}
     listEl.innerHTML=ranked.map((r,i)=>`
       <div class="lb-row">

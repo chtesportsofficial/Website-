@@ -592,7 +592,7 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
         const key=(r.owner_team_name||r.team_name);
         totals.set(key,(totals.get(key)||0)+(r.points||0));
       });
-      const ranked=[...totals.entries()].map(([team_name,points])=>({team_name,points})).sort((a,b)=>b.points-a.points).slice(0,10);
+      const ranked=[...totals.entries()].map(([team_name,points])=>({team_name,points})).filter(r=>r.points>0).sort((a,b)=>b.points-a.points).slice(0,10);
       if(!ranked.length){box.innerHTML='<div class="lb-row"><div class="lb-name" style="color:var(--text-dim)">No results yet this month.</div></div>';return}
       box.innerHTML=ranked.map((r,i)=>'<div class="lb-row"><div class="lb-rank '+medalClass(i)+'">'+(i+1)+'</div><div class="lb-avatar"></div><div class="lb-name">'+esc(r.team_name)+'<span class="s">Squad</span></div><div class="lb-amt">'+r.points+' PTS</div></div>').join('');
     }
