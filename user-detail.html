@@ -406,6 +406,11 @@
           💰 Adjust Balance
         </button>
       </div>
+      <div style="margin-top:10px;">
+        <button class="action-btn" id="deleteUserBtn" style="width:100%;background:var(--error);color:#fff;border-color:var(--error);">
+          🗑️ Delete User Permanently
+        </button>
+      </div>
     </div>
   </div>
 
@@ -716,6 +721,46 @@ function closeConfirmation(){confirmOverlay.classList.remove('show');confirmOver
 confirmCancel.addEventListener('click',closeConfirmation);confirmOverlay.addEventListener('click',e=>{if(e.target===confirmOverlay)closeConfirmation()});confirmOk.addEventListener('click',async()=>{const action=confirmAction;closeConfirmation();if(action)await action()});
 document.getElementById('adminToggleBtn').addEventListener('click',function(){const makeAdmin=!targetProfile.is_admin;askConfirmation(makeAdmin?'Make Admin?':'Remove Admin?',makeAdmin?'Are you sure you want to make this user an admin?':'Are you sure you want to remove admin access from this user?',()=>toggleField('is_admin',!!targetProfile.is_admin,document.getElementById('adminToggleBtn')),false)});
 document.getElementById('banToggleBtn').addEventListener('click',function(){const blockUser=!targetProfile.is_banned;askConfirmation(blockUser?'Block User?':'Unblock User?',blockUser?'Are you sure you want to block this user?':'Are you sure you want to unblock this user?',()=>toggleField('is_banned',!!targetProfile.is_banned,document.getElementById('banToggleBtn')),blockUser)});
+
+document.getElementById('deleteUserBtn').addEventListener('click',function(){
+  askConfirmation(
+    'Delete this user permanently?',
+    'This deletes the login account for good — it cannot be undone. Their tournament and deposit/withdraw history stays on record, just unlinked from this account.',
+    deleteUserPermanently,
+    true
+  );
+});
+
+async function deleteUserPermanently(){
+  const btn = document.getElementById('deleteUserBtn');
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session){ showToast('Session expired. Please log in again.'); return; }
+
+  btn.disabled = true;
+  const originalLabel = btn.innerHTML;
+  btn.innerHTML = 'Deleting...';
+
+  try{
+    const res = await fetch('https://chteo-api.onrender.com/api/admin-delete-user.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ access_token: session.access_token, user_id: targetUid })
+    });
+    const data = await res.json();
+    if(data && data.success){
+      showToast('User deleted.');
+      setTimeout(() => { window.location.href = 'user-management.html'; }, 900);
+    } else {
+      showToast('Delete failed: ' + (data && data.message ? data.message : 'Unknown error'));
+      btn.disabled = false;
+      btn.innerHTML = originalLabel;
+    }
+  }catch(e){
+    showToast('Delete failed: ' + e.message);
+    btn.disabled = false;
+    btn.innerHTML = originalLabel;
+  }
+}
 
 /* ── Adjust Balance logic ── */
 let _adjType = 'add';
