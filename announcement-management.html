@@ -85,8 +85,10 @@
   #post-btn{
     width:100%; border:0; border-radius:12px; padding:13px; font:inherit; font-weight:800;
     cursor:pointer; background:var(--success); color:#fff; margin-top:4px;
+    display:flex; align-items:center; justify-content:center; gap:8px;
   }
-  #post-btn:disabled{ opacity:.6; cursor:not-allowed; }
+  #post-btn:disabled{ opacity:.75; cursor:not-allowed; }
+  .btn-spinner{ width:16px; height:16px; border:2px solid rgba(255,255,255,0.4); border-top-color:#fff; border-radius:50%; display:inline-block; animation:spin .8s linear infinite; }
 
   .list-empty{ font-size:13.5px; color:var(--muted); text-align:center; padding:20px 0; }
 
@@ -98,7 +100,8 @@
   .ann-body{ flex:1; min-width:0; }
   .ann-title{ font-weight:800; font-size:14px; margin-bottom:2px; }
   .ann-text{ font-size:13.5px; color:var(--ink); white-space:pre-wrap; word-break:break-word; }
-  .ann-img{ width:100%; max-height:180px; object-fit:contain; border-radius:10px; margin-top:8px; border:1px solid var(--border); }
+  .ann-img-wrap{ width:100%; aspect-ratio:1/1; border-radius:10px; margin-top:8px; border:1px solid var(--border); overflow:hidden; display:flex; align-items:center; justify-content:center; background:#000; }
+  .ann-img{ width:100%; height:100%; object-fit:contain; }
   .ann-meta{ font-size:11.5px; color:var(--muted); margin-top:6px; }
   .ann-del{
     flex-shrink:0; width:34px; height:34px; border-radius:9px; border:1px solid var(--border);
@@ -165,7 +168,7 @@
           <div id="ann-image-preview" style="display:none;margin-top:10px"></div>
         </div>
 
-        <button id="post-btn" type="button">Post Announcement</button>
+        <button id="post-btn" type="button"><span id="post-btn-label">Post Announcement</span></button>
       </div>
 
       <div class="panel">
@@ -244,7 +247,7 @@ async function loadAnnouncements(){
         + '<div class="ann-body">'
         + (title ? '<div class="ann-title">' + escapeHtml(title) + '</div>' : '')
         + '<div class="ann-text">' + escapeHtml(body) + '</div>'
-        + (image ? '<img class="ann-img" src="' + image + '" alt="">' : '')
+        + (image ? '<div class="ann-img-wrap"><img class="ann-img" src="' + image + '" alt=""></div>' : '')
         + '<div class="ann-meta">' + escapeHtml(row.admin_name || 'Admin') + '  •  ' + formatDate(row.created_at) + '</div>'
         + '</div>'
         + '<button class="ann-del" data-id="' + row.id + '" aria-label="Delete">'
@@ -286,10 +289,12 @@ async function postAnnouncement(){
   const input = document.getElementById('ann-message');
   const imageInput = document.getElementById('ann-image');
   const btn = document.getElementById('post-btn');
+  const label = document.getElementById('post-btn-label');
   const title = titleInput.value.trim();
   const message = input.value.trim();
   if(!message){ showToast('Write an announcement first.'); return; }
   btn.disabled = true;
+  label.innerHTML = '<span class="btn-spinner"></span> Posting...';
   try{
     const adminName = await getAdminName();
     let image = '';
@@ -315,7 +320,7 @@ async function postAnnouncement(){
   }catch(e){
     showToast('Post failed: ' + (e.message || 'Unknown error'));
     console.error(e);
-  }finally{ btn.disabled = false; }
+  }finally{ btn.disabled = false; label.textContent = 'Post Announcement'; }
 }
 
 function setupUI(){
