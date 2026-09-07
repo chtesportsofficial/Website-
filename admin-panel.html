@@ -620,7 +620,7 @@
 
         <div class="menu-divider"></div>
 
-        <button type="button" class="menu-card menu-card-btn" id="open-notice-btn">
+        <a class="menu-card menu-card-btn" id="open-notice-btn" href="send-notice.html">
           <div class="menu-icon menu-icon-notice">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           </div>
@@ -631,7 +631,7 @@
           <div class="menu-arrow">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
           </div>
-        </button>
+        </a>
 
         <div class="menu-divider"></div>
 
@@ -906,7 +906,6 @@ function closeNoticeModal(){
 }
 
 function setupNoticeUI(){
-  document.getElementById('open-notice-btn').addEventListener('click',openNoticeModal);
   document.getElementById('notice-modal-close').addEventListener('click',closeNoticeModal);
   document.getElementById('notice-modal-overlay').addEventListener('click',(e)=>{
     if(e.target.id==='notice-modal-overlay') closeNoticeModal();
