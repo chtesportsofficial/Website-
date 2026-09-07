@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHTEO — Announcements</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg: var(--g-bg);
+    --card: var(--g-surface);
+    --card-2: var(--g-surface-2);
+    --border: var(--g-border);
+    --ink: var(--g-text);
+    --muted: var(--g-muted);
+    --accent: #3557ff;
+    --success: var(--g-accent);
+    --danger: var(--g-danger);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+  }
+
+  /* ---------- Gate views ---------- */
+  .gate{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+  .gate-card{ width:100%; max-width:380px; background:var(--card); border:1px solid var(--border); border-radius:24px; padding:36px 30px; text-align:center; }
+  .gate-card h1{ font-size:18px; font-weight:800; margin:0 0 8px; }
+  .gate-card p{ font-size:13.5px; color:var(--muted); line-height:1.6; margin:0 0 22px; }
+  .gate-btn{ width:100%; padding:13px; border:none; border-radius:10px; background:var(--accent); color:#fff; font-size:14.5px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .spinner{ width:32px; height:32px; border:3px solid rgba(120,130,160,0.25); border-top-color:var(--accent); border-radius:50%; margin:0 auto 16px; animation:spin .8s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .gate-text{ color:var(--muted); font-size:14px; }
+
+  /* ---------- Page ---------- */
+  .app{ display:none; }
+  .app.active{ display:block; }
+
+  .topbar{ display:flex; align-items:center; gap:12px; padding:20px 18px; max-width:520px; margin:0 auto; }
+  .back-btn{
+    width:44px; height:44px;
+    border-radius:12px;
+    background:var(--card);
+    border:1px solid var(--border);
+    color:var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .back-btn svg{ width:20px; height:20px }
+  .topbar h1{ font-size:19px; font-weight:750; margin:0; }
+
+  .content{ max-width:520px; margin:0 auto; padding:0 18px 60px; }
+
+  .panel{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:20px;
+    margin-bottom:18px;
+  }
+  .panel h2{ font-size:15px; font-weight:800; margin:0 0 14px; }
+
+  .field{ margin-bottom:12px; }
+  .field label{ display:block; font-size:12.5px; font-weight:700; margin-bottom:6px; color:var(--muted); text-transform:uppercase; letter-spacing:.3px; }
+  .field input, .field textarea{
+    width:100%;
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:11px 13px;
+    font-size:14px;
+    font-family:inherit;
+    outline:none;
+    background:var(--card-2);
+    color:var(--ink);
+  }
+  .field textarea{ min-height:110px; resize:vertical; }
+  .field input:focus, .field textarea:focus{ border-color:var(--accent); }
+
+  #post-btn{
+    width:100%; border:0; border-radius:12px; padding:13px; font:inherit; font-weight:800;
+    cursor:pointer; background:var(--success); color:#fff; margin-top:4px;
+  }
+  #post-btn:disabled{ opacity:.6; cursor:not-allowed; }
+
+  .list-empty{ font-size:13.5px; color:var(--muted); text-align:center; padding:20px 0; }
+
+  .ann-item{
+    display:flex; gap:12px; align-items:flex-start;
+    padding:14px 0; border-top:1px solid var(--border);
+  }
+  .ann-item:first-child{ border-top:none; }
+  .ann-body{ flex:1; min-width:0; }
+  .ann-title{ font-weight:800; font-size:14px; margin-bottom:2px; }
+  .ann-text{ font-size:13.5px; color:var(--ink); white-space:pre-wrap; word-break:break-word; }
+  .ann-img{ width:100%; max-height:180px; object-fit:contain; border-radius:10px; margin-top:8px; border:1px solid var(--border); }
+  .ann-meta{ font-size:11.5px; color:var(--muted); margin-top:6px; }
+  .ann-del{
+    flex-shrink:0; width:34px; height:34px; border-radius:9px; border:1px solid var(--border);
+    background:var(--card-2); color:var(--danger); cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .ann-del svg{ width:16px; height:16px; }
+
+  .toast{
+    position:fixed; bottom:24px; left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--ink); color:var(--bg);
+    padding:11px 18px; border-radius:10px;
+    font-size:13px; font-weight:600;
+    opacity:0; pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease;
+    z-index:999;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+  <!-- CHECKING SESSION -->
+  <div class="gate" id="gate-checking">
+    <div>
+      <div class="spinner"></div>
+      <div class="gate-text">Checking access...</div>
+    </div>
+  </div>
+
+  <!-- ACCESS DENIED -->
+  <div class="gate" id="gate-denied" style="display:none;">
+    <div class="gate-card">
+      <h1>Access denied</h1>
+      <p>You don't have admin access to this page.</p>
+      <button class="gate-btn" onclick="window.location.href='admin-panel.html'">Back to admin panel</button>
+    </div>
+  </div>
+
+  <!-- PAGE -->
+  <div class="app" id="app">
+    <div class="topbar">
+      <button class="back-btn" type="button" onclick="if(history.length > 1){ history.back(); } else { window.location.href='admin-panel.html'; }" aria-label="Back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </button>
+      <h1>Announcements</h1>
+    </div>
+
+    <div class="content">
+      <div class="panel">
+        <h2>New announcement</h2>
+
+        <div class="field">
+          <label for="ann-title">Title</label>
+          <input type="text" id="ann-title" placeholder="e.g. New tournament this weekend">
+        </div>
+        <div class="field">
+          <label for="ann-message">Message</label>
+          <textarea id="ann-message" placeholder="Write the announcement..."></textarea>
+        </div>
+        <div class="field">
+          <label for="ann-image">Image (optional)</label>
+          <input type="file" id="ann-image" accept="image/png,image/jpeg,image/webp">
+          <div id="ann-image-preview" style="display:none;margin-top:10px"></div>
+        </div>
+
+        <button id="post-btn" type="button">Post Announcement</button>
+      </div>
+
+      <div class="panel">
+        <h2>All announcements</h2>
+        <div id="ann-list"><div class="list-empty">Loading...</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://myfficbwcbgbxbdqjexv.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+
+let supabaseClient;
+try {
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} catch(e){
+  document.getElementById('gate-checking').innerHTML =
+    '<div class="gate-text">Supabase init error: ' + e.message + '</div>';
+}
+
+function showGate(name){
+  document.getElementById('gate-checking').style.display = name === 'checking' ? 'flex' : 'none';
+  document.getElementById('gate-denied').style.display = name === 'denied' ? 'flex' : 'none';
+  document.getElementById('app').classList.toggle('active', name === 'app');
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// Same pattern as site_notices: stored as JSON in the `message` text
+// column so title/body/image all live in one field.
+function parseAnnMessage(raw){
+  if(!raw) return {title:'', body:'', image:''};
+  try{
+    const obj = JSON.parse(raw);
+    if(obj && typeof obj==='object' && ('title' in obj || 'body' in obj)){
+      return {title:obj.title||'', body:obj.body||'', image:obj.image||''};
+    }
+  }catch(e){ /* legacy plain text */ }
+  return {title:'', body:raw, image:''};
+}
+
+function formatDate(value){
+  if(!value) return '';
+  const d = new Date(value);
+  if(Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleString('en-BD',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function loadAnnouncements(){
+  const listEl = document.getElementById('ann-list');
+  try{
+    const { data, error } = await supabaseClient.from('announcements')
+      .select('id,message,created_at,admin_name')
+      .order('created_at', { ascending:false });
+    if(error) throw error;
+    if(!data || !data.length){
+      listEl.innerHTML = '<div class="list-empty">No announcements yet.</div>';
+      return;
+    }
+    listEl.innerHTML = data.map(row => {
+      const { title, body, image } = parseAnnMessage(row.message);
+      return '<div class="ann-item">'
+        + '<div class="ann-body">'
+        + (title ? '<div class="ann-title">' + escapeHtml(title) + '</div>' : '')
+        + '<div class="ann-text">' + escapeHtml(body) + '</div>'
+        + (image ? '<img class="ann-img" src="' + image + '" alt="">' : '')
+        + '<div class="ann-meta">' + escapeHtml(row.admin_name || 'Admin') + '  •  ' + formatDate(row.created_at) + '</div>'
+        + '</div>'
+        + '<button class="ann-del" data-id="' + row.id + '" aria-label="Delete">'
+        + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>'
+        + '</button>'
+        + '</div>';
+    }).join('');
+
+    listEl.querySelectorAll('.ann-del').forEach(btn => {
+      btn.addEventListener('click', () => deleteAnnouncement(btn.dataset.id));
+    });
+  }catch(e){
+    listEl.innerHTML = '<div class="list-empty">Could not load announcements.</div>';
+    console.error(e);
+  }
+}
+
+async function deleteAnnouncement(id){
+  try{
+    const { error } = await supabaseClient.from('announcements').delete().eq('id', id);
+    if(error) throw error;
+    showToast('Announcement removed.');
+    await loadAnnouncements();
+  }catch(e){
+    showToast('Delete failed: ' + (e.message || 'Unknown error'));
+    console.error(e);
+  }
+}
+
+async function getAdminName(){
+  const { data:{ user } } = await supabaseClient.auth.getUser();
+  if(!user) return 'Admin';
+  const { data:profile } = await supabaseClient.from('profiles').select('full_name,email').eq('id', user.id).single();
+  return (profile && (profile.full_name || profile.email)) || user.email || 'Admin';
+}
+
+async function postAnnouncement(){
+  const titleInput = document.getElementById('ann-title');
+  const input = document.getElementById('ann-message');
+  const imageInput = document.getElementById('ann-image');
+  const btn = document.getElementById('post-btn');
+  const title = titleInput.value.trim();
+  const message = input.value.trim();
+  if(!message){ showToast('Write an announcement first.'); return; }
+  btn.disabled = true;
+  try{
+    const adminName = await getAdminName();
+    let image = '';
+    const file = imageInput && imageInput.files ? imageInput.files[0] : null;
+    if(file){
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const safe = ['jpg','jpeg','png','webp'].includes(ext) ? ext : 'jpg';
+      const path = 'announcement-' + crypto.randomUUID() + '.' + safe;
+      const up = await supabaseClient.storage.from('tournament-banners').upload(path, file, { upsert:false, contentType:file.type });
+      if(up.error) throw up.error;
+      image = supabaseClient.storage.from('tournament-banners').getPublicUrl(path).data.publicUrl;
+    }
+    const payload = JSON.stringify({ title, body:message, image });
+    const { error } = await supabaseClient.from('announcements').insert({ message:payload, admin_name:adminName });
+    if(error) throw error;
+    titleInput.value = '';
+    input.value = '';
+    if(imageInput) imageInput.value = '';
+    const pp = document.getElementById('ann-image-preview');
+    if(pp){ pp.innerHTML = ''; pp.style.display = 'none'; }
+    showToast('Announcement posted.');
+    await loadAnnouncements();
+  }catch(e){
+    showToast('Post failed: ' + (e.message || 'Unknown error'));
+    console.error(e);
+  }finally{ btn.disabled = false; }
+}
+
+function setupUI(){
+  const imageInput = document.getElementById('ann-image');
+  imageInput.addEventListener('change', () => {
+    const f = imageInput.files && imageInput.files[0];
+    const p = document.getElementById('ann-image-preview');
+    if(!f){ p.innerHTML = ''; p.style.display = 'none'; return; }
+    const u = URL.createObjectURL(f);
+    p.innerHTML = '<img src="' + u + '" style="width:100%;max-height:180px;object-fit:contain;border-radius:12px;border:1px solid var(--border)">';
+    p.style.display = 'block';
+  });
+  document.getElementById('post-btn').addEventListener('click', postAnnouncement);
+  loadAnnouncements();
+}
+
+async function checkAccess(){
+  showGate('checking');
+  const { data: { session } } = await supabaseClient.auth.getSession();
+
+  if(!session){
+    window.location.href = 'admin-panel.html';
+    return;
+  }
+
+  const { data: profile, error: profileErr } = await supabaseClient
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', session.user.id)
+    .single();
+
+  if(profileErr || !profile || !profile.is_admin){
+    showGate('denied');
+    return;
+  }
+
+  showGate('app');
+  setupUI();
+}
+
+checkAccess();
+</script>
+
+</body>
+</html>

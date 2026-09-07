@@ -122,7 +122,9 @@
     <h1>Announcements</h1>
   </div>
 
-  <div class="empty-wrap">
+  <div id="ann-list-wrap"></div>
+
+  <div class="empty-wrap" id="empty-wrap" style="display:none;">
     <div class="empty-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 11v2a2 2 0 0 0 2 2h1l2 5h2l-1.5-5H10l8 4V6l-8 4H6a2 2 0 0 0-2 2z"/>
@@ -135,11 +137,83 @@
 
 </div>
 
+<style>
+  .ann-card{
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:16px;
+    padding:16px;
+    margin-bottom:12px;
+  }
+  .ann-card .a-title{ font-weight:700; font-size:15px; margin-bottom:4px; }
+  .ann-card .a-body{ font-size:13.5px; color:var(--text-primary); white-space:pre-wrap; word-break:break-word; line-height:1.55; }
+  .ann-card .a-img{ width:100%; max-height:200px; object-fit:contain; border-radius:12px; margin-top:10px; border:1px solid var(--card-border); }
+  .ann-card .a-meta{ font-size:11.5px; color:var(--text-secondary); margin-top:10px; }
+  .ann-loading{ text-align:center; color:var(--text-secondary); font-size:13px; padding:30px 0; }
+</style>
+
 <script>
   window.addEventListener('pageshow', function(event){
     if (event.persisted) {
       location.reload();
     }
+  });
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function parseAnnMessage(raw){
+    if(!raw) return {title:'', body:'', image:''};
+    try{
+      const obj = JSON.parse(raw);
+      if(obj && typeof obj==='object' && ('title' in obj || 'body' in obj)){
+        return {title:obj.title||'', body:obj.body||'', image:obj.image||''};
+      }
+    }catch(e){ /* legacy plain text */ }
+    return {title:'', body:raw, image:''};
+  }
+
+  function formatAnnDate(value){
+    if(!value) return '';
+    const d = new Date(value);
+    if(Number.isNaN(d.getTime())) return String(value);
+    return d.toLocaleString('en-BD',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});
+  }
+
+  function renderAnnouncements(rows){
+    const wrap = document.getElementById('ann-list-wrap');
+    const empty = document.getElementById('empty-wrap');
+    if(!rows || !rows.length){
+      wrap.innerHTML = '';
+      empty.style.display = 'flex';
+      return;
+    }
+    empty.style.display = 'none';
+    wrap.innerHTML = rows.map(row => {
+      const { title, body, image } = parseAnnMessage(row.message);
+      return '<div class="ann-card">'
+        + (title ? '<div class="a-title">' + escapeHtml(title) + '</div>' : '')
+        + '<div class="a-body">' + escapeHtml(body) + '</div>'
+        + (image ? '<img class="a-img" src="' + image + '" alt="">' : '')
+        + '<div class="a-meta">' + escapeHtml(row.admin_name || 'Admin') + '  •  ' + formatAnnDate(row.created_at) + '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    const wrap = document.getElementById('ann-list-wrap');
+    wrap.innerHTML = '<div class="ann-loading">Loading...</div>';
+    window.CHTEO.getSupabaseClient(function(client){
+      client.from('announcements')
+        .select('id,message,created_at,admin_name')
+        .order('created_at', { ascending:false })
+        .then(function(res){
+          if(res.error){ wrap.innerHTML = ''; document.getElementById('empty-wrap').style.display = 'flex'; return; }
+          renderAnnouncements(res.data);
+        })
+        .catch(function(){ wrap.innerHTML = ''; document.getElementById('empty-wrap').style.display = 'flex'; });
+    });
   });
 </script>
 
