@@ -62,6 +62,9 @@ $amount = isset($input['amount']) ? (float)$input['amount'] : 0;
 $reference = isset($input['reference']) ? trim($input['reference']) : '';
 $description = isset($input['description']) ? trim($input['description']) : 'Tournament entry fee';
 $slotTimes = isset($input['slot_times']) && is_array($input['slot_times']) ? $input['slot_times'] : [];
+$entries = isset($input['entries']) && is_array($input['entries']) ? $input['entries'] : [];
+$whatsapp = isset($input['whatsapp']) ? trim((string)$input['whatsapp']) : '';
+$uid = isset($input['uid']) ? trim((string)$input['uid']) : '';
 
 if ($amount <= 0) {
     echo json_encode(["success" => false, "message" => "A positive amount is required"]);
@@ -125,7 +128,7 @@ try {
     // ---- 5. Notify admin on Telegram, routed to the group for THIS
     //         purchase's slot time(s) (best-effort — never breaks the
     //         actual payment response if Telegram is down/misconfigured).
-    notifyTelegramSlotPurchase($authUser['email'] ?? $verifiedUid, $amount, $reference, $slotTimes);
+    notifyTelegramSlotPurchase($authUser['email'] ?? $verifiedUid, $amount, $reference, $slotTimes, $entries, $whatsapp, $uid);
 
     echo json_encode(["success" => true, "balance" => (float)$newBalance, "withdrawable_balance" => (float)$newWithdrawable, "non_withdrawable_balance" => (float)$newNonWithdrawable]);
 } catch (Exception $e) {
@@ -145,7 +148,7 @@ try {
 // 4. Paste the token below, and each group's chat id next to its time.
 //    Leave BOT_TOKEN empty to disable this entirely without touching the
 //    rest of the file. A time left as '' just skips that group silently.
-function notifyTelegramSlotPurchase($who, $amount, $reference, $slotTimes) {
+function notifyTelegramSlotPurchase($who, $amount, $reference, $slotTimes, $entries, $whatsapp, $uid) {
     $BOT_TOKEN = '8946675932:AAHxGR-v1JoGVDmpKJYnpqriKpF7swjSKkE'; // <-- paste your bot token here (shared by all groups)
     $CHAT_ID_BY_HOUR = [
         9  => '-5357739634',  // 9 PM SLOT UPDATES
@@ -163,20 +166,43 @@ function notifyTelegramSlotPurchase($who, $amount, $reference, $slotTimes) {
     // "9:00 PM" -> 9, "12:00 AM" -> 12 — matches how the time slots are
     // named everywhere else on the site (tournament-details.html, lobby
     // creation in admin), so no extra config needed beyond the chat ids above.
+    function extractHour($t) {
+        return preg_match('/^(\d{1,2}):/', trim((string)$t), $m) ? (int)$m[1] : null;
+    }
+
+    // Group the submitted team/player entries by which hour's group they
+    // belong to, so a multi-slot purchase (e.g. one 3PM + one 4PM entry)
+    // sends each group only the entries that are actually theirs.
+    $entriesByHour = [];
+    foreach ($entries as $e) {
+        $hour = extractHour($e['time_label'] ?? '');
+        if ($hour === null) continue;
+        $entriesByHour[$hour][] = $e;
+    }
+
     $hours = [];
     foreach ($slotTimes as $t) {
-        if (preg_match('/^(\d{1,2}):/', trim((string)$t), $m)) {
-            $hours[(int)$m[1]] = true; // dedupe: a multi-slot purchase touching the same hour only notifies once
-        }
+        $hour = extractHour($t);
+        if ($hour !== null) $hours[$hour] = true;
     }
 
     foreach (array_keys($hours) as $hour) {
         if (empty($CHAT_ID_BY_HOUR[$hour])) continue; // that hour's group not configured — skip quietly
         $chatId = $CHAT_ID_BY_HOUR[$hour];
-        $text = "🎮 New slot purchase — {$hour}:00\n"
-              . "User: {$who}\n"
-              . "Amount: ৳{$amount}\n"
-              . "{$reference}";
+
+        $lines = [];
+        $theseEntries = $entriesByHour[$hour] ?? [];
+        foreach ($theseEntries as $e) {
+            $lines[] = "TEAM NAME: " . ($e['team_name'] ?? '-') . "\n"
+                     . "PLAYER NAME: " . ($e['player_name'] ?? '-');
+        }
+
+        $text = "UID: " . ($uid !== '' ? '#'.$uid : '-') . "\n"
+              . "WHATSAPP NUMBER: " . ($whatsapp ?: '-');
+        if ($lines) {
+            $text .= "\n\n" . implode("\n\n", $lines);
+        }
+
         $ch = curl_init("https://api.telegram.org/bot{$BOT_TOKEN}/sendMessage");
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
