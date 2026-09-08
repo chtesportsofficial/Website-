@@ -274,6 +274,7 @@
     background:var(--ink); color:#fff; padding:11px 18px; border-radius:10px;
     font-size:13px; font-weight:600; opacity:0; pointer-events:none;
     transition:opacity .25s ease, transform .25s ease; z-index:10;
+    max-width:min(92vw,420px); word-break:break-word; text-align:left;
   }
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
@@ -481,7 +482,7 @@ function showToast(msg){
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(window._toastTimer);
-  window._toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+  window._toastTimer = setTimeout(() => t.classList.remove('show'), 6000);
 }
 
 function escapeHtml(str){
@@ -751,7 +752,9 @@ async function deleteUserPermanently(){
       showToast('User deleted.');
       setTimeout(() => { window.location.href = 'user-management.html'; }, 900);
     } else {
-      showToast('Delete failed: ' + (data && data.message ? data.message : 'Unknown error'));
+      const debugInfo = data && data.debug ? (' | ' + JSON.stringify(data.debug)) : '';
+      showToast('Delete failed: ' + (data && data.message ? data.message : 'Unknown error') + debugInfo);
+      console.error('Delete user failed:', data);
       btn.disabled = false;
       btn.innerHTML = originalLabel;
     }
