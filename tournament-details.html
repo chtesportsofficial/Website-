@@ -818,10 +818,15 @@ async function submitJoin(){
       const {data:{session}}=await sb.auth.getSession();
       const fee=(Number(currentTournament?.entry_fee)||0)*lobbyCount;
       const slotTimes=[...new Set(currentJoinLobbyIds.map(id=>lobbyDataById[id]?.time_label).filter(Boolean))];
+      const entryDetails=teamData.entries.map(e=>({
+        team_name:e.teamName,
+        player_name:e.playerName,
+        time_label:lobbyDataById[e.lobbyId]?.time_label||''
+      }));
       const res=await fetch('https://chteo-api.onrender.com/api/deduct-balance.php',{
         method:'POST',
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
-        body:JSON.stringify({amount:fee,reference:'Tournament entry: '+(currentTournament?.title||'')+(lobbyCount>1?` (${lobbyCount} entries)`:''),description:'Tournament entry fee',slot_times:slotTimes})
+        body:JSON.stringify({amount:fee,reference:'Tournament entry: '+(currentTournament?.title||'')+(lobbyCount>1?` (${lobbyCount} entries)`:''),description:'Tournament entry fee',slot_times:slotTimes,entries:entryDetails,whatsapp:whatsapp,uid:userProfile?.user_number||''})
       });
       const j=await res.json();
       if(!j.success){
