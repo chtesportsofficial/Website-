@@ -96,4 +96,41 @@ curl_setopt($ch2, CURLOPT_HTTPHEADER, [
 curl_exec($ch2);
 curl_close($ch2);
 
-echo json_encode(['success' => true, 'message' => 'User deleted.']);
+// Flag the matching MySQL wallet row (filess.io) as deleted, so it drops
+// out of the Wallet Leaderboard — but the row itself, and its
+// deposit/withdraw history in wallet_transactions, stay intact.
+// This is best-effort: if the wallet DB is unreachable for any reason,
+// we still report success for the part that matters (the login account
+// is gone), rather than confusingly failing an already-successful delete.
+$walletFlagWarning = null;
+try {
+    $required = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
+    $missingEnv = [];
+    foreach ($required as $key) {
+        if (getenv($key) === false || getenv($key) === '') { $missingEnv[] = $key; }
+    }
+    if (!empty($missingEnv)) {
+        throw new Exception('Missing DB env vars: ' . implode(', ', $missingEnv));
+    }
+    $mysqlConn = @new mysqli(
+        getenv('DB_HOST'),
+        getenv('DB_USER'),
+        getenv('DB_PASSWORD'),
+        getenv('DB_NAME'),
+        (int)(getenv('DB_PORT') ?: 3306)
+    );
+    if ($mysqlConn->connect_error) {
+        throw new Exception('DB connect failed: ' . $mysqlConn->connect_error);
+    }
+    $mysqlConn->set_charset('utf8mb4');
+    $stmt = $mysqlConn->prepare('UPDATE wallet_users SET account_deleted = 1 WHERE supabase_uid = ?');
+    $stmt->bind_param('s', $target_user_id);
+    $stmt->execute();
+    $stmt->close();
+    $mysqlConn->close();
+} catch (Throwable $e) {
+    $walletFlagWarning = $e->getMessage();
+    error_log('admin-delete-user.php: could not flag wallet_users as deleted — ' . $walletFlagWarning);
+}
+
+echo json_encode(['success' => true, 'message' => 'User deleted.', 'wallet_flag_warning' => $walletFlagWarning]);

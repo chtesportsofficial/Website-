@@ -174,7 +174,7 @@ $offset = ($page - 1) * $limit;
 $conn->set_charset('utf8mb4');
 
 // ---- Build WHERE clause + bound params (shared by the count query and the page query) ----
-$whereParts = [];
+$whereParts = ['account_deleted = 0'];
 $paramTypes = '';
 $paramValues = [];
 
@@ -205,10 +205,11 @@ if ($uidSearchActive) {
 
 $whereSql = count($whereParts) > 0 ? ('WHERE ' . implode(' AND ', $whereParts)) : '';
 
-// ---- Overall stats (always unfiltered, so the summary card stays a true total) ----
+// ---- Overall stats (unfiltered by search/balance filters, but always
+// excludes deleted accounts so the summary card reflects live users) ----
 $totalWallets = 0;
 $totalBalanceAll = 0.0;
-$overallResult = $conn->query("SELECT COUNT(*) AS cnt, COALESCE(SUM(balance),0) AS total FROM wallet_users");
+$overallResult = $conn->query("SELECT COUNT(*) AS cnt, COALESCE(SUM(balance),0) AS total FROM wallet_users WHERE account_deleted = 0");
 if ($overallResult !== false) {
     $overallRow = $overallResult->fetch_assoc();
     $totalWallets = (int)$overallRow['cnt'];
@@ -242,7 +243,7 @@ $rankCompare = $sort === 'asc' ? '<' : '>';
 
 $pageSql = "
     SELECT w1.supabase_uid, w1.email, w1.balance,
-        (SELECT COUNT(*) FROM wallet_users w2 WHERE w2.balance $rankCompare w1.balance) + 1 AS rnk
+        (SELECT COUNT(*) FROM wallet_users w2 WHERE w2.account_deleted = 0 AND w2.balance $rankCompare w1.balance) + 1 AS rnk
     FROM wallet_users w1
     $whereSql
     ORDER BY w1.balance $orderDir
