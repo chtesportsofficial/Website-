@@ -689,6 +689,8 @@ function renderTarget(){
     banBtn.style.display = '';
     banBtn.textContent = p.is_banned ? 'Unblock User' : 'Block User';
   }
+  const deleteBtn = document.getElementById('deleteUserBtn');
+  deleteBtn.style.display = p.is_owner ? 'none' : '';
 
   // Show Adjust Balance button
   document.getElementById('adjOpenBtn').style.display = 'block';
@@ -733,6 +735,10 @@ document.getElementById('deleteUserBtn').addEventListener('click',function(){
 });
 
 async function deleteUserPermanently(){
+  if(targetProfile.is_owner){
+    showToast('Owner অ্যাকাউন্ট ডিলিট করা যাবে না।');
+    return;
+  }
   const btn = document.getElementById('deleteUserBtn');
   const { data: { session } } = await supabaseClient.auth.getSession();
   if(!session){ showToast('Session expired. Please log in again.'); return; }
