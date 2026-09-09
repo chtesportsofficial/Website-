@@ -359,18 +359,20 @@ document.getElementById('filterDateInput').addEventListener('change',function(){
   applyFilter();
 });
 
+let resultsLobbyIds=new Set();
 function renderSlot(slot){
   const lobby=slot.lobby||{};
   const confirmed=slot.confirmed;
   const timeLabel=esc(lobby.time_label||'Scrim')+(lobby.custom_title?' · '+esc(lobby.custom_title):'');
   const teamLabel=esc(slot.rows.map(r=>r.team_name).filter(Boolean).join(', '));
+  const hasResult=lobby.id&&resultsLobbyIds.has(lobby.id);
 
   const credsOrResult = confirmed ? `
     <div class="t-cred-grid">
       ${credBox('Room ID',lobby.room_id)}
       ${credBox('Password',lobby.room_password)}
     </div>
-    <button type="button" class="t-result-btn" ${lobby.result_url?`onclick="window.open('${esc(lobby.result_url).replace(/'/g,"&#39;")}','_blank')"`:'disabled'}>${lobby.result_url?'View Result':'Result not published'}</button>
+    <button type="button" class="t-result-btn" ${hasResult?`onclick="window.open('lobby-results.html?id=${encodeURIComponent(lobby.id)}','_blank')"`:'disabled'}>${hasResult?'View Result':'Result not published'}</button>
   ` : `
     <div class="t-pending-note">📝 Your slot request is being verified. ID, password and result will show here once the admin confirms your payment.</div>
   `;
@@ -422,6 +424,12 @@ function renderCard(group){
   if(!data||!data.length){
     showEmpty('You haven\'t joined any tournament','Tournaments you register for will show up here, along with your slot and match details.','Browse Tournaments','index.html');
     return;
+  }
+
+  const lobbyIds=[...new Set(data.map(r=>r.tournament_lobbies?.id).filter(Boolean))];
+  if(lobbyIds.length){
+    const {data:resultsData,error:resultsErr}=await sb.from('lobby_results').select('lobby_id').in('lobby_id',lobbyIds);
+    if(!resultsErr) resultsLobbyIds=new Set((resultsData||[]).map(r=>r.lobby_id));
   }
 
   allRows=data;

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Result — CHT ESP ORG</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#0b0e1a; --card:#141a2b; --card-2:#161d30; --border:rgba(255,255,255,0.08);
+    --text:#ffffff; --text-dim:#7d8494; --text-mid:#9aa0ae;
+    --gold:#f2b705; --silver:#c8cdd6; --bronze:#c9820f;
+  }
+  html[data-theme="light"]{
+    --bg:#f4f6fb; --card:#ffffff; --card-2:#eef1f7; --border:rgba(18,20,26,0.10);
+    --text:#12141a; --text-dim:#8a93a6; --text-mid:#606a7d;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;}
+  .page{max-width:460px;margin:0 auto;padding:14px 14px 40px;}
+  .header{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+  .back-btn{width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+  .back-btn svg{width:20px;height:20px;}
+  .header h1{font-size:19px;font-weight:750;}
+  .header .sub{font-size:11.5px;color:var(--text-dim);margin-top:2px;}
+
+  .row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:8px;}
+  .rank{width:32px;height:32px;border-radius:50%;background:var(--card-2);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;flex-shrink:0;}
+  .rank.r1{background:var(--gold);color:#1a1400;}
+  .rank.r2{background:var(--silver);color:#1a1c22;}
+  .rank.r3{background:var(--bronze);color:#1c1000;}
+  .info{flex:1;min-width:0;}
+  .team{font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .points{font-size:11.5px;color:var(--text-dim);margin-top:2px;}
+  .prize{font-size:13px;font-weight:800;color:var(--gold);flex-shrink:0;text-align:right;}
+  .empty,.loading{text-align:center;color:var(--text-dim);font-size:12.5px;padding:40px 0;}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <button class="back-btn" type="button" onclick="history.back()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <div>
+      <h1 id="pageTitle">Result</h1>
+      <div class="sub" id="pageSub">Loading...</div>
+    </div>
+  </div>
+  <div id="list"><div class="loading">Loading...</div></div>
+</div>
+
+<script>
+const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+
+const lobbyId=new URLSearchParams(location.search).get('id');
+
+function rankClass(i){return i===0?'r1':i===1?'r2':i===2?'r3':'';}
+function fmtDate(d){try{return new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return d;}}
+
+(async function(){
+  if(!lobbyId){
+    document.getElementById('list').innerHTML='<div class="empty">No result specified.</div>';
+    return;
+  }
+
+  const [lobbyRes,resultsRes]=await Promise.all([
+    sb.from('tournament_lobbies').select('lobby_date,time_label,custom_title,tournaments(title)').eq('id',lobbyId).single(),
+    sb.from('lobby_results').select('*, lobby_teams(team_name)').eq('lobby_id',lobbyId).order('rank',{ascending:true})
+  ]);
+
+  if(lobbyRes.data){
+    const l=lobbyRes.data;
+    document.getElementById('pageTitle').textContent=l.tournaments?.title||'Result';
+    document.getElementById('pageSub').textContent=fmtDate(l.lobby_date)+' — '+(l.time_label||'')+(l.custom_title?' · '+l.custom_title:'');
+  } else {
+    document.getElementById('pageSub').textContent='';
+  }
+
+  if(resultsRes.error||!resultsRes.data||!resultsRes.data.length){
+    document.getElementById('list').innerHTML='<div class="empty">Result not published yet.</div>';
+    return;
+  }
+
+  document.getElementById('list').innerHTML=resultsRes.data.map((r,i)=>`
+    <div class="row">
+      <div class="rank ${rankClass(i)}">${r.rank||(i+1)}</div>
+      <div class="info">
+        <div class="team">${esc(r.lobby_teams?.team_name||'Team')}</div>
+        <div class="points">${Number(r.total_points)||0} pts</div>
+      </div>
+      ${r.prize_won?`<div class="prize">৳${Number(r.prize_won)}</div>`:''}
+    </div>`).join('');
+})();
+</script>
+</body>
+</html>
