@@ -830,7 +830,7 @@ function renderLobbies(){
       <div class="lobby-top"><div class="lobby-date">${lobbyLabel(l)}</div>${badgeHtml}</div>
       <div class="lobby-meta">${l.joined_count||0}/${l.total_slots||0} joined · ${Number(l.booked_slots)||0} booked</div>
       <div class="lobby-actions">
-        <button class="mini green" onclick="openTeams('${l.id}')">Teams</button><button class="mini" onclick="setBookedSlots('${l.id}')">Booked</button>
+        <button class="mini green" onclick="openTeams('${l.id}')">Teams</button><button class="mini" onclick="setBookedSlots('${l.id}')">Booked</button><button class="mini" onclick="setRoomCredentials('${l.id}')">Room ID/Pass</button>
         <button class="mini" onclick="openResults('${l.id}')">Enter Result</button>
         ${l.status==='cancelled'?`<button class="mini green" onclick="setLobbyStatus('${l.id}','upcoming')">On</button><button class="mini t-delete" onclick="deleteLobby('${l.id}')">Delete</button>`:`<button class="mini red" onclick="setLobbyStatus('${l.id}','cancelled')">Off</button>`}
       </div>
@@ -853,6 +853,26 @@ async function setBookedSlots(lobbyId){
   if(error){ msg(error.message); return; }
   lobby.booked_slots=value;
   loadLobbies(currentLobbyTournament,{includeOlder:lobbiesShowingAll});
+}
+
+// This is what feeds the Room ID/Password box players see on "My
+// Tournaments" (tournaments.html) — until this is set, it just shows
+// "Not published yet" there. Typically filled in right before the match
+// starts, once the room is actually created in-game.
+async function setRoomCredentials(lobbyId){
+  const lobby=lobbies.find(x=>x.id===lobbyId);
+  if(!lobby)return;
+  const roomId=prompt('Room ID',lobby.room_id||'');
+  if(roomId===null)return;
+  const roomPassword=prompt('Room Password',lobby.room_password||'');
+  if(roomPassword===null)return;
+  const {error}=await sb.from('tournament_lobbies')
+    .update({room_id:roomId.trim(),room_password:roomPassword.trim()})
+    .eq('id',lobbyId);
+  if(error){ msg(error.message); return; }
+  lobby.room_id=roomId.trim();
+  lobby.room_password=roomPassword.trim();
+  msg('Room ID/Password saved. Players will see it under My Tournaments.');
 }
 
 function addTimeInput(){

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHTEO — Host Panel</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --navy-1:#1b2140; --navy-2:#2a3266; --navy-3:#333c7a;
+    --white:#ffffff; --ink:#1b2140; --muted:#7a7f9a; --line:#e2e3ee;
+    --accent:#3557ff; --accent-dark:#2846e0; --green:#22c55e; --red:#ef4444;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh;
+    font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    background:radial-gradient(circle at 12% 0%, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 40%),
+      linear-gradient(160deg, var(--navy-1) 0%, var(--navy-2) 55%, var(--navy-3) 100%);
+    color:var(--ink);
+  }
+  .gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .gate-card{width:100%;max-width:380px;background:var(--white);border-radius:24px;padding:36px 30px;box-shadow:0 30px 60px -20px rgba(0,0,0,0.45);text-align:center;}
+  .gate-card h1{font-size:18px;font-weight:800;margin:0 0 8px;}
+  .gate-card p{font-size:13.5px;color:var(--muted);line-height:1.6;margin:0 0 22px;}
+  .gate-btn{width:100%;padding:13px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;}
+  .gate-btn:hover{background:var(--accent-dark);}
+  .spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,0.25);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .gate-text{color:#fff;font-size:13.5px;text-align:center;}
+
+  #app{display:none;max-width:560px;margin:0 auto;padding:20px 16px 60px;}
+  #app.active{display:block;}
+  .top-bar{margin-bottom:18px;}
+  .top-bar h1{color:#fff;font-size:19px;font-weight:750;margin:0;}
+  .top-bar p{color:rgba(255,255,255,0.65);font-size:12px;margin:2px 0 0;}
+
+  .card{background:var(--white);border-radius:18px;padding:16px;box-shadow:0 6px 18px rgba(20,20,35,0.08);margin-bottom:12px;}
+  select{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px 13px;font-size:14px;font-family:inherit;color:var(--ink);background:#fff;}
+
+  .lobby-item{border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:10px;}
+  .lobby-date{font-size:13px;font-weight:800;}
+  .lobby-cred{font-size:12px;color:var(--muted);margin-top:6px;}
+  .lobby-cred b{color:var(--ink);font-weight:700;}
+  .lobby-actions{margin-top:10px;}
+  .lobby-actions button{border:0;border-radius:10px;padding:10px 14px;font:inherit;font-size:12.5px;font-weight:800;cursor:pointer;background:var(--accent);color:#fff;}
+  .empty{text-align:center;color:var(--muted);font-size:12.5px;padding:20px;}
+
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#1b2140;color:#fff;padding:12px 18px;border-radius:12px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s ease, transform .2s ease;z-index:100;max-width:90%;text-align:center;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate-checking">
+  <div><div class="spinner"></div><div class="gate-text">Checking access…</div></div>
+</div>
+
+<div class="gate" id="gate-denied" style="display:none">
+  <div class="gate-card">
+    <h1>Access denied</h1>
+    <p>You don't have host access for this page.</p>
+    <button class="gate-btn" onclick="location.href='chteo_auth.html'">Back</button>
+  </div>
+</div>
+
+<div id="app">
+  <div class="top-bar">
+    <h1>Host Panel</h1>
+    <p>Set Room ID / Password for a lobby — nothing else here</p>
+  </div>
+
+  <div class="card">
+    <select id="tournamentSelect">
+      <option value="">Select a tournament…</option>
+    </select>
+  </div>
+
+  <div id="lobbyList"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://myfficbwcbgbxbdqjexv.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+function showGate(name){
+  document.getElementById('gate-checking').style.display = name === 'checking' ? 'flex' : 'none';
+  document.getElementById('gate-denied').style.display = name === 'denied' ? 'flex' : 'none';
+  document.getElementById('app').classList.toggle('active', name === 'app');
+}
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+let lobbies = [];
+
+function fmtDate(d){
+  try{ return new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
+  catch(e){ return d; }
+}
+
+async function loadLobbies(tid){
+  const box = document.getElementById('lobbyList');
+  if(!tid){ box.innerHTML=''; return; }
+  box.innerHTML = '<div class="card"><div class="empty">Loading...</div></div>';
+  const { data, error } = await sb.from('tournament_lobbies')
+    .select('id,lobby_date,time_label,custom_title,room_id,room_password,status')
+    .eq('tournament_id', tid)
+    .neq('status','completed')
+    .order('lobby_date',{ascending:true});
+  if(error){ box.innerHTML = '<div class="card"><div class="empty">Could not load lobbies.</div></div>'; console.error(error); return; }
+  lobbies = data || [];
+  render();
+}
+
+function render(){
+  const box = document.getElementById('lobbyList');
+  if(!lobbies.length){ box.innerHTML = '<div class="card"><div class="empty">No active lobbies for this tournament.</div></div>'; return; }
+  box.innerHTML = '<div class="card">' + lobbies.map(l => `
+    <div class="lobby-item">
+      <div class="lobby-date">${fmtDate(l.lobby_date)} — ${l.time_label || ''}${l.custom_title ? ' · '+l.custom_title : ''}</div>
+      <div class="lobby-cred">Room ID: <b>${l.room_id || 'Not set'}</b></div>
+      <div class="lobby-cred">Password: <b>${l.room_password || 'Not set'}</b></div>
+      <div class="lobby-actions">
+        <button type="button" onclick="setRoomCredentials('${l.id}')">Set Room ID/Pass</button>
+      </div>
+    </div>`).join('') + '</div>';
+}
+
+async function setRoomCredentials(lobbyId){
+  const lobby = lobbies.find(x => x.id === lobbyId);
+  if(!lobby) return;
+  const roomId = prompt('Room ID', lobby.room_id || '');
+  if(roomId === null) return;
+  const roomPassword = prompt('Room Password', lobby.room_password || '');
+  if(roomPassword === null) return;
+  const { error } = await sb.from('tournament_lobbies')
+    .update({ room_id: roomId.trim(), room_password: roomPassword.trim() })
+    .eq('id', lobbyId);
+  if(error){ showToast('Save failed: ' + error.message); return; }
+  lobby.room_id = roomId.trim();
+  lobby.room_password = roomPassword.trim();
+  render();
+  showToast('Saved — players will see it under My Tournaments.');
+}
+
+async function loadTournaments(){
+  const sel = document.getElementById('tournamentSelect');
+  const { data, error } = await sb.from('tournaments')
+    .select('id,title,status')
+    .neq('status','completed')
+    .order('created_at',{ascending:false});
+  if(error){ console.error(error); return; }
+  (data || []).forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t.id;
+    opt.textContent = t.title;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', () => loadLobbies(sel.value));
+}
+
+async function checkAccessAndLoad(){
+  showGate('checking');
+  const { data: { session } } = await sb.auth.getSession();
+  if(!session){ location.href = 'chteo_auth.html'; return; }
+
+  const { data: me, error: meErr } = await sb.from('profiles').select('is_host,is_admin,is_owner').eq('id', session.user.id).single();
+  if(meErr || !me || !(me.is_host || me.is_admin || me.is_owner)){ showGate('denied'); return; }
+
+  showGate('app');
+  loadTournaments();
+}
+
+checkAccessAndLoad();
+</script>
+
+</body>
+</html>

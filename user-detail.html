@@ -401,6 +401,7 @@
       <div class="actions-row">
         <button class="action-btn make-admin" id="adminToggleBtn">Make Admin</button>
         <button class="action-btn block" id="banToggleBtn">Block User</button>
+        <button class="action-btn make-admin" id="hostToggleBtn">Make Host</button>
       </div>
       <div style="margin-top:10px;">
         <button class="action-btn" id="adjOpenBtn" onclick="adjOpen()" style="width:100%;color:var(--accent);border-color:rgba(53,87,255,0.35);display:none;">
@@ -498,7 +499,7 @@ function initials(name){
 
 // Fields already covered elsewhere on the page (avatar/name/badges,
 // the country pill, the slogan box) — never listed in either row list.
-const ALWAYS_HIDDEN = new Set(['id', 'full_name', 'avatar_url', 'is_admin', 'is_banned', 'is_owner', 'bio', 'country', 'slogan', 'location', 'user_serial', 'user_serial_number', 'serial', 'user_serial_no']);
+const ALWAYS_HIDDEN = new Set(['id', 'full_name', 'avatar_url', 'is_admin', 'is_banned', 'is_owner', 'is_host', 'bio', 'country', 'slogan', 'location', 'user_serial', 'user_serial_number', 'serial', 'user_serial_no']);
 
 // Everything below follows the requested serial:
 // UID, WhatsApp, Email, Location -> main info list (photo/team name/
@@ -691,6 +692,13 @@ function renderTarget(){
   }
   const deleteBtn = document.getElementById('deleteUserBtn');
   deleteBtn.style.display = p.is_owner ? 'none' : '';
+  const hostBtn = document.getElementById('hostToggleBtn');
+  if(p.is_owner){
+    hostBtn.style.display = 'none';
+  } else {
+    hostBtn.style.display = '';
+    hostBtn.textContent = p.is_host ? 'Remove Host' : 'Make Host';
+  }
 
   // Show Adjust Balance button
   document.getElementById('adjOpenBtn').style.display = 'block';
@@ -724,6 +732,7 @@ function closeConfirmation(){confirmOverlay.classList.remove('show');confirmOver
 confirmCancel.addEventListener('click',closeConfirmation);confirmOverlay.addEventListener('click',e=>{if(e.target===confirmOverlay)closeConfirmation()});confirmOk.addEventListener('click',async()=>{const action=confirmAction;closeConfirmation();if(action)await action()});
 document.getElementById('adminToggleBtn').addEventListener('click',function(){const makeAdmin=!targetProfile.is_admin;askConfirmation(makeAdmin?'Make Admin?':'Remove Admin?',makeAdmin?'Are you sure you want to make this user an admin?':'Are you sure you want to remove admin access from this user?',()=>toggleField('is_admin',!!targetProfile.is_admin,document.getElementById('adminToggleBtn')),false)});
 document.getElementById('banToggleBtn').addEventListener('click',function(){const blockUser=!targetProfile.is_banned;askConfirmation(blockUser?'Block User?':'Unblock User?',blockUser?'Are you sure you want to block this user?':'Are you sure you want to unblock this user?',()=>toggleField('is_banned',!!targetProfile.is_banned,document.getElementById('banToggleBtn')),blockUser)});
+document.getElementById('hostToggleBtn').addEventListener('click',function(){const makeHost=!targetProfile.is_host;askConfirmation(makeHost?'Make Host?':'Remove Host?',makeHost?'This lets them set Room ID/Password for lobbies via the Host Panel — nothing else. They will NOT get admin access.':'Are you sure you want to remove host access from this user?',()=>toggleField('is_host',!!targetProfile.is_host,document.getElementById('hostToggleBtn')),false)});
 
 document.getElementById('deleteUserBtn').addEventListener('click',function(){
   askConfirmation(

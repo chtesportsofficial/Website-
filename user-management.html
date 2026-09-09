@@ -322,6 +322,7 @@
         <div class="filter-row" id="filter-row">
           <button class="filter-pill active" data-filter="all" onclick="setFilter('all')">All</button>
           <button class="filter-pill" data-filter="admin" onclick="setFilter('admin')">Admin</button>
+          <button class="filter-pill" data-filter="host" onclick="setFilter('host')">Host</button>
           <button class="filter-pill" data-filter="user" onclick="setFilter('user')">User</button>
           <button class="filter-pill" data-filter="blocked" onclick="setFilter('blocked')">Blocked</button>
         </div>
@@ -359,6 +360,7 @@ function roleKey(u){
   if(u.is_banned) return 'blocked';
   if(u.is_owner) return 'admin'; // owner counts under admin filter too
   if(u.is_admin) return 'admin';
+  if(u.is_host) return 'host';
   return 'user';
 }
 
@@ -488,6 +490,7 @@ function renderUsers(){
     if(u.is_banned) badge = '<span class="badge badge-blocked">Blocked</span>';
     else if(u.is_owner) badge = '<span class="badge badge-owner">Owner</span>';
     else if(u.is_admin) badge = '<span class="badge badge-admin">Admin</span>';
+    else if(u.is_host) badge = '<span class="badge badge-admin">Host</span>';
 
     const uid = u.user_number != null ? ('#' + escapeHtml(u.user_number)) : '#—';
     const whatsapp = escapeHtml(u.whatsapp || '—');
