@@ -82,6 +82,9 @@
       // row in profile.html). Use an explicit undefined-check rather than
       // `||` so that a real `false` from Supabase isn't lost.
       isAdmin: (row && typeof row.is_admin !== "undefined") ? !!row.is_admin : current.isAdmin,
+      // Same pattern as isAdmin, for the Host Panel row (host-only accounts
+      // that aren't full admins — see admin-panel.html's access gate).
+      isHost: (row && typeof row.is_host !== "undefined") ? !!row.is_host : current.isHost,
       supabase_uid: authUid || current.supabase_uid
     });
     localStorage.setItem("user_profile", JSON.stringify(merged));

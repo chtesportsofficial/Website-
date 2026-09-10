@@ -31,7 +31,9 @@
 
   #app{display:none;max-width:560px;margin:0 auto;padding:20px 16px 60px;}
   #app.active{display:block;}
-  .top-bar{margin-bottom:18px;}
+  .top-bar{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+  .back-btn{width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.16);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;text-decoration:none;}
+  .back-btn svg{width:20px;height:20px;}
   .top-bar h1{color:#fff;font-size:19px;font-weight:750;margin:0;}
   .top-bar p{color:rgba(255,255,255,0.65);font-size:12px;margin:2px 0 0;}
 
@@ -66,8 +68,13 @@
 
 <div id="app">
   <div class="top-bar">
-    <h1>Host Panel</h1>
-    <p>Set Room ID / Password for a lobby — nothing else here</p>
+    <a class="back-btn" href="profile.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </a>
+    <div>
+      <h1>Host Panel</h1>
+      <p>Set Room ID / Password for a lobby — nothing else here</p>
+    </div>
   </div>
 
   <div class="card">
@@ -153,17 +160,36 @@ async function setRoomCredentials(lobbyId){
 
 async function loadTournaments(){
   const sel = document.getElementById('tournamentSelect');
-  const { data, error } = await sb.from('tournaments')
-    .select('id,title,status')
-    .neq('status','completed')
-    .order('created_at',{ascending:false});
-  if(error){ console.error(error); return; }
-  (data || []).forEach(t => {
+  const [{ data: sections, error: secErr }, { data: tours, error: tourErr }] = await Promise.all([
+    sb.from('tournament_sections').select('id,name,display_order').order('display_order',{ascending:true}),
+    sb.from('tournaments').select('id,title,section_id,status').neq('status','completed').order('created_at',{ascending:false})
+  ]);
+  if(secErr || tourErr){ console.error(secErr||tourErr); return; }
+
+  const addOption = (parent, t) => {
     const opt = document.createElement('option');
     opt.value = t.id;
     opt.textContent = t.title;
-    sel.appendChild(opt);
+    parent.appendChild(opt);
+  };
+
+  (sections || []).forEach(s => {
+    const items = (tours || []).filter(t => t.section_id === s.id);
+    if(!items.length) return;
+    const group = document.createElement('optgroup');
+    group.label = s.name;
+    items.forEach(t => addOption(group, t));
+    sel.appendChild(group);
   });
+
+  const ungrouped = (tours || []).filter(t => !(sections || []).some(s => s.id === t.section_id));
+  if(ungrouped.length){
+    const group = document.createElement('optgroup');
+    group.label = 'Other';
+    ungrouped.forEach(t => addOption(group, t));
+    sel.appendChild(group);
+  }
+
   sel.addEventListener('change', () => loadLobbies(sel.value));
 }
 
