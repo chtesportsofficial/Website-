@@ -44,6 +44,14 @@ input,select{width:100%;background:#0f1521;border:1px solid #293650;color:#fff;b
     <button type="button" class="clear-btn" id="clearFilterBtn">Clear</button>
   </div>
 
+  <button type="button" class="mini green" id="addLobbyToggleBtn" style="margin-bottom:10px">+ Add Lobby</button>
+  <div class="filter-bar" id="addLobbyForm" style="display:none;flex-direction:column;align-items:stretch;gap:8px">
+    <div><label>Date</label><input type="date" id="newLobbyDate"></div>
+    <div id="newLobbyTimes"><div class="lobby-time-row" style="margin-bottom:6px"><label>Time</label><input type="time" step="3600" class="newLobbyTimeInput"></div></div>
+    <button type="button" class="clear-btn" id="addTimeRowBtn">+ Add another time</button>
+    <button type="button" class="mini green" id="saveNewLobbyBtn">Save Lobby</button>
+  </div>
+
   <div class="count" id="resultCount"></div>
   <div id="historyList"><div class="loading">Loading...</div></div>
 </div>
@@ -59,6 +67,19 @@ function fmtLobbyDate(d){try{return new Date(d+'T00:00:00').toLocaleDateString('
 
 const tid=new URLSearchParams(location.search).get('tid');
 let allHistory=[];
+let tournamentMeta=null;
+
+// Converts a native <input type="time"> value ("21:00") into the "H:MM AM/PM"
+// label format the rest of the app (tournament-management.html) expects.
+function timeValueTo12h(v){
+  if(!v)return '';
+  const [hStr,mStr]=v.split(':');
+  let h=parseInt(hStr,10);
+  const m=(mStr||'00').padStart(2,'0');
+  const ap=h>=12?'PM':'AM';
+  let h12=h%12; if(h12===0)h12=12;
+  return h12+':'+m+' '+ap;
+}
 
 async function admin(){
   const {data:{session}}=await sb.auth.getSession();
@@ -88,8 +109,8 @@ function render(){
 
 async function load(){
   if(!tid){$('historyList').innerHTML='<div class="empty">No tournament specified.</div>';return}
-  const {data:t}=await sb.from('tournaments').select('title').eq('id',tid).single();
-  if(t){$('pageTitle').textContent=t.title+' — History';$('pageSub').textContent='All completed lobbies';}
+  const {data:t}=await sb.from('tournaments').select('title,default_slots,total_slots').eq('id',tid).single();
+  if(t){tournamentMeta=t;$('pageTitle').textContent=t.title+' — History';$('pageSub').textContent='All completed lobbies';}
 
   const {data,error}=await sb.from('tournament_lobbies').select('*')
     .eq('tournament_id',tid).eq('status','completed')
@@ -101,6 +122,37 @@ async function load(){
 
 $('dateFilter').addEventListener('change',render);
 $('clearFilterBtn').addEventListener('click',function(){$('dateFilter').value='';render();});
+
+$('addLobbyToggleBtn').addEventListener('click',function(){
+  const f=$('addLobbyForm');
+  f.style.display=f.style.display==='none'?'flex':'none';
+});
+$('addTimeRowBtn').addEventListener('click',function(){
+  const row=document.createElement('div');
+  row.className='lobby-time-row'; row.style.marginBottom='6px';
+  row.innerHTML='<input type="time" step="3600" class="newLobbyTimeInput">';
+  $('newLobbyTimes').appendChild(row);
+});
+// Lobbies added from this History page are for matches that already
+// happened (played over WhatsApp etc, admin just didn't get to enter them
+// in time) — so unlike the normal "Add Lobby" flow in Lobbies, these are
+// inserted straight in as 'completed' rather than 'upcoming'.
+async function saveNewLobby(){
+  if(!tid)return;
+  const date=$('newLobbyDate').value; if(!date)return alert('Pick a date.');
+  const times=[...document.querySelectorAll('.newLobbyTimeInput')].map(i=>timeValueTo12h(i.value)).filter(Boolean);
+  if(!times.length)return alert('Add at least one time.');
+  const slots=tournamentMeta?.default_slots||tournamentMeta?.total_slots||0;
+  const rows=times.map(t=>({tournament_id:tid,lobby_date:date,time_label:t,total_slots:slots,status:'completed'}));
+  const {data,error}=await sb.from('tournament_lobbies').insert(rows).select();
+  if(error)return alert(error.message);
+  if(!data||data.length===0)return alert('Insert blocked (0 rows) — check the INSERT RLS policy on tournament_lobbies.');
+  $('newLobbyDate').value='';
+  $('newLobbyTimes').innerHTML='<div class="lobby-time-row" style="margin-bottom:6px"><input type="time" step="3600" class="newLobbyTimeInput"></div>';
+  $('addLobbyForm').style.display='none';
+  await load();
+}
+$('saveNewLobbyBtn').addEventListener('click',saveNewLobby);
 
 (async()=>{if(await admin())await load()})();
 </script>
