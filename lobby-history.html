@@ -81,6 +81,7 @@ function render(){
       <div class="lobby-meta">${l.joined_count||0}/${l.total_slots||0} joined · ${Number(l.booked_slots)||0} booked</div>
       <div class="lobby-actions">
         <button class="mini green" onclick="location.href='tournament-management.html?tid=${encodeURIComponent(tid)}&lobby=${encodeURIComponent(l.id)}'">View Results</button>
+        <button class="mini" onclick="location.href='tournament-management.html?tid=${encodeURIComponent(tid)}&lobby=${encodeURIComponent(l.id)}&team=1'">Add Team</button>
       </div>
     </div>`).join(''):`<div class="empty">${filterDate?'No completed lobbies on this date.':'No completed lobbies yet.'}</div>`;
 }

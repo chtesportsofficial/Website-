@@ -939,7 +939,7 @@ function renderTeamsList(){
       <div class="team-top"><b>${esc(tm.team_name)}</b><span class="team-status ${tm.confirmation_status}">${tm.confirmation_status}</span></div>
       <div class="team-meta">${playerName?'👤 '+playerName+' · ':''}${uidBadge} ${payBadge}</div>
       <div class="team-meta">${tm.contact_number?'📱 '+esc(tm.contact_number):''}${tm.payment_reference?' · Ref: '+esc(tm.payment_reference):''}</div>
-      ${tm.confirmation_status==='pending'?`<div class="team-actions"><button class="mini green" onclick="setTeamStatus('${tm.id}','confirmed')">Confirm</button><button class="mini red" onclick="setTeamStatus('${tm.id}','rejected')">Reject</button></div>`:`<div class="team-actions"><button class="mini" onclick="setTeamStatus('${tm.id}','pending')">Reset</button></div>`}
+      ${tm.confirmation_status==='pending'?`<div class="team-actions"><button class="mini green" onclick="setTeamStatus('${tm.id}','confirmed')">Confirm</button><button class="mini red" onclick="setTeamStatus('${tm.id}','rejected')">Reject</button><button class="mini t-delete" onclick="deleteTeam('${tm.id}')">Delete</button></div>`:`<div class="team-actions"><button class="mini" onclick="setTeamStatus('${tm.id}','pending')">Reset</button><button class="mini t-delete" onclick="deleteTeam('${tm.id}')">Delete</button></div>`}
     </div>`;
   }).join(''):'<div class="empty">No teams joined yet.</div>';
 }
@@ -986,6 +986,17 @@ async function setTeamStatus(teamId,status){
   if(!data||data.length===0)return msg('Update blocked (0 rows) — check the UPDATE RLS policy on lobby_teams.');
   await openTeams(currentLobbyForTeams.id);
   await loadLobbies(currentLobbyTournament.id);
+}
+async function deleteTeam(teamId){
+  const tm=lobbyTeamsCache.find(t=>t.id===teamId);
+  askConfirm('Delete team?','This will permanently remove the team (and any saved result for it) from the lobby.',async()=>{
+    await sb.from('lobby_results').delete().eq('team_id',teamId);
+    const {error}=await sb.from('lobby_teams').delete().eq('id',teamId);
+    if(error)return msg(error.message);
+    await logActivity('team_deleted','tournament','tournament_lobby',currentLobbyForTeams.id,tm?.team_name||null,{narration:`deleted team "${tm?.team_name||''}" from the lobby.`,highlight_targets:[tm?.team_name||null]});
+    await openTeams(currentLobbyForTeams.id);
+    await loadLobbies(currentLobbyTournament.id);
+  });
 }
 
 async function openResults(lobbyId){
@@ -1269,12 +1280,12 @@ document.addEventListener('DOMContentLoaded', function(){
   // straight to the results modal for one lobby instead of making the
   // admin re-open the tournament and click through to find it.
   const params=new URLSearchParams(location.search);
-  const jumpTid=params.get('tid'), jumpLobby=params.get('lobby');
+  const jumpTid=params.get('tid'), jumpLobby=params.get('lobby'), jumpTeam=params.get('team');
   if(jumpTid&&jumpLobby){
     currentLobbyTournament=tournaments.find(x=>x.id===jumpTid);
     if(currentLobbyTournament){
       await loadLobbies(jumpTid,{includeOlder:true});
-      openResults(jumpLobby);
+      if(jumpTeam)openTeams(jumpLobby); else openResults(jumpLobby);
     }
   }
 })();
