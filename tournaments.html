@@ -372,7 +372,7 @@ function renderSlot(slot){
       ${credBox('Room ID',lobby.room_id)}
       ${credBox('Password',lobby.room_password)}
     </div>
-    <button type="button" class="t-result-btn" ${hasResult?`onclick="window.open('lobby-results.html?id=${encodeURIComponent(lobby.id)}','_blank')"`:'disabled'}>${hasResult?'View Result':'Result not published'}</button>
+    <button type="button" class="t-result-btn" ${hasResult?`onclick="location.href='lobby-results.html?id=${encodeURIComponent(lobby.id)}'"`:'disabled'}>${hasResult?'View Result':'Result not published'}</button>
   ` : `
     <div class="t-pending-note">📝 Your slot request is being verified. ID, password and result will show here once the admin confirms your payment.</div>
   `;
