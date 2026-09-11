@@ -1300,13 +1300,18 @@ document.addEventListener('DOMContentLoaded', function(){
   // straight to the results modal for one lobby instead of making the
   // admin re-open the tournament and click through to find it.
   const params=new URLSearchParams(location.search);
-  const jumpTid=params.get('tid'), jumpLobby=params.get('lobby'), jumpTeam=params.get('team');
+  const jumpTid=params.get('tid'), jumpLobby=params.get('lobby'), jumpTeam=params.get('team'), backToLobbies=params.get('openLobbies');
   if(jumpTid&&jumpLobby){
     currentLobbyTournament=tournaments.find(x=>x.id===jumpTid);
     if(currentLobbyTournament){
       await loadLobbies(jumpTid,{includeOlder:true});
       if(jumpTeam)openTeams(jumpLobby); else openResults(jumpLobby);
     }
+  }else if(jumpTid&&backToLobbies){
+    // Back button on lobby-history.html links here instead of using
+    // history.back(), so it lands on this tournament's Lobbies view
+    // every time rather than wherever browser history happens to point.
+    openLobbies(jumpTid);
   }
 })();
 </script>
