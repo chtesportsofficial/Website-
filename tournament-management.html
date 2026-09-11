@@ -269,7 +269,7 @@
 </div></div>
 
 <div class="modal" id="ltm"><div class="box">
-  <div class="mh"><b id="ltmTitle">Teams</b><button type="button" onclick="closeM('ltm')">×</button></div>
+  <div class="mh"><b id="ltmTitle">Teams</b><button type="button" onclick="closeTeamsModal()">×</button></div>
   <button type="button" class="mini add-team-btn" onclick="toggleAddTeamForm()">+ Add Team</button>
   <div id="addTeamForm" class="add-team-form" style="display:none">
     <label>Team Name *</label><input id="atTeamName" placeholder="Team name">
@@ -284,7 +284,7 @@
 </div></div>
 
 <div class="modal" id="lrm"><div class="box">
-  <div class="mh"><b id="lrmTitle">Enter Result</b><button type="button" onclick="closeM('lrm')">×</button></div>
+  <div class="mh"><b id="lrmTitle">Enter Result</b><button type="button" onclick="closeResultsModal()">×</button></div>
   <div class="results-toolbar"><button type="button" onclick="sortResultsByPoints()">↕ Sort by points</button></div>
   <div id="resultsList"><div class="loading">Loading...</div></div>
   <div class="modal-actions results-actions"><button type="button" id="saveResultsBtn" onclick="saveResultsClick()">Save Results</button><button type="button" class="primary" id="completeResultsBtn" onclick="saveResultsAndComplete()">Complete</button></div>
@@ -855,8 +855,8 @@ function renderLobbies(){
       <div class="lobby-top"><div class="lobby-date">${lobbyLabel(l)}</div>${badgeHtml}</div>
       <div class="lobby-meta">${l.joined_count||0}/${l.total_slots||0} joined · ${Number(l.booked_slots)||0} booked</div>
       <div class="lobby-actions">
-        <button class="mini green" onclick="openTeams('${l.id}')">Teams</button><button class="mini" onclick="setBookedSlots('${l.id}')">Booked</button><button class="mini" onclick="setRoomCredentials('${l.id}')">Room ID/Pass</button>
-        <button class="mini" onclick="openResults('${l.id}')">Enter Result</button>
+        <button class="mini green" onclick="teamsReturnTid=null;openTeams('${l.id}')">Teams</button><button class="mini" onclick="setBookedSlots('${l.id}')">Booked</button><button class="mini" onclick="setRoomCredentials('${l.id}')">Room ID/Pass</button>
+        <button class="mini" onclick="resultsReturnTid=null;openResults('${l.id}')">Enter Result</button>
         ${l.status==='cancelled'?`<button class="mini green" onclick="setLobbyStatus('${l.id}','upcoming')">On</button><button class="mini t-delete" onclick="deleteLobby('${l.id}')">Delete</button>`:`<button class="mini red" onclick="setLobbyStatus('${l.id}','cancelled')">Off</button>`}
       </div>
     </div>`;
@@ -864,6 +864,15 @@ function renderLobbies(){
 }
 
 let historyList=[];
+let teamsReturnTid=null, resultsReturnTid=null;
+function closeTeamsModal(){
+  closeM('ltm');
+  if(teamsReturnTid){const t=teamsReturnTid;teamsReturnTid=null;openHistory(t);}
+}
+function closeResultsModal(){
+  closeM('lrm');
+  if(resultsReturnTid){const t=resultsReturnTid;resultsReturnTid=null;openHistory(t);}
+}
 function openHistory(tid){
   currentLobbyTournament=tournaments.find(x=>x.id===tid); if(!currentLobbyTournament)return;
   $('lhmTitle').textContent=currentLobbyTournament.title+' — History';
@@ -921,15 +930,14 @@ function ensureInLobbies(lobbyId){
 function openResultsFromHistory(lobbyId){
   ensureInLobbies(lobbyId);
   closeM('lhm');
+  resultsReturnTid=currentLobbyTournament.id;
   openResults(lobbyId);
-  // Closing this should come back to History, not the plain tournament list.
-  document.querySelector('#lrm .mh button').onclick=function(){closeM('lrm');openHistory(currentLobbyTournament.id);};
 }
 function openTeamsFromHistory(lobbyId){
   ensureInLobbies(lobbyId);
   closeM('lhm');
+  teamsReturnTid=currentLobbyTournament.id;
   openTeams(lobbyId);
-  document.querySelector('#ltm .mh button').onclick=function(){closeM('ltm');openHistory(currentLobbyTournament.id);};
 }
 // Lobbies added from History are for matches that already happened
 // (played over WhatsApp etc, admin just didn't get to enter them in time)
@@ -1036,7 +1044,6 @@ async function deleteLobby(id){
 }
 
 async function openTeams(lobbyId){
-  document.querySelector('#ltm .mh button').onclick=function(){closeM('ltm')};
   currentLobbyForTeams=lobbies.find(x=>x.id===lobbyId);
   $('ltmTitle').textContent=currentLobbyForTeams?`Teams — ${fmtLobbyDate(currentLobbyForTeams.lobby_date)} ${currentLobbyForTeams.time_label}`:'Teams';
   $('teamsList').innerHTML='<div class="loading">Loading...</div>'; openM('ltm');
@@ -1134,7 +1141,6 @@ async function linkTeamAccount(teamId){
 }
 
 async function openResults(lobbyId){
-  document.querySelector('#lrm .mh button').onclick=function(){closeM('lrm')};
   currentLobbyForResults=lobbies.find(x=>x.id===lobbyId);
   $('lrmTitle').textContent=currentLobbyForResults?`Result — ${fmtLobbyDate(currentLobbyForResults.lobby_date)} ${currentLobbyForResults.time_label}`:'Enter Result';
   $('resultsList').innerHTML='<div class="loading">Loading...</div>'; openM('lrm');
@@ -1285,7 +1291,7 @@ async function saveResultsAndComplete(){
     const ok=await saveResults(); if(ok===false||ok===undefined)return;
     const warning=await creditPrizes();
     await setLobbyStatus(currentLobbyForResults.id,'completed');
-    closeM('lrm');
+    closeResultsModal();
     msg(warning?('Lobby completed. '+warning):'Lobby completed and prizes credited.');
   }finally{
     resultsSubmitting=false;
