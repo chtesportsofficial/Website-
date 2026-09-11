@@ -1419,7 +1419,9 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('lhmClearFilterBtn').addEventListener('click', function(){$('lhmDateFilter').value='';renderHistory();});
   document.getElementById('lhmAddLobbyToggleBtn').addEventListener('click', function(){
     const f=$('lhmAddLobbyForm');
-    f.style.display=f.style.display==='none'?'block':'none';
+    const opening=f.style.display==='none';
+    f.style.display=opening?'block':'none';
+    if(opening&&$('lhmDateFilter').value)$('lhmNewLobbyDate').value=$('lhmDateFilter').value;
   });
   document.getElementById('lhmAddTimeRowBtn').addEventListener('click', function(){
     const row=document.createElement('div');
