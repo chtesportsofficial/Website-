@@ -66,6 +66,7 @@ html[data-theme="light"] .lb-rank.bronze{color:#a85f2a}
 .lb-sub{font-size:9px;color:var(--text-dim);font-weight:600;white-space:nowrap}
 .empty{padding:26px 4px;text-align:center;color:var(--text-dim);font-size:12px}
 
+.lb-avatar.logo-error{background:var(--surface-2)}
 </style>
 </head>
 <body>
@@ -137,46 +138,52 @@ function start(){
   let view='month';
   let monthOffset=0;
 
-  async function render(rows, profileRows=[]){
+  async function render(rows, logoRows=[]){
     const totals=new Map();
-    const profileByName=new Map(), profileById=new Map();
-    (profileRows||[]).forEach(p=>{
-      const logo=getLogo(p); if(!logo) return;
-      ['team_name','teamName','squad_name','squadName','full_name','display_name','name'].forEach(k=>{
-        const n=normalizeName(p?.[k]); if(n && !profileByName.has(n)) profileByName.set(n,logo);
-      });
-      ['id','uid','user_id','user_uid','profile_id'].forEach(k=>{
-        const id=String(p?.[k]??'').trim(); if(id && !profileById.has(id)) profileById.set(id,logo);
-      });
+    const logoByName=new Map();
+
+    (logoRows||[]).forEach(x=>{
+      const name=normalizeName(x?.team_name);
+      const logo=String(x?.logo??'').trim();
+      if(name && logo) logoByName.set(name,logo);
     });
+
     (rows||[]).forEach(r=>{
       const key=r.owner_team_name||r.team_name;
       const cur=totals.get(key)||{team_name:key,points:0,logo:''};
       cur.points+=Number(r.points)||0;
       if(!cur.logo) cur.logo=getLogo(r);
-      if(!cur.logo){
-        for(const k of ['owner_uid','owner_user_id','user_id','uid','profile_id','owner_id']){
-          const id=String(r?.[k]??'').trim();
-          if(id && profileById.has(id)){ cur.logo=profileById.get(id); break; }
-        }
-      }
-      if(!cur.logo) cur.logo=profileByName.get(normalizeName(key))||'';
+      if(!cur.logo) cur.logo=logoByName.get(normalizeName(key))||'';
       totals.set(key,cur);
     });
-    const ranked=[...totals.values()].filter(r=>r.points>0).sort((a,b)=>b.points-a.points);
-    if(!ranked.length){listEl.innerHTML='<div class="empty">এই সময়ের জন্য এখনো কোনো ফলাফল নেই।</div>';return}
+
+    const ranked=[...totals.values()]
+      .filter(r=>r.points>0)
+      .sort((a,b)=>b.points-a.points);
+
+    if(!ranked.length){
+      listEl.innerHTML='<div class="empty">এই সময়ের জন্য এখনো কোনো ফলাফল নেই।</div>';
+      return;
+    }
+
     listEl.innerHTML=ranked.map((r,i)=>`
       <div class="lb-row">
         <div class="lb-rank ${medalClass(i)}">${i+1}</div>
-        <div class="lb-avatar">${r.logo?`<img src="${esc(r.logo)}" alt="" loading="lazy" onerror="this.parentElement.innerHTML='';">`:''}</div>
+        <div class="lb-avatar">
+          ${r.logo?`<img src="${esc(r.logo)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentElement.classList.add('logo-error');this.remove();">`:''}
+        </div>
         <div class="lb-name">${esc(r.team_name)}</div>
         <div class="lb-amt">${r.points} পয়েন্ট</div>
       </div>`).join('');
   }
 
-  async function loadProfiles(){
-    const {data,error}=await sb.from('profiles').select('*');
-    if(error){ console.warn('[Leaderboard] Profile logo load failed:',error.message); return []; }
+  async function loadTeamLogos(){
+    // Public-safe view: only team_name + logo should be exposed.
+    const {data,error}=await sb.from('leaderboard_team_logos').select('team_name,logo');
+    if(error){
+      console.warn('[Leaderboard] Team-logo view unavailable:', error.message);
+      return [];
+    }
     return data||[];
   }
 
@@ -189,8 +196,8 @@ function start(){
       .select('*')
       .gte('lobby_date',from).lt('lobby_date',to);
     if(error){listEl.innerHTML='<div class="empty">লিডারবোর্ড লোড করা যায়নি।</div>';console.error(error);return}
-    const profiles=await loadProfiles();
-    render(data,profiles);
+    const logos=await loadTeamLogos();
+    render(data,logos);
   }
 
   async function loadAllTime(){
@@ -198,8 +205,8 @@ function start(){
     const {data,error}=await sb.from('leaderboard_rows')
       .select('*');
     if(error){listEl.innerHTML='<div class="empty">লিডারবোর্ড লোড করা যায়নি।</div>';console.error(error);return}
-    const profiles=await loadProfiles();
-    render(data,profiles);
+    const logos=await loadTeamLogos();
+    render(data,logos);
   }
 
   function setView(v){
