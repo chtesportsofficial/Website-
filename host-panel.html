@@ -23,10 +23,6 @@ button{cursor:pointer}
 .today-title small{display:block;color:var(--muted);font-size:9px;font-weight:700;margin-top:4px}
 .refresh{border:1px solid #293650;background:#111827;color:#e9edf5;border-radius:11px;padding:9px 12px;font-size:9px;font-weight:900}
 
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-.stat{background:linear-gradient(145deg,#182237,#141d30);border:1px solid #2b3852;border-radius:16px;padding:12px 11px;box-shadow:0 8px 22px #0002}
-.stat b{display:block;font-size:19px;line-height:1.1;font-weight:950}
-.stat span{display:block;font-size:8px;color:#8e98ab;font-weight:900;margin-top:5px;letter-spacing:.2px}
 
 .notice{background:#141b2b;border:1px solid #27334c;border-radius:15px;padding:12px 13px;color:#aeb7c7;font-size:9px;line-height:1.5;margin-bottom:12px}
 
@@ -111,6 +107,25 @@ input{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-r
   .room-grid{grid-template-columns:1fr}
   .lobby-actions .mini{flex:1}
 }
+
+.team-item{background:#171f31;border:1px solid #293650;border-radius:14px;padding:10px;margin-top:8px}
+.team-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.team-top>b{font-size:12px;font-weight:950}
+.team-status{font-size:9px;font-weight:900;padding:3px 8px;border-radius:999px;background:#203329;color:#5ee98b;text-transform:capitalize}
+.team-status.pending{background:#2b2410;color:#f6c453}
+.team-status.rejected{background:#2b1720;color:#ff6575}
+.team-meta{font-size:9px;color:#8e98ab;margin-top:4px}
+.team-uid{background:#1c2a3d;color:#7cc2ff;font-weight:900;padding:2px 7px;border-radius:999px;font-size:9px}
+.team-uid.guest{background:#232a3d;color:#8e98ab}
+.team-pay{padding:2px 7px;border-radius:999px;font-size:9px;font-weight:900;margin-left:4px}
+.team-pay.balance{background:#203329;color:#5ee98b}
+.team-pay.manual{background:#2b2410;color:#f6c453}
+.team-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.add-team-btn{width:100%;padding:11px;margin:2px 0 12px;text-align:center;font-size:10px}
+.add-team-form{background:#141b2b;border:1px solid #293650;border-radius:14px;padding:12px;margin-bottom:14px}
+.add-team-form label{margin:8px 0 5px}
+.add-team-form label:first-child{margin-top:0}
+
 </style>
 </head>
 <body>
@@ -126,19 +141,23 @@ input{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-r
       <button class="refresh" onclick="load()">↻ Refresh</button>
     </div>
   </section>
-
-  <div class="stats">
-    <div class="stat"><b id="tStat">0</b><span>ACTIVE TOURNAMENTS</span></div>
-    <div class="stat"><b id="lStat">0</b><span>ACTIVE LOBBIES</span></div>
-    <div class="stat"><b id="sStat">0/0</b><span>TEAMS / SLOTS</span></div>
-  </div>
-
-  <div id="notice" class="notice">Loading today's active lobbies…</div>
   <div id="content"><div class="loading">Loading…</div></div>
 </main>
 
-<div class="modal" id="teamsModal"><div class="box"><div class="mh"><b id="teamsTitle">Teams</b><button class="close" onclick="closeModal('teamsModal')">×</button></div><div id="teamsList" class="loading">Loading…</div></div></div>
-
+<div class="modal" id="teamsModal"><div class="box">
+  <div class="mh"><b id="teamsTitle">Teams</b><button type="button" class="close" onclick="closeModal('teamsModal')">×</button></div>
+  <button type="button" class="mini add-team-btn" onclick="toggleAddTeamForm()">+ Add Team</button>
+  <div id="addTeamForm" class="add-team-form" style="display:none">
+    <label>Team Name *</label><input id="atTeamName" placeholder="Team name">
+    <label>Player Name</label><input id="atPlayerName" placeholder="Player name">
+    <label>WhatsApp Number *</label><input id="atWhatsapp" placeholder="01XXXXXXXXX" inputmode="tel">
+    <div class="modal-actions">
+      <button type="button" onclick="toggleAddTeamForm(false)">Cancel</button>
+      <button type="button" class="primary" onclick="submitManualTeam()">Add Team</button>
+    </div>
+  </div>
+  <div id="teamsList"><div class="loading">Loading…</div></div>
+</div></div>
 <div class="modal" id="roomModal"><div class="box">
   <div class="mh"><b>Room ID / Password</b><button class="close" onclick="closeModal('roomModal')">×</button></div>
   <label>Room ID</label><input id="roomId" placeholder="Room ID">
@@ -160,7 +179,7 @@ const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
 const KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
 const sb=window.supabase.createClient(SUPABASE_URL,KEY);
 
-let session=null, profile=null, lobbies=[], tournaments=new Map(), currentLobby=null, currentTournament=null, resultRows=[], resultSubmitting=false;
+let session=null, profile=null, lobbies=[], tournaments=new Map(), currentLobby=null, currentTournament=null, lobbyTeamsCache=[], resultRows=[], resultSubmitting=false;
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
@@ -235,21 +254,6 @@ function render(){
     if(!groups.has(t.id))groups.set(t.id,{t,l:[]});
     groups.get(t.id).l.push(l);
   });
-
-  let totalJoined=0,totalSlots=0;
-  lobbies.forEach(l=>{
-    totalJoined+=Number(l.joined_count)||0;
-    totalSlots+=Number(l.total_slots)||0;
-  });
-
-  $('tStat').textContent=groups.size;
-  $('lStat').textContent=lobbies.length;
-  $('sStat').textContent=totalJoined+'/'+totalSlots;
-
-  const access=profile?.is_admin?'Admin access':'Host access';
-  $('notice').textContent=groups.size
-    ? `${access} · ${lobbies.length} active lobb${lobbies.length===1?'y':'ies'} today. No Tournament Management access is needed here`
-    : 'No active tournament lobby scheduled for today.';
 
   if(!groups.size){
     $('content').innerHTML='<div class="empty">No active lobbies for today.</div>';
@@ -337,15 +341,98 @@ async function saveRoom(){
 }
 async function openTeams(id){
   currentLobby=lobbies.find(x=>x.id===id);if(!currentLobby)return;
-  $('teamsTitle').textContent='Teams — '+fmtShort(currentLobby.lobby_date)+' '+currentLobby.time_label;
-  $('teamsList').innerHTML='<div class="loading">Loading…</div>';openModal('teamsModal');
-  const r=await sb.from('lobby_teams').select('*, profiles(user_number,full_name)').eq('lobby_id',id).order('joined_at');
-  if(r.error){$('teamsList').innerHTML='<div class="empty">Could not load teams.</div>';return}
-  $('teamsList').innerHTML=r.data?.length?r.data.map(tm=>{
-    const uid=tm.profiles?.user_number?`<span class="uid">UID #${tm.profiles.user_number}</span>`:'<span class="uid">Guest</span>';
-    const player=Array.isArray(tm.players)&&tm.players[0]?.name?' · '+esc(tm.players[0].name):'';
-    return `<div class="team"><div class="teamtop"><div class="teamname">${esc(tm.team_name)}</div><span class="badge ${tm.confirmation_status==='confirmed'?'':'pending'}">${esc(tm.confirmation_status||'unknown')}</span></div><div class="teammeta">${uid}${player}</div><div class="teammeta">${tm.contact_number?'📱 '+esc(tm.contact_number):''}</div></div>`
-  }).join(''):'<div class="empty">No teams joined yet.</div>'
+  $('teamsTitle').textContent=`Teams — ${fmtShort(currentLobby.lobby_date)} ${currentLobby.time_label}`;
+  $('teamsList').innerHTML='<div class="loading">Loading…</div>';
+  openModal('teamsModal');
+  const r=await sb.from('lobby_teams').select('*, profiles(user_number,whatsapp,email)').eq('lobby_id',id).order('joined_at');
+  if(r.error){$('teamsList').innerHTML='<div class="empty">Could not load teams.</div>';console.error(r.error);return}
+  lobbyTeamsCache=r.data||[];
+  renderTeamsList();
+}
+function renderTeamsList(){
+  $('teamsList').innerHTML=lobbyTeamsCache.length?lobbyTeamsCache.map(tm=>{
+    const uidBadge=tm.profiles?.user_number
+      ? `<span class="team-uid">UID #${tm.profiles.user_number}</span>`
+      : `<span class="team-uid guest">Guest</span>`;
+    const playerName=Array.isArray(tm.players)&&tm.players[0]?.name?esc(tm.players[0].name):'';
+    const payBadge=tm.payment_method==='balance'
+      ? `<span class="team-pay balance">Balance</span>`
+      : `<span class="team-pay manual">Manual</span>`;
+    const status=tm.confirmation_status||'pending';
+    return `<div class="team-item">
+      <div class="team-top"><b>${esc(tm.team_name)}</b><span class="team-status ${esc(status)}">${esc(status)}</span></div>
+      <div class="team-meta">${playerName?'👤 '+playerName+' · ':''}${uidBadge} ${payBadge}</div>
+      <div class="team-meta">${tm.contact_number?'📱 '+esc(tm.contact_number):''}${tm.payment_reference?' · Ref: '+esc(tm.payment_reference):''}</div>
+      ${status==='pending'
+        ? `<div class="team-actions"><button class="mini green" onclick="setTeamStatus('${tm.id}','confirmed')">Confirm</button><button class="mini red" onclick="setTeamStatus('${tm.id}','rejected')">Reject</button>${!tm.submitted_by?`<button class="mini" onclick="linkTeamAccount('${tm.id}')">Link Account</button>`:''}<button class="mini red" onclick="deleteTeam('${tm.id}')">Delete</button></div>`
+        : `<div class="team-actions"><button class="mini" onclick="setTeamStatus('${tm.id}','pending')">Reset</button>${!tm.submitted_by?`<button class="mini" onclick="linkTeamAccount('${tm.id}')">Link Account</button>`:''}<button class="mini red" onclick="deleteTeam('${tm.id}')">Delete</button></div>`}
+    </div>`;
+  }).join(''):'<div class="empty">No teams joined yet.</div>';
+}
+function toggleAddTeamForm(show){
+  const el=$('addTeamForm');
+  const willShow=show===undefined?el.style.display==='none':show;
+  el.style.display=willShow?'block':'none';
+  if(willShow){
+    $('atTeamName').value='';$('atPlayerName').value='';$('atWhatsapp').value='';
+    $('atTeamName').focus();
+  }
+}
+async function submitManualTeam(){
+  const teamName=$('atTeamName').value.trim();
+  const playerName=$('atPlayerName').value.trim();
+  const whatsapp=$('atWhatsapp').value.trim();
+  if(!teamName)return msg('Team name is required.');
+  if(!whatsapp)return msg('WhatsApp number is required.');
+  if(!currentLobby)return;
+
+  const earliest=lobbyTeamsCache.length
+    ? Math.min(...lobbyTeamsCache.map(t=>new Date(t.joined_at).getTime()))
+    : Date.now();
+
+  const payload={
+    lobby_id:currentLobby.id,
+    team_name:teamName,
+    players:playerName?[{name:playerName}]:[],
+    contact_number:whatsapp,
+    payment_method:'manual',
+    payment_reference:`Added by ${profile?.full_name||profile?.email||'Host'}`,
+    confirmation_status:'confirmed',
+    joined_at:new Date(earliest-1000).toISOString()
+  };
+
+  const r=await sb.from('lobby_teams').insert(payload);
+  if(r.error)return msg(r.error.message);
+
+  await logActivity('team_added_manually',currentLobby.id,teamName,{
+    narration:`manually added team "${teamName}" to the lobby (WhatsApp booking).`,
+    highlight_targets:[teamName]
+  });
+
+  toggleAddTeamForm(false);
+  await openTeams(currentLobby.id);
+  await load();
+}
+async function setTeamStatus(teamId,status){
+  const r=await sb.from('lobby_teams').update({confirmation_status:status}).eq('id',teamId).select();
+  if(r.error)return msg(r.error.message);
+  if(!r.data?.length)return msg('Update blocked (0 rows) — check the UPDATE RLS policy on lobby_teams.');
+  await openTeams(currentLobby.id);
+  await load();
+}
+async function deleteTeam(teamId){
+  const tm=lobbyTeamsCache.find(t=>t.id===teamId);
+  askConfirm('Delete team?','This will permanently remove the team (and any saved result for it) from the lobby.',async()=>{
+    await sb.from('lobby_results').delete().eq('team_id',teamId);
+    const r=await sb.from('lobby_teams').delete().eq('id',teamId);
+    if(r.error)return msg(r.error.message);
+    await logActivity('team_deleted',currentLobby.id,tm?.team_name||null,{
+      narration:`deleted team "${tm?.team_name||''}" from the lobby.`,
+      highlight_targets:[tm?.team_name||null]
+    });
+    await openTeams(currentLobby.id);
+    await load();
+  });
 }
 async function openResults(id){
   currentLobby=lobbies.find(x=>x.id===id);if(!currentLobby)return;
