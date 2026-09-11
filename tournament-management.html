@@ -243,6 +243,31 @@
   <div class="sub-panel-head"><button type="button" class="mini" id="showHistoryBtn" style="width:100%">Show History</button></div>
 </div></div>
 
+<div class="modal" id="lhm"><div class="box">
+  <div class="mh"><b id="lhmTitle">History</b><button type="button" onclick="closeM('lhm');openM('lbm')">×</button></div>
+
+  <div class="lobby-add-box">
+    <label>Filter by date</label>
+    <div style="display:flex;gap:8px;align-items:flex-end">
+      <input type="date" id="lhmDateFilter" style="flex:1">
+      <button type="button" class="mini" id="lhmClearFilterBtn">Clear</button>
+    </div>
+  </div>
+
+  <button type="button" class="mini green" id="lhmAddLobbyToggleBtn" style="margin:10px 0">+ Add Lobby</button>
+  <div class="lobby-add-box" id="lhmAddLobbyForm" style="display:none">
+    <div class="lobby-dt-row">
+      <div class="lobby-dt-col"><label>Date</label><input type="date" id="lhmNewLobbyDate"></div>
+      <div class="lobby-dt-col"><label>Time</label><div id="lhmNewLobbyTimes"><div class="lobby-time-row"><input type="time" step="3600" class="lhmNewLobbyTimeInput"></div></div></div>
+    </div>
+    <button type="button" class="mini" style="margin-top:8px;width:100%" id="lhmAddTimeRowBtn">＋ Add another time</button>
+    <button type="button" class="create-bottom" id="lhmSaveNewLobbyBtn">Save Lobby(s)</button>
+  </div>
+
+  <div class="sub-panel-head"><b id="lhmCount"></b></div>
+  <div id="lhmList"><div class="loading">Loading...</div></div>
+</div></div>
+
 <div class="modal" id="ltm"><div class="box">
   <div class="mh"><b id="ltmTitle">Teams</b><button type="button" onclick="closeM('ltm')">×</button></div>
   <button type="button" class="mini add-team-btn" onclick="toggleAddTeamForm()">+ Add Team</button>
@@ -838,6 +863,94 @@ function renderLobbies(){
   }).join(''):'<div class="empty">No active lobbies.</div>';
 }
 
+let historyList=[];
+function openHistory(tid){
+  currentLobbyTournament=tournaments.find(x=>x.id===tid); if(!currentLobbyTournament)return;
+  $('lhmTitle').textContent=currentLobbyTournament.title+' — History';
+  $('lhmDateFilter').value='';
+  $('lhmNewLobbyDate').value='';
+  $('lhmNewLobbyTimes').innerHTML='<div class="lobby-time-row"><input type="time" step="3600" class="lhmNewLobbyTimeInput"></div>';
+  $('lhmAddLobbyForm').style.display='none';
+  openM('lhm');
+  loadHistory(tid);
+}
+function timeLabelToMinutes(label){
+  const m=(label||'').match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if(!m)return 0;
+  let h=parseInt(m[1],10); const min=parseInt(m[2],10); const ap=m[3].toUpperCase();
+  if(ap==='PM'&&h!==12)h+=12;
+  if(ap==='AM'&&h===12)h=0;
+  return h*60+min;
+}
+async function loadHistory(tid){
+  $('lhmList').innerHTML='<div class="loading">Loading...</div>';
+  const {data,error}=await sb.from('tournament_lobbies').select('*').eq('tournament_id',tid).eq('status','completed').order('lobby_date',{ascending:false});
+  if(error){$('lhmList').innerHTML='<div class="empty">Could not load history.</div>';console.error(error);return;}
+  historyList=(data||[]).sort((a,b)=>{
+    if(a.lobby_date!==b.lobby_date)return b.lobby_date.localeCompare(a.lobby_date);
+    return timeLabelToMinutes(b.time_label)-timeLabelToMinutes(a.time_label);
+  });
+  renderHistory();
+}
+function renderHistory(){
+  const filterDate=$('lhmDateFilter').value;
+  const rows=filterDate?historyList.filter(l=>l.lobby_date===filterDate):historyList;
+  $('lhmCount').textContent=rows.length+(rows.length===1?' lobby':' lobbies');
+  $('lhmList').innerHTML=rows.length?rows.map(l=>`
+    <div class="lobby-item">
+      <div class="lobby-top">
+        <div class="lobby-date">${fmtLobbyDate(l.lobby_date)} — ${esc(l.time_label)}${l.custom_title?` <span style="color:#8b96aa;font-weight:700">(${esc(l.custom_title)})</span>`:''}</div>
+        <div class="lobby-status completed">✔ COMPLETED</div>
+      </div>
+      <div class="lobby-meta">${l.joined_count||0}/${l.total_slots||0} joined · ${Number(l.booked_slots)||0} booked</div>
+      <div class="lobby-actions">
+        <button class="mini green" onclick="openResultsFromHistory('${l.id}')">View Results</button>
+        <button class="mini" onclick="openTeamsFromHistory('${l.id}')">Add Team</button>
+      </div>
+    </div>`).join(''):`<div class="empty">${filterDate?'No completed lobbies on this date.':'No completed lobbies yet.'}</div>`;
+}
+// openResults/openTeams look the lobby up in the `lobbies` array, which by
+// default only holds recent/active lobbies — so make sure the row from
+// history is in there before jumping to it.
+function ensureInLobbies(lobbyId){
+  if(!lobbies.find(x=>x.id===lobbyId)){
+    const h=historyList.find(x=>x.id===lobbyId);
+    if(h)lobbies.push(h);
+  }
+}
+function openResultsFromHistory(lobbyId){
+  ensureInLobbies(lobbyId);
+  closeM('lhm');
+  openResults(lobbyId);
+  // Closing this should come back to History, not the plain tournament list.
+  document.querySelector('#lrm .mh button').onclick=function(){closeM('lrm');openHistory(currentLobbyTournament.id);};
+}
+function openTeamsFromHistory(lobbyId){
+  ensureInLobbies(lobbyId);
+  closeM('lhm');
+  openTeams(lobbyId);
+  document.querySelector('#ltm .mh button').onclick=function(){closeM('ltm');openHistory(currentLobbyTournament.id);};
+}
+// Lobbies added from History are for matches that already happened
+// (played over WhatsApp etc, admin just didn't get to enter them in time)
+// — so unlike the normal "Add Lobby" flow in Lobbies, these go straight in
+// as 'completed' rather than 'upcoming'.
+async function saveHistoryLobby(){
+  const tid=currentLobbyTournament?.id; if(!tid)return;
+  const date=$('lhmNewLobbyDate').value; if(!date)return msg('Pick a date.');
+  const times=[...document.querySelectorAll('.lhmNewLobbyTimeInput')].map(i=>timeValueTo12h(i.value)).filter(Boolean);
+  if(!times.length)return msg('Add at least one time.');
+  const slots=currentLobbyTournament.default_slots||currentLobbyTournament.total_slots||0;
+  const rows=times.map(t=>({tournament_id:tid,lobby_date:date,time_label:t,total_slots:slots,status:'completed'}));
+  const {data,error}=await sb.from('tournament_lobbies').insert(rows).select();
+  if(error)return msg(error.message);
+  if(!data||data.length===0)return msg('Insert blocked (0 rows) — check the INSERT RLS policy on tournament_lobbies.');
+  $('lhmNewLobbyDate').value='';
+  $('lhmNewLobbyTimes').innerHTML='<div class="lobby-time-row"><input type="time" step="3600" class="lhmNewLobbyTimeInput"></div>';
+  $('lhmAddLobbyForm').style.display='none';
+  await loadHistory(tid);
+}
+
 async function setBookedSlots(lobbyId){
   const lobby=lobbies.find(x=>x.id===lobbyId);
   if(!lobby)return;
@@ -923,6 +1036,7 @@ async function deleteLobby(id){
 }
 
 async function openTeams(lobbyId){
+  document.querySelector('#ltm .mh button').onclick=function(){closeM('ltm')};
   currentLobbyForTeams=lobbies.find(x=>x.id===lobbyId);
   $('ltmTitle').textContent=currentLobbyForTeams?`Teams — ${fmtLobbyDate(currentLobbyForTeams.lobby_date)} ${currentLobbyForTeams.time_label}`:'Teams';
   $('teamsList').innerHTML='<div class="loading">Loading...</div>'; openM('ltm');
@@ -1020,6 +1134,7 @@ async function linkTeamAccount(teamId){
 }
 
 async function openResults(lobbyId){
+  document.querySelector('#lrm .mh button').onclick=function(){closeM('lrm')};
   currentLobbyForResults=lobbies.find(x=>x.id===lobbyId);
   $('lrmTitle').textContent=currentLobbyForResults?`Result — ${fmtLobbyDate(currentLobbyForResults.lobby_date)} ${currentLobbyForResults.time_label}`:'Enter Result';
   $('resultsList').innerHTML='<div class="loading">Loading...</div>'; openM('lrm');
@@ -1289,40 +1404,27 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('saveSectionBtn').addEventListener('click', saveSection);
   document.getElementById('showHistoryBtn').addEventListener('click', function(){
     if(!currentLobbyTournament)return;
-    location.replace('lobby-history.html?tid='+encodeURIComponent(currentLobbyTournament.id));
+    closeM('lbm');
+    openHistory(currentLobbyTournament.id);
   });
+  document.getElementById('lhmDateFilter').addEventListener('change', renderHistory);
+  document.getElementById('lhmClearFilterBtn').addEventListener('click', function(){$('lhmDateFilter').value='';renderHistory();});
+  document.getElementById('lhmAddLobbyToggleBtn').addEventListener('click', function(){
+    const f=$('lhmAddLobbyForm');
+    f.style.display=f.style.display==='none'?'block':'none';
+  });
+  document.getElementById('lhmAddTimeRowBtn').addEventListener('click', function(){
+    const row=document.createElement('div');
+    row.className='lobby-time-row';
+    row.innerHTML='<input type="time" step="3600" class="lhmNewLobbyTimeInput">';
+    $('lhmNewLobbyTimes').appendChild(row);
+  });
+  document.getElementById('lhmSaveNewLobbyBtn').addEventListener('click', saveHistoryLobby);
 });
 
 (async()=>{
   if(!await admin())return;
   await load();
-  // Deep link from lobby-history.html's "View Results" button: jump
-  // straight to the results modal for one lobby instead of making the
-  // admin re-open the tournament and click through to find it.
-  const params=new URLSearchParams(location.search);
-  const jumpTid=params.get('tid'), jumpLobby=params.get('lobby'), jumpTeam=params.get('team'), backToLobbies=params.get('openLobbies');
-  if(jumpTid&&jumpLobby){
-    currentLobbyTournament=tournaments.find(x=>x.id===jumpTid);
-    if(currentLobbyTournament){
-      await loadLobbies(jumpTid,{includeOlder:true});
-      // Came here from lobby-history.html's "View Results"/"Add Team" link,
-      // so closing this modal should go back there — not just reveal
-      // whatever page happens to be underneath.
-      const backToHistory=()=>location.replace('lobby-history.html?tid='+encodeURIComponent(jumpTid));
-      if(jumpTeam){
-        openTeams(jumpLobby);
-        document.querySelector('#ltm .mh button').onclick=backToHistory;
-      }else{
-        openResults(jumpLobby);
-        document.querySelector('#lrm .mh button').onclick=backToHistory;
-      }
-    }
-  }else if(jumpTid&&backToLobbies){
-    // Back button on lobby-history.html links here instead of using
-    // history.back(), so it lands on this tournament's Lobbies view
-    // every time rather than wherever browser history happens to point.
-    openLobbies(jumpTid);
-  }
 })();
 </script>
 
