@@ -296,6 +296,7 @@ function getAutoBookedRemaining(l){
 
 function lobbyDisplayJoined(l){
   const total=Math.max(0,Number(l.total_slots)||0);
+  if(l.status==='full')return total;
   const actual=Math.max(0,Number(l.joined_count)||0);
   const manualBooked=Math.max(0,Number(l.booked_slots)||0);
   const autoTarget=getAutoBookedTarget(l);
