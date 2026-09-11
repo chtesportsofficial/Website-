@@ -873,10 +873,12 @@ function closeResultsModal(){
   closeM('lrm');
   if(resultsReturnTid){const t=resultsReturnTid;resultsReturnTid=null;openHistory(t);}
 }
+let lastHistoryTid=null;
 function openHistory(tid){
   currentLobbyTournament=tournaments.find(x=>x.id===tid); if(!currentLobbyTournament)return;
   $('lhmTitle').textContent=currentLobbyTournament.title+' — History';
-  $('lhmDateFilter').value='';
+  if(tid!==lastHistoryTid)$('lhmDateFilter').value='';
+  lastHistoryTid=tid;
   $('lhmNewLobbyDate').value='';
   $('lhmNewLobbyTimes').innerHTML='<div class="lobby-time-row"><input type="time" step="3600" class="lhmNewLobbyTimeInput"></div>';
   $('lhmAddLobbyForm').style.display='none';
