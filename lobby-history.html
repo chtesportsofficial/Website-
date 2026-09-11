@@ -80,6 +80,14 @@ function timeValueTo12h(v){
   let h12=h%12; if(h12===0)h12=12;
   return h12+':'+m+' '+ap;
 }
+function timeLabelToMinutes(label){
+  const m=(label||'').match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if(!m)return 0;
+  let h=parseInt(m[1],10); const min=parseInt(m[2],10); const ap=m[3].toUpperCase();
+  if(ap==='PM'&&h!==12)h+=12;
+  if(ap==='AM'&&h===12)h=0;
+  return h*60+min;
+}
 
 async function admin(){
   const {data:{session}}=await sb.auth.getSession();
@@ -116,7 +124,10 @@ async function load(){
     .eq('tournament_id',tid).eq('status','completed')
     .order('lobby_date',{ascending:false});
   if(error){$('historyList').innerHTML='<div class="empty">Could not load history.</div>';console.error(error);return;}
-  allHistory=(data||[]).sort((a,b)=>(b.lobby_date+b.time_label).localeCompare(a.lobby_date+a.time_label));
+  allHistory=(data||[]).sort((a,b)=>{
+    if(a.lobby_date!==b.lobby_date)return b.lobby_date.localeCompare(a.lobby_date);
+    return timeLabelToMinutes(b.time_label)-timeLabelToMinutes(a.time_label);
+  });
   render();
 }
 
