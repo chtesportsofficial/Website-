@@ -939,7 +939,7 @@ function renderTeamsList(){
       <div class="team-top"><b>${esc(tm.team_name)}</b><span class="team-status ${tm.confirmation_status}">${tm.confirmation_status}</span></div>
       <div class="team-meta">${playerName?'👤 '+playerName+' · ':''}${uidBadge} ${payBadge}</div>
       <div class="team-meta">${tm.contact_number?'📱 '+esc(tm.contact_number):''}${tm.payment_reference?' · Ref: '+esc(tm.payment_reference):''}</div>
-      ${tm.confirmation_status==='pending'?`<div class="team-actions"><button class="mini green" onclick="setTeamStatus('${tm.id}','confirmed')">Confirm</button><button class="mini red" onclick="setTeamStatus('${tm.id}','rejected')">Reject</button><button class="mini t-delete" onclick="deleteTeam('${tm.id}')">Delete</button></div>`:`<div class="team-actions"><button class="mini" onclick="setTeamStatus('${tm.id}','pending')">Reset</button><button class="mini t-delete" onclick="deleteTeam('${tm.id}')">Delete</button></div>`}
+      ${tm.confirmation_status==='pending'?`<div class="team-actions"><button class="mini green" onclick="setTeamStatus('${tm.id}','confirmed')">Confirm</button><button class="mini red" onclick="setTeamStatus('${tm.id}','rejected')">Reject</button>${!tm.submitted_by?`<button class="mini" onclick="linkTeamAccount('${tm.id}')">Link Account</button>`:''}<button class="mini t-delete" onclick="deleteTeam('${tm.id}')">Delete</button></div>`:`<div class="team-actions"><button class="mini" onclick="setTeamStatus('${tm.id}','pending')">Reset</button>${!tm.submitted_by?`<button class="mini" onclick="linkTeamAccount('${tm.id}')">Link Account</button>`:''}<button class="mini t-delete" onclick="deleteTeam('${tm.id}')">Delete</button></div>`}
     </div>`;
   }).join(''):'<div class="empty">No teams joined yet.</div>';
 }
@@ -996,6 +996,26 @@ async function deleteTeam(teamId){
     await logActivity('team_deleted','tournament','tournament_lobby',currentLobbyForTeams.id,tm?.team_name||null,{narration:`deleted team "${tm?.team_name||''}" from the lobby.`,highlight_targets:[tm?.team_name||null]});
     await openTeams(currentLobbyForTeams.id);
     await loadLobbies(currentLobbyTournament.id);
+  });
+}
+// For a guest team added manually (WhatsApp booking, no account yet at the
+// time) — once that player makes an account, this links the team to it:
+// the "Guest" badge becomes their real UID, and any future prize for this
+// lobby is credited to their wallet instead of a manual bKash/Nagad payout.
+async function linkTeamAccount(teamId){
+  const tm=lobbyTeamsCache.find(t=>t.id===teamId);
+  const uidRaw=prompt(`Link "${tm?.team_name||'this team'}" to which UID?`,'');
+  if(uidRaw===null)return;
+  const uid=parseInt(uidRaw.trim(),10);
+  if(!uid)return msg('Enter a valid UID number.');
+  const {data:prof,error:pErr}=await sb.from('profiles').select('id,user_number,full_name').eq('user_number',uid).single();
+  if(pErr||!prof)return msg('No account found with that UID.');
+  askConfirm(`Link to UID #${prof.user_number}?`,`This team will be linked to ${prof.full_name||'this account'} (UID #${prof.user_number}). Any future prize for this lobby will be credited to their wallet instead of manual payout.`,async()=>{
+    const {data,error}=await sb.from('lobby_teams').update({submitted_by:prof.id}).eq('id',teamId).select();
+    if(error)return msg(error.message);
+    if(!data||data.length===0)return msg('Update blocked (0 rows) — check the UPDATE RLS policy on lobby_teams.');
+    await logActivity('team_linked_account','tournament','tournament_lobby',currentLobbyForTeams.id,tm?.team_name||null,{narration:`linked team "${tm?.team_name||''}" to UID #${prof.user_number}.`,highlight_targets:[tm?.team_name||null]});
+    await openTeams(currentLobbyForTeams.id);
   });
 }
 
