@@ -5,42 +5,112 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Host Panel — CHT ESP ORG</title>
 <style>
-:root{--bg:#080b12;--surface:#121827;--surface2:#171f31;--line:#293650;--muted:#8b96aa;--green:#25d366;--green2:#39e77b;--red:#ff5d6c;--gold:#f6c453;--text:#f4f6fb}
+:root{--bg:#080b12;--surface:#121827;--surface2:#171f31;--line:#26324a;--muted:#8b96aa;--green:#25d366;--green2:#39e77b;--red:#ff5d6c;--gold:#f6c453;--card:#121827;--border:#26324a;--text:#f4f6fb}
 *{box-sizing:border-box}
-body{margin:0;min-height:100vh;background:radial-gradient(circle at 12% 0%,rgba(255,255,255,.07),transparent 40%),linear-gradient(160deg,#1b2140 0%,#2a3266 55%,#333c7a 100%);color:var(--text);font-family:Inter,system-ui,-apple-system,sans-serif}
-.wrap{max-width:900px;margin:auto;padding:18px 12px 40px}
-.head{display:flex;gap:11px;align-items:center;margin-bottom:16px}
-.back{width:44px;height:44px;border:1px solid var(--line);border-radius:12px;background:#121827;color:#fff;font-size:22px;cursor:pointer}
-h1{font-size:20px;margin:0;font-weight:900}.sub{font-size:10px;color:var(--muted);margin-top:4px}
-.datebar{display:flex;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(180deg,#141b2b,#111827);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:12px}
-.date-title{font-size:12px;font-weight:900}.date-title small{display:block;color:var(--muted);font-size:9px;margin-top:3px}
-.refresh{border:1px solid var(--line);background:#111827;color:#eaf0fa;border-radius:10px;padding:9px 12px;font-size:10px;font-weight:900}
+html{background:#080b12}
+body{margin:0;min-height:100vh;background:radial-gradient(circle at 12% 0%,rgba(255,255,255,.06) 0%,rgba(255,255,255,0) 40%),linear-gradient(160deg,#1b2140 0%,#2a3266 55%,#333c7a 100%);color:#f4f6fb;font-family:Inter,system-ui,-apple-system,sans-serif}
+button,input{font:inherit}
+button{cursor:pointer}
+.wrap{max-width:760px;margin:auto;padding:20px 14px 110px}
+.head{display:flex;gap:12px;align-items:center;margin-bottom:18px}
+.back{width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--border);color:var(--text);display:flex;align-items:center;justify-content:center;font-size:27px;line-height:1}
+.head h1{font-size:19px;margin:0;font-weight:750}
+.sub{font-size:10px;color:var(--muted);margin-top:4px}
+
+.today-panel{background:linear-gradient(180deg,#141b2b,#111827);border:1px solid #27334c;border-radius:19px;padding:13px 14px;margin-bottom:12px;box-shadow:0 12px 30px #0003}
+.today-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.today-title{font-size:13px;font-weight:950}
+.today-title small{display:block;color:var(--muted);font-size:9px;font-weight:700;margin-top:4px}
+.refresh{border:1px solid #293650;background:#111827;color:#e9edf5;border-radius:11px;padding:9px 12px;font-size:9px;font-weight:900}
+
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-.stat{background:#141b2b;border:1px solid var(--line);border-radius:14px;padding:11px}.stat b{display:block;font-size:18px}.stat span{font-size:8px;color:var(--muted);font-weight:800}
-.tournament{background:linear-gradient(180deg,#141b2b,#111827);border:1px solid var(--line);border-radius:18px;margin-bottom:12px;overflow:hidden;box-shadow:0 12px 30px #0003}
-.thead{padding:13px 14px 10px;border-bottom:1px solid #253047}.tname{font-size:14px;font-weight:950}.tmeta{font-size:9px;color:var(--muted);margin-top:4px}
-.lobby{padding:12px 13px;border-bottom:1px solid #202b40}.lobby:last-child{border-bottom:0}
-.ltop{display:flex;align-items:center;justify-content:space-between;gap:10px}.ltime{font-size:12px;font-weight:950}
-.badge{font-size:8px;font-weight:950;padding:5px 8px;border-radius:999px;background:#203329;color:#5ee98b;white-space:nowrap}
-.badge.full{background:#2b2410;color:#f6c453}.badge.off{background:#2b1720;color:#ff6575}.badge.pending{background:#2b2410;color:#f6c453}
-.info{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}
-.info-box{background:#0e1420;border:1px solid #26324a;border-radius:10px;padding:8px}.info-box span{display:block;color:#7f8ba0;font-size:8px;font-weight:800}.info-box b{display:block;font-size:11px;margin-top:3px;word-break:break-all}
-.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:9px}
-.btn{border:1px solid #293650;background:#111827;color:#eaf0fa;border-radius:10px;padding:10px 6px;font-size:9px;font-weight:900;cursor:pointer}
-.btn.green{color:#62eb91}.btn.red{color:#ff6f7c}.btn.gold{color:#f6c453}.btn:disabled{opacity:.45;cursor:not-allowed}
-.empty,.loading{text-align:center;color:var(--muted);font-size:11px;padding:30px 12px}
-.notice{background:#141b2b;border:1px solid var(--line);border-radius:15px;padding:14px;color:#aeb7c7;font-size:10px;line-height:1.55;margin-bottom:12px}
+.stat{background:linear-gradient(145deg,#182237,#141d30);border:1px solid #2b3852;border-radius:16px;padding:12px 11px;box-shadow:0 8px 22px #0002}
+.stat b{display:block;font-size:19px;line-height:1.1;font-weight:950}
+.stat span{display:block;font-size:8px;color:#8e98ab;font-weight:900;margin-top:5px;letter-spacing:.2px}
+
+.notice{background:#141b2b;border:1px solid #27334c;border-radius:15px;padding:12px 13px;color:#aeb7c7;font-size:9px;line-height:1.5;margin-bottom:12px}
+
+.group{background:linear-gradient(180deg,#141b2b,#111827);border:1px solid #27334c;border-radius:19px;padding:12px;margin-bottom:12px;box-shadow:0 12px 30px #0003}
+.group-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 4px 8px}
+.group-name{font-size:14px;font-weight:950;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.group-count{font-size:9px;color:#7f8ba0;font-weight:900;white-space:nowrap}
+.lobby-item{background:linear-gradient(145deg,#182237,#141d30);border:1px solid #2b3852;border-radius:16px;padding:12px;margin-top:9px;box-shadow:0 8px 22px #0002}
+.lobby-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.lobby-date{font-size:12px;font-weight:950}
+.lobby-meta{font-size:9px;color:#8e98ab;margin-top:5px}
+.lobby-status{font-size:8px;font-weight:950;padding:5px 8px;border-radius:999px;background:#203329;color:#5ee98b;white-space:nowrap}
+.lobby-status.full{background:#2b2410;color:#f6c453}
+.lobby-status.pending{background:#2b2410;color:#f6c453}
+.lobby-status.off{background:#2b1720;color:#ff6575}
+
+.room-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.room-box{min-width:0;background:#0e1420;border:1px solid #293650;border-radius:11px;padding:9px 10px}
+.room-box span{display:block;color:#7f8ba0;font-size:8px;font-weight:900;text-transform:uppercase}
+.room-box b{display:block;font-size:11px;margin-top:4px;word-break:break-all;color:#f0f3f8}
+
+.lobby-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.mini{border:1px solid #293650;background:#111827;color:#e8ebf2;border-radius:10px;padding:9px 12px;font-size:9px;font-weight:900;min-height:36px}
+.mini.green{color:#62eb91}
+.mini.red{color:#ff6f7c}
+.mini.gold{color:#f6c453}
+.mini:disabled{opacity:.45;cursor:not-allowed}
+
+.empty,.loading{text-align:center;color:var(--muted);font-size:11px;padding:24px 12px}
+
 .modal{display:none;position:fixed;inset:0;background:#000b;z-index:9999;align-items:flex-end;backdrop-filter:blur(4px)}
-.modal.open{display:flex}.box{width:100%;max-height:92vh;overflow:auto;background:#0c111b;border:1px solid #293650;border-radius:22px 22px 0 0;padding:0 14px 16px}
-.mh{display:flex;align-items:center;justify-content:space-between;padding:16px 0 12px;position:sticky;top:0;background:#0c111b;z-index:3}.mh b{font-size:14px}.close{width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:#151d2c;color:#fff;font-size:20px}
-.team{background:#171f31;border:1px solid var(--line);border-radius:13px;padding:10px;margin-top:8px}.teamtop{display:flex;justify-content:space-between;gap:8px}.teamname{font-size:11px;font-weight:900}.teammeta{font-size:9px;color:#8e98ab;margin-top:4px}.uid{display:inline-block;background:#1c2a3d;color:#7cc2ff;border-radius:999px;padding:2px 7px;font-weight:900}
-.result-row{display:grid;grid-template-columns:28px minmax(0,1fr) 72px 60px 30px;gap:6px;align-items:center;background:#171f31;border:1px solid var(--line);border-radius:12px;padding:8px;margin-top:8px}
-.rank{width:27px;height:27px;border-radius:8px;display:grid;place-items:center;background:#101725;border:1px solid #2b3852;font-size:10px;font-weight:900}
-.rname{font-size:10px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rmeta{font-size:8px;color:#8e98ab;margin-top:2px}
-.result-row input{width:100%;background:#101725;border:1px solid var(--line);color:#fff;border-radius:7px;padding:7px;font-size:9px}.updown{display:flex;flex-direction:column;gap:2px}.updown button{width:28px;height:14px;background:#101725;border:1px solid var(--line);color:#fff;border-radius:5px;font-size:8px}.updown button:disabled{opacity:.3}
-.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}.modal-actions button{border:1px solid var(--line);background:#151d2c;color:#fff;border-radius:11px;padding:11px;font-weight:900}.modal-actions .primary{background:#22c55e;color:#06120a;border-color:#22c55e}
-.confirm{display:none;position:fixed;inset:0;z-index:10000;background:#000a;align-items:center;justify-content:center;padding:20px}.confirm.open{display:flex}.confirm-card{width:min(370px,100%);background:#141a29;border:1px solid #2c3851;border-radius:20px;padding:20px}.confirm-title{font-size:15px;font-weight:900}.confirm-text{font-size:10px;color:#929caf;line-height:1.5;margin-top:6px}.confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}.confirm-actions button{border:1px solid var(--line);background:#111827;color:#fff;border-radius:11px;padding:11px;font-weight:900}.confirm-actions .danger{background:#e5485a;border-color:#e5485a}
-@media(max-width:560px){.wrap{padding:14px 10px 30px}.stats{gap:6px}.stat{padding:9px}.stat b{font-size:16px}.actions{grid-template-columns:repeat(2,1fr)}.info{grid-template-columns:1fr 1fr}.result-row{grid-template-columns:27px minmax(0,1fr) 62px 54px 28px}}
+.modal.open{display:flex}
+.box{width:100%;max-height:92vh;max-height:92dvh;overflow:auto;background:#0c111b;border:1px solid #293650;border-radius:22px 22px 0 0;padding:0 17px 17px}
+.mh{display:flex;align-items:center;justify-content:space-between;padding:17px 0 13px;position:sticky;top:0;background:#0c111b;z-index:20}
+.mh b{font-size:14px}
+.close{width:34px;height:34px;border-radius:10px;border:1px solid #293650;background:#151d2c;color:#fff;font-size:20px}
+label{display:block;color:#8d98ab;font-size:9px;font-weight:900;margin:9px 0 5px}
+input{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-radius:11px;padding:10px;font-size:11px}
+.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}
+.modal-actions button{border:1px solid #293650;background:#151d2c;color:#fff;border-radius:11px;padding:11px;font-weight:900}
+.modal-actions .primary{background:#22c55e;color:#06120a;border-color:#22c55e}
+
+.team-item{background:#171f31;border:1px solid #293650;border-radius:14px;padding:10px;margin-top:8px}
+.team-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.teamname{font-size:11px;font-weight:900}
+.teammeta{font-size:9px;color:#8e98ab;margin-top:4px}
+.uid{display:inline-block;background:#1c2a3d;color:#7cc2ff;border-radius:999px;padding:2px 7px;font-weight:900}
+.team-status{font-size:9px;font-weight:900;padding:4px 8px;border-radius:999px;background:#203329;color:#5ee98b}
+.team-status.pending{background:#2b2410;color:#f6c453}
+.team-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+
+.result-row{display:grid;grid-template-columns:26px 1fr 66px 58px 30px;gap:6px;align-items:center;background:#171f31;border:1px solid #293650;border-radius:12px;padding:8px;margin-top:8px}
+.rank{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:#101725;border:1px solid #2b3852;font-size:10px;font-weight:900}
+.rname{font-size:10px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rmeta{font-size:8px;color:#8e98ab;margin-top:2px}
+.result-row input{width:100%;background:#101725;border:1px solid #293650;color:#fff;border-radius:7px;padding:7px;font-size:10px}
+.updown{display:flex;flex-direction:column;gap:2px}
+.updown button{width:28px;height:15px;background:#101725;border:1px solid #293650;color:#fff;border-radius:6px;font-size:8px}
+.updown button:disabled{opacity:.3}
+
+.confirm{display:none;position:fixed;inset:0;z-index:10000;background:#000a;align-items:center;justify-content:center;padding:20px}
+.confirm.open{display:flex}
+.confirm-card{width:min(360px,100%);background:#141a29;border:1px solid #2c3851;border-radius:20px;padding:20px;box-shadow:0 25px 70px #0008}
+.confirm-title{font-size:15px;font-weight:900}
+.confirm-text{font-size:10px;color:#929caf;line-height:1.5;margin-top:6px}
+.confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+.confirm-actions button{border:1px solid #293650;background:#111827;color:#fff;border-radius:11px;padding:11px;font-weight:900}
+.confirm-actions .danger{background:#e5485a;border-color:#e5485a}
+
+@media(max-width:560px){
+  .wrap{padding:14px 12px 80px}
+  .stats{gap:6px}
+  .stat{padding:10px 8px;border-radius:14px}
+  .stat b{font-size:17px}
+  .stat span{font-size:7px}
+  .lobby-actions{gap:6px}
+  .mini{padding:8px 10px;font-size:8px}
+  .room-grid{gap:7px}
+  .result-row{grid-template-columns:26px minmax(0,1fr) 62px 54px 28px}
+}
+@media(max-width:390px){
+  .room-grid{grid-template-columns:1fr}
+  .lobby-actions .mini{flex:1}
+}
 </style>
 </head>
 <body>
@@ -49,8 +119,20 @@ h1{font-size:20px;margin:0;font-weight:900}.sub{font-size:10px;color:var(--muted
     <button class="back" onclick="history.back()" aria-label="Back">‹</button>
     <div><h1>Host Panel</h1><div class="sub">Today's active tournament lobbies</div></div>
   </div>
-  <div class="datebar"><div class="date-title" id="todayLabel">Today<small>Loading date…</small></div><button class="refresh" onclick="load()">↻ Refresh</button></div>
-  <div class="stats"><div class="stat"><b id="tStat">0</b><span>ACTIVE TOURNAMENTS</span></div><div class="stat"><b id="lStat">0</b><span>ACTIVE LOBBIES</span></div><div class="stat"><b id="sStat">0</b><span>TEAMS / SLOTS</span></div></div>
+
+  <section class="today-panel">
+    <div class="today-head">
+      <div class="today-title">Today's Active Lobbies<small id="todayLabel">Loading date…</small></div>
+      <button class="refresh" onclick="load()">↻ Refresh</button>
+    </div>
+  </section>
+
+  <div class="stats">
+    <div class="stat"><b id="tStat">0</b><span>ACTIVE TOURNAMENTS</span></div>
+    <div class="stat"><b id="lStat">0</b><span>ACTIVE LOBBIES</span></div>
+    <div class="stat"><b id="sStat">0/0</b><span>TEAMS / SLOTS</span></div>
+  </div>
+
   <div id="notice" class="notice">Loading today's active lobbies…</div>
   <div id="content"><div class="loading">Loading…</div></div>
 </main>
@@ -134,7 +216,7 @@ async function applyAutoStatus(list){
 async function load(){
   $('content').innerHTML='<div class="loading">Loading…</div>';
   const today=ymd(new Date());
-  $('todayLabel').innerHTML='Today<small>'+fmtDate(today)+'</small>';
+  $('todayLabel').textContent=fmtDate(today);
   const tr=await sb.from('tournaments').select('id,title,status,default_slots,total_slots,prize_distribution').neq('status','archived');
   if(tr.error){$('content').innerHTML='<div class="empty">Could not load tournaments: '+esc(tr.error.message)+'</div>';return}
   tournaments=new Map((tr.data||[]).map(t=>[t.id,t]));
@@ -150,41 +232,78 @@ function render(){
   const groups=new Map();
   lobbies.forEach(l=>{
     const t=tournaments.get(l.tournament_id);if(!t)return;
-    if(!groups.has(t.id))groups.set(t.id,{t,l:[]});groups.get(t.id).l.push(l);
+    if(!groups.has(t.id))groups.set(t.id,{t,l:[]});
+    groups.get(t.id).l.push(l);
   });
+
   let totalJoined=0,totalSlots=0;
-  lobbies.forEach(l=>{totalJoined+=Number(l.joined_count)||0;totalSlots+=Number(l.total_slots)||0});
-  $('tStat').textContent=groups.size;$('lStat').textContent=lobbies.length;$('sStat').textContent=totalJoined+'/'+totalSlots;
-  $('notice').textContent=groups.size?((profile?.is_admin?'Admin access':'Host access')+' · '+lobbies.length+' active lobby'+(lobbies.length===1?'':'ies')+' today. No Tournament Management access is needed here.'):'No active tournament lobby scheduled for today.';
-  if(!groups.size){$('content').innerHTML='<div class="empty">No active lobbies for today.</div>';return}
+  lobbies.forEach(l=>{
+    totalJoined+=Number(l.joined_count)||0;
+    totalSlots+=Number(l.total_slots)||0;
+  });
+
+  $('tStat').textContent=groups.size;
+  $('lStat').textContent=lobbies.length;
+  $('sStat').textContent=totalJoined+'/'+totalSlots;
+
+  const access=profile?.is_admin?'Admin access':'Host access';
+  $('notice').textContent=groups.size
+    ? `${access} · ${lobbies.length} active lobb${lobbies.length===1?'y':'ies'} today. No Tournament Management access is needed here`
+    : 'No active tournament lobby scheduled for today.';
+
+  if(!groups.size){
+    $('content').innerHTML='<div class="empty">No active lobbies for today.</div>';
+    return;
+  }
+
   $('content').innerHTML=[...groups.values()].map(g=>`
-    <section class="tournament">
-      <div class="thead"><div class="tname">${esc(g.t.title)}</div><div class="tmeta">${g.l.length} active lobby${g.l.length===1?'':'ies'} · default ${Number(g.t.default_slots||g.t.total_slots)||0} slots</div></div>
-      ${g.l.sort((a,b)=>(parseLobbyDateTime(a.lobby_date,a.time_label)||0)-(parseLobbyDateTime(b.lobby_date,b.time_label)||0)).map(renderLobby).join('')}
-    </section>`).join('');
+    <section class="group">
+      <div class="group-head">
+        <div class="group-name">${esc(g.t.title)}</div>
+        <div class="group-count">${g.l.length} active lobb${g.l.length===1?'y':'ies'}</div>
+      </div>
+      ${g.l.sort((a,b)=>{
+        const da=parseLobbyDateTime(a.lobby_date,a.time_label);
+        const db=parseLobbyDateTime(b.lobby_date,b.time_label);
+        if(da&&db)return da-db;
+        return (a.time_label||'').localeCompare(b.time_label||'');
+      }).map(renderLobby).join('')}
+    </section>
+  `).join('');
 }
+
 function renderLobby(l){
   const live=liveBadge(l);
-  let badge=l.status==='full'?'<span class="badge full">● FULL</span>':live?`<span class="badge ${live.cls}">● ${live.text}</span>`:'<span class="badge">○ UPCOMING</span>';
-  const room=l.room_id||'Not set',pass=l.room_password||'Not set';
-  return `<div class="lobby">
-    <div class="ltop"><div class="ltime">${fmtShort(l.lobby_date)} — ${esc(l.time_label)}</div>${badge}</div>
-    <div class="info">
-      <div class="info-box"><span>TEAMS / SLOTS</span><b>${Number(l.joined_count)||0} / ${Number(l.total_slots)||0}</b></div>
-      <div class="info-box"><span>ROOM ID</span><b>${esc(room)}</b></div>
-      <div class="info-box"><span>PASSWORD</span><b>${esc(pass)}</b></div>
-      <div class="info-box"><span>BOOKED</span><b>${Number(l.booked_slots)||0}</b></div>
+  let badge='';
+  if(l.status==='full') badge='<div class="lobby-status full">● FULL</div>';
+  else if(live) badge=`<div class="lobby-status ${live.cls||''}">● ${live.text}</div>`;
+  else badge='<div class="lobby-status">○ UPCOMING</div>';
+
+  const room=l.room_id||'Not set';
+  const pass=l.room_password||'Not set';
+
+  return `<div class="lobby-item">
+    <div class="lobby-top">
+      <div class="lobby-date">${fmtShort(l.lobby_date)} — ${esc(l.time_label)}</div>
+      ${badge}
     </div>
-    <div class="actions">
-      <button class="btn green" onclick="openTeams('${l.id}')">Teams</button>
-      <button class="btn" onclick="openRoom('${l.id}')">Room ID/Pass</button>
-      <button class="btn" onclick="openResults('${l.id}')">Enter Result</button>
+    <div class="lobby-meta">${Number(l.joined_count)||0} / ${Number(l.total_slots)||0} teams joined</div>
+
+    <div class="room-grid">
+      <div class="room-box"><span>Room ID</span><b>${esc(room)}</b></div>
+      <div class="room-box"><span>Password</span><b>${esc(pass)}</b></div>
+    </div>
+
+    <div class="lobby-actions">
+      <button class="mini green" onclick="openTeams('${l.id}')">Teams</button>
+      <button class="mini" onclick="openRoom('${l.id}')">Room ID/Pass</button>
+      <button class="mini" onclick="openResults('${l.id}')">Enter Result</button>
       ${l.status==='full'
-        ?`<button class="btn gold" onclick="changeStatus('${l.id}','upcoming')">Unfull</button>`
-        :`<button class="btn gold" onclick="changeStatus('${l.id}','full')">Full</button>`}
-      <button class="btn red" onclick="changeStatus('${l.id}','cancelled')">Off</button>
+        ? `<button class="mini gold" onclick="changeStatus('${l.id}','upcoming')">Unfull</button>`
+        : `<button class="mini gold" onclick="changeStatus('${l.id}','full')">Full</button>`}
+      <button class="mini red" onclick="changeStatus('${l.id}','cancelled')">Off</button>
     </div>
-  </div>`
+  </div>`;
 }
 async function refreshLobby(id){
   const r=await sb.from('tournament_lobbies').select('*').eq('id',id).single();
