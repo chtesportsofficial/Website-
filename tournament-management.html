@@ -1289,7 +1289,7 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('saveSectionBtn').addEventListener('click', saveSection);
   document.getElementById('showHistoryBtn').addEventListener('click', function(){
     if(!currentLobbyTournament)return;
-    location.href='lobby-history.html?tid='+encodeURIComponent(currentLobbyTournament.id);
+    location.replace('lobby-history.html?tid='+encodeURIComponent(currentLobbyTournament.id));
   });
 });
 
