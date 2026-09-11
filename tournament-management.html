@@ -1304,12 +1304,18 @@ document.addEventListener('DOMContentLoaded', function(){
   if(jumpTid&&jumpLobby){
     currentLobbyTournament=tournaments.find(x=>x.id===jumpTid);
     if(currentLobbyTournament){
-      $('lbmTitle').textContent=currentLobbyTournament.title+' — Lobbies';
-      $('lobbyDate').value=ymd(new Date());
-      $('lobbyTimes').innerHTML='<div class="lobby-time-row"><input type="time" step="3600" class="lobbyTimeInput"></div>';
-      openM('lbm');
       await loadLobbies(jumpTid,{includeOlder:true});
-      if(jumpTeam)openTeams(jumpLobby); else openResults(jumpLobby);
+      // Came here from lobby-history.html's "View Results"/"Add Team" link,
+      // so closing this modal should go back there — not just reveal
+      // whatever page happens to be underneath.
+      const backToHistory=()=>location.replace('lobby-history.html?tid='+encodeURIComponent(jumpTid));
+      if(jumpTeam){
+        openTeams(jumpLobby);
+        document.querySelector('#ltm .mh button').onclick=backToHistory;
+      }else{
+        openResults(jumpLobby);
+        document.querySelector('#lrm .mh button').onclick=backToHistory;
+      }
     }
   }else if(jumpTid&&backToLobbies){
     // Back button on lobby-history.html links here instead of using
