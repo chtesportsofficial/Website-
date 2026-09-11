@@ -434,6 +434,56 @@ async function deleteTeam(teamId){
     await load();
   });
 }
+
+// Link a manually-added Guest team to an existing account by UID.
+// This matches Tournament Management: the Guest badge becomes the real UID,
+// and future prizes can be credited to that user's wallet.
+async function linkTeamAccount(teamId){
+  const tm=lobbyTeamsCache.find(t=>t.id===teamId);
+  if(!tm)return msg('Team not found.');
+
+  const uidRaw=prompt(`Link "${tm.team_name}" to which UID?`,'');
+  if(uidRaw===null)return;
+
+  const uid=parseInt(uidRaw.trim(),10);
+  if(!uid)return msg('Enter a valid UID number.');
+
+  const {data:prof,error:pErr}=await sb
+    .from('profiles')
+    .select('id,user_number,full_name')
+    .eq('user_number',uid)
+    .single();
+
+  if(pErr||!prof)return msg('No account found with that UID.');
+
+  askConfirm(
+    `Link to UID #${prof.user_number}?`,
+    `This team will be linked to ${prof.full_name||'this account'} (UID #${prof.user_number}). Any future prize for this lobby will be credited to their wallet instead of manual payout.`,
+    async()=>{
+      const {data,error}=await sb
+        .from('lobby_teams')
+        .update({submitted_by:prof.id})
+        .eq('id',teamId)
+        .select();
+
+      if(error)return msg(error.message);
+      if(!data||data.length===0)return msg('Update blocked (0 rows) — check the UPDATE RLS policy on lobby_teams.');
+
+      await logActivity(
+        'team_linked_account',
+        currentLobby.id,
+        tm.team_name,
+        {
+          narration:`linked team "${tm.team_name}" to UID #${prof.user_number}.`,
+          highlight_targets:[tm.team_name]
+        }
+      );
+
+      await openTeams(currentLobby.id);
+    }
+  );
+}
+
 async function openResults(id){
   currentLobby=lobbies.find(x=>x.id===id);if(!currentLobby)return;
   currentTournament=tournaments.get(currentLobby.tournament_id);
