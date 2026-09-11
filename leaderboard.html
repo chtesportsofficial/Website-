@@ -46,14 +46,21 @@ button{font-family:inherit;cursor:pointer}
 .lb-card{margin:0 16px;background:linear-gradient(135deg,rgba(33,230,193,.08),rgba(19,24,38,.4));border:1px solid rgba(33,230,193,.25);border-radius:16px;padding:14px}
 html[data-theme="light"] .lb-card{background:linear-gradient(135deg,rgba(33,230,193,.10),rgba(230,247,242,.65));border-color:rgba(20,150,120,.35)}
 .lb-list{padding-right:2px}
-.lb-row{display:flex;align-items:center;gap:11px;padding:10px 2px}
+.lb-row{display:flex;align-items:center;gap:12px;padding:10px 2px}
 .lb-row+.lb-row{border-top:1px solid var(--line)}
 .lb-rank{width:24px;text-align:center;font-weight:900;font-size:13px;color:var(--text-dim)}
 .lb-rank.gold{color:#ffd35a}.lb-rank.silver{color:#cfd6e6}.lb-rank.bronze{color:#e0a06a}
 html[data-theme="light"] .lb-rank.gold{color:#b8860b}
 html[data-theme="light"] .lb-rank.silver{color:#5b6b85}
 html[data-theme="light"] .lb-rank.bronze{color:#a85f2a}
-.lb-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(145deg,#26344a,#111722);border:1px solid var(--line);flex-shrink:0}
+.lb-avatar{
+  width:42px;height:42px;border-radius:50%;
+  background:var(--surface-2);
+  border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;flex-shrink:0;
+}
+.lb-avatar img{width:100%;height:100%;display:block;object-fit:cover;border-radius:50%}
 .lb-name{flex:1;font-size:12.5px;font-weight:700;display:flex;flex-direction:column;gap:2px}
 .lb-name .s{font-size:9px;font-weight:600;color:var(--text-dim)}
 .lb-amt{font-size:12px;font-weight:900;color:var(--green);white-space:nowrap}
@@ -99,6 +106,14 @@ html[data-theme="light"] .lb-rank.bronze{color:#a85f2a}
 const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
 const SUPABASE_KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+function getLogo(r){
+  const keys=['owner_team_logo','team_logo','team_logo_url','logo_url','owner_team_logo_url','team_avatar','avatar_url','logo'];
+  for(const k of keys){
+    const v=r?.[k];
+    if(typeof v==='string' && v.trim()) return v.trim();
+  }
+  return '';
+}
 function medalClass(i){return i===0?'gold':i===1?'silver':i===2?'bronze':'';}
 const BN_MONTHS=['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
 function monthRange(offset){
@@ -132,8 +147,9 @@ function start(){
       // the free-typed squad name on that particular slot entry (team_name).
       // Falls back to team_name only for old rows that predate owner_team_name.
       const key=r.owner_team_name||r.team_name;
-      const cur=totals.get(key)||{team_name:key,points:0,prize:0};
-      cur.points+=r.points||0; cur.prize+=Number(r.prize_won)||0;
+      const cur=totals.get(key)||{team_name:key,points:0,logo:''};
+       cur.points+=Number(r.points)||0;
+       if(!cur.logo) cur.logo=getLogo(r);
       totals.set(key,cur);
     });
     const ranked=[...totals.values()].filter(r=>r.points>0).sort((a,b)=>b.points-a.points);
@@ -141,8 +157,8 @@ function start(){
     listEl.innerHTML=ranked.map((r,i)=>`
       <div class="lb-row">
         <div class="lb-rank ${medalClass(i)}">${i+1}</div>
-        <div class="lb-avatar"></div>
-        <div class="lb-name">${esc(r.team_name)}<span class="s">৳${r.prize} জিতেছে</span></div>
+        <div class="lb-avatar">${getLogo(r)?`<img src="${esc(getLogo(r))}" alt="" onerror="this.remove();">`:''}</div>
+        <div class="lb-name">${esc(r.team_name)}</div>
         <div class="lb-amt">${r.points} পয়েন্ট</div>
       </div>`).join('');
   }
@@ -153,7 +169,7 @@ function start(){
     nextBtn.disabled=offset>=0;
     listEl.innerHTML='<div class="empty">লোডিং...</div>';
     const {data,error}=await sb.from('leaderboard_rows')
-      .select('team_name,owner_team_name,prize_won,points')
+      .select('*')
       .gte('lobby_date',from).lt('lobby_date',to);
     if(error){listEl.innerHTML='<div class="empty">লিডারবোর্ড লোড করা যায়নি।</div>';console.error(error);return}
     render(data);
@@ -162,7 +178,7 @@ function start(){
   async function loadAllTime(){
     listEl.innerHTML='<div class="empty">লোডিং...</div>';
     const {data,error}=await sb.from('leaderboard_rows')
-      .select('team_name,owner_team_name,prize_won,points');
+      .select('*');
     if(error){listEl.innerHTML='<div class="empty">লিডারবোর্ড লোড করা যায়নি।</div>';console.error(error);return}
     render(data);
   }
