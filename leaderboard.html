@@ -107,11 +107,10 @@ const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
 const SUPABASE_KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 function getLogo(r){
-  const keys=['team_logo','team_logo_url','logo_url','owner_team_logo','owner_team_logo_url','team_avatar','avatar_url','profile_picture','profile_image','image_url','photo_url','avatar','logo','picture'];
-  for(const k of keys){ const v=r?.[k]; if(typeof v==='string' && v.trim()) return v.trim(); }
-  return '';
+  const v=r?.team_logo;
+  return typeof v==='string' && v.trim() ? v.trim() : '';
 }
-function normalizeName(v){ return String(v??'').trim().toLowerCase().replace(/\s+/g,' '); }
+
 function medalClass(i){return i===0?'gold':i===1?'silver':i===2?'bronze':'';}
 const BN_MONTHS=['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
 function monthRange(offset){
@@ -138,22 +137,19 @@ function start(){
   let view='month';
   let monthOffset=0;
 
-  async function render(rows, logoRows=[]){
+  async function render(rows){
     const totals=new Map();
-    const logoByName=new Map();
-
-    (logoRows||[]).forEach(x=>{
-      const name=normalizeName(x?.team_name);
-      const logo=String(x?.logo??'').trim();
-      if(name && logo) logoByName.set(name,logo);
-    });
 
     (rows||[]).forEach(r=>{
-      const key=r.owner_team_name||r.team_name;
-      const cur=totals.get(key)||{team_name:key,points:0,logo:''};
+      // Stable identity: profile UUID (submitted_by), NOT team name.
+      // The view resolves submitted_by -> profiles.avatar_url as team_logo.
+      const identity=String(r?.submitted_by||r?.user_number||'').trim();
+      const key=identity || String(r?.owner_team_name||r?.team_name||'').trim();
+      const displayName=String(r?.owner_team_name||r?.team_name||'').trim();
+      const cur=totals.get(key)||{team_name:displayName,points:0,logo:'',user_number:r?.user_number||''};
       cur.points+=Number(r.points)||0;
       if(!cur.logo) cur.logo=getLogo(r);
-      if(!cur.logo) cur.logo=logoByName.get(normalizeName(key))||'';
+      if(displayName) cur.team_name=displayName;
       totals.set(key,cur);
     });
 
@@ -177,16 +173,6 @@ function start(){
       </div>`).join('');
   }
 
-  async function loadTeamLogos(){
-    // Public-safe view: only team_name + logo should be exposed.
-    const {data,error}=await sb.from('leaderboard_team_logos').select('team_name,logo');
-    if(error){
-      console.warn('[Leaderboard] Team-logo view unavailable:', error.message);
-      return [];
-    }
-    return data||[];
-  }
-
   async function loadMonth(offset){
     const {start:from,end:to,label}=monthRange(offset);
     monthTab.textContent=label;
@@ -196,8 +182,7 @@ function start(){
       .select('*')
       .gte('lobby_date',from).lt('lobby_date',to);
     if(error){listEl.innerHTML='<div class="empty">লিডারবোর্ড লোড করা যায়নি।</div>';console.error(error);return}
-    const logos=await loadTeamLogos();
-    render(data,logos);
+    render(data);
   }
 
   async function loadAllTime(){
@@ -205,8 +190,7 @@ function start(){
     const {data,error}=await sb.from('leaderboard_rows')
       .select('*');
     if(error){listEl.innerHTML='<div class="empty">লিডারবোর্ড লোড করা যায়নি।</div>';console.error(error);return}
-    const logos=await loadTeamLogos();
-    render(data,logos);
+    render(data);
   }
 
   function setView(v){
