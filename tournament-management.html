@@ -1304,6 +1304,10 @@ document.addEventListener('DOMContentLoaded', function(){
   if(jumpTid&&jumpLobby){
     currentLobbyTournament=tournaments.find(x=>x.id===jumpTid);
     if(currentLobbyTournament){
+      $('lbmTitle').textContent=currentLobbyTournament.title+' — Lobbies';
+      $('lobbyDate').value=ymd(new Date());
+      $('lobbyTimes').innerHTML='<div class="lobby-time-row"><input type="time" step="3600" class="lobbyTimeInput"></div>';
+      openM('lbm');
       await loadLobbies(jumpTid,{includeOlder:true});
       if(jumpTeam)openTeams(jumpLobby); else openResults(jumpLobby);
     }
