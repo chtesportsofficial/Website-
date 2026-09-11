@@ -849,7 +849,7 @@ function renderLobbies(){
   const lobbyLabel=l=>fmtLobbyDate(l.lobby_date)+' — '+esc(l.time_label)+(l.custom_title?' <span style="color:#8b96aa;font-weight:700">('+esc(l.custom_title)+')</span>':'');
   $('lobbiesActive').innerHTML=active.length?active.map(l=>{
     const liveBadge=lobbyLiveBadge(l);
-    const badgeHtml=l.status==='cancelled'?`<div class="lobby-status cancelled">${lobbyDot(l.status)} CANCELLED</div>`:liveBadge?`<div class="lobby-status ${liveBadge.cls}">${lobbyDot(l.status)} ${liveBadge.text}</div>`:'';
+    const badgeHtml=l.status==='cancelled'?`<div class="lobby-status cancelled">${lobbyDot(l.status)} CANCELLED</div>`:l.status==='full'?`<div class="lobby-status pending">${lobbyDot(l.status)} FULL</div>`:liveBadge?`<div class="lobby-status ${liveBadge.cls}">${lobbyDot(l.status)} ${liveBadge.text}</div>`:'';
     return `
     <div class="lobby-item">
       <div class="lobby-top"><div class="lobby-date">${lobbyLabel(l)}</div>${badgeHtml}</div>
@@ -857,7 +857,7 @@ function renderLobbies(){
       <div class="lobby-actions">
         <button class="mini green" onclick="teamsReturnTid=null;openTeams('${l.id}')">Teams</button><button class="mini" onclick="setBookedSlots('${l.id}')">Booked</button><button class="mini" onclick="setRoomCredentials('${l.id}')">Room ID/Pass</button>
         <button class="mini" onclick="resultsReturnTid=null;openResults('${l.id}')">Enter Result</button>
-        ${l.status==='cancelled'?`<button class="mini green" onclick="setLobbyStatus('${l.id}','upcoming')">On</button><button class="mini t-delete" onclick="deleteLobby('${l.id}')">Delete</button>`:`<button class="mini red" onclick="setLobbyStatus('${l.id}','cancelled')">Off</button>`}
+        ${l.status==='cancelled'?`<button class="mini green" onclick="setLobbyStatus('${l.id}','upcoming')">On</button><button class="mini t-delete" onclick="deleteLobby('${l.id}')">Delete</button>`:`${l.status==='full'?`<button class="mini" onclick="setLobbyStatus('${l.id}','upcoming')">Unfull</button>`:`<button class="mini" onclick="setLobbyStatus('${l.id}','full')">Full</button>`}<button class="mini red" onclick="setLobbyStatus('${l.id}','cancelled')">Off</button>`}
       </div>
     </div>`;
   }).join(''):'<div class="empty">No active lobbies.</div>';
