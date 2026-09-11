@@ -102,9 +102,9 @@
 .lobby-add-box{background:#0e1420;border:1px solid #293650;border-radius:14px;padding:12px;margin-bottom:10px}
 .lobby-dt-row{display:flex;gap:8px}
 .lobby-dt-col{flex:1;min-width:0}
-.lobby-time-row{display:flex;gap:8px;margin-top:6px}
-.lobby-time-row:first-child{margin-top:0}
-.lobby-time-row .lobbyTimeInput{flex:1;width:100%}
+.lobby-time-row,.lhm-time-row{display:flex;gap:8px;margin-top:6px}
+.lobby-time-row:first-child,.lhm-time-row:first-child{margin-top:0}
+.lobby-time-row .lobbyTimeInput,.lhm-time-row .lhmNewLobbyTimeInput{flex:1;width:100%}
 .lobby-item{background:#171f31;border:1px solid #293650;border-radius:14px;padding:11px;margin-top:8px}
 .lobby-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .lobby-date{font-size:12px;font-weight:900}
@@ -258,7 +258,7 @@
   <div class="lobby-add-box" id="lhmAddLobbyForm" style="display:none">
     <div class="lobby-dt-row">
       <div class="lobby-dt-col"><label>Date</label><input type="date" id="lhmNewLobbyDate"></div>
-      <div class="lobby-dt-col"><label>Time</label><div id="lhmNewLobbyTimes"><div class="lobby-time-row"><input type="time" step="3600" class="lhmNewLobbyTimeInput"></div></div></div>
+      <div class="lobby-dt-col"><label>Time</label><div id="lhmNewLobbyTimes"><div class="lhm-time-row"><input type="time" step="3600" class="lhmNewLobbyTimeInput"></div></div></div>
     </div>
     <button type="button" class="mini" style="margin-top:8px;width:100%" id="lhmAddTimeRowBtn">＋ Add another time</button>
     <button type="button" class="create-bottom" id="lhmSaveNewLobbyBtn">Save Lobby(s)</button>
@@ -880,7 +880,7 @@ function openHistory(tid){
   if(tid!==lastHistoryTid)$('lhmDateFilter').value='';
   lastHistoryTid=tid;
   $('lhmNewLobbyDate').value='';
-  $('lhmNewLobbyTimes').innerHTML='<div class="lobby-time-row"><input type="time" step="3600" class="lhmNewLobbyTimeInput"></div>';
+  $('lhmNewLobbyTimes').innerHTML='<div class="lhm-time-row"><input type="time" step="3600" class="lhmNewLobbyTimeInput"></div>';
   $('lhmAddLobbyForm').style.display='none';
   openM('lhm');
   loadHistory(tid);
@@ -956,7 +956,7 @@ async function saveHistoryLobby(){
   if(error)return msg(error.message);
   if(!data||data.length===0)return msg('Insert blocked (0 rows) — check the INSERT RLS policy on tournament_lobbies.');
   $('lhmNewLobbyDate').value='';
-  $('lhmNewLobbyTimes').innerHTML='<div class="lobby-time-row"><input type="time" step="3600" class="lhmNewLobbyTimeInput"></div>';
+  $('lhmNewLobbyTimes').innerHTML='<div class="lhm-time-row"><input type="time" step="3600" class="lhmNewLobbyTimeInput"></div>';
   $('lhmAddLobbyForm').style.display='none';
   await loadHistory(tid);
 }
@@ -1425,7 +1425,7 @@ document.addEventListener('DOMContentLoaded', function(){
   });
   document.getElementById('lhmAddTimeRowBtn').addEventListener('click', function(){
     const row=document.createElement('div');
-    row.className='lobby-time-row';
+    row.className='lhm-time-row';
     row.innerHTML='<input type="time" step="3600" class="lhmNewLobbyTimeInput">';
     $('lhmNewLobbyTimes').appendChild(row);
   });
