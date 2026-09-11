@@ -141,15 +141,28 @@ function start(){
     const totals=new Map();
 
     (rows||[]).forEach(r=>{
-      // Stable identity: profile UUID (submitted_by), NOT team name.
-      // The view resolves submitted_by -> profiles.avatar_url as team_logo.
-      const identity=String(r?.submitted_by||r?.user_number||'').trim();
-      const key=identity || String(r?.owner_team_name||r?.team_name||'').trim();
+      // IMPORTANT: aggregate points by the stable team name/owner team name.
+      // Logo identity is still UID-based via submitted_by -> profiles.id -> avatar_url.
       const displayName=String(r?.owner_team_name||r?.team_name||'').trim();
-      const cur=totals.get(key)||{team_name:displayName,points:0,logo:'',user_number:r?.user_number||''};
-      cur.points+=Number(r.points)||0;
-      if(!cur.logo) cur.logo=getLogo(r);
+      const key=displayName.toLowerCase().replace(/\\s+/g,' ');
+
+      const cur=totals.get(key)||{
+        team_name:displayName,
+        points:0,
+        logo:'',
+        user_number:r?.user_number||''
+      };
+
+      cur.points += Number(r?.points)||0;
+
+      // Keep the first valid UID-based logo found for this team.
+      if(!cur.logo){
+        cur.logo=getLogo(r);
+      }
+
       if(displayName) cur.team_name=displayName;
+      if(!cur.user_number && r?.user_number) cur.user_number=r.user_number;
+
       totals.set(key,cur);
     });
 
