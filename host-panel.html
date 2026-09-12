@@ -201,8 +201,23 @@ function liveBadge(l){
   const dt=parseLobbyDateTime(l.lobby_date,l.time_label);if(!dt)return {cls:'',text:'MATCH ON'};
   return ((Date.now()-dt.getTime())/60000)<60?{cls:'',text:'MATCH ON'}:{cls:'pending',text:'PENDING'};
 }
-function closeModal(id){$(id).classList.remove('open')}
-function openModal(id){$(id).classList.add('open')}
+let _scrollY=0,_modalOpenCount=0;
+function closeModal(id){
+  $(id).classList.remove('open');
+  _modalOpenCount=Math.max(0,_modalOpenCount-1);
+  if(_modalOpenCount===0){
+    document.body.style.position='';document.body.style.top='';document.body.style.width='';document.body.style.overflow='';
+    window.scrollTo(0,_scrollY);
+  }
+}
+function openModal(id){
+  if(_modalOpenCount===0){
+    _scrollY=window.scrollY||window.pageYOffset||0;
+    document.body.style.position='fixed';document.body.style.top=(-_scrollY)+'px';document.body.style.width='100%';document.body.style.overflow='hidden';
+  }
+  _modalOpenCount++;
+  $(id).classList.add('open');
+}
 function msg(text){alert(text)}
 function askConfirm(title,text,action){
   $('confirmTitle').textContent=title;$('confirmText').textContent=text;$('confirm').classList.add('open');
