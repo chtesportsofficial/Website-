@@ -51,6 +51,7 @@ button{cursor:pointer}
 .mini.red{color:#ff6f7c}
 .mini.gold{color:#f6c453}
 .mini:disabled{opacity:.45;cursor:not-allowed}
+.modal-actions button:disabled{opacity:.55;cursor:not-allowed}
 
 .empty,.loading{text-align:center;color:var(--muted);font-size:11px;padding:24px 12px}
 
@@ -158,7 +159,7 @@ input{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-r
     <label>WhatsApp Number *</label><input id="atWhatsapp" placeholder="01XXXXXXXXX" inputmode="tel">
     <div class="modal-actions">
       <button type="button" onclick="toggleAddTeamForm(false)">Cancel</button>
-      <button type="button" class="primary" onclick="submitManualTeam()">Add Team</button>
+      <button type="button" class="primary" id="addTeamSubmitBtn" onclick="submitManualTeam()">Add Team</button>
     </div>
   </div>
   <div id="teamsList"><div class="loading">Loading…</div></div>
@@ -177,6 +178,18 @@ input{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-r
 </div></div>
 
 <div class="confirm" id="confirm"><div class="confirm-card"><div class="confirm-title" id="confirmTitle">Are you sure?</div><div class="confirm-text" id="confirmText"></div><div class="confirm-actions"><button onclick="closeConfirm()">Cancel</button><button class="danger" id="confirmOk">Continue</button></div></div></div>
+<div class="confirm" id="linkAccountModal">
+  <div class="confirm-card">
+    <div class="confirm-title">Link Team to Account</div>
+    <div class="confirm-text" id="linkAccountText"></div>
+    <label style="display:block;margin-top:14px;font-size:9px;font-weight:900;color:#929caf;text-transform:uppercase;letter-spacing:.03em">Player's UID</label>
+    <input id="linkAccountUid" placeholder="e.g. 24" inputmode="numeric" style="margin-top:6px" autocomplete="off">
+    <div class="confirm-actions">
+      <button onclick="closeLinkAccountModal()">Cancel</button>
+      <button class="danger" id="linkAccountOk" style="background:#22c55e;border-color:#22c55e;color:#06120a">Link</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -406,32 +419,40 @@ async function submitManualTeam(){
   if(!whatsapp)return msg('WhatsApp number is required.');
   if(!currentLobby)return;
 
-  const earliest=lobbyTeamsCache.length
-    ? Math.min(...lobbyTeamsCache.map(t=>new Date(t.joined_at).getTime()))
-    : Date.now();
+  const btn=$('addTeamSubmitBtn');
+  const originalLabel=btn.textContent;
+  btn.disabled=true;btn.textContent='Adding…';
 
-  const payload={
-    lobby_id:currentLobby.id,
-    team_name:teamName,
-    players:playerName?[{name:playerName}]:[],
-    contact_number:whatsapp,
-    payment_method:'manual',
-    payment_reference:`Added by ${profile?.full_name||profile?.email||'Host'}`,
-    confirmation_status:'confirmed',
-    joined_at:new Date(earliest-1000).toISOString()
-  };
+  try{
+    const earliest=lobbyTeamsCache.length
+      ? Math.min(...lobbyTeamsCache.map(t=>new Date(t.joined_at).getTime()))
+      : Date.now();
 
-  const r=await sb.from('lobby_teams').insert(payload);
-  if(r.error)return msg(r.error.message);
+    const payload={
+      lobby_id:currentLobby.id,
+      team_name:teamName,
+      players:playerName?[{name:playerName}]:[],
+      contact_number:whatsapp,
+      payment_method:'manual',
+      payment_reference:`Added by ${profile?.full_name||profile?.email||'Host'}`,
+      confirmation_status:'confirmed',
+      joined_at:new Date(earliest-1000).toISOString()
+    };
 
-  await logActivity('team_added_manually',currentLobby.id,teamName,{
-    narration:`manually added team "${teamName}" to the lobby (WhatsApp booking).`,
-    highlight_targets:[teamName]
-  });
+    const r=await sb.from('lobby_teams').insert(payload);
+    if(r.error)return msg(r.error.message);
 
-  toggleAddTeamForm(false);
-  await openTeams(currentLobby.id);
-  await load();
+    await logActivity('team_added_manually',currentLobby.id,teamName,{
+      narration:`manually added team "${teamName}" to the lobby (WhatsApp booking).`,
+      highlight_targets:[teamName]
+    });
+
+    toggleAddTeamForm(false);
+    await openTeams(currentLobby.id);
+    await load();
+  }finally{
+    btn.disabled=false;btn.textContent=originalLabel;
+  }
 }
 async function setTeamStatus(teamId,status){
   const r=await sb.from('lobby_teams').update({confirmation_status:status}).eq('id',teamId).select();
@@ -458,50 +479,69 @@ async function deleteTeam(teamId){
 // Link a manually-added Guest team to an existing account by UID.
 // This matches Tournament Management: the Guest badge becomes the real UID,
 // and future prizes can be credited to that user's wallet.
+function closeLinkAccountModal(){$('linkAccountModal').classList.remove('open')}
 async function linkTeamAccount(teamId){
   const tm=lobbyTeamsCache.find(t=>t.id===teamId);
   if(!tm)return msg('Team not found.');
 
-  const uidRaw=prompt(`Link "${tm.team_name}" to which UID?`,'');
-  if(uidRaw===null)return;
+  $('linkAccountText').textContent=`Enter the UID of the account "${tm.team_name}" belongs to.`;
+  const input=$('linkAccountUid');
+  input.value='';
+  const okBtn=$('linkAccountOk');
+  const originalLabel=okBtn.textContent;
+  $('linkAccountModal').classList.add('open');
+  setTimeout(()=>input.focus(),50);
 
-  const uid=parseInt(uidRaw.trim(),10);
-  if(!uid)return msg('Enter a valid UID number.');
+  const submit=async()=>{
+    const uid=parseInt(input.value.trim(),10);
+    if(!uid){input.focus();return msg('Enter a valid UID number.')}
 
-  const {data:prof,error:pErr}=await sb
-    .from('profiles')
-    .select('id,user_number,full_name')
-    .eq('user_number',uid)
-    .single();
+    okBtn.disabled=true;okBtn.textContent='Checking…';
+    let prof;
+    try{
+      const {data,error:pErr}=await sb
+        .from('profiles')
+        .select('id,user_number,full_name')
+        .eq('user_number',uid)
+        .single();
+      if(pErr||!data)return msg('No account found with that UID.');
+      prof=data;
+    }finally{
+      okBtn.disabled=false;okBtn.textContent=originalLabel;
+    }
 
-  if(pErr||!prof)return msg('No account found with that UID.');
+    closeLinkAccountModal();
 
-  askConfirm(
-    `Link to UID #${prof.user_number}?`,
-    `This team will be linked to ${prof.full_name||'this account'} (UID #${prof.user_number}). Any future prize for this lobby will be credited to their wallet instead of manual payout.`,
-    async()=>{
-      const {data,error}=await sb
-        .from('lobby_teams')
-        .update({submitted_by:prof.id})
-        .eq('id',teamId)
-        .select();
+    askConfirm(
+      `Link to UID #${prof.user_number}?`,
+      `This team will be linked to ${prof.full_name||'this account'} (UID #${prof.user_number}). Any future prize for this lobby will be credited to their wallet instead of manual payout.`,
+      async()=>{
+        const {data,error}=await sb
+          .from('lobby_teams')
+          .update({submitted_by:prof.id})
+          .eq('id',teamId)
+          .select();
 
-      if(error)return msg(error.message);
-      if(!data||data.length===0)return msg('Update blocked (0 rows) — check the UPDATE RLS policy on lobby_teams.');
+        if(error)return msg(error.message);
+        if(!data||data.length===0)return msg('Update blocked (0 rows) — check the UPDATE RLS policy on lobby_teams.');
 
-      await logActivity(
-        'team_linked_account',
-        currentLobby.id,
-        tm.team_name,
-        {
-          narration:`linked team "${tm.team_name}" to UID #${prof.user_number}.`,
-          highlight_targets:[tm.team_name]
-        }
-      );
+        await logActivity(
+          'team_linked_account',
+          currentLobby.id,
+          tm.team_name,
+          {
+            narration:`linked team "${tm.team_name}" to UID #${prof.user_number}.`,
+            highlight_targets:[tm.team_name]
+          }
+        );
 
       await openTeams(currentLobby.id);
     }
   );
+  };
+
+  okBtn.onclick=submit;
+  input.onkeydown=(e)=>{ if(e.key==='Enter')submit(); };
 }
 
 async function openResults(id){
