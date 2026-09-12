@@ -128,26 +128,58 @@ function start(){
   async function render(rows){
     const totals=new Map();
     (rows||[]).forEach(r=>{
-      // team_name from the view is already resolved as:
-      // profile full_name when available, otherwise the slot-entered team name.
-      // Grouping therefore follows the profile name, not the free-typed slot name.
+      // The VIEW resolves team_name to the profile name when a submitted_by
+      // user exists. Otherwise it falls back to the slot-entered name.
       const key=(r.team_name||'').trim();
       if(!key) return;
       const cur=totals.get(key)||{team_name:key,points:0,prize:0,logo:r.team_logo||''};
-      cur.points+=Number(r.points)||0;
-      cur.prize+=Number(r.prize_won)||0;
+      cur.points += Number(r.points)||0;
+      cur.prize += Number(r.prize_won)||0;
       if(!cur.logo && r.team_logo) cur.logo=r.team_logo;
       totals.set(key,cur);
     });
-    const ranked=[...totals.values()].filter(r=>r.points>0).sort((a,b)=>b.points-a.points);
-    if(!ranked.length){listEl.innerHTML='<div class="empty">এই সময়ের জন্য এখনো কোনো ফলাফল নেই।</div>';return}
+    const ranked=[...totals.values()]
+      .filter(r=>r.points>0)
+      .sort((a,b)=>b.points-a.points);
+    if(!ranked.length){
+      listEl.innerHTML='<div class="empty">এই সময়ের জন্য এখনো কোনো ফলাফল নেই।</div>';
+      return;
+    }
     listEl.innerHTML=ranked.map((r,i)=>`
       <div class="lb-row">
         <div class="lb-rank ${medalClass(i)}">${i+1}</div>
-        <div class="lb-avatar">${r.logo?`<img src="${esc(r.logo)}" alt="" loading="lazy" onerror="this.parentElement.innerHTML='';">`:''}</div>
+        <div class="lb-avatar">${r.logo?`<img src="${esc(r.logo)}" alt="" loading="lazy" onerror="this.style.display='none';">`:''}</div>
         <div class="lb-name">${esc(r.team_name)}</div>
         <div class="lb-amt">${r.points} পয়েন্ট</div>
       </div>`).join('');
+  }
+
+  async function loadMonth(offset){
+    const {start:from,end:to,label}=monthRange(offset);
+    monthTab.textContent=label;
+    nextBtn.disabled=offset>=0;
+    listEl.innerHTML='<div class="empty">লোডিং...</div>';
+    const {data,error}=await sb.from('leaderboard_rows')
+      .select('team_name,owner_team_name,prize_won,points,team_logo')
+      .gte('lobby_date',from).lt('lobby_date',to);
+    if(error){
+      listEl.innerHTML='<div class="empty">লিডারবোর্ড লোড করা যায়নি।</div>';
+      console.error('[Leaderboard]',error);
+      return;
+    }
+    render(data);
+  }
+
+  async function loadAllTime(){
+    listEl.innerHTML='<div class="empty">লোডিং...</div>';
+    const {data,error}=await sb.from('leaderboard_rows')
+      .select('team_name,owner_team_name,prize_won,points,team_logo');
+    if(error){
+      listEl.innerHTML='<div class="empty">লিডারবোর্ড লোড করা যায়নি।</div>';
+      console.error('[Leaderboard]',error);
+      return;
+    }
+    render(data);
   }
 
   function setView(v){
