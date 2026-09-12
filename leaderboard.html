@@ -48,6 +48,10 @@ html[data-theme="light"] .lb-card{background:linear-gradient(135deg,rgba(33,230,
 .lb-list{padding-right:2px}
 .lb-row{display:flex;align-items:center;gap:11px;padding:10px 2px}
 .lb-row+.lb-row{border-top:1px solid var(--line)}
+.lb-row.me{background:linear-gradient(90deg,rgba(255,90,46,.14),rgba(255,90,46,.03));border-radius:12px;padding-left:8px;padding-right:8px;box-shadow:inset 0 0 0 1.5px rgba(255,90,46,.55)}
+.lb-row.me+.lb-row{border-top:none}
+.lb-row.me .lb-name{color:var(--fire-2)}
+.lb-you-tag{font-size:8px;font-weight:800;color:var(--fire-2);background:rgba(255,90,46,.16);border:1px solid rgba(255,90,46,.4);border-radius:999px;padding:1px 6px;margin-left:6px;white-space:nowrap}
 .lb-rank{width:24px;text-align:center;font-weight:900;font-size:13px;color:var(--text-dim)}
 .lb-rank.gold{color:#ffd35a}.lb-rank.silver{color:#cfd6e6}.lb-rank.bronze{color:#e0a06a}
 html[data-theme="light"] .lb-rank.gold{color:#b8860b}
@@ -125,6 +129,13 @@ function start(){
   let view='month';
   let monthOffset=0;
 
+  function myUid(){
+    try{
+      const p=JSON.parse(localStorage.getItem('user_profile')||'{}');
+      return p && p.uid!=null ? String(p.uid) : null;
+    }catch(e){ return null; }
+  }
+
   async function render(rows){
     const totals=new Map();
     (rows||[]).forEach(r=>{
@@ -137,18 +148,20 @@ function start(){
       if(!cur.logo && r.team_logo) cur.logo=r.team_logo;
       totals.set(id,cur);
     });
-    const ranked=[...totals.values()]
+    const ranked=[...totals.entries()]
+      .map(([id,r])=>({...r,id}))
       .filter(r=>r.points>0)
       .sort((a,b)=>b.points-a.points);
     if(!ranked.length){
       listEl.innerHTML='<div class="empty">এই সময়ের জন্য এখনো কোনো ফলাফল নেই।</div>';
       return;
     }
+    const uid=myUid();
     listEl.innerHTML=ranked.map((r,i)=>`
-      <div class="lb-row">
+      <div class="lb-row${uid && r.id===uid?' me':''}">
         <div class="lb-rank ${medalClass(i)}">${i+1}</div>
         <div class="lb-avatar">${r.logo?`<img src="${esc(r.logo)}" alt="" loading="lazy" onerror="this.style.display='none';">`:''}</div>
-        <div class="lb-name">${esc(r.team_name)}</div>
+        <div class="lb-name">${esc(r.team_name)}${uid && r.id===uid?'<span class="lb-you-tag">আপনি</span>':''}</div>
         <div class="lb-amt">${r.points} পয়েন্ট</div>
       </div>`).join('');
   }
