@@ -53,7 +53,7 @@ html[data-theme="light"] .lb-card{background:linear-gradient(135deg,rgba(33,230,
 html[data-theme="light"] .lb-rank.gold{color:#b8860b}
 html[data-theme="light"] .lb-rank.silver{color:#5b6b85}
 html[data-theme="light"] .lb-rank.bronze{color:#a85f2a}
-.lb-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(145deg,#26344a,#111722);border:1px solid var(--line);flex-shrink:0}
+.lb-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(145deg,#26344a,#111722);border:1px solid var(--line);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center}.lb-avatar img{width:100%;height:100%;display:block;object-fit:cover;border-radius:50%;}
 .lb-name{flex:1;font-size:12.5px;font-weight:700;display:flex;flex-direction:column;gap:2px}
 .lb-name .s{font-size:9px;font-weight:600;color:var(--text-dim)}
 .lb-amt{font-size:12px;font-weight:900;color:var(--green);white-space:nowrap}
@@ -128,9 +128,7 @@ function start(){
   async function render(rows){
     const totals=new Map();
     (rows||[]).forEach(r=>{
-      // The VIEW resolves team_name to the profile name when a submitted_by
-      // user exists. Otherwise it falls back to the slot-entered name.
-      const key=(r.team_name||'').trim();
+      const key=(r.display_team_name||r.team_name||'').trim();
       if(!key) return;
       const cur=totals.get(key)||{team_name:key,points:0,prize:0,logo:r.team_logo||''};
       cur.points += Number(r.points)||0;
@@ -159,8 +157,8 @@ function start(){
     monthTab.textContent=label;
     nextBtn.disabled=offset>=0;
     listEl.innerHTML='<div class="empty">লোডিং...</div>';
-    const {data,error}=await sb.from('leaderboard_rows')
-      .select('team_name,owner_team_name,prize_won,points,team_logo')
+    const {data,error}=await sb.from('leaderboard_profile_resolved')
+      .select('team_name,display_team_name,owner_team_name,prize_won,points,team_logo')
       .gte('lobby_date',from).lt('lobby_date',to);
     if(error){
       listEl.innerHTML='<div class="empty">লিডারবোর্ড লোড করা যায়নি।</div>';
@@ -172,8 +170,8 @@ function start(){
 
   async function loadAllTime(){
     listEl.innerHTML='<div class="empty">লোডিং...</div>';
-    const {data,error}=await sb.from('leaderboard_rows')
-      .select('team_name,owner_team_name,prize_won,points,team_logo');
+    const {data,error}=await sb.from('leaderboard_profile_resolved')
+      .select('team_name,display_team_name,owner_team_name,prize_won,points,team_logo');
     if(error){
       listEl.innerHTML='<div class="empty">লিডারবোর্ড লোড করা যায়নি।</div>';
       console.error('[Leaderboard]',error);
