@@ -51,7 +51,6 @@ html[data-theme="light"] .lb-card{background:linear-gradient(135deg,rgba(33,230,
 .lb-row.me{background:linear-gradient(90deg,rgba(255,90,46,.14),rgba(255,90,46,.03));border-radius:12px;padding-left:8px;padding-right:8px;box-shadow:inset 0 0 0 1.5px rgba(255,90,46,.55)}
 .lb-row.me+.lb-row{border-top:none}
 .lb-row.me .lb-name{color:var(--fire-2)}
-.lb-you-tag{font-size:8px;font-weight:800;color:var(--fire-2);background:rgba(255,90,46,.16);border:1px solid rgba(255,90,46,.4);border-radius:999px;padding:1px 6px;margin-left:6px;white-space:nowrap}
 .lb-rank{width:24px;text-align:center;font-weight:900;font-size:13px;color:var(--text-dim)}
 .lb-rank.gold{color:#ffd35a}.lb-rank.silver{color:#cfd6e6}.lb-rank.bronze{color:#e0a06a}
 html[data-theme="light"] .lb-rank.gold{color:#b8860b}
@@ -72,7 +71,7 @@ html[data-theme="light"] .lb-rank.bronze{color:#a85f2a}
   <button class="back-btn" type="button" onclick="history.back()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
   </button>
-  <div class="title">লিডারবোর্ড</div>
+  <div class="title" data-i18n="leaderboard.title">লিডারবোর্ড</div>
 </div>
 
 <div class="filter-tabs" id="filterTabs">
@@ -81,12 +80,12 @@ html[data-theme="light"] .lb-rank.bronze{color:#a85f2a}
     <div class="filter-tab active" id="monthTab" data-view="month">এই মাস</div>
     <button class="nav-arrow" id="nextMonthBtn" aria-label="Next month">›</button>
   </div>
-  <div class="filter-tab" id="allTimeTab" data-view="all">অল টাইম</div>
+  <div class="filter-tab" id="allTimeTab" data-view="all" data-i18n="leaderboard.allTime">অল টাইম</div>
 </div>
 
 <div class="section" style="padding-top:0">
   <div class="lb-card">
-    <div class="lb-list" id="lbList"><div class="empty">লোডিং...</div></div>
+    <div class="lb-list" id="lbList"><div class="empty" data-i18n="leaderboard.loading">লোডিং...</div></div>
   </div>
 </div>
 
@@ -105,15 +104,28 @@ const SUPABASE_KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 function medalClass(i){return i===0?'gold':i===1?'silver':i===2?'bronze':'';}
 const BN_MONTHS=['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+const EN_MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+function currentLang(){
+  return (window.CHTEO && window.CHTEO.getLangPref) ? window.CHTEO.getLangPref() : 'bn';
+}
+const LB_TEXT={
+  bn:{loading:'লোডিং...',noResults:'এই সময়ের জন্য এখনো কোনো ফলাফল নেই।',loadError:'লিডারবোর্ড লোড করা যায়নি।',points:'পয়েন্ট'},
+  en:{loading:'Loading...',noResults:'No results for this period yet.',loadError:'Could not load the leaderboard.',points:'points'}
+};
+function lbText(key){
+  const lang=currentLang()==='en'?'en':'bn';
+  return LB_TEXT[lang][key];
+}
 function monthRange(offset){
   const now=new Date();
   const d=new Date(now.getFullYear(),now.getMonth()+offset,1);
   const start=new Date(d.getFullYear(),d.getMonth(),1);
   const end=new Date(d.getFullYear(),d.getMonth()+1,1);
+  const months=currentLang()==='en'?EN_MONTHS:BN_MONTHS;
   return {
     start:start.toISOString().slice(0,10),
     end:end.toISOString().slice(0,10),
-    label:`${BN_MONTHS[start.getMonth()]} ${start.getFullYear()}`
+    label:`${months[start.getMonth()]} ${start.getFullYear()}`
   };
 }
 
@@ -153,7 +165,7 @@ function start(){
       .filter(r=>r.points>0)
       .sort((a,b)=>b.points-a.points);
     if(!ranked.length){
-      listEl.innerHTML='<div class="empty">এই সময়ের জন্য এখনো কোনো ফলাফল নেই।</div>';
+      listEl.innerHTML=`<div class="empty">${lbText('noResults')}</div>`;
       return;
     }
     const uid=myUid();
@@ -161,8 +173,8 @@ function start(){
       <div class="lb-row${uid && r.id===uid?' me':''}">
         <div class="lb-rank ${medalClass(i)}">${i+1}</div>
         <div class="lb-avatar">${r.logo?`<img src="${esc(r.logo)}" alt="" loading="lazy" onerror="this.style.display='none';">`:''}</div>
-        <div class="lb-name">${esc(r.team_name)}${uid && r.id===uid?'<span class="lb-you-tag">আপনি</span>':''}</div>
-        <div class="lb-amt">${r.points} পয়েন্ট</div>
+        <div class="lb-name">${esc(r.team_name)}</div>
+        <div class="lb-amt">${r.points} ${lbText('points')}</div>
       </div>`).join('');
   }
 
@@ -170,12 +182,12 @@ function start(){
     const {start:from,end:to,label}=monthRange(offset);
     monthTab.textContent=label;
     nextBtn.disabled=offset>=0;
-    listEl.innerHTML='<div class="empty">লোডিং...</div>';
+    listEl.innerHTML=`<div class="empty">${lbText('loading')}</div>`;
     const {data,error}=await sb.from('leaderboard_rows')
       .select('team_name,owner_team_name,prize_won,points,team_logo,user_number')
       .gte('lobby_date',from).lt('lobby_date',to);
     if(error){
-      listEl.innerHTML='<div class="empty">লিডারবোর্ড লোড করা যায়নি।</div>';
+      listEl.innerHTML=`<div class="empty">${lbText('loadError')}</div>`;
       console.error('[Leaderboard]',error);
       return;
     }
@@ -183,11 +195,11 @@ function start(){
   }
 
   async function loadAllTime(){
-    listEl.innerHTML='<div class="empty">লোডিং...</div>';
+    listEl.innerHTML=`<div class="empty">${lbText('loading')}</div>`;
     const {data,error}=await sb.from('leaderboard_rows')
       .select('team_name,owner_team_name,prize_won,points,team_logo,user_number');
     if(error){
-      listEl.innerHTML='<div class="empty">লিডারবোর্ড লোড করা যায়নি।</div>';
+      listEl.innerHTML=`<div class="empty">${lbText('loadError')}</div>`;
       console.error('[Leaderboard]',error);
       return;
     }
@@ -207,6 +219,7 @@ function start(){
   allTimeTab.addEventListener('click',()=>setView('all'));
   prevBtn.addEventListener('click',()=>{ monthOffset--; if(view==='month')loadMonth(monthOffset); });
   nextBtn.addEventListener('click',()=>{ if(monthOffset<0){monthOffset++; if(view==='month')loadMonth(monthOffset);} });
+  document.addEventListener('chteo:langchange',()=>{ if(view==='month')loadMonth(monthOffset); else loadAllTime(); });
 
   setView('month');
 }

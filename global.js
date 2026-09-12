@@ -420,6 +420,9 @@
       "editprofile.locationPh": "Enter your location",
       "editprofile.save": "SAVE CHANGES",
 
+      "leaderboard.title": "Leaderboard",
+      "leaderboard.allTime": "All Time",
+
       "refer.title": "Refer & Earn",
       "refer.totalCommissions": "Total Commissions",
       "refer.totalCommissionsSub": "Lifetime earnings from your referred friends",
@@ -620,6 +623,9 @@
       "editprofile.location": "অবস্থান :",
       "editprofile.locationPh": "আপনার অবস্থান লিখুন",
       "editprofile.save": "পরিবর্তন সংরক্ষণ করুন",
+
+      "leaderboard.title": "লিডারবোর্ড",
+      "leaderboard.allTime": "অল টাইম",
 
       "refer.title": "রেফার ও আয়",
       "refer.totalCommissions": "মোট কমিশন",
