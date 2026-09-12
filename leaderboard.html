@@ -128,13 +128,14 @@ function start(){
   async function render(rows){
     const totals=new Map();
     (rows||[]).forEach(r=>{
-      const key=(r.team_name||'').trim();
-      if(!key) return;
-      const cur=totals.get(key)||{team_name:key,points:0,prize:0,logo:r.team_logo||''};
+      const display=String(r.owner_team_name||r.team_name||'').trim();
+      if(!display) return;
+      const id=r.user_number!=null?String(r.user_number):display;
+      const cur=totals.get(id)||{team_name:display,points:0,prize:0,logo:r.team_logo||''};
       cur.points += Number(r.points)||0;
       cur.prize += Number(r.prize_won)||0;
       if(!cur.logo && r.team_logo) cur.logo=r.team_logo;
-      totals.set(key,cur);
+      totals.set(id,cur);
     });
     const ranked=[...totals.values()]
       .filter(r=>r.points>0)

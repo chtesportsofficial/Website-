@@ -605,9 +605,10 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
     async function load(){
       const now=new Date();
       const monthStart=new Date(now.getFullYear(),now.getMonth(),1).toISOString().slice(0,10);
-      // Same source as leaderboard.html: team_logo comes straight off each
-      // row, keyed by user_number, instead of a name-text join (name
-      // matching can pull in a different team's logo when names collide).
+      // team_logo comes straight off each row (same source as leaderboard.html).
+      // Rows are grouped by user_number (UID), not name text — two different
+      // accounts can share a display name, and name-based grouping would
+      // wrongly merge their points and logos together.
       const {data,error}=await sb.from('leaderboard_rows')
         .select('team_name,owner_team_name,points,team_logo,user_number')
         .gte('lobby_date',monthStart);
@@ -618,10 +619,10 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
       }
       const totals=new Map();
       data.forEach(r=>{
-        const key=String(r.owner_team_name||r.team_name||'').trim();
-        if(!key)return;
-        const id=r.user_number!=null?String(r.user_number):normalize(key);
-        const cur=totals.get(id)||{team_name:key,points:0,logo:''};
+        const display=String(r.owner_team_name||r.team_name||'').trim();
+        if(!display)return;
+        const id=r.user_number!=null?String(r.user_number):normalize(display);
+        const cur=totals.get(id)||{team_name:display,points:0,logo:''};
         cur.points+=Number(r.points)||0;
         if(!cur.logo && r.team_logo) cur.logo=r.team_logo;
         totals.set(id,cur);
