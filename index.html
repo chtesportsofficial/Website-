@@ -605,32 +605,25 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
     async function load(){
       const now=new Date();
       const monthStart=new Date(now.getFullYear(),now.getMonth(),1).toISOString().slice(0,10);
-      // Load the scores and the public profile-logo view together.
-      // The logo view is the same source used by the leaderboard page.
-      const [rowsRes,logosRes]=await Promise.all([
-        sb.from('leaderboard_rows').select('team_name,owner_team_name,points').gte('lobby_date',monthStart),
-        sb.from('leaderboard_team_logos').select('team_name,logo')
-      ]);
-      const {data,error}=rowsRes;
+      // Same source as leaderboard.html: team_logo comes straight off each
+      // row, keyed by user_number, instead of a name-text join (name
+      // matching can pull in a different team's logo when names collide).
+      const {data,error}=await sb.from('leaderboard_rows')
+        .select('team_name,owner_team_name,points,team_logo,user_number')
+        .gte('lobby_date',monthStart);
       if(error||!data){
         console.warn('[Index] leaderboard load failed:',error?.message);
         box.innerHTML='<div class="lb-row"><div class="lb-name" style="color:var(--text-dim)">লোড করা যায়নি।</div></div>';
         return;
       }
-      const logoByName=new Map();
-      (logosRes.data||[]).forEach(x=>{
-        const name=normalize(x?.team_name);
-        const logo=String(x?.logo??'').trim();
-        if(name&&logo&&!logoByName.has(name)) logoByName.set(name,logo);
-      });
       const totals=new Map();
       data.forEach(r=>{
         const key=String(r.owner_team_name||r.team_name||'').trim();
         if(!key)return;
-        const id=normalize(key);
+        const id=r.user_number!=null?String(r.user_number):normalize(key);
         const cur=totals.get(id)||{team_name:key,points:0,logo:''};
         cur.points+=Number(r.points)||0;
-        if(!cur.logo) cur.logo=logoByName.get(id)||'';
+        if(!cur.logo && r.team_logo) cur.logo=r.team_logo;
         totals.set(id,cur);
       });
       const ranked=[...totals.values()].filter(r=>r.points>0).sort((a,b)=>b.points-a.points).slice(0,10);
