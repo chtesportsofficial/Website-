@@ -635,7 +635,7 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
       });
       const ranked=[...totals.values()].filter(r=>r.points>0).sort((a,b)=>b.points-a.points).slice(0,10);
       if(!ranked.length){box.innerHTML='<div class="lb-row"><div class="lb-name" style="color:var(--text-dim)">এই মাসে এখনো কোনো ফলাফল নেই।</div></div>';return}
-      box.innerHTML=ranked.map((r,i)=>'<div class="lb-row"><div class="lb-rank '+medalClass(i)+'">'+(i+1)+'</div><div class="lb-avatar">'+(r.logo?'<img src="'+esc(r.logo)+'" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.parentElement.classList.add('logo-error');this.remove();">':'')+'</div><div class="lb-name">'+esc(r.team_name)+'<span class="s">স্কোয়াড</span></div><div class="lb-amt">'+r.points+' পয়েন্ট</div></div>').join('');
+      box.innerHTML=ranked.map((r,i)=>`<div class="lb-row"><div class="lb-rank ${medalClass(i)}">${i+1}</div><div class="lb-avatar">${r.logo?`<img src="${esc(r.logo)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.parentElement.classList.add('logo-error');this.remove();">`:''}</div><div class="lb-name">${esc(r.team_name)}<span class="s">স্কোয়াড</span></div><div class="lb-amt">${r.points} পয়েন্ট</div></div>`).join('');
     }
     load();
   }
