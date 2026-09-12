@@ -606,9 +606,10 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
       const now=new Date();
       const monthStart=new Date(now.getFullYear(),now.getMonth(),1).toISOString().slice(0,10);
       // team_logo comes straight off each row (same source as leaderboard.html).
-      // Rows are grouped by user_number (UID), not name text — two different
-      // accounts can share a display name, and name-based grouping would
-      // wrongly merge their points and logos together.
+      // Rows are grouped by user_number (UID) — the stable per-team identity.
+      // If the same team ever appears twice with a stray low-point entry,
+      // that's a data mistake (one match's row recorded under the wrong
+      // UID) to fix in Supabase, not something to paper over here.
       const {data,error}=await sb.from('leaderboard_rows')
         .select('team_name,owner_team_name,points,team_logo,user_number')
         .gte('lobby_date',monthStart);
