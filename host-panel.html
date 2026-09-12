@@ -13,7 +13,8 @@ button,input{font:inherit}
 button{cursor:pointer}
 .wrap{max-width:760px;margin:auto;padding:20px 14px 110px}
 .head{display:flex;gap:12px;align-items:center;margin-bottom:18px}
-.back{width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--border);color:var(--text);display:flex;align-items:center;justify-content:center;font-size:27px;line-height:1}
+.back-btn{width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.back-btn svg{width:20px;height:20px}
 .head h1{font-size:19px;margin:0;font-weight:750}
 .sub{font-size:10px;color:var(--muted);margin-top:4px}
 
@@ -131,8 +132,12 @@ input{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-r
 <body>
 <main class="wrap">
   <div class="head">
-    <button class="back" onclick="history.back()" aria-label="Back">‹</button>
-    <div><h1>Host Panel</h1><div class="sub">Today's active tournament lobbies</div></div>
+    <button class="back-btn" type="button" onclick="history.back()" aria-label="Back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+    </button>
+    <div><h1>Host Panel</h1></div>
   </div>
 
   <section class="today-panel">
