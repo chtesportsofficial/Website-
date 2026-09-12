@@ -77,13 +77,20 @@ input{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-r
 .team-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
 
 .result-row{display:grid;grid-template-columns:26px 1fr 66px 58px 30px;gap:6px;align-items:center;background:#171f31;border:1px solid #293650;border-radius:12px;padding:8px;margin-top:8px}
-.rank{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:#101725;border:1px solid #2b3852;font-size:10px;font-weight:900}
-.rname{font-size:10px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:#101725;border:1px solid #2b3852;font-size:10px;font-weight:900;color:#9eabc0}
+.rank.r1{background:#3a2c05;color:#f6c453;border-color:#5c4708}
+.rank.r2{background:#232833;color:#c9cfdb;border-color:#3a4150}
+.rank.r3{background:#33220f;color:#e0a370;border-color:#4d3417}
+.result-name-wrap{display:flex;flex-direction:column;gap:2px;overflow:hidden;min-width:0}
+.result-name-wrap .team-uid{align-self:flex-start}
+.rname{font-size:11px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rmeta{font-size:8px;color:#8e98ab;margin-top:2px}
 .result-row input{width:100%;background:#101725;border:1px solid #293650;color:#fff;border-radius:7px;padding:7px;font-size:10px}
 .updown{display:flex;flex-direction:column;gap:2px}
 .updown button{width:28px;height:15px;background:#101725;border:1px solid #293650;color:#fff;border-radius:6px;font-size:8px}
 .updown button:disabled{opacity:.3}
+.results-toolbar{display:flex;justify-content:flex-end;margin-bottom:2px}
+.results-toolbar button{border:1px solid #293650;background:#111827;color:#e8ebf2;border-radius:10px;padding:8px 12px;font-size:9px;font-weight:900}
 
 .confirm{display:none;position:fixed;inset:0;z-index:10000;background:#000a;align-items:center;justify-content:center;padding:20px}
 .confirm.open{display:flex}
@@ -173,8 +180,9 @@ input{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-r
 
 <div class="modal" id="resultsModal"><div class="box">
   <div class="mh"><b id="resultsTitle">Enter Result</b><button class="close" onclick="closeModal('resultsModal')">×</button></div>
+  <div class="results-toolbar"><button type="button" onclick="sortResultsByPoints()">↕ Sort by points</button></div>
   <div id="resultsList" class="loading">Loading…</div>
-  <div class="modal-actions"><button id="saveBtn" onclick="saveResultsClick()">Save Results</button><button id="completeBtn" class="primary" onclick="saveResultsAndComplete()">Complete</button></div>
+  <div class="modal-actions" style="grid-template-columns:1fr"><button id="saveBtn" class="primary" onclick="saveResultsClick()">Save Results</button></div>
 </div></div>
 
 <div class="confirm" id="confirm"><div class="confirm-card"><div class="confirm-title" id="confirmTitle">Are you sure?</div><div class="confirm-text" id="confirmText"></div><div class="confirm-actions"><button onclick="closeConfirm()">Cancel</button><button class="danger" id="confirmOk">Continue</button></div></div></div>
@@ -319,6 +327,9 @@ function renderLobby(l){
   const room=l.room_id||'Not set';
   const pass=l.room_password||'Not set';
 
+  const dt=parseLobbyDateTime(l.lobby_date,l.time_label);
+  const timeOver=dt&&dt.getTime()<=Date.now();
+
   return `<div class="lobby-item">
     <div class="lobby-top">
       <div class="lobby-date">${fmtShort(l.lobby_date)} — ${esc(l.time_label)}</div>
@@ -335,12 +346,28 @@ function renderLobby(l){
       <button class="mini green" onclick="openTeams('${l.id}')">Teams</button>
       <button class="mini" onclick="openRoom('${l.id}')">Room ID/Pass</button>
       <button class="mini" onclick="openResults('${l.id}')">Enter Result</button>
-      ${l.status==='full'
-        ? `<button class="mini gold" onclick="changeStatus('${l.id}','upcoming')">Unfull</button>`
-        : `<button class="mini gold" onclick="changeStatus('${l.id}','full')">Full</button>`}
-      <button class="mini red" onclick="changeStatus('${l.id}','cancelled')">Off</button>
+      ${timeOver
+        ? `<button class="mini green" onclick="completeLobbyRow('${l.id}')">Complete</button>`
+        : `${l.status==='full'
+            ? `<button class="mini gold" onclick="changeStatus('${l.id}','upcoming')">Unfull</button>`
+            : `<button class="mini gold" onclick="changeStatus('${l.id}','full')">Full</button>`}
+           <button class="mini red" onclick="changeStatus('${l.id}','cancelled')">Off</button>`}
     </div>
   </div>`;
+}
+async function completeLobbyRow(id){
+  const l=lobbies.find(x=>x.id===id);if(!l)return;
+  askConfirm(
+    'Complete lobby?',
+    `Mark ${fmtShort(l.lobby_date)} ${l.time_label} as completed and remove it from active lobbies? Make sure results have been saved (Enter Result → Save Results) first.`,
+    async()=>{
+      const r=await sb.from('tournament_lobbies').update({status:'completed'}).eq('id',id).select();
+      if(r.error)return msg(r.error.message);
+      if(!r.data?.length)return msg('Update blocked (0 rows) — check tournament_lobbies UPDATE RLS.');
+      await logActivity('lobby_completed',id,fmtShort(l.lobby_date)+' '+l.time_label,{narration:`completed the lobby from Host Panel.`});
+      lobbies=lobbies.filter(x=>x.id!==id);render();
+    }
+  );
 }
 async function refreshLobby(id){
   const r=await sb.from('tournament_lobbies').select('*').eq('id',id).single();
@@ -558,26 +585,66 @@ async function openResults(id){
   resultRows=(a.data||[]).sort((x,y)=>(map.get(x.id)?.rank??9999)-(map.get(y.id)?.rank??9999));
   renderResults(map)
 }
+function rankBadgeClass(i){return i===0?'r1':i===1?'r2':i===2?'r3':'';}
+function prizeRankCount(){
+  const n=currentTournament?.prize_distribution?.length;
+  return Number.isInteger(n)&&n>0?n:Infinity;
+}
+function updatePrizeLocks(){
+  const n=prizeRankCount();
+  [...document.querySelectorAll('#resultsList .result-row')].forEach((row,i)=>{
+    const inp=row.querySelector('.prize');if(!inp)return;
+    const locked=i>=n;
+    inp.disabled=locked;
+    inp.placeholder=locked?'—':'৳';
+    if(locked)inp.value='';
+  });
+}
 function renderResults(map){
-  const prizeN=Array.isArray(currentTournament?.prize_distribution)?currentTournament.prize_distribution.length:Infinity;
   $('resultsList').innerHTML=resultRows.length?resultRows.map((tm,i)=>{
-    const r=map.get(tm.id)||{};const uid=tm.profiles?.user_number?'UID #'+tm.profiles.user_number:'Guest';
+    const r=map.get(tm.id)||{};
+    const uidBadge=tm.profiles?.user_number?`<span class="team-uid">UID #${tm.profiles.user_number}</span>`:`<span class="team-uid guest">Guest</span>`;
     return `<div class="result-row" data-team="${tm.id}">
-      <div class="rank">${i+1}</div><div><div class="rname">${esc(tm.team_name)}</div><div class="rmeta">${esc(uid)}</div></div>
-      <input class="prize" type="number" min="0" placeholder="৳" value="${r.prize_won??''}" ${i>=prizeN?'disabled':''}>
+      <div class="rank ${rankBadgeClass(i)}">${i+1}</div>
+      <div class="result-name-wrap"><div class="rname">${esc(tm.team_name)}</div>${uidBadge}</div>
+      <input class="prize" type="number" min="0" placeholder="৳" value="${r.prize_won??''}">
       <input class="points" type="number" min="0" placeholder="PTS" value="${r.total_points??''}">
-      <div class="updown"><button onclick="moveResult(${i},-1)" ${i===0?'disabled':''}>▲</button><button onclick="moveResult(${i},1)" ${i===resultRows.length-1?'disabled':''}>▼</button></div>
+      <div class="updown"><button onclick="moveResultRow('${tm.id}',-1)" ${i===0?'disabled':''}>▲</button><button onclick="moveResultRow('${tm.id}',1)" ${i===resultRows.length-1?'disabled':''}>▼</button></div>
     </div>`
-  }).join(''):'<div class="empty">No confirmed teams for this lobby.</div>'
+  }).join(''):'<div class="empty">No confirmed teams for this lobby.</div>';
+  updatePrizeLocks();
 }
-function moveResult(i,dir){
-  const j=i+dir;if(j<0||j>=resultRows.length)return;
-  [resultRows[i],resultRows[j]]=[resultRows[j],resultRows[i]];
-  const map=new Map();document.querySelectorAll('.result-row').forEach(row=>{});
-  openResultsLocal()
+// DOM-based move/sort (no DB re-fetch) so unsaved point/prize edits are never lost.
+function moveResultRow(teamId,dir){
+  const list=$('resultsList');
+  const row=list.querySelector(`.result-row[data-team="${teamId}"]`);
+  if(!row)return;
+  const sibling=dir<0?row.previousElementSibling:row.nextElementSibling;
+  if(!sibling)return;
+  if(dir<0)list.insertBefore(row,sibling);else list.insertBefore(sibling,row);
+  renumberResultRows();
 }
-async function openResultsLocal(){
-  const r=await sb.from('lobby_results').select('*').eq('lobby_id',currentLobby.id);renderResults(new Map((r.data||[]).map(x=>[x.team_id,x])))
+function sortResultsByPoints(){
+  const list=$('resultsList');
+  const rows=[...list.querySelectorAll('.result-row')];
+  rows.sort((a,b)=>{
+    const pa=+a.querySelector('.points').value||0;
+    const pb=+b.querySelector('.points').value||0;
+    return pb-pa;
+  });
+  rows.forEach(r=>list.appendChild(r));
+  renumberResultRows();
+}
+function renumberResultRows(){
+  const rows=[...document.querySelectorAll('#resultsList .result-row')];
+  rows.forEach((row,i)=>{
+    const badge=row.querySelector('.rank');
+    badge.textContent=i+1;
+    badge.className='rank '+rankBadgeClass(i);
+    row.querySelectorAll('.updown button')[0].disabled=i===0;
+    row.querySelectorAll('.updown button')[1].disabled=i===rows.length-1;
+  });
+  updatePrizeLocks();
 }
 async function saveResults(){
   const rows=[...document.querySelectorAll('#resultsList .result-row')].map((row,i)=>({
@@ -592,21 +659,8 @@ async function saveResults(){
   return true
 }
 async function saveResultsClick(){
-  if(resultSubmitting)return;resultSubmitting=true;$('saveBtn').disabled=true;$('completeBtn').disabled=true;
-  try{if(await saveResults())msg('Results saved.')}finally{resultSubmitting=false;$('saveBtn').disabled=false;$('completeBtn').disabled=false}
-}
-async function saveResultsAndComplete(){
-  if(resultSubmitting)return;resultSubmitting=true;$('completeBtn').disabled=true;$('saveBtn').disabled=true;$('completeBtn').textContent='Processing…';
-  try{
-    const ok=await saveResults();if(!ok)return;
-    // Same completion behavior as Tournament Management: prize crediting is handled
-    // by its existing flow/API. This Host Panel intentionally does not create a new
-    // payment system.
-    const r=await sb.from('tournament_lobbies').update({status:'completed'}).eq('id',currentLobby.id).select();
-    if(r.error||!r.data?.length)return msg(r.error?.message||'Could not complete lobby.');
-    await logActivity('lobby_completed',currentLobby.id,fmtShort(currentLobby.lobby_date)+' '+currentLobby.time_label,{narration:'completed the lobby from Host Panel.'});
-    closeModal('resultsModal');lobbies=lobbies.filter(x=>x.id!==currentLobby.id);render();msg('Lobby completed. Results saved.');
-  }finally{$('completeBtn').disabled=false;$('saveBtn').disabled=false;$('completeBtn').textContent='Complete';resultSubmitting=false}
+  if(resultSubmitting)return;resultSubmitting=true;$('saveBtn').disabled=true;$('saveBtn').textContent='Saving…';
+  try{if(await saveResults())msg('Results saved.')}finally{resultSubmitting=false;$('saveBtn').disabled=false;$('saveBtn').textContent='Save Results'}
 }
 document.addEventListener('DOMContentLoaded',async()=>{if(await auth())await load()});
 </script>
