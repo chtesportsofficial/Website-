@@ -280,12 +280,12 @@ async function load(){
   const tr=await sb.from('tournaments').select('id,title,status,default_slots,total_slots,prize_distribution').neq('status','archived');
   if(tr.error){$('content').innerHTML='<div class="empty">Could not load tournaments: '+esc(tr.error.message)+'</div>';return}
   tournaments=new Map((tr.data||[]).map(t=>[t.id,t]));
-  const lr=await sb.from('tournament_lobbies').select('*').eq('lobby_date',today).in('status',['upcoming','live','full']).order('time_label');
+  const lr=await sb.from('tournament_lobbies').select('*').eq('lobby_date',today).in('status',['upcoming','live','full','cancelled']).order('time_label');
   if(lr.error){$('content').innerHTML='<div class="empty">Could not load lobbies: '+esc(lr.error.message)+'</div>';return}
   lobbies=lr.data||[];
   await applyAutoStatus(lobbies);
-  // Keep only today's active rows after the client-side status refresh.
-  lobbies=lobbies.filter(l=>l.lobby_date===today&&['upcoming','live','full'].includes(l.status));
+  // Keep only today's rows after the client-side status refresh (cancelled ones stay so Off lobbies remain manageable).
+  lobbies=lobbies.filter(l=>l.lobby_date===today&&['upcoming','live','full','cancelled'].includes(l.status));
   render();
 }
 function render(){
@@ -320,7 +320,8 @@ function render(){
 function renderLobby(l){
   const live=liveBadge(l);
   let badge='';
-  if(l.status==='full') badge='<div class="lobby-status full">● FULL</div>';
+  if(l.status==='cancelled') badge='<div class="lobby-status off">● OFF</div>';
+  else if(l.status==='full') badge='<div class="lobby-status full">● FULL</div>';
   else if(live) badge=`<div class="lobby-status ${live.cls||''}">● ${live.text}</div>`;
   else badge='<div class="lobby-status">○ UPCOMING</div>';
 
@@ -397,7 +398,7 @@ async function changeStatus(id,status){
     if(r.error)return msg(r.error.message);
     if(!r.data?.length)return msg('Update blocked (0 rows) — check tournament_lobbies UPDATE RLS.');
     await logActivity('lobby_status_changed',id,fmtShort(l.lobby_date)+' '+l.time_label,{narration:`set lobby ${fmtShort(l.lobby_date)} ${l.time_label} to ${status}.`});
-    if(status==='cancelled')lobbies=lobbies.filter(x=>x.id!==id);else l.status=status;
+    if(status!=='cancelled')l.status=status;else l.status='cancelled';
     render();
   })
 }
