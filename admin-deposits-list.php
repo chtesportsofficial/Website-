@@ -12,8 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-require_once __DIR__ . '/db.php';       // exposes $conn (mysqli)
-$conn->set_charset('utf8mb4');
+require_once __DIR__ . '/db.php';       // exposes $conn (PDO, Postgres)
 require_once __DIR__ . '/admin-auth.php';
 
 $input = json_decode(file_get_contents('php://input'), true) ?: [];
@@ -39,15 +38,12 @@ $stmt = $conn->prepare(
      ORDER BY created_at DESC
      LIMIT 200"
 );
-$stmt->bind_param('s', $status);
-$stmt->execute();
-$result = $stmt->get_result();
+$stmt->execute([$status]);
 
 $requests = [];
-while ($row = $result->fetch_assoc()) {
+while ($row = $stmt->fetch()) {
     $requests[] = $row;
 }
-$stmt->close();
 
 // The admin panel should show the same "UID" the user sees in the app
 // (profiles.user_number in Supabase), not the internal wallet_users.id.
@@ -59,20 +55,11 @@ if (!empty($requests)) {
     // Single batched query instead of one query per unique user_id — the
     // earlier per-row loop was the main reason the list felt slow.
     $placeholders = implode(',', array_fill(0, count($uniqueIds), '?'));
-    $types = str_repeat('i', count($uniqueIds));
     $lookupStmt = $conn->prepare("SELECT id, supabase_uid FROM wallet_users WHERE id IN ($placeholders)");
-    $bindArgs = [];
-    $bindArgs[] = &$types;
-    foreach ($uniqueIds as $k => $v) {
-        $bindArgs[] = &$uniqueIds[$k];
-    }
-    call_user_func_array([$lookupStmt, 'bind_param'], $bindArgs);
-    $lookupStmt->execute();
-    $lookupResult = $lookupStmt->get_result();
-    while ($row = $lookupResult->fetch_assoc()) {
+    $lookupStmt->execute($uniqueIds);
+    while ($row = $lookupStmt->fetch()) {
         $walletToSupabase[(int)$row['id']] = $row['supabase_uid'];
     }
-    $lookupStmt->close();
 
     $supabaseToUserNumber = [];
     $supabaseUids = array_values(array_filter($walletToSupabase));
@@ -107,4 +94,3 @@ if (!empty($requests)) {
 }
 
 echo json_encode(['success' => true, 'requests' => $requests]);
-$conn->close();

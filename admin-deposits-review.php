@@ -24,8 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-require_once __DIR__ . '/db.php';       // exposes $conn (mysqli)
-$conn->set_charset('utf8mb4');
+require_once __DIR__ . '/db.php';       // exposes $conn (PDO, Postgres)
 require_once __DIR__ . '/admin-auth.php';
 
 $input = json_decode(file_get_contents('php://input'), true) ?: [];
@@ -50,15 +49,13 @@ if (!$admin_uid) {
     exit();
 }
 
-$conn->begin_transaction();
+$conn->beginTransaction();
 
 try {
     // Lock the request row so two admins can't both act on it at once.
     $stmt = $conn->prepare("SELECT id, user_id, amount, trx_id, status FROM wallet_deposit_requests WHERE id = ? FOR UPDATE");
-    $stmt->bind_param('i', $request_id);
-    $stmt->execute();
-    $req = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
+    $stmt->execute([$request_id]);
+    $req = $stmt->fetch();
 
     if (!$req) {
         throw new Exception('Request not found');
@@ -73,10 +70,8 @@ try {
         // Lock the user's wallet row too, then credit the balance.
         $stmt = $conn->prepare("SELECT balance, withdrawable_balance, non_withdrawable_balance, referred_by, created_at
              FROM wallet_users WHERE id = ? FOR UPDATE");
-        $stmt->bind_param('i', $req['user_id']);
-        $stmt->execute();
-        $wallet = $stmt->get_result()->fetch_assoc();
-        $stmt->close();
+        $stmt->execute([$req['user_id']]);
+        $wallet = $stmt->fetch();
 
         if (!$wallet) {
             throw new Exception('Wallet user not found');
@@ -115,10 +110,8 @@ try {
             $stmt = $conn->prepare(
                 "SELECT COUNT(*) AS cnt FROM referral_commissions WHERE referred_id = ?"
             );
-            $stmt->bind_param('i', $req['user_id']);
-            $stmt->execute();
-            $priorCount = (int)($stmt->get_result()->fetch_assoc()['cnt'] ?? 0);
-            $stmt->close();
+            $stmt->execute([$req['user_id']]);
+            $priorCount = (int)($stmt->fetch()['cnt'] ?? 0);
 
             $is_first_deposit = ($priorCount === 0);
         }
@@ -143,15 +136,12 @@ try {
                  non_withdrawable_balance = ?
              WHERE id = ?"
         );
-        $stmt->bind_param(
-            'dddi',
+        $stmt->execute([
             $balance_after,
             $withdrawable_after,
             $non_withdrawable_after,
             $req['user_id']
-        );
-        $stmt->execute();
-        $stmt->close();
+        ]);
 
         $type = 'deposit';
         $description = $bonus_amount > 0
@@ -164,13 +154,10 @@ try {
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())"
         );
         $creditedAmount = $deposit_amount + $bonus_amount;
-        $stmt->bind_param(
-            'isdddsss',
+        $stmt->execute([
             $req['user_id'], $type, $creditedAmount, $balance_before, $balance_after,
             $req['trx_id'], $description, $tx_status
-        );
-        $stmt->execute();
-        $stmt->close();
+        ]);
 
         /*
         |----------------------------------------------------------------
@@ -187,10 +174,8 @@ try {
                 "SELECT balance, withdrawable_balance
                  FROM wallet_users WHERE id = ? FOR UPDATE"
             );
-            $stmt->bind_param('i', $referred_by);
-            $stmt->execute();
-            $referrerWallet = $stmt->get_result()->fetch_assoc();
-            $stmt->close();
+            $stmt->execute([$referred_by]);
+            $referrerWallet = $stmt->fetch();
 
             if ($referrerWallet) {
 
@@ -206,14 +191,11 @@ try {
                          withdrawable_balance = ?
                      WHERE id = ?"
                 );
-                $stmt->bind_param(
-                    'ddi',
+                $stmt->execute([
                     $refBalanceAfter,
                     $refWithdrawableAfter,
                     $referred_by
-                );
-                $stmt->execute();
-                $stmt->close();
+                ]);
 
                 $refType = 'referral_commission';
                 $refDescription = $is_first_deposit
@@ -224,13 +206,10 @@ try {
                         (user_id, type, amount, balance_before, balance_after, reference, description, status, created_at)
                      VALUES (?, ?, ?, ?, ?, ?, ?, 'completed', NOW())"
                 );
-                $stmt->bind_param(
-                    'isdddss',
+                $stmt->execute([
                     $referred_by, $refType, $commission_amount, $refBalanceBefore, $refBalanceAfter,
                     $req['trx_id'], $refDescription
-                );
-                $stmt->execute();
-                $stmt->close();
+                ]);
 
                 $stmt = $conn->prepare(
                     "INSERT INTO referral_commissions
@@ -239,13 +218,10 @@ try {
                      VALUES (?, ?, ?, ?, ?, ?, ?, NOW())"
                 );
                 $isFirstDepositInt = $is_first_deposit ? 1 : 0;
-                $stmt->bind_param(
-                    'iiidddi',
+                $stmt->execute([
                     $referred_by, $req['user_id'], $request_id, $deposit_amount,
                     $commission_rate, $commission_amount, $isFirstDepositInt
-                );
-                $stmt->execute();
-                $stmt->close();
+                ]);
             }
             // If the referrer's wallet row somehow doesn't exist, we
             // silently skip commission crediting rather than failing the
@@ -254,15 +230,11 @@ try {
     }
 
     $stmt = $conn->prepare("UPDATE wallet_deposit_requests SET status = ?, admin_note = ?, reviewed_at = NOW() WHERE id = ?");
-    $stmt->bind_param('ssi', $new_status, $admin_note, $request_id);
-    $stmt->execute();
-    $stmt->close();
+    $stmt->execute([$new_status, $admin_note, $request_id]);
 
     $conn->commit();
     echo json_encode(['success' => true]);
 } catch (Exception $e) {
-    $conn->rollback();
+    $conn->rollBack();
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
-
-$conn->close();
