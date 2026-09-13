@@ -94,28 +94,36 @@ if ($profileResponse === false || $profileCode < 200 || $profileCode >= 300 || !
    UNIQUE) is inserted FIRST for each winner; if that insert fails with
    a duplicate-key error, this exact prize was already credited before
    (double-click / concurrent request / re-save), so it's skipped WITHOUT
-   touching the balance. The uniqueness is enforced by MySQL itself, so
-   double-crediting is impossible even under a race between two requests. */
-$conn->set_charset('utf8mb4');
-$conn->begin_transaction();
+   touching the balance. The uniqueness is enforced by Postgres itself, so
+   double-crediting is impossible even under a race between two requests.
+
+   IMPORTANT Postgres difference from MySQL: once any statement inside a
+   transaction errors, Postgres aborts the WHOLE transaction — every
+   further statement fails until a ROLLBACK, even unrelated ones. MySQL
+   just fails that one statement (which is why the old mysqli version could
+   catch errno 1062 and keep going). So each attempt here is wrapped in its
+   own SAVEPOINT: on a duplicate-key error (SQLSTATE 23505) we roll back
+   only to that savepoint, which keeps the outer transaction alive so the
+   loop can continue to the next winner. */
+$conn->beginTransaction();
 
 try {
     $refStmt = $conn->prepare(
-        "INSERT INTO wallet_prize_credits (reference, user_id, amount) VALUES (?, ?, ?)"
+        "INSERT INTO wallet_prize_credits (reference, user_id, amount) VALUES (:reference, :ref_user_id, :ref_amount)"
     );
     $updateStmt = $conn->prepare(
         "UPDATE wallet_users
-         SET withdrawable_balance = withdrawable_balance + ?,
-             balance = balance + ?
-         WHERE supabase_uid = ?"
+         SET withdrawable_balance = withdrawable_balance + :amount1,
+             balance = balance + :amount2
+         WHERE supabase_uid = :uid"
     );
     $lookupStmt = $conn->prepare(
-        "SELECT id FROM wallet_users WHERE supabase_uid = ? LIMIT 1"
+        "SELECT id FROM wallet_users WHERE supabase_uid = :lookup_uid LIMIT 1"
     );
     $insertStmt = $conn->prepare(
         "INSERT INTO wallet_transactions
             (user_id, type, amount, description, status, reference)
-         VALUES (?, 'prize', ?, 'Tournament prize', 'completed', ?)"
+         VALUES (:tx_user_id, 'prize', :tx_amount, 'Tournament prize', 'completed', :tx_reference)"
     );
 
     $credited = [];
@@ -134,9 +142,8 @@ try {
 
         // Resolve the integer wallet_users.id first (needed for the
         // prize_credits row and the transactions log).
-        $lookupStmt->bind_param('s', $uid);
-        $lookupStmt->execute();
-        $row = $lookupStmt->get_result()->fetch_assoc();
+        $lookupStmt->execute(['lookup_uid' => $uid]);
+        $row = $lookupStmt->fetch();
         if (!$row) {
             $skipped[] = $c; // no wallet_users row for this uid
             continue;
@@ -145,43 +152,54 @@ try {
         $reference = 'prize_' . $lobbyId . '_' . $teamId;
 
         // Atomically claim this exact prize. Duplicate => already credited.
+        // Savepoint lets us recover from a duplicate-key error without
+        // losing the rest of the transaction (see note above).
+        $conn->exec('SAVEPOINT prize_credit_sp');
+
         $ok = false;
-        $errno = 0;
+        $isDuplicate = false;
         try {
-            $refStmt->bind_param('sid', $reference, $walletUserId, $amount);
-            $ok = $refStmt->execute();
-            if (!$ok) {
-                $errno = $conn->errno;
+            $ok = $refStmt->execute([
+                'reference'   => $reference,
+                'ref_user_id' => $walletUserId,
+                'ref_amount'  => $amount
+            ]);
+        } catch (PDOException $ex) {
+            $conn->exec('ROLLBACK TO SAVEPOINT prize_credit_sp');
+            $isDuplicate = (($ex->errorInfo[0] ?? null) === '23505');
+            if (!$isDuplicate) {
+                throw new Exception('Could not reserve prize reference: ' . $ex->getMessage());
             }
-        } catch (\Throwable $ex) {
-            $ok = false;
-            $errno = (int)$ex->getCode();
         }
 
         if (!$ok) {
-            if ($errno === 1062) {
+            if ($isDuplicate) {
                 $skipped[] = $c + ['reason' => 'already credited'];
                 continue;
             }
-            throw new Exception('Could not reserve prize reference: ' . $conn->error);
+            throw new Exception('Could not reserve prize reference');
         }
 
-        // Reference claimed — safe to actually move the money now.
-        $updateStmt->bind_param('dds', $amount, $amount, $uid);
-        $updateStmt->execute();
+        $conn->exec('RELEASE SAVEPOINT prize_credit_sp');
 
-        if ($updateStmt->affected_rows > 0) {
-            $insertStmt->bind_param('ids', $walletUserId, $amount, $reference);
-            $insertStmt->execute();
+        // Reference claimed — safe to actually move the money now.
+        $updateStmt->execute([
+            'amount1' => $amount,
+            'amount2' => $amount,
+            'uid'     => $uid
+        ]);
+
+        if ($updateStmt->rowCount() > 0) {
+            $insertStmt->execute([
+                'tx_user_id'   => $walletUserId,
+                'tx_amount'    => $amount,
+                'tx_reference' => $reference
+            ]);
             $credited[] = ['supabase_uid' => $uid, 'amount' => $amount];
         } else {
             $skipped[] = $c; // shouldn't happen since lookup just found the row
         }
     }
-    $refStmt->close();
-    $updateStmt->close();
-    $lookupStmt->close();
-    $insertStmt->close();
 
     if (!count($credited) && !count($skipped)) {
         throw new Exception('No wallet accounts found for the given users');
@@ -196,8 +214,7 @@ try {
         'skipped' => $skipped
     ]);
 } catch (Exception $e) {
-    $conn->rollback();
+    $conn->rollBack();
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
-?>

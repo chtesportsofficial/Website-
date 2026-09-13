@@ -94,47 +94,43 @@ if (!is_array($user) || empty($user['email'])) {
 
 $email = trim($user['email']);
 
-// ---- Find the matching wallet_users row ----
-$conn->set_charset('utf8mb4');
+try {
+    // ---- Find the matching wallet_users row ----
+    $stmt = $conn->prepare("SELECT id FROM wallet_users WHERE email = :email LIMIT 1");
+    $stmt->execute(['email' => $email]);
+    $walletUserRow = $stmt->fetch();
 
-$stmt = $conn->prepare("SELECT id FROM wallet_users WHERE email = ? LIMIT 1");
-$stmt->bind_param('s', $email);
-$stmt->execute();
-$stmt->bind_result($walletUserId);
+    if (!$walletUserRow) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'Wallet account not found for this user']);
+        exit;
+    }
+    $walletUserId = $walletUserRow['id'];
 
-if (!$stmt->fetch()) {
-    $stmt->close();
-    http_response_code(404);
-    echo json_encode(['success' => false, 'message' => 'Wallet account not found for this user']);
-    exit;
-}
-$stmt->close();
+    // ---- Insert the pending deposit request ----
+    $stmt = $conn->prepare(
+        "INSERT INTO wallet_deposit_requests
+            (user_id, email, method, sender_number, trx_id, amount, status)
+         VALUES (:user_id, :email, :method, :sender_number, :trx_id, :amount, 'pending')
+         RETURNING id"
+    );
 
-// ---- Insert the pending deposit request ----
-$stmt = $conn->prepare(
-    "INSERT INTO wallet_deposit_requests
-        (user_id, email, method, sender_number, trx_id, amount, status)
-     VALUES (?, ?, ?, ?, ?, ?, 'pending')"
-);
+    $stmt->execute([
+        'user_id'       => $walletUserId,
+        'email'         => $email,
+        'method'        => $method,
+        'sender_number' => $senderNumber,
+        'trx_id'        => $trxId,
+        'amount'        => $amount
+    ]);
 
-if (!$stmt) {
+    $requestId = (int)$stmt->fetch()['id'];
+
+} catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Database prepare failed', 'error' => $conn->error]);
+    echo json_encode(['success' => false, 'message' => 'Database error', 'error' => $e->getMessage()]);
     exit;
 }
-
-$stmt->bind_param('issssd', $walletUserId, $email, $method, $senderNumber, $trxId, $amount);
-
-if (!$stmt->execute()) {
-    $error = $stmt->error;
-    $stmt->close();
-    http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Could not save deposit request', 'error' => $error]);
-    exit;
-}
-
-$requestId = (int)$stmt->insert_id;
-$stmt->close();
 
 echo json_encode([
     'success' => true,

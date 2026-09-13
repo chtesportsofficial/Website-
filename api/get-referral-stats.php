@@ -22,7 +22,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../admin-auth.php';
-$conn->set_charset('utf8mb4');
 
 function respond($success, $data = []) {
     echo json_encode(array_merge(['success' => $success], $data));
@@ -38,15 +37,14 @@ if (!$supabase_uid) {
 }
 
 // --- Resolve supabase_uid -> internal numeric wallet_users.id ---
-$lookup = $conn->prepare("SELECT id FROM wallet_users WHERE supabase_uid = ? LIMIT 1");
-if (!$lookup) {
-    error_log('get-referral-stats.php prepare failed: ' . $conn->error);
+try {
+    $lookup = $conn->prepare("SELECT id FROM wallet_users WHERE supabase_uid = :uid LIMIT 1");
+    $lookup->execute(['uid' => $supabase_uid]);
+    $walletUser = $lookup->fetch();
+} catch (PDOException $e) {
+    error_log('get-referral-stats.php lookup failed: ' . $e->getMessage());
     respond(false, ['message' => 'Server error (lookup query failed).']);
 }
-$lookup->bind_param('s', $supabase_uid);
-$lookup->execute();
-$walletUser = $lookup->get_result()->fetch_assoc();
-$lookup->close();
 
 if (!$walletUser) {
     respond(false, ['message' => 'Wallet user not found for this account']);
@@ -59,11 +57,9 @@ $user_id = (int)$walletUser['id'];
 | Registered members: everyone whose referred_by points to this user
 |--------------------------------------------------------------------------
 */
-$stmt = $conn->prepare("SELECT COUNT(*) AS cnt FROM wallet_users WHERE referred_by = ?");
-$stmt->bind_param('i', $user_id);
-$stmt->execute();
-$registered_members = (int)($stmt->get_result()->fetch_assoc()['cnt'] ?? 0);
-$stmt->close();
+$stmt = $conn->prepare("SELECT COUNT(*) AS cnt FROM wallet_users WHERE referred_by = :user_id");
+$stmt->execute(['user_id' => $user_id]);
+$registered_members = (int)($stmt->fetch()['cnt'] ?? 0);
 
 /*
 |--------------------------------------------------------------------------
@@ -75,12 +71,10 @@ $stmt = $conn->prepare(
         COALESCE(SUM(commission_amount), 0) AS total_commissions,
         COALESCE(SUM(deposit_amount), 0)    AS total_deposit_amount
      FROM referral_commissions
-     WHERE referrer_id = ?"
+     WHERE referrer_id = :user_id"
 );
-$stmt->bind_param('i', $user_id);
-$stmt->execute();
-$sums = $stmt->get_result()->fetch_assoc();
-$stmt->close();
+$stmt->execute(['user_id' => $user_id]);
+$sums = $stmt->fetch();
 
 $total_commissions    = (float)($sums['total_commissions'] ?? 0);
 $total_deposit_amount = (float)($sums['total_deposit_amount'] ?? 0);
@@ -127,5 +121,3 @@ respond(true, [
     'total_deposit_amount'  => $total_deposit_amount,
     'invite_code'           => $invite_code
 ]);
-
-$conn->close();

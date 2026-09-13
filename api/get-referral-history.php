@@ -27,7 +27,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../admin-auth.php';
-$conn->set_charset('utf8mb4');
 
 function respond($success, $data = []) {
     echo json_encode(array_merge(['success' => $success], $data));
@@ -43,15 +42,14 @@ if (!$supabase_uid) {
 }
 
 // --- Resolve supabase_uid -> internal numeric wallet_users.id ---
-$lookup = $conn->prepare("SELECT id FROM wallet_users WHERE supabase_uid = ? LIMIT 1");
-if (!$lookup) {
-    error_log('get-referral-history.php prepare failed: ' . $conn->error);
+try {
+    $lookup = $conn->prepare("SELECT id FROM wallet_users WHERE supabase_uid = :uid LIMIT 1");
+    $lookup->execute(['uid' => $supabase_uid]);
+    $walletUser = $lookup->fetch();
+} catch (PDOException $e) {
+    error_log('get-referral-history.php lookup failed: ' . $e->getMessage());
     respond(false, ['message' => 'Server error (lookup query failed).']);
 }
-$lookup->bind_param('s', $supabase_uid);
-$lookup->execute();
-$walletUser = $lookup->get_result()->fetch_assoc();
-$lookup->close();
 
 if (!$walletUser) {
     respond(false, ['message' => 'Wallet user not found for this account']);
@@ -88,18 +86,21 @@ $stmt = $conn->prepare(
      FROM referral_commissions rc
      JOIN wallet_users wu           ON wu.id = rc.referred_id
      LEFT JOIN wallet_deposit_requests wdr ON wdr.id = rc.deposit_request_id
-     WHERE rc.referrer_id = ?
+     WHERE rc.referrer_id = :user_id
      ORDER BY rc.created_at DESC"
 );
-$stmt->bind_param('i', $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
+$stmt->execute(['user_id' => $user_id]);
 
 $history = [];
 
-while ($row = $result->fetch_assoc()) {
+while ($row = $stmt->fetch()) {
 
-    $isFirstDeposit = (bool)$row['is_first_deposit'];
+    // NOTE (PDO_PGSQL gotcha): Postgres boolean columns come back through
+    // PDO as the strings 't' / 'f', NOT native PHP true/false. A plain
+    // (bool) cast would treat 'f' as truthy (non-empty string), which
+    // would silently mark every repeat commission as "first deposit".
+    // So this checks explicitly against the possible true-ish values.
+    $isFirstDeposit = in_array($row['is_first_deposit'], [true, 't', 1, '1'], true);
 
     if ($isFirstDeposit) {
         $status = 'Completed';
@@ -120,10 +121,6 @@ while ($row = $result->fetch_assoc()) {
     ];
 }
 
-$stmt->close();
-
 respond(true, [
     'history' => $history
 ]);
-
-$conn->close();
