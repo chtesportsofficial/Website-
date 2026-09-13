@@ -362,6 +362,15 @@ async function fetchWalletBalance(){
       if(j&&!j.success){
         console.error('[wallet-balance] attempt',attempt,'API returned failure:',j.message||j);
         walletBalanceErrorDetail=j.message||JSON.stringify(j);
+        // The server actually responded (just with a failure) — this is a
+        // real backend/DB error, not a cold-start timeout, so retrying the
+        // identical request won't help. Stop immediately instead of
+        // grinding through the full ~54s retry schedule.
+        walletBalance=null;
+        walletBalanceError=true;
+        walletBalanceLoading=false;
+        if(document.getElementById('jfPaymentOptions'))renderPaymentOptions();
+        return;
       }
       walletBalance=null;
       walletBalanceError=true;
