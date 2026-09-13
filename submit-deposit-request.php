@@ -24,9 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-require_once __DIR__ . '/db.php'; // must expose $conn (mysqli)
+require_once __DIR__ . '/db.php'; // must expose $conn (PDO, Postgres)
 require_once __DIR__ . '/admin-auth.php'; // for verify_user_token()
-$conn->set_charset('utf8mb4');
 
 function respond($status, $data = []) {
     echo json_encode(array_merge(['status' => $status], $data));
@@ -109,51 +108,43 @@ if ($amount <= 0) {
     respond(false, ['message' => 'Amount must be greater than 0']);
 }
 
-// --- Resolve supabase_uid -> internal numeric wallet_users.id ---
-$lookup = $conn->prepare("SELECT id, email FROM wallet_users WHERE supabase_uid = ? LIMIT 1");
-if (!$lookup) {
-    error_log('submit-deposit-request.php prepare failed: ' . $conn->error);
-    respond(false, ['message' => 'Server error (lookup query failed). Contact admin.']);
-}
-$lookup->bind_param('s', $supabase_uid);
-$lookup->execute();
-$walletUser = $lookup->get_result()->fetch_assoc();
-$lookup->close();
+try {
+    // --- Resolve supabase_uid -> internal numeric wallet_users.id ---
+    $lookup = $conn->prepare("SELECT id, email FROM wallet_users WHERE supabase_uid = ? LIMIT 1");
+    $lookup->execute([$supabase_uid]);
+    $walletUser = $lookup->fetch();
 
-if (!$walletUser) {
-    respond(false, ['message' => 'Wallet user not found for this account']);
-}
+    if (!$walletUser) {
+        respond(false, ['message' => 'Wallet user not found for this account']);
+    }
 
-$user_id = (int)$walletUser['id'];
-$email   = $walletUser['email'];
+    $user_id = (int)$walletUser['id'];
+    $email   = $walletUser['email'];
 
-// DB enum is ('Bkash','Nagad') — capitalized — but the frontend sends
-// lowercase 'bkash'/'nagad', so convert before inserting.
-$method_db = ucfirst($method);
+    // DB enum is ('Bkash','Nagad') — capitalized — but the frontend sends
+    // lowercase 'bkash'/'nagad', so convert before inserting.
+    $method_db = ucfirst($method);
 
-// --- Prevent duplicate submission of the same trx_id ---
-$check = $conn->prepare("SELECT id, status FROM wallet_deposit_requests WHERE trx_id = ? LIMIT 1");
-$check->bind_param('s', $trx_id);
-$check->execute();
-$existing = $check->get_result()->fetch_assoc();
-$check->close();
+    // --- Prevent duplicate submission of the same trx_id ---
+    $check = $conn->prepare("SELECT id, status FROM wallet_deposit_requests WHERE trx_id = ? LIMIT 1");
+    $check->execute([$trx_id]);
+    $existing = $check->fetch();
 
-if ($existing) {
-    respond(false, [
-        'message' => 'This Transaction ID has already been submitted (status: ' . $existing['status'] . ')'
-    ]);
-}
+    if ($existing) {
+        respond(false, [
+            'message' => 'This Transaction ID has already been submitted (status: ' . $existing['status'] . ')'
+        ]);
+    }
 
-// --- Insert the pending request ---
-$stmt = $conn->prepare(
-    "INSERT INTO wallet_deposit_requests
-        (user_id, email, method, sender_number, trx_id, amount, status, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW())"
-);
-$stmt->bind_param('issssd', $user_id, $email, $method_db, $sender_number, $trx_id, $amount);
-
-if ($stmt->execute()) {
-    $request_id = $stmt->insert_id;
+    // --- Insert the pending request ---
+    $stmt = $conn->prepare(
+        "INSERT INTO wallet_deposit_requests
+            (user_id, email, method, sender_number, trx_id, amount, status, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW())
+         RETURNING id"
+    );
+    $stmt->execute([$user_id, $email, $method_db, $sender_number, $trx_id, $amount]);
+    $request_id = $stmt->fetch()['id'];
 
     // Notify only after the insert has actually succeeded, so a Telegram
     // hiccup can never block or falsely fail a real submission.
@@ -173,9 +164,7 @@ if ($stmt->execute()) {
         'message'    => 'Deposit request submitted. It will be reviewed by an admin shortly.',
         'request_id' => $request_id
     ]);
-} else {
-    respond(false, ['message' => 'Database error: ' . $stmt->error]);
+} catch (PDOException $e) {
+    error_log('submit-deposit-request.php DB error: ' . $e->getMessage());
+    respond(false, ['message' => 'Server error (database). Contact admin.']);
 }
-
-$stmt->close();
-$conn->close();
