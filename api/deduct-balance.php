@@ -73,26 +73,28 @@ if ($amount <= 0) {
 
 // ---- 4. Deduct, inside a transaction with a row lock (prevents double-spend
 //         from two simultaneous requests racing each other)
-$conn->begin_transaction();
+$conn->beginTransaction();
 try {
     $stmt = $conn->prepare(
         "SELECT id, balance, withdrawable_balance, non_withdrawable_balance
-         FROM wallet_users WHERE supabase_uid = ? LIMIT 1 FOR UPDATE"
+         FROM wallet_users WHERE supabase_uid = :uid LIMIT 1 FOR UPDATE"
     );
-    $stmt->bind_param("s", $verifiedUid);
-    $stmt->execute();
-    $stmt->bind_result($user_id, $balance, $withdrawableBalance, $nonWithdrawableBalance);
-    $found = $stmt->fetch();
-    $stmt->close();
+    $stmt->execute(['uid' => $verifiedUid]);
+    $row = $stmt->fetch();
 
-    if (!$found) {
-        $conn->rollback();
+    if (!$row) {
+        $conn->rollBack();
         echo json_encode(["success" => false, "message" => "Wallet not found for this account"]);
         exit;
     }
 
+    $user_id = $row['id'];
+    $balance = $row['balance'];
+    $withdrawableBalance = $row['withdrawable_balance'];
+    $nonWithdrawableBalance = $row['non_withdrawable_balance'];
+
     if ((float)$balance < $amount) {
-        $conn->rollback();
+        $conn->rollBack();
         echo json_encode(["success" => false, "message" => "Insufficient balance", "balance" => (float)$balance]);
         exit;
     }
@@ -109,19 +111,32 @@ try {
 
     $upd = $conn->prepare(
         "UPDATE wallet_users
-         SET withdrawable_balance = ?,
-             non_withdrawable_balance = ?,
-             balance = ?
-         WHERE id = ?"
+         SET withdrawable_balance = :withdrawable,
+             non_withdrawable_balance = :non_withdrawable,
+             balance = :balance
+         WHERE id = :id"
     );
-    $upd->bind_param("dddi", $newWithdrawable, $newNonWithdrawable, $newBalance, $user_id);
-    $upd->execute();
-    $upd->close();
+    $upd->execute([
+        'withdrawable' => $newWithdrawable,
+        'non_withdrawable' => $newNonWithdrawable,
+        'balance' => $newBalance,
+        'id' => $user_id
+    ]);
 
-    $ins = $conn->prepare("INSERT INTO wallet_transactions (user_id, type, amount, balance_before, balance_after, reference, description, status) VALUES (?, 'debit', ?, ?, ?, ?, ?, 'completed')");
-    $ins->bind_param("iddsss", $user_id, $amount, $balance, $newBalance, $reference, $description);
-    $ins->execute();
-    $ins->close();
+    $ins = $conn->prepare(
+        "INSERT INTO wallet_transactions
+            (user_id, type, amount, balance_before, balance_after, reference, description, status)
+         VALUES
+            (:user_id, 'debit', :amount, :balance_before, :balance_after, :reference, :description, 'completed')"
+    );
+    $ins->execute([
+        'user_id' => $user_id,
+        'amount' => $amount,
+        'balance_before' => $balance,
+        'balance_after' => $newBalance,
+        'reference' => $reference,
+        'description' => $description
+    ]);
 
     $conn->commit();
 
@@ -132,7 +147,7 @@ try {
 
     echo json_encode(["success" => true, "balance" => (float)$newBalance, "withdrawable_balance" => (float)$newWithdrawable, "non_withdrawable_balance" => (float)$newNonWithdrawable]);
 } catch (Exception $e) {
-    $conn->rollback();
+    $conn->rollBack();
     echo json_encode(["success" => false, "message" => "Server error: " . $e->getMessage()]);
 }
 
