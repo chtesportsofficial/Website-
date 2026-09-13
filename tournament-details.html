@@ -320,7 +320,7 @@ function lobbyIsFull(l){
   const slots=l.total_slots||0,joined=lobbyDisplayJoined(l);
   return l.status==='full'||joined>=slots||isJoinWindowClosed(l);
 }
-let sessionUser=null, sessionAccessToken=null, userProfile=null, walletBalance=null, walletBalanceError=false, walletBalanceLoading=false;
+let sessionUser=null, sessionAccessToken=null, userProfile=null, walletBalance=null, walletBalanceError=false, walletBalanceLoading=false, walletBalanceErrorDetail='';
 let selectedLobbies=new Set(), lobbyDataById={};
 let lobbyTeamCounts={};
 
@@ -328,6 +328,7 @@ async function fetchWalletBalance(){
   if(!sessionUser||!sessionAccessToken)return;
   walletBalanceLoading=true;
   walletBalanceError=false;
+  walletBalanceErrorDetail='';
   // Render free-tier services can cold-start slowly (30-60s) — retry a few
   // times with growing delays before giving up. Cumulative wait before the
   // last attempt fires is ~54s, so a full cold start gets covered.
@@ -346,28 +347,40 @@ async function fetchWalletBalance(){
       let j=null, parseErr=null;
       try{ j=await res.json(); }catch(pe){ parseErr=pe; }
       if(!res.ok||parseErr||!j){
-        console.error('[wallet-balance] attempt',attempt,'HTTP',res.status,res.statusText,parseErr?('JSON parse failed: '+parseErr.message):'',!parseErr&&j?('body: '+JSON.stringify(j)):'');
+        const detail='HTTP '+res.status+' '+res.statusText+(parseErr?(' — JSON parse failed: '+parseErr.message):(j?(' — '+JSON.stringify(j)):''));
+        console.error('[wallet-balance] attempt',attempt,detail);
+        walletBalanceErrorDetail=detail;
       }
       if(j&&j.success){
         walletBalance=Number(j.balance)||0;
         walletBalanceError=false;
+        walletBalanceErrorDetail='';
         walletBalanceLoading=false;
         if(document.getElementById('jfPaymentOptions'))renderPaymentOptions();
         return;
       }
-      if(j&&!j.success)console.error('[wallet-balance] attempt',attempt,'API returned failure:',j.message||j);
+      if(j&&!j.success){
+        console.error('[wallet-balance] attempt',attempt,'API returned failure:',j.message||j);
+        walletBalanceErrorDetail=j.message||JSON.stringify(j);
+      }
       walletBalance=null;
       walletBalanceError=true;
     }catch(e){
       console.error('[wallet-balance] attempt',attempt,'network/fetch error:',e.message||e);
+      walletBalanceErrorDetail=e.message||String(e);
       walletBalance=null;
       walletBalanceError=true;
     }
+    // Let the UI reflect "still retrying" progress instead of a flat
+    // "loading" the whole 54s, so a stuck state is distinguishable from
+    // one that's actively working through the cold-start window.
+    if(document.getElementById('jfPaymentOptions'))renderPaymentOptions();
   }
   walletBalanceLoading=false;
   if(document.getElementById('jfPaymentOptions'))renderPaymentOptions();
 }
 async function retryWalletBalance(){
+
   await fetchWalletBalance();
   renderPaymentOptions();
 }
@@ -762,7 +775,7 @@ function renderPaymentOptions(){
   }else if(walletBalanceLoading){
     html+=`<div class="jf-note">ব্যালেন্স লোড হচ্ছে…</div>`;
   }else if(walletBalanceError){
-    html+=`<div class="jf-note">ব্যালেন্স লোড করা যায়নি (নেটওয়ার্ক/সার্ভার সমস্যা)। <button type="button" class="jf-copy-btn" onclick="retryWalletBalance()">🔄 আবার চেষ্টা করুন</button></div>`;
+    html+=`<div class="jf-note">ব্যালেন্স লোড করা যায়নি (নেটওয়ার্ক/সার্ভার সমস্যা)${walletBalanceErrorDetail?': <span style="opacity:.75">'+esc(walletBalanceErrorDetail)+'</span>':''}. <button type="button" class="jf-copy-btn" onclick="retryWalletBalance()">🔄 আবার চেষ্টা করুন</button></div>`;
   }else if(!enough){
     html+=`<div class="jf-note">ব্যালেন্স যথেষ্ট নয় — স্লট বুক করতে ওয়ালেটে টাকা যোগ করুন।</div>`;
   }
