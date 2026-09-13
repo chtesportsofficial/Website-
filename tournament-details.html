@@ -263,6 +263,15 @@ function parseLobbyDateTime(lobbyDate,timeLabel){
   if(!m)return null;
   let h=(+m[1])%12; if(/pm/i.test(m[3]))h+=12;
   const d=new Date(lobbyDate+'T00:00:00'); d.setHours(h,+m[2],0,0);
+  // A "12:00 AM" slot is deliberately entered under the evening's own
+  // date (e.g. the 13th's late-night slot, alongside that day's 8/9 PM
+  // ones) so it still displays/groups as "13 Sept" — but 12:00 AM is
+  // the real start of the NEXT calendar day, so the actual match
+  // moment used for join-window/full timing is one day later. Must
+  // match host-panel.html and tournament-management.html exactly, or
+  // the same lobby row gets treated as already-passed on this page
+  // while still showing as upcoming elsewhere.
+  if(h===0) d.setDate(d.getDate()+1);
   return d;
 }
 function isJoinWindowClosed(l){
