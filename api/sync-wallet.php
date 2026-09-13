@@ -99,22 +99,16 @@ function resolveReferrerWalletId($referralCode, $supabaseUrl, $serviceKey, $conn
     $referrerSupabaseUid = $rows[0]['id'];
     debug_log('[referral-debug] referrerSupabaseUid=' . $referrerSupabaseUid);
 
-    $stmt = $conn->prepare(
-        "SELECT id FROM wallet_users WHERE supabase_uid = ? LIMIT 1"
-    );
-
-    if (!$stmt) {
-        debug_log('[referral-debug] bail: prepare failed: ' . $conn->error);
+    try {
+        $stmt = $conn->prepare(
+            "SELECT id FROM wallet_users WHERE supabase_uid = :uid LIMIT 1"
+        );
+        $stmt->execute(['uid' => $referrerSupabaseUid]);
+        $row = $stmt->fetch();
+    } catch (PDOException $e) {
+        debug_log('[referral-debug] bail: query failed: ' . $e->getMessage());
         return null;
     }
-
-    $stmt->bind_param("s", $referrerSupabaseUid);
-    $stmt->execute();
-
-    $res = $stmt->get_result();
-    $row = $res->fetch_assoc();
-
-    $stmt->close();
 
     if (!$row) {
         debug_log('[referral-debug] bail: no wallet_users row for supabase_uid=' . $referrerSupabaseUid . ' (referrer has not synced their wallet yet)');
@@ -300,17 +294,17 @@ if (
 
 /*
 |--------------------------------------------------------------------------
-| MySQL Connection Check
+| Postgres Connection Check
 |--------------------------------------------------------------------------
 */
 
-if (!isset($conn) || !($conn instanceof mysqli)) {
+if (!isset($conn) || !($conn instanceof PDO)) {
 
     http_response_code(500);
 
     echo json_encode([
         'success' => false,
-        'message' => 'MySQL connection is not available'
+        'message' => 'Database connection is not available'
     ]);
 
     exit;
@@ -323,39 +317,27 @@ if (!isset($conn) || !($conn instanceof mysqli)) {
 |--------------------------------------------------------------------------
 */
 
-$stmt = $conn->prepare(
-    "SELECT id, balance, role, status
-     FROM wallet_users
-     WHERE supabase_uid = ? OR email = ?
-     LIMIT 1"
-);
-
-if (!$stmt) {
+try {
+    $stmt = $conn->prepare(
+        "SELECT id, balance, role, status
+         FROM wallet_users
+         WHERE supabase_uid = :uid OR email = :email
+         LIMIT 1"
+    );
+    $stmt->execute(['uid' => $supabaseUid, 'email' => $email]);
+    $row = $stmt->fetch();
+} catch (PDOException $e) {
 
     http_response_code(500);
 
     echo json_encode([
         'success' => false,
-        'message' => 'Database prepare failed',
-        'error' => $conn->error
+        'message' => 'Database query failed',
+        'error' => $e->getMessage()
     ]);
 
     exit;
 }
-
-$stmt->bind_param(
-    "ss",
-    $supabaseUid,
-    $email
-);
-
-$stmt->execute();
-
-$result = $stmt->get_result();
-
-$row = $result->fetch_assoc();
-
-$stmt->close();
 
 
 /*
@@ -383,27 +365,23 @@ if ($row) {
     | Update Supabase UID / Name / Email
     */
 
-    $stmt = $conn->prepare(
-        "UPDATE wallet_users
-         SET supabase_uid = ?,
-             name = ?,
-             email = ?
-         WHERE id = ?"
-    );
-
-    if ($stmt) {
-
-        $stmt->bind_param(
-            "sssi",
-            $supabaseUid,
-            $name,
-            $email,
-            $walletId
+    try {
+        $stmt = $conn->prepare(
+            "UPDATE wallet_users
+             SET supabase_uid = :uid,
+                 name = :name,
+                 email = :email
+             WHERE id = :id"
         );
 
-        $stmt->execute();
-
-        $stmt->close();
+        $stmt->execute([
+            'uid'   => $supabaseUid,
+            'name'  => $name,
+            'email' => $email,
+            'id'    => $walletId
+        ]);
+    } catch (PDOException $e) {
+        debug_log('[referral-debug] update existing user failed: ' . $e->getMessage());
     }
 
 }
@@ -433,79 +411,58 @@ else {
         $conn
     );
 
+    try {
+        $stmt = $conn->prepare(
+            "INSERT INTO wallet_users
+            (
+                supabase_uid,
+                name,
+                email,
+                password,
+                balance,
+                bonus_balance,
+                referred_by,
+                role,
+                status
+            )
+            VALUES
+            (
+                :uid,
+                :name,
+                :email,
+                NULL,
+                0.00,
+                0.00,
+                :referred_by,
+                'user',
+                'active'
+            )
+            RETURNING id"
+        );
 
-    $stmt = $conn->prepare(
-        "INSERT INTO wallet_users
-        (
-            supabase_uid,
-            name,
-            email,
-            password,
-            balance,
-            bonus_balance,
-            referred_by,
-            role,
-            status
-        )
-        VALUES
-        (
-            ?,
-            ?,
-            ?,
-            NULL,
-            0.00,
-            0.00,
-            ?,
-            'user',
-            'active'
-        )"
-    );
-
-
-    if (!$stmt) {
-
-        http_response_code(500);
-
-        echo json_encode([
-            'success' => false,
-            'message' => 'Database prepare failed',
-            'error' => $conn->error,
-            'referral_debug' => $GLOBALS['__referral_debug']
+        $stmt->execute([
+            'uid'         => $supabaseUid,
+            'name'        => $name,
+            'email'       => $email,
+            'referred_by' => $referrerWalletId
         ]);
 
-        exit;
-    }
+        $inserted = $stmt->fetch();
+        $walletId = (int)$inserted['id'];
 
-
-    $stmt->bind_param(
-        "sssi",
-        $supabaseUid,
-        $name,
-        $email,
-        $referrerWalletId
-    );
-
-
-    if (!$stmt->execute()) {
+    } catch (PDOException $e) {
 
         http_response_code(500);
 
         echo json_encode([
             'success' => false,
             'message' => 'Could not create wallet account',
-            'error' => $stmt->error,
+            'error' => $e->getMessage(),
             'referral_debug' => $GLOBALS['__referral_debug']
         ]);
 
-        $stmt->close();
-
         exit;
     }
-
-
-    $walletId = (int)$stmt->insert_id;
-
-    $stmt->close();
 }
 
 
