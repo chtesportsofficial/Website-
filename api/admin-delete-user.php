@@ -6,8 +6,8 @@
 //   keep their history and just lose the link to this user (see
 //   delete_user_fk_safety.sql, which must be run once beforehand so those
 //   foreign keys are ON DELETE SET NULL instead of CASCADE).
-// - Does NOT touch the MySQL wallet (wallet_users / wallet_transactions on
-//   filess.io) — deposit/withdraw history there is untouched.
+// - Does NOT touch the Postgres wallet (wallet_users / wallet_transactions on
+//   Supabase) — deposit/withdraw history there is untouched.
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
@@ -96,7 +96,7 @@ curl_setopt($ch2, CURLOPT_HTTPHEADER, [
 curl_exec($ch2);
 curl_close($ch2);
 
-// Flag the matching MySQL wallet row (filess.io) as deleted, so it drops
+// Flag the matching Postgres wallet row (Supabase) as deleted, so it drops
 // out of the Wallet Leaderboard — but the row itself, and its
 // deposit/withdraw history in wallet_transactions, stay intact.
 // This is best-effort: if the wallet DB is unreachable for any reason,
@@ -112,22 +112,19 @@ try {
     if (!empty($missingEnv)) {
         throw new Exception('Missing DB env vars: ' . implode(', ', $missingEnv));
     }
-    $mysqlConn = @new mysqli(
-        getenv('DB_HOST'),
-        getenv('DB_USER'),
-        getenv('DB_PASSWORD'),
-        getenv('DB_NAME'),
-        (int)(getenv('DB_PORT') ?: 3306)
-    );
-    if ($mysqlConn->connect_error) {
-        throw new Exception('DB connect failed: ' . $mysqlConn->connect_error);
-    }
-    $mysqlConn->set_charset('utf8mb4');
-    $stmt = $mysqlConn->prepare('UPDATE wallet_users SET account_deleted = 1 WHERE supabase_uid = ?');
-    $stmt->bind_param('s', $target_user_id);
-    $stmt->execute();
-    $stmt->close();
-    $mysqlConn->close();
+    $dsn = 'pgsql:host=' . getenv('DB_HOST') .
+        ';port=' . (getenv('DB_PORT') ?: 5432) .
+        ';dbname=' . getenv('DB_NAME') .
+        ';sslmode=require';
+    $pgConn = new PDO($dsn, getenv('DB_USER'), getenv('DB_PASSWORD'), [
+        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES   => false,
+        PDO::ATTR_TIMEOUT            => 10
+    ]);
+    $stmt = $pgConn->prepare('UPDATE wallet_users SET account_deleted = 1 WHERE supabase_uid = ?');
+    $stmt->execute([$target_user_id]);
+    $pgConn = null;
 } catch (Throwable $e) {
     $walletFlagWarning = $e->getMessage();
     error_log('admin-delete-user.php: could not flag wallet_users as deleted — ' . $walletFlagWarning);

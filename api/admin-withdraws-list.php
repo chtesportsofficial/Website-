@@ -92,20 +92,16 @@ if ($profileResponse === false || $profileCode < 200 || $profileCode >= 300 || !
 }
 
 /* Fetch requests. */
-$conn->set_charset('utf8mb4');
-
 $stmt = $conn->prepare(
     "SELECT id, user_id, email, amount, method, account_number, status, admin_note, created_at, reviewed_at, is_guest, guest_note
      FROM wallet_withdraw_requests
      WHERE status = ?
      ORDER BY created_at DESC"
 );
-$stmt->bind_param('s', $status);
-$stmt->execute();
-$result = $stmt->get_result();
+$stmt->execute([$status]);
 
 $requests = [];
-while ($row = $result->fetch_assoc()) {
+while ($row = $stmt->fetch()) {
     $requests[] = [
         'id' => (int)$row['id'],
         'supabase_uid' => $row['user_id'],
@@ -121,7 +117,6 @@ while ($row = $result->fetch_assoc()) {
         'guest_note' => $row['guest_note']
     ];
 }
-$stmt->close();
 
 echo json_encode([
     'success' => true,

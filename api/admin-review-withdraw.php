@@ -98,8 +98,7 @@ if ($profileResponse === false || $profileCode < 200 || $profileCode >= 300 || !
     exit;
 }
 
-$conn->set_charset('utf8mb4');
-$conn->begin_transaction();
+$conn->beginTransaction();
 
 try {
     $stmt = $conn->prepare(
@@ -107,11 +106,8 @@ try {
          FROM wallet_withdraw_requests
          WHERE id = ? LIMIT 1 FOR UPDATE"
     );
-    $stmt->bind_param('i', $requestId);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $request = $result->fetch_assoc();
-    $stmt->close();
+    $stmt->execute([$requestId]);
+    $request = $stmt->fetch();
 
     if (!$request) {
         throw new Exception('Withdrawal request not found');
@@ -130,11 +126,8 @@ try {
              FROM wallet_users
              WHERE supabase_uid = ? LIMIT 1 FOR UPDATE"
         );
-        $stmt->bind_param('s', $userId);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $wallet = $result->fetch_assoc();
-        $stmt->close();
+        $stmt->execute([$userId]);
+        $wallet = $stmt->fetch();
 
         if (!$wallet) {
             throw new Exception('Wallet not found for this user');
@@ -157,9 +150,7 @@ try {
                  SET withdrawable_balance = ?, balance = ?
                  WHERE id = ?"
             );
-            $stmt->bind_param('ddi', $newWithdrawable, $newBalance, $wallet['id']);
-            $stmt->execute();
-            $stmt->close();
+            $stmt->execute([$newWithdrawable, $newBalance, $wallet['id']]);
         }
     }
 
@@ -169,9 +160,7 @@ try {
          WHERE id = ?"
     );
     $status = $action === 'approve' ? 'approved' : 'rejected';
-    $stmt->bind_param('ssi', $status, $adminNote, $requestId);
-    $stmt->execute();
-    $stmt->close();
+    $stmt->execute([$status, $adminNote, $requestId]);
 
     $conn->commit();
 
@@ -185,7 +174,7 @@ try {
         'admin_email' => $adminEmail
     ]);
 } catch (Exception $e) {
-    $conn->rollback();
+    $conn->rollBack();
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }

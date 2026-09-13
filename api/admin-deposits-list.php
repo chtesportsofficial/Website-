@@ -116,9 +116,8 @@ if (!$isAdmin) {
 }
 
 // ---- Fetch deposit requests ----
-$conn->set_charset('utf8mb4');
-
 $allowedStatuses = ['pending', 'approved', 'declined'];
+$params = [];
 
 if ($statusFilter === 'all') {
     $stmt = $conn->prepare(
@@ -138,24 +137,22 @@ if ($statusFilter === 'all') {
          ORDER BY created_at ASC
          LIMIT 200"
     );
-    $stmt->bind_param('s', $statusFilter);
+    $params[] = $statusFilter;
 }
 
 if (!$stmt) {
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Database prepare failed', 'error' => $conn->error]);
+    echo json_encode(['success' => false, 'message' => 'Database prepare failed']);
     exit;
 }
 
-$stmt->execute();
-$result = $stmt->get_result();
+$stmt->execute($params);
 
 $requests = [];
-while ($row = $result->fetch_assoc()) {
+while ($row = $stmt->fetch()) {
     $row['amount'] = (float)$row['amount'];
     $requests[] = $row;
 }
-$stmt->close();
 
 echo json_encode([
     'success' => true,

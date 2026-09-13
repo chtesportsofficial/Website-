@@ -148,8 +148,6 @@ if (!$targetProfile) {
 $targetEmail = $targetProfile['email'];
 
 // ---- Fetch wallet balance (wallet_users is keyed by email) ----
-$conn->set_charset('utf8mb4');
-
 $balance = null;
 $withdrawableBalance = 0.0;
 $nonWithdrawableBalance = 0.0;
@@ -157,15 +155,12 @@ $stmt = $conn->prepare(
     "SELECT balance, withdrawable_balance, non_withdrawable_balance
      FROM wallet_users WHERE email = ?"
 );
-$stmt->bind_param('s', $targetEmail);
-$stmt->execute();
-$res = $stmt->get_result();
-if ($row = $res->fetch_assoc()) {
+$stmt->execute([$targetEmail]);
+if ($row = $stmt->fetch()) {
     $withdrawableBalance = (float)$row['withdrawable_balance'];
     $nonWithdrawableBalance = (float)$row['non_withdrawable_balance'];
     $balance = $withdrawableBalance + $nonWithdrawableBalance;
 }
-$stmt->close();
 
 // ---- Fetch this user's deposit request history ----
 $stmt = $conn->prepare(
@@ -175,16 +170,13 @@ $stmt = $conn->prepare(
      ORDER BY created_at DESC
      LIMIT 50"
 );
-$stmt->bind_param('s', $targetUserId);
-$stmt->execute();
-$result = $stmt->get_result();
+$stmt->execute([$targetUserId]);
 
 $deposits = [];
-while ($row = $result->fetch_assoc()) {
+while ($row = $stmt->fetch()) {
     $row['amount'] = (float)$row['amount'];
     $deposits[] = $row;
 }
-$stmt->close();
 
 echo json_encode([
     'success' => true,

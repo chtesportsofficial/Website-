@@ -141,8 +141,7 @@ if (!$isAdmin) {
 }
 
 // ---- Process the balance adjustment inside a transaction ----
-$conn->set_charset('utf8mb4');
-$conn->begin_transaction();
+$conn->beginTransaction();
 
 try {
     // Lock the target user's wallet row so concurrent adjustments don't clash.
@@ -150,11 +149,8 @@ try {
         "SELECT id, balance, withdrawable_balance, non_withdrawable_balance
          FROM wallet_users WHERE email = ? FOR UPDATE"
     );
-    $stmt->bind_param('s', $targetEmail);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $walletRow = $result->fetch_assoc();
-    $stmt->close();
+    $stmt->execute([$targetEmail]);
+    $walletRow = $stmt->fetch();
 
     if (!$walletRow) {
         throw new Exception('Wallet account not found for this user');
@@ -189,14 +185,11 @@ try {
              balance = withdrawable_balance + non_withdrawable_balance
          WHERE email = ?"
     );
-    $stmt->bind_param('ds', $delta, $targetEmail);
-    $stmt->execute();
+    $stmt->execute([$delta, $targetEmail]);
 
-    if ($stmt->affected_rows === 0) {
-        $stmt->close();
+    if ($stmt->rowCount() === 0) {
         throw new Exception('Failed to update balance');
     }
-    $stmt->close();
 
     // ---- Log the adjustment in the audit table ----
     $reason = 'Balance type: ' . $balanceType;
@@ -204,27 +197,22 @@ try {
         "INSERT INTO wallet_balance_adjustments (user_id, email, amount, type, reason, admin_email)
          VALUES (?, ?, ?, ?, ?, ?)"
     );
-    $stmt->bind_param('ssdsss', $targetUserId, $targetEmail, $amount, $type, $reason, $adminEmail);
-    $stmt->execute();
-    $stmt->close();
+    $stmt->execute([$targetUserId, $targetEmail, $amount, $type, $reason, $adminEmail]);
 
     // ---- Fetch the new balance to return to the client ----
     $stmt = $conn->prepare(
         "SELECT balance, withdrawable_balance, non_withdrawable_balance
          FROM wallet_users WHERE email = ?"
     );
-    $stmt->bind_param('s', $targetEmail);
-    $stmt->execute();
-    $res = $stmt->get_result();
+    $stmt->execute([$targetEmail]);
     $newBalance = null;
     $newWithdrawable = null;
     $newNonWithdrawable = null;
-    if ($row = $res->fetch_assoc()) {
+    if ($row = $stmt->fetch()) {
         $newBalance = (float)$row['balance'];
         $newWithdrawable = (float)$row['withdrawable_balance'];
         $newNonWithdrawable = (float)$row['non_withdrawable_balance'];
     }
-    $stmt->close();
 
     // ---- Also log into wallet_transactions so this shows up in the user's
     //      Recent Transactions / wallet history (get-wallet-history.php).
@@ -243,17 +231,14 @@ try {
             (user_id, type, amount, balance_before, balance_after, description, status)
          VALUES (?, ?, ?, ?, ?, ?, 'completed')"
     );
-    $stmt->bind_param(
-        'isddds',
+    $stmt->execute([
         $walletUserId,
         $txnType,
         $amount,
         $currentBalance,
         $newBalance,
         $txnDescription
-    );
-    $stmt->execute();
-    $stmt->close();
+    ]);
 
     $conn->commit();
 
@@ -270,7 +255,7 @@ try {
         'non_withdrawable_balance' => $newNonWithdrawable
     ]);
 } catch (Exception $e) {
-    $conn->rollback();
+    $conn->rollBack();
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }

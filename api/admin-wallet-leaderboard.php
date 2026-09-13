@@ -171,21 +171,16 @@ if ($limit < 1) { $limit = 50; }
 if ($limit > 200) { $limit = 200; } // hard cap so a bad request can't force-load everything
 $offset = ($page - 1) * $limit;
 
-$conn->set_charset('utf8mb4');
-
 // ---- Build WHERE clause + bound params (shared by the count query and the page query) ----
 $whereParts = ['account_deleted = 0'];
-$paramTypes = '';
 $paramValues = [];
 
 if ($minBalance !== null) {
     $whereParts[] = 'balance >= ?';
-    $paramTypes .= 'd';
     $paramValues[] = $minBalance;
 }
 if ($maxBalance !== null) {
     $whereParts[] = 'balance <= ?';
-    $paramTypes .= 'd';
     $paramValues[] = $maxBalance;
 }
 if ($uidSearchActive) {
@@ -193,7 +188,6 @@ if ($uidSearchActive) {
         $placeholders = implode(',', array_fill(0, count($matchingSupabaseUids), '?'));
         $whereParts[] = "supabase_uid IN ($placeholders)";
         foreach ($matchingSupabaseUids as $sid) {
-            $paramTypes .= 's';
             $paramValues[] = $sid;
         }
     } else {
@@ -209,31 +203,32 @@ $whereSql = count($whereParts) > 0 ? ('WHERE ' . implode(' AND ', $whereParts)) 
 // excludes deleted accounts so the summary card reflects live users) ----
 $totalWallets = 0;
 $totalBalanceAll = 0.0;
-$overallResult = $conn->query("SELECT COUNT(*) AS cnt, COALESCE(SUM(balance),0) AS total FROM wallet_users WHERE account_deleted = 0");
-if ($overallResult !== false) {
-    $overallRow = $overallResult->fetch_assoc();
-    $totalWallets = (int)$overallRow['cnt'];
-    $totalBalanceAll = (float)$overallRow['total'];
+try {
+    $overallStmt = $conn->query("SELECT COUNT(*) AS cnt, COALESCE(SUM(balance),0) AS total FROM wallet_users WHERE account_deleted = 0");
+    $overallRow = $overallStmt->fetch();
+    if ($overallRow) {
+        $totalWallets = (int)$overallRow['cnt'];
+        $totalBalanceAll = (float)$overallRow['total'];
+    }
+} catch (PDOException $e) {
+    // leave defaults (0 / 0.0) if this summary query fails
 }
 
 // ---- Count of rows matching the current filter (for pagination / "load more") ----
 $totalMatching = 0;
 $countSql = "SELECT COUNT(*) AS cnt FROM wallet_users $whereSql";
-$countStmt = $conn->prepare($countSql);
-if ($countStmt === false) {
+try {
+    $countStmt = $conn->prepare($countSql);
+    $countStmt->execute($paramValues);
+    $countRow = $countStmt->fetch();
+    if ($countRow) {
+        $totalMatching = (int)$countRow['cnt'];
+    }
+} catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Database query failed', 'error' => $conn->error]);
+    echo json_encode(['success' => false, 'message' => 'Database query failed', 'error' => $e->getMessage()]);
     exit;
 }
-if ($paramTypes !== '') {
-    $countStmt->bind_param($paramTypes, ...$paramValues);
-}
-$countStmt->execute();
-$countRes = $countStmt->get_result();
-if ($countRes) {
-    $totalMatching = (int)$countRes->fetch_assoc()['cnt'];
-}
-$countStmt->close();
 
 // ---- Page of results, each with its rank against the FULL unfiltered leaderboard ----
 // (rank is computed with a correlated subquery scoped to just this page's rows, not
@@ -250,38 +245,28 @@ $pageSql = "
     LIMIT ? OFFSET ?
 ";
 
-$pageTypes = $paramTypes . 'ii';
 $pageValues = $paramValues;
 $pageValues[] = $limit;
 $pageValues[] = $offset;
 
-$pageStmt = $conn->prepare($pageSql);
-if ($pageStmt === false) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Database query failed', 'error' => $conn->error]);
-    exit;
-}
-$pageStmt->bind_param($pageTypes, ...$pageValues);
-$pageStmt->execute();
-$pageResult = $pageStmt->get_result();
-
-if ($pageResult === false) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Database query failed', 'error' => $conn->error]);
-    exit;
-}
-
 $rows = [];
 $rankByUid = [];
-while ($row = $pageResult->fetch_assoc()) {
-    $rows[] = [
-        'uid' => $row['supabase_uid'],
-        'email' => $row['email'],
-        'balance' => (float)$row['balance']
-    ];
-    $rankByUid[$row['supabase_uid']] = (int)$row['rnk'];
+try {
+    $pageStmt = $conn->prepare($pageSql);
+    $pageStmt->execute($pageValues);
+    while ($row = $pageStmt->fetch()) {
+        $rows[] = [
+            'uid' => $row['supabase_uid'],
+            'email' => $row['email'],
+            'balance' => (float)$row['balance']
+        ];
+        $rankByUid[$row['supabase_uid']] = (int)$row['rnk'];
+    }
+} catch (PDOException $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Database query failed', 'error' => $e->getMessage()]);
+    exit;
 }
-$pageStmt->close();
 
 // ---- Look up full_name for every row from Supabase profiles, in one batched call ----
 // (Fetching one row at a time here would mean one extra Supabase call per leaderboard
