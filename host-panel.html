@@ -346,14 +346,29 @@ function renderLobby(l){
       <button class="mini green" onclick="openTeams('${l.id}')">Teams</button>
       <button class="mini" onclick="openRoom('${l.id}')">Room ID/Pass</button>
       <button class="mini" onclick="openResults('${l.id}')">Enter Result</button>
-      ${timeOver
-        ? `<button class="mini green" onclick="completeLobbyRow('${l.id}')">Complete</button>`
-        : `${l.status==='full'
-            ? `<button class="mini gold" onclick="changeStatus('${l.id}','upcoming')">Unfull</button>`
-            : `<button class="mini gold" onclick="changeStatus('${l.id}','full')">Full</button>`}
-           <button class="mini red" onclick="changeStatus('${l.id}','cancelled')">Off</button>`}
+      ${l.status==='cancelled'
+        ? `<button class="mini green" onclick="changeStatus('${l.id}','upcoming')">On</button>
+           <button class="mini red" onclick="deleteLobbyRow('${l.id}')">Delete</button>`
+        : timeOver
+          ? `<button class="mini green" onclick="completeLobbyRow('${l.id}')">Complete</button>`
+          : `${l.status==='full'
+              ? `<button class="mini gold" onclick="changeStatus('${l.id}','upcoming')">Unfull</button>`
+              : `<button class="mini gold" onclick="changeStatus('${l.id}','full')">Full</button>`}
+             <button class="mini red" onclick="changeStatus('${l.id}','cancelled')">Off</button>`}
     </div>
   </div>`;
+}
+async function deleteLobbyRow(id){
+  const l=lobbies.find(x=>x.id===id);if(!l)return;
+  askConfirm(
+    'Delete lobby?',
+    `This will permanently remove ${fmtShort(l.lobby_date)} ${l.time_label} and cannot be undone.`,
+    async()=>{
+      const r=await sb.from('tournament_lobbies').delete().eq('id',id);
+      if(r.error)return msg(r.error.message);
+      lobbies=lobbies.filter(x=>x.id!==id);render();
+    }
+  );
 }
 async function completeLobbyRow(id){
   const l=lobbies.find(x=>x.id===id);if(!l)return;

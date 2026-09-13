@@ -6,6 +6,7 @@
 <title>Tournament Management — CHT ESP ORG</title>
 <style>
 :root{--bg:#080b12;--surface:#121827;--surface2:#171f31;--line:#26324a;--muted:#8b96aa;--green:#25d366;--green2:#39e77b;--red:#ff5d6c;--gold:#f6c453;--card:#121827;--border:#26324a;--text:#f4f6fb}
+html{background:#1b2140}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 12% 0%, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 40%),linear-gradient(160deg, #1b2140 0%, #2a3266 55%, #333c7a 100%);color:#f4f6fb;font-family:Inter,system-ui,-apple-system,sans-serif}
 .wrap{max-width:760px;margin:auto;padding:20px 14px 110px}.head{display:flex;gap:12px;align-items:center;margin-bottom:18px;background:transparent}.back-btn{width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer}.back-btn svg{width:20px;height:20px}.header h1,.topbar h1,.head h1{font-size:19px;margin:0;font-weight:750}.sub{font-size:10px;color:var(--muted);margin-top:4px}
 .topbar{display:flex;justify-content:flex-end;margin:-2px 0 12px}.archive-link{display:inline-flex;align-items:center;gap:7px;padding:10px 13px;border:1px solid #293650;background:#141b2b;color:#e9edf5;border-radius:12px;text-decoration:none;font-size:10px;font-weight:900;box-shadow:0 6px 20px #0003}
@@ -234,7 +235,7 @@
       <div class="lobby-dt-col"><label>Time</label><div id="lobbyTimes"><div class="lobby-time-row"><input type="time" step="3600" class="lobbyTimeInput"></div></div></div>
     </div>
     <button type="button" class="mini" style="margin-top:8px;width:100%" onclick="addTimeInput()">＋ Add another time</button>
-    <button type="button" class="create-bottom" onclick="saveLobbies()">Save Lobby(s)</button>
+    <button type="button" class="create-bottom" id="saveLobbiesBtn" onclick="saveLobbies()">Save Lobby(s)</button>
   </div>
 
   <div class="sub-panel-head"><b>Active</b></div>
@@ -320,12 +321,13 @@ function closeM(id){
  $(id).classList.remove('open');
  openModalCount=Math.max(0,openModalCount-1);
  if(openModalCount===0){
+  const y=savedScrollY;
   document.body.style.position='';
   document.body.style.top='';
   document.body.style.left='';
   document.body.style.right='';
   document.body.style.width='';
-  window.scrollTo(0,savedScrollY);
+  requestAnimationFrame(()=>window.scrollTo(0,y));
  }
 }
 function msg(x,type){
@@ -853,12 +855,7 @@ function renderLobbies(){
     return `
     <div class="lobby-item">
       <div class="lobby-top"><div class="lobby-date">${lobbyLabel(l)}</div>${badgeHtml}</div>
-      <div class="lobby-meta">${l.joined_count||0}/${l.total_slots||0} joined · ${Number(l.booked_slots)||0} booked</div>
-      <div class="lobby-actions">
-        <button class="mini green" onclick="teamsReturnTid=null;openTeams('${l.id}')">Teams</button><button class="mini" onclick="setBookedSlots('${l.id}')">Booked</button><button class="mini" onclick="setRoomCredentials('${l.id}')">Room ID/Pass</button>
-        <button class="mini" onclick="resultsReturnTid=null;openResults('${l.id}')">Enter Result</button>
-        ${l.status==='cancelled'?`<button class="mini green" onclick="setLobbyStatus('${l.id}','upcoming')">On</button><button class="mini t-delete" onclick="deleteLobby('${l.id}')">Delete</button>`:`${l.status==='full'?`<button class="mini" onclick="setLobbyStatus('${l.id}','upcoming')">Unfull</button>`:`<button class="mini" onclick="setLobbyStatus('${l.id}','full')">Full</button>`}<button class="mini red" onclick="setLobbyStatus('${l.id}','cancelled')">Off</button>`}
-      </div>
+      <div class="lobby-meta">${l.joined_count||0}/${l.total_slots||0} joined</div>
     </div>`;
   }).join(''):'<div class="empty">No active lobbies.</div>';
 }
@@ -950,15 +947,22 @@ async function saveHistoryLobby(){
   const date=$('lhmNewLobbyDate').value; if(!date)return msg('Pick a date.');
   const times=[...document.querySelectorAll('.lhmNewLobbyTimeInput')].map(i=>timeValueTo12h(i.value)).filter(Boolean);
   if(!times.length)return msg('Add at least one time.');
-  const slots=currentLobbyTournament.default_slots||currentLobbyTournament.total_slots||0;
-  const rows=times.map(t=>({tournament_id:tid,lobby_date:date,time_label:t,total_slots:slots,status:'completed'}));
-  const {data,error}=await sb.from('tournament_lobbies').insert(rows).select();
-  if(error)return msg(error.message);
-  if(!data||data.length===0)return msg('Insert blocked (0 rows) — check the INSERT RLS policy on tournament_lobbies.');
-  $('lhmNewLobbyDate').value='';
-  $('lhmNewLobbyTimes').innerHTML='<div class="lhm-time-row"><input type="time" step="3600" class="lhmNewLobbyTimeInput"></div>';
-  $('lhmAddLobbyForm').style.display='none';
-  await loadHistory(tid);
+  const btn=$('lhmSaveNewLobbyBtn');
+  const originalLabel=btn.textContent;
+  btn.disabled=true;btn.textContent='Saving…';
+  try{
+    const slots=currentLobbyTournament.default_slots||currentLobbyTournament.total_slots||0;
+    const rows=times.map(t=>({tournament_id:tid,lobby_date:date,time_label:t,total_slots:slots,status:'completed'}));
+    const {data,error}=await sb.from('tournament_lobbies').insert(rows).select();
+    if(error)return msg(error.message);
+    if(!data||data.length===0)return msg('Insert blocked (0 rows) — check the INSERT RLS policy on tournament_lobbies.');
+    $('lhmNewLobbyDate').value='';
+    $('lhmNewLobbyTimes').innerHTML='<div class="lhm-time-row"><input type="time" step="3600" class="lhmNewLobbyTimeInput"></div>';
+    $('lhmAddLobbyForm').style.display='none';
+    await loadHistory(tid);
+  }finally{
+    btn.disabled=false;btn.textContent=originalLabel;
+  }
 }
 
 async function setBookedSlots(lobbyId){
@@ -1020,14 +1024,21 @@ async function saveLobbies(){
   const date=$('lobbyDate').value; if(!date)return msg('Pick a date.');
   const times=[...document.querySelectorAll('.lobby-time-row')].map(row=>timeValueTo12h(row.querySelector('.lobbyTimeInput').value)).filter(Boolean);
   if(!times.length)return msg('Add at least one time.');
-  const slots=currentLobbyTournament.default_slots||currentLobbyTournament.total_slots||0;
-  const rows=times.map(t=>({tournament_id:tid,lobby_date:date,time_label:t,total_slots:slots,status:'upcoming'}));
-  const {data,error}=await sb.from('tournament_lobbies').insert(rows).select();
-  if(error)return msg(error.message);
-  if(!data||data.length===0)return msg('Insert blocked (0 rows) — check the INSERT RLS policy on tournament_lobbies.');
-  await logActivity('lobbies_added','tournament','tournament_lobby',tid,currentLobbyTournament.title,{narration:`added ${rows.length} lobby slot(s) for ${currentLobbyTournament.title} on ${date}.`,highlight_targets:[currentLobbyTournament.title]});
-  $('lobbyTimes').innerHTML='<div class="lobby-time-row"><input type="time" step="3600" class="lobbyTimeInput"></div>';
-  await loadLobbies(tid);
+  const btn=$('saveLobbiesBtn');
+  const originalLabel=btn.textContent;
+  btn.disabled=true;btn.textContent='Saving…';
+  try{
+    const slots=currentLobbyTournament.default_slots||currentLobbyTournament.total_slots||0;
+    const rows=times.map(t=>({tournament_id:tid,lobby_date:date,time_label:t,total_slots:slots,status:'upcoming'}));
+    const {data,error}=await sb.from('tournament_lobbies').insert(rows).select();
+    if(error)return msg(error.message);
+    if(!data||data.length===0)return msg('Insert blocked (0 rows) — check the INSERT RLS policy on tournament_lobbies.');
+    await logActivity('lobbies_added','tournament','tournament_lobby',tid,currentLobbyTournament.title,{narration:`added ${rows.length} lobby slot(s) for ${currentLobbyTournament.title} on ${date}.`,highlight_targets:[currentLobbyTournament.title]});
+    $('lobbyTimes').innerHTML='<div class="lobby-time-row"><input type="time" step="3600" class="lobbyTimeInput"></div>';
+    await loadLobbies(tid);
+  }finally{
+    btn.disabled=false;btn.textContent=originalLabel;
+  }
 }
 async function setLobbyStatus(id,status){
   const l=lobbies.find(x=>x.id===id);
