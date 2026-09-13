@@ -185,14 +185,16 @@ if ($name === '') {
 |--------------------------------------------------------------------------
 */
 
-$stmt = $conn->prepare("
-    SELECT id, balance, role, status
-    FROM wallet_users
-    WHERE supabase_uid = ? OR email = ?
-    LIMIT 1
-");
-
-if (!$stmt) {
+try {
+    $stmt = $conn->prepare("
+        SELECT id, balance, role, status
+        FROM wallet_users
+        WHERE supabase_uid = :uid OR email = :email
+        LIMIT 1
+    ");
+    $stmt->execute(['uid' => $supabaseUid, 'email' => $email]);
+    $row = $stmt->fetch();
+} catch (PDOException $e) {
     http_response_code(500);
 
     echo json_encode([
@@ -202,19 +204,6 @@ if (!$stmt) {
 
     exit;
 }
-
-$stmt->bind_param(
-    "ss",
-    $supabaseUid,
-    $email
-);
-
-$stmt->execute();
-
-$result = $stmt->get_result();
-$row = $result->fetch_assoc();
-
-$stmt->close();
 
 /*
 |--------------------------------------------------------------------------
@@ -235,28 +224,25 @@ if ($row) {
     |--------------------------------------------------------------
     */
 
-    $stmt = $conn->prepare("
-        UPDATE wallet_users
-        SET
-            supabase_uid = ?,
-            name = ?,
-            email = ?,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-    ");
+    try {
+        $stmt = $conn->prepare("
+            UPDATE wallet_users
+            SET
+                supabase_uid = :uid,
+                name = :name,
+                email = :email,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = :id
+        ");
 
-    if ($stmt) {
-
-        $stmt->bind_param(
-            "sssi",
-            $supabaseUid,
-            $name,
-            $email,
-            $walletId
-        );
-
-        $stmt->execute();
-        $stmt->close();
+        $stmt->execute([
+            'uid'   => $supabaseUid,
+            'name'  => $name,
+            'email' => $email,
+            'id'    => $walletId
+        ]);
+    } catch (PDOException $e) {
+        // best-effort — don't fail the whole sync if this update fails
     }
 
 }
@@ -273,67 +259,51 @@ else {
     $role    = 'user';
     $status  = 'active';
 
-    $stmt = $conn->prepare("
-        INSERT INTO wallet_users
-        (
-            supabase_uid,
-            name,
-            email,
-            password,
-            balance,
-            role,
-            status
-        )
-        VALUES
-        (
-            ?,
-            ?,
-            ?,
-            NULL,
-            0.00,
-            'user',
-            'active'
-        )
-    ");
+    try {
+        $stmt = $conn->prepare("
+            INSERT INTO wallet_users
+            (
+                supabase_uid,
+                name,
+                email,
+                password,
+                balance,
+                role,
+                status
+            )
+            VALUES
+            (
+                :uid,
+                :name,
+                :email,
+                NULL,
+                0.00,
+                'user',
+                'active'
+            )
+            RETURNING id
+        ");
 
-    if (!$stmt) {
-        http_response_code(500);
-
-        echo json_encode([
-            'success' => false,
-            'message' => 'Could not prepare wallet account'
+        $stmt->execute([
+            'uid'   => $supabaseUid,
+            'name'  => $name,
+            'email' => $email
         ]);
 
-        exit;
-    }
+        $inserted = $stmt->fetch();
+        $walletId = (int)$inserted['id'];
 
-    $stmt->bind_param(
-        "sss",
-        $supabaseUid,
-        $name,
-        $email
-    );
-
-    if (!$stmt->execute()) {
-
-        $error = $stmt->error;
-
-        $stmt->close();
-
+    } catch (PDOException $e) {
         http_response_code(500);
 
         echo json_encode([
             'success' => false,
             'message' => 'Could not create wallet account',
-            'error' => $error
+            'error' => $e->getMessage()
         ]);
 
         exit;
     }
-
-    $walletId = (int)$conn->insert_id;
-
-    $stmt->close();
 }
 
 /*

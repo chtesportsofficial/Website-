@@ -104,21 +104,21 @@ if ($profileResponse === false || $profileCode < 200 || $profileCode >= 300 || !
    Same duplicate-guard as credit-prize.php: a row is inserted into
    wallet_prize_credits FIRST, keyed on reference = prize_<lobby_id>_<team_id>
    with a sentinel user_id of 0 (guests have no wallet_users.id). Because
-   that reference is UNIQUE, MySQL itself blocks a double-click / retry
+   that reference is UNIQUE, Postgres itself blocks a double-click / retry
    from ever filing the same guest prize twice — and it also blocks a mixup
    with credit-prize.php ever double-paying the same team through both
    paths, since they share the exact same reference format. */
-$conn->set_charset('utf8mb4');
-$conn->begin_transaction();
+$conn->beginTransaction();
 
 try {
     $refStmt = $conn->prepare(
-        "INSERT INTO wallet_prize_credits (reference, user_id, amount) VALUES (?, 0, ?)"
+        "INSERT INTO wallet_prize_credits (reference, user_id, amount) VALUES (:reference, 0, :amount)"
     );
     $insertStmt = $conn->prepare(
         "INSERT INTO wallet_withdraw_requests
             (user_id, email, amount, method, account_number, status, is_guest, guest_note, created_at)
-         VALUES ('', 'Guest', ?, ?, ?, 'pending', 1, ?, NOW())"
+         VALUES ('', 'Guest', :amount, :method, :account_number, 'pending', true, :guest_note, NOW())
+         RETURNING id"
     );
 
     $submitted = [];
@@ -148,30 +148,40 @@ try {
         $reference = 'prize_' . $lobbyId . '_' . $teamId;
 
         // Atomically claim this exact prize. Duplicate => already processed.
+        // Postgres reports a unique-violation as SQLSTATE 23505 (MySQL used
+        // errno 1062 for the same thing).
+        //
+        // IMPORTANT Postgres difference from MySQL: once any statement
+        // inside a transaction errors, Postgres marks the WHOLE transaction
+        // "aborted" and refuses every further statement until a ROLLBACK —
+        // unlike MySQL, which just fails that one statement and lets you
+        // keep going. Since this loop must keep processing the remaining
+        // withdrawals after skipping a duplicate, each attempt runs inside
+        // its own SAVEPOINT so only that one claim gets rolled back on
+        // failure, not the whole transaction.
         $ok = false;
-        $errno = 0;
+        $conn->exec('SAVEPOINT prize_claim');
         try {
-            $refStmt->bind_param('sd', $reference, $amount);
-            $ok = $refStmt->execute();
-            if (!$ok) {
-                $errno = $conn->errno;
-            }
-        } catch (\Throwable $ex) {
-            $ok = false;
-            $errno = (int)$ex->getCode();
-        }
-
-        if (!$ok) {
-            if ($errno === 1062) {
+            $ok = $refStmt->execute(['reference' => $reference, 'amount' => $amount]);
+            $conn->exec('RELEASE SAVEPOINT prize_claim');
+        } catch (PDOException $ex) {
+            $conn->exec('ROLLBACK TO SAVEPOINT prize_claim');
+            $sqlState = $ex->errorInfo[0] ?? null;
+            if ($sqlState === '23505') {
                 $skipped[] = $w + ['reason' => 'already submitted'];
                 continue;
             }
-            throw new Exception('Could not reserve prize reference: ' . $conn->error);
+            throw new Exception('Could not reserve prize reference: ' . $ex->getMessage());
         }
 
-        $insertStmt->bind_param('dsss', $amount, $method, $accountNumber, $guestNote);
-        $insertStmt->execute();
-        $requestId = (int)$insertStmt->insert_id;
+        $insertStmt->execute([
+            'amount' => $amount,
+            'method' => $method,
+            'account_number' => $accountNumber,
+            'guest_note' => $guestNote
+        ]);
+        $insertedRow = $insertStmt->fetch();
+        $requestId = (int)$insertedRow['id'];
 
         $submitted[] = [
             'lobby_id' => $lobbyId,
@@ -180,8 +190,6 @@ try {
             'request_id' => $requestId
         ];
     }
-    $refStmt->close();
-    $insertStmt->close();
 
     $conn->commit();
 
@@ -216,7 +224,7 @@ try {
         'skipped' => $skipped
     ]);
 } catch (Exception $e) {
-    $conn->rollback();
+    $conn->rollBack();
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }

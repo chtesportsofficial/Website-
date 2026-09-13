@@ -51,39 +51,32 @@ if (!$uid) {
     exit;
 }
 
-$stmt = $conn->prepare("SELECT id, balance, withdrawable_balance, non_withdrawable_balance FROM wallet_users WHERE supabase_uid = ? LIMIT 1");
+try {
+    $stmt = $conn->prepare("SELECT id, balance, withdrawable_balance, non_withdrawable_balance FROM wallet_users WHERE supabase_uid = :uid LIMIT 1");
+    $stmt->execute(['uid' => $uid]);
+    $row = $stmt->fetch();
 
-if (!$stmt) {
+    if ($row) {
+        $out = json_encode([
+            "success" => true,
+            "user_id" => (int)$row['id'],
+            'balance' => (float)$row['balance'],
+            'withdrawable_balance' => (float)$row['withdrawable_balance'],
+            'non_withdrawable_balance' => (float)$row['non_withdrawable_balance']
+        ]);
+    } else {
+        $out = json_encode([
+            "success" => false,
+            "message" => "User not found",
+            "balance" => 0
+        ]);
+    }
+} catch (PDOException $e) {
     $out = json_encode([
         "success" => false,
         "message" => "Database query error"
     ]);
-    ob_end_clean();
-    echo $out;
-    exit;
 }
-
-$stmt->bind_param("s", $uid);
-$stmt->execute();
-$stmt->bind_result($user_id, $balance, $withdrawableBalance, $nonWithdrawableBalance);
-
-if ($stmt->fetch()) {
-    $out = json_encode([
-        "success" => true,
-        "user_id" => $user_id,
-        'balance' => (float)$balance,
-        'withdrawable_balance' => (float)$withdrawableBalance,
-        'non_withdrawable_balance' => (float)$nonWithdrawableBalance
-    ]);
-} else {
-    $out = json_encode([
-        "success" => false,
-        "message" => "User not found",
-        "balance" => 0
-    ]);
-}
-
-$stmt->close();
 
 // Discard any stray output that snuck in from included files, then
 // send exactly (and only) the clean JSON we built above.

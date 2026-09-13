@@ -88,20 +88,16 @@ $userId = $user['id'];
 $email  = isset($user['email']) ? trim($user['email']) : '';
 
 // ---- Deduct from withdrawable_balance and insert the request, atomically ----
-$conn->set_charset('utf8mb4');
-$conn->begin_transaction();
+$conn->beginTransaction();
 
 try {
     $stmt = $conn->prepare(
         "SELECT id, withdrawable_balance, non_withdrawable_balance
          FROM wallet_users
-         WHERE supabase_uid = ? LIMIT 1 FOR UPDATE"
+         WHERE supabase_uid = :uid LIMIT 1 FOR UPDATE"
     );
-    $stmt->bind_param('s', $userId);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $wallet = $result->fetch_assoc();
-    $stmt->close();
+    $stmt->execute(['uid' => $userId]);
+    $wallet = $stmt->fetch();
 
     if (!$wallet) {
         throw new Exception('Wallet account not found for this user');
@@ -121,23 +117,32 @@ try {
     // rejection (see admin-review-withdraw.php) refunds it back.
     $stmt = $conn->prepare(
         "UPDATE wallet_users
-         SET withdrawable_balance = ?, balance = ?
-         WHERE id = ?"
+         SET withdrawable_balance = :withdrawable, balance = :balance
+         WHERE id = :id"
     );
-    $stmt->bind_param('ddi', $newWithdrawable, $newBalance, $wallet['id']);
-    $stmt->execute();
-    $stmt->close();
+    $stmt->execute([
+        'withdrawable' => $newWithdrawable,
+        'balance' => $newBalance,
+        'id' => $wallet['id']
+    ]);
 
     $status = 'pending';
     $stmt = $conn->prepare(
         "INSERT INTO wallet_withdraw_requests
             (user_id, email, amount, method, account_number, status, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, NOW())"
+         VALUES (:user_id, :email, :amount, :method, :account_number, :status, NOW())
+         RETURNING id"
     );
-    $stmt->bind_param('ssdsss', $userId, $email, $amount, $method, $accountNumber, $status);
-    $stmt->execute();
-    $requestId = (int)$stmt->insert_id;
-    $stmt->close();
+    $stmt->execute([
+        'user_id' => $userId,
+        'email' => $email,
+        'amount' => $amount,
+        'method' => $method,
+        'account_number' => $accountNumber,
+        'status' => $status
+    ]);
+    $inserted = $stmt->fetch();
+    $requestId = (int)$inserted['id'];
 
     $conn->commit();
 
@@ -184,7 +189,7 @@ try {
         'balance' => $newBalance
     ]);
 } catch (Exception $e) {
-    $conn->rollback();
+    $conn->rollBack();
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
