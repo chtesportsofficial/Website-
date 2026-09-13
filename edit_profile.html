@@ -100,6 +100,9 @@ input,select{width:100%;border:0;outline:0;background:transparent;color:var(--te
   border:1.5px solid #fff;
   touch-action:none;
 }
+.crop-rect-inner{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+.crop-circle-mask{position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 9999px rgba(0,0,0,.42);}
+.crop-circle-outline{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(255,255,255,.5);}
 .crop-grid-line{position:absolute;background:rgba(255,255,255,.55);pointer-events:none;}
 .crop-grid-line.v1{left:33.333%;top:0;width:1px;height:100%;}
 .crop-grid-line.v2{left:66.666%;top:0;width:1px;height:100%;}
@@ -220,10 +223,14 @@ input,select{width:100%;border:0;outline:0;background:transparent;color:var(--te
       <div class="crop-mask" id="maskLeft"></div>
       <div class="crop-mask" id="maskRight"></div>
       <div class="crop-rect" id="cropRect">
-        <div class="crop-grid-line v1"></div>
-        <div class="crop-grid-line v2"></div>
-        <div class="crop-grid-line h1"></div>
-        <div class="crop-grid-line h2"></div>
+        <div class="crop-rect-inner">
+          <div class="crop-grid-line v1"></div>
+          <div class="crop-grid-line v2"></div>
+          <div class="crop-grid-line h1"></div>
+          <div class="crop-grid-line h2"></div>
+          <div class="crop-circle-mask"></div>
+          <div class="crop-circle-outline"></div>
+        </div>
         <div class="crop-handle tl" data-handle="tl"></div>
         <div class="crop-handle tr" data-handle="tr"></div>
         <div class="crop-handle bl" data-handle="bl"></div>
