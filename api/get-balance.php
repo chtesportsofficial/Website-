@@ -30,6 +30,7 @@ function json_out($data, $status = 200) {
 register_shutdown_function(function () {
     $e = error_get_last();
     if ($e && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        error_log('get-balance.php: FATAL: ' . $e['message'] . ' in ' . $e['file'] . ' on line ' . $e['line']);
         while (ob_get_level() > 0) ob_end_clean();
         wallet_cors();
         if (!headers_sent()) {
@@ -104,38 +105,43 @@ if (!is_array($user) || empty($user['id'])) {
 
 $uid = (string)$user['id'];
 
+// NOTE: wallet_users only has a single `balance` column — there is no
+// withdrawable_balance / non_withdrawable_balance split in the schema.
+// Selecting those (as an earlier version of this file did) throws a fatal
+// "unknown column" error under mysqli exception mode, which the shutdown
+// handler above then reports as a generic "Wallet API server error".
 $stmt = $conn->prepare(
-    'SELECT id, balance, withdrawable_balance, non_withdrawable_balance
+    'SELECT id, balance
      FROM wallet_users
      WHERE supabase_uid = ?
      LIMIT 1'
 );
 
 if (!$stmt) {
+    error_log('get-balance.php: prepare() failed: ' . $conn->error);
     json_out(['success'=>false,'message'=>'Database query error'], 500);
 }
 
 $stmt->bind_param('s', $uid);
 
 if (!$stmt->execute()) {
+    error_log('get-balance.php: execute() failed: ' . $stmt->error);
     $stmt->close();
     json_out(['success'=>false,'message'=>'Database query failed'], 500);
 }
 
-$stmt->bind_result(
-    $user_id,
-    $balance,
-    $withdrawableBalance,
-    $nonWithdrawableBalance
-);
+$stmt->bind_result($user_id, $balance);
 
 if ($stmt->fetch()) {
+    // Mirror the single balance into both fields for frontend compatibility
+    // (tournament-details.html / wallet.html expect these keys) until/unless
+    // a real withdrawable/non-withdrawable split is added to the schema.
     $out = [
         'success' => true,
         'user_id' => (int)$user_id,
         'balance' => (float)$balance,
-        'withdrawable_balance' => (float)$withdrawableBalance,
-        'non_withdrawable_balance' => (float)$nonWithdrawableBalance
+        'withdrawable_balance' => (float)$balance,
+        'non_withdrawable_balance' => 0
     ];
 } else {
     $out = [
