@@ -1,6 +1,7 @@
 <?php
 // CHTEO wallet balance endpoint.
-// Authenticates the real Supabase session, then reads the matching MySQL wallet row.
+// Authenticates the real Supabase session, then reads the matching Postgres wallet row.
+// Migrated from MySQL/mysqli to Supabase Postgres/PDO.
 
 ob_start();
 ini_set('display_errors', '0');
@@ -105,53 +106,36 @@ if (!is_array($user) || empty($user['id'])) {
 
 $uid = (string)$user['id'];
 
-// NOTE: wallet_users only has a single `balance` column — there is no
-// withdrawable_balance / non_withdrawable_balance split in the schema.
-// Selecting those (as an earlier version of this file did) throws a fatal
-// "unknown column" error under mysqli exception mode, which the shutdown
-// handler above then reports as a generic "Wallet API server error".
-$stmt = $conn->prepare(
-    'SELECT id, balance
-     FROM wallet_users
-     WHERE supabase_uid = ?
-     LIMIT 1'
-);
+try {
+    $stmt = $conn->prepare(
+        'SELECT id, balance, withdrawable_balance, non_withdrawable_balance
+         FROM wallet_users
+         WHERE supabase_uid = :uid
+         LIMIT 1'
+    );
+    $stmt->execute(['uid' => $uid]);
+    $row = $stmt->fetch();
 
-if (!$stmt) {
-    error_log('get-balance.php: prepare() failed: ' . $conn->error);
-    json_out(['success'=>false,'message'=>'Database query error'], 500);
-}
-
-$stmt->bind_param('s', $uid);
-
-if (!$stmt->execute()) {
-    error_log('get-balance.php: execute() failed: ' . $stmt->error);
-    $stmt->close();
+    if ($row) {
+        $out = [
+            'success' => true,
+            'user_id' => (int)$row['id'],
+            'balance' => (float)$row['balance'],
+            'withdrawable_balance' => (float)$row['withdrawable_balance'],
+            'non_withdrawable_balance' => (float)$row['non_withdrawable_balance']
+        ];
+    } else {
+        $out = [
+            'success'=>false,
+            'message'=>'Wallet user not found',
+            'balance'=>0,
+            'withdrawable_balance'=>0,
+            'non_withdrawable_balance'=>0
+        ];
+    }
+} catch (PDOException $e) {
+    error_log('get-balance.php: query failed: ' . $e->getMessage());
     json_out(['success'=>false,'message'=>'Database query failed'], 500);
 }
 
-$stmt->bind_result($user_id, $balance);
-
-if ($stmt->fetch()) {
-    // Mirror the single balance into both fields for frontend compatibility
-    // (tournament-details.html / wallet.html expect these keys) until/unless
-    // a real withdrawable/non-withdrawable split is added to the schema.
-    $out = [
-        'success' => true,
-        'user_id' => (int)$user_id,
-        'balance' => (float)$balance,
-        'withdrawable_balance' => (float)$balance,
-        'non_withdrawable_balance' => 0
-    ];
-} else {
-    $out = [
-        'success'=>false,
-        'message'=>'Wallet user not found',
-        'balance'=>0,
-        'withdrawable_balance'=>0,
-        'non_withdrawable_balance'=>0
-    ];
-}
-
-$stmt->close();
 json_out($out);
