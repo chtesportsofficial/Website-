@@ -91,39 +91,56 @@ if ($profileResponse === false || $profileCode < 200 || $profileCode >= 300 || !
 
 /* Credit each winner. Prize money is withdrawable (unlike deposits).
    A wallet_prize_credits row (reference = prize_<lobby_id>_<team_id>,
-   UNIQUE) is inserted FIRST for each winner; if that insert fails with
-   a duplicate-key error, this exact prize was already credited before
-   (double-click / concurrent request / re-save), so it's skipped WITHOUT
-   touching the balance. The uniqueness is enforced by Postgres itself, so
-   double-crediting is impossible even under a race between two requests.
+   UNIQUE) tracks what's already been credited for this exact team/lobby.
+
+   - First time this reference is seen: insert the row and credit the
+     full amount.
+   - If this reference already exists (host edited the prize and saved
+     again): only the DIFFERENCE between the new and old amount is
+     applied to the wallet (e.g. 150 -> 200 credits +50, 200 -> 150
+     debits -50), and the stored amount is updated to the new value.
+     A downward adjustment is blocked (skipped, balance untouched) if it
+     would take withdrawable_balance below zero.
+   - If the amount is unchanged, nothing happens (no-op skip).
 
    IMPORTANT Postgres difference from MySQL: once any statement inside a
    transaction errors, Postgres aborts the WHOLE transaction — every
    further statement fails until a ROLLBACK, even unrelated ones. MySQL
-   just fails that one statement (which is why the old mysqli version could
-   catch errno 1062 and keep going). So each attempt here is wrapped in its
-   own SAVEPOINT: on a duplicate-key error (SQLSTATE 23505) we roll back
-   only to that savepoint, which keeps the outer transaction alive so the
-   loop can continue to the next winner. */
+   just fails that one statement. So each attempt here runs inside its
+   own SAVEPOINT: on a duplicate-key race (SQLSTATE 23505, two requests
+   inserting the same brand-new reference at once) we roll back only to
+   that savepoint, keeping the outer transaction alive for the rest of
+   the loop. */
 $conn->beginTransaction();
 
 try {
     $refStmt = $conn->prepare(
         "INSERT INTO wallet_prize_credits (reference, user_id, amount) VALUES (:reference, :ref_user_id, :ref_amount)"
     );
-    $updateStmt = $conn->prepare(
+    $existingStmt = $conn->prepare(
+        "SELECT amount FROM wallet_prize_credits WHERE reference = :reference FOR UPDATE"
+    );
+    $updateCreditStmt = $conn->prepare(
+        "UPDATE wallet_prize_credits SET amount = :new_amount WHERE reference = :reference"
+    );
+    // The "withdrawable_balance + :diff3 >= 0" guard means a downward
+    // adjustment that would push the balance negative simply matches zero
+    // rows (rowCount() === 0 below) instead of ever creating a negative
+    // balance.
+    $applyDiffStmt = $conn->prepare(
         "UPDATE wallet_users
-         SET withdrawable_balance = withdrawable_balance + :amount1,
-             balance = balance + :amount2
-         WHERE supabase_uid = :uid"
+         SET withdrawable_balance = withdrawable_balance + :diff1,
+             balance = balance + :diff2
+         WHERE supabase_uid = :uid
+           AND withdrawable_balance + :diff3 >= 0"
     );
     $lookupStmt = $conn->prepare(
         "SELECT id FROM wallet_users WHERE supabase_uid = :lookup_uid LIMIT 1"
     );
-    $insertStmt = $conn->prepare(
+    $insertTxStmt = $conn->prepare(
         "INSERT INTO wallet_transactions
             (user_id, type, amount, description, status, reference)
-         VALUES (:tx_user_id, 'prize', :tx_amount, 'Tournament prize', 'completed', :tx_reference)"
+         VALUES (:tx_user_id, 'prize', :tx_amount, :tx_description, 'completed', :tx_reference)"
     );
 
     $credited = [];
@@ -151,54 +168,71 @@ try {
         $walletUserId = (int)$row['id'];
         $reference = 'prize_' . $lobbyId . '_' . $teamId;
 
-        // Atomically claim this exact prize. Duplicate => already credited.
-        // Savepoint lets us recover from a duplicate-key error without
-        // losing the rest of the transaction (see note above).
         $conn->exec('SAVEPOINT prize_credit_sp');
 
-        $ok = false;
-        $isDuplicate = false;
         try {
-            $ok = $refStmt->execute([
-                'reference'   => $reference,
-                'ref_user_id' => $walletUserId,
-                'ref_amount'  => $amount
-            ]);
+            $existingStmt->execute(['reference' => $reference]);
+            $existingRow = $existingStmt->fetch();
+
+            if ($existingRow === false) {
+                // First time crediting this exact team/lobby.
+                $refStmt->execute([
+                    'reference'   => $reference,
+                    'ref_user_id' => $walletUserId,
+                    'ref_amount'  => $amount
+                ]);
+                $diff = $amount;
+                $isAdjustment = false;
+            } else {
+                // Already credited before — only apply the difference.
+                $oldAmount = (float)$existingRow['amount'];
+                $diff = round($amount - $oldAmount, 2);
+
+                if (abs($diff) < 0.005) {
+                    $conn->exec('RELEASE SAVEPOINT prize_credit_sp');
+                    $skipped[] = $c + ['reason' => 'already credited (amount unchanged)'];
+                    continue;
+                }
+
+                $updateCreditStmt->execute(['new_amount' => $amount, 'reference' => $reference]);
+                $isAdjustment = true;
+            }
         } catch (PDOException $ex) {
             $conn->exec('ROLLBACK TO SAVEPOINT prize_credit_sp');
-            $isDuplicate = (($ex->errorInfo[0] ?? null) === '23505');
-            if (!$isDuplicate) {
-                throw new Exception('Could not reserve prize reference: ' . $ex->getMessage());
-            }
-        }
-
-        if (!$ok) {
-            if ($isDuplicate) {
-                $skipped[] = $c + ['reason' => 'already credited'];
+            $isDuplicateRace = (($ex->errorInfo[0] ?? null) === '23505');
+            if ($isDuplicateRace) {
+                $skipped[] = $c + ['reason' => 'already credited (concurrent request)'];
                 continue;
             }
-            throw new Exception('Could not reserve prize reference');
+            throw new Exception('Could not reserve/update prize reference: ' . $ex->getMessage());
         }
 
-        $conn->exec('RELEASE SAVEPOINT prize_credit_sp');
-
-        // Reference claimed — safe to actually move the money now.
-        $updateStmt->execute([
-            'amount1' => $amount,
-            'amount2' => $amount,
-            'uid'     => $uid
+        // Reference claimed/updated — now actually move the (possibly
+        // negative, for a downward adjustment) diff amount.
+        $applyDiffStmt->execute([
+            'diff1' => $diff,
+            'diff2' => $diff,
+            'diff3' => $diff,
+            'uid'   => $uid
         ]);
 
-        if ($updateStmt->rowCount() > 0) {
-            $insertStmt->execute([
-                'tx_user_id'   => $walletUserId,
-                'tx_amount'    => $amount,
-                'tx_reference' => $reference
-            ]);
-            $credited[] = ['supabase_uid' => $uid, 'amount' => $amount];
-        } else {
-            $skipped[] = $c; // shouldn't happen since lookup just found the row
+        if ($applyDiffStmt->rowCount() === 0) {
+            // Would have pushed withdrawable_balance negative — refuse
+            // this specific adjustment, leave everything as it was.
+            $conn->exec('ROLLBACK TO SAVEPOINT prize_credit_sp');
+            $skipped[] = $c + ['reason' => 'adjustment blocked — would make balance negative'];
+            continue;
         }
+
+        $insertTxStmt->execute([
+            'tx_user_id'    => $walletUserId,
+            'tx_amount'     => $diff,
+            'tx_description' => $isAdjustment ? 'Tournament prize adjustment' : 'Tournament prize',
+            'tx_reference'  => $reference
+        ]);
+
+        $conn->exec('RELEASE SAVEPOINT prize_credit_sp');
+        $credited[] = ['supabase_uid' => $uid, 'amount' => $diff, 'adjustment' => $isAdjustment];
     }
 
     if (!count($credited) && !count($skipped)) {
@@ -209,7 +243,7 @@ try {
 
     echo json_encode([
         'success' => true,
-        'message' => count($credited) . ' winner(s) credited.',
+        'message' => count($credited) . ' winner(s) credited/adjusted.',
         'credited' => $credited,
         'skipped' => $skipped
     ]);
