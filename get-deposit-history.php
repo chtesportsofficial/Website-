@@ -14,9 +14,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-require_once __DIR__ . '/db.php'; // must expose $conn (mysqli)
+require_once __DIR__ . '/db.php'; // must expose $conn (PDO, Postgres)
 require_once __DIR__ . '/admin-auth.php'; // for verify_user_token()
-$conn->set_charset('utf8mb4');
 
 function respond($success, $data = []) {
     echo json_encode(array_merge(['success' => $success], $data));
@@ -36,10 +35,8 @@ if (!$supabase_uid) {
 }
 
 $lookup = $conn->prepare("SELECT id FROM wallet_users WHERE supabase_uid = ? LIMIT 1");
-$lookup->bind_param('s', $supabase_uid);
-$lookup->execute();
-$walletUser = $lookup->get_result()->fetch_assoc();
-$lookup->close();
+$lookup->execute([$supabase_uid]);
+$walletUser = $lookup->fetch();
 
 if (!$walletUser) {
     respond(false, ['message' => 'Wallet user not found for this account']);
@@ -54,15 +51,11 @@ $stmt = $conn->prepare(
      ORDER BY created_at DESC
      LIMIT 20"
 );
-$stmt->bind_param('i', $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
+$stmt->execute([$user_id]);
 
 $history = [];
-while ($row = $result->fetch_assoc()) {
+while ($row = $stmt->fetch()) {
     $history[] = $row;
 }
-$stmt->close();
 
 respond(true, ['history' => $history]);
-$conn->close();
