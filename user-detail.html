@@ -344,6 +344,12 @@
     color:var(--ink); margin:0 2px 8px;
   }
   .dep-heading-bar{ width:4px;height:15px;border-radius:999px;background:var(--accent); }
+  .dep-summary-row{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+  }
+  .dep-chevron{
+    font-size:20px; font-weight:900; color:var(--muted); line-height:1; flex-shrink:0;
+  }
   .dep-loading, .dep-empty{
     text-align:center; color:var(--muted); font-size:12.5px; padding:14px 8px;
   }
@@ -454,20 +460,23 @@
         <div class="other-grid" id="otherList"></div>
       </div>
 
-      <div class="dep-card" id="depositSection">
-        <div class="dep-heading"><span class="dep-heading-bar"></span><span>WALLET HISTORY</span></div>
-        <div id="depositList"><div class="dep-loading">Loading wallet history...</div></div>
+      <div style="margin-top:10px;">
+        <button class="action-btn" id="adjOpenBtn" onclick="adjOpen()" style="width:100%;color:var(--accent);border-color:rgba(53,87,255,0.35);display:none;">
+          💰 Adjust Balance
+        </button>
+      </div>
+
+      <div class="dep-card" id="depositSection" onclick="openHistoryModal()" style="cursor:pointer;">
+        <div class="dep-summary-row">
+          <div class="dep-heading" style="margin:0;"><span class="dep-heading-bar"></span><span>WALLET HISTORY</span></div>
+          <span class="dep-chevron">›</span>
+        </div>
       </div>
 
       <div class="actions-row">
         <button class="action-btn make-admin" id="adminToggleBtn">Make Admin</button>
         <button class="action-btn block" id="banToggleBtn">Block User</button>
         <button class="action-btn make-admin" id="hostToggleBtn">Make Host</button>
-      </div>
-      <div style="margin-top:10px;">
-        <button class="action-btn" id="adjOpenBtn" onclick="adjOpen()" style="width:100%;color:var(--accent);border-color:rgba(53,87,255,0.35);display:none;">
-          💰 Adjust Balance
-        </button>
       </div>
       <div style="margin-top:10px;">
         <button class="action-btn" id="deleteUserBtn" style="width:100%;background:var(--error);color:#fff;border-color:var(--error);">
@@ -510,6 +519,18 @@
     </div>
   </div>
   <!-- ── end Adjust Balance Modal ── -->
+
+  <!-- ── Wallet History Modal ── -->
+  <div id="historyOverlay" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(8,12,25,.65);backdrop-filter:blur(5px);align-items:flex-end;justify-content:center;">
+    <div id="historyModal" style="width:100%;max-width:480px;max-height:82vh;background:#fff;border-radius:24px 24px 0 0;padding:22px 20px 26px;box-shadow:0 -20px 60px rgba(0,0,0,.28);display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-shrink:0;">
+        <div style="font-size:15px;font-weight:900;color:var(--ink);">Wallet History</div>
+        <button onclick="closeHistoryModal()" style="width:32px;height:32px;border-radius:8px;border:none;background:#f0f1f7;color:var(--muted);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
+      </div>
+      <div id="depositList" style="overflow-y:auto;flex:1;"><div class="dep-loading">Loading wallet history...</div></div>
+    </div>
+  </div>
+  <!-- ── end Wallet History Modal ── -->
 
   <div class="toast" id="toast"></div>
 
@@ -956,6 +977,16 @@ function renderDeposits(history){
     `;
   }).join('') + '</div>';
 }
+
+function openHistoryModal(){
+  document.getElementById('historyOverlay').style.display = 'flex';
+}
+function closeHistoryModal(){
+  document.getElementById('historyOverlay').style.display = 'none';
+}
+document.getElementById('historyOverlay').addEventListener('click', function(e){
+  if(e.target === this) closeHistoryModal();
+});
 
 async function loadBalance(){
   const { data: { session } } = await supabaseClient.auth.getSession();
