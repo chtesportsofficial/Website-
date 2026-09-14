@@ -172,7 +172,7 @@ if ($limit > 200) { $limit = 200; } // hard cap so a bad request can't force-loa
 $offset = ($page - 1) * $limit;
 
 // ---- Build WHERE clause + bound params (shared by the count query and the page query) ----
-$whereParts = ['account_deleted = 0'];
+$whereParts = ['account_deleted = false'];
 $paramValues = [];
 
 if ($minBalance !== null) {
@@ -204,7 +204,7 @@ $whereSql = count($whereParts) > 0 ? ('WHERE ' . implode(' AND ', $whereParts)) 
 $totalWallets = 0;
 $totalBalanceAll = 0.0;
 try {
-    $overallStmt = $conn->query("SELECT COUNT(*) AS cnt, COALESCE(SUM(balance),0) AS total FROM wallet_users WHERE account_deleted = 0");
+    $overallStmt = $conn->query("SELECT COUNT(*) AS cnt, COALESCE(SUM(balance),0) AS total FROM wallet_users WHERE account_deleted = false");
     $overallRow = $overallStmt->fetch();
     if ($overallRow) {
         $totalWallets = (int)$overallRow['cnt'];
@@ -238,7 +238,7 @@ $rankCompare = $sort === 'asc' ? '<' : '>';
 
 $pageSql = "
     SELECT w1.supabase_uid, w1.email, w1.balance,
-        (SELECT COUNT(*) FROM wallet_users w2 WHERE w2.account_deleted = 0 AND w2.balance $rankCompare w1.balance) + 1 AS rnk
+        (SELECT COUNT(*) FROM wallet_users w2 WHERE w2.account_deleted = false AND w2.balance $rankCompare w1.balance) + 1 AS rnk
     FROM wallet_users w1
     $whereSql
     ORDER BY w1.balance $orderDir

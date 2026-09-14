@@ -122,7 +122,7 @@ try {
         PDO::ATTR_EMULATE_PREPARES   => false,
         PDO::ATTR_TIMEOUT            => 10
     ]);
-    $stmt = $pgConn->prepare('UPDATE wallet_users SET account_deleted = 1 WHERE supabase_uid = ?');
+    $stmt = $pgConn->prepare('UPDATE wallet_users SET account_deleted = true WHERE supabase_uid = ?');
     $stmt->execute([$target_user_id]);
     $pgConn = null;
 } catch (Throwable $e) {
