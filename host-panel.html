@@ -96,7 +96,7 @@ input{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-r
 .confirm.open{display:flex}
 .confirm-card{width:min(360px,100%);background:#141a29;border:1px solid #2c3851;border-radius:20px;padding:20px;box-shadow:0 25px 70px #0008}
 .confirm-title{font-size:15px;font-weight:900}
-.confirm-text{font-size:10px;color:#929caf;line-height:1.5;margin-top:6px}
+.confirm-text{font-size:10px;color:#929caf;line-height:1.5;margin-top:6px;white-space:pre-line}
 .confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
 .confirm-actions button{border:1px solid #293650;background:#111827;color:#fff;border-radius:11px;padding:11px;font-weight:900}
 .confirm-actions .danger{background:#e5485a;border-color:#e5485a}
@@ -126,6 +126,9 @@ input{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-r
 .team-meta{font-size:9px;color:#8e98ab;margin-top:4px}
 .team-uid{background:#1c2a3d;color:#7cc2ff;font-weight:900;padding:2px 7px;border-radius:999px;font-size:9px}
 .team-uid.guest{background:#232a3d;color:#8e98ab}
+.guest-payout{display:none;grid-column:1/-1;gap:6px;margin-top:2px}
+.guest-payout.show{display:flex}
+.guest-payout select,.guest-payout input{flex:1;padding:6px;font-size:10px;border-radius:6px;border:1px solid #293650;background:#101725;color:#e8ebf2}
 .team-pay{padding:2px 7px;border-radius:999px;font-size:9px;font-weight:900;margin-left:4px}
 .team-pay.balance{background:#203329;color:#5ee98b}
 .team-pay.manual{background:#2b2410;color:#f6c453}
@@ -185,7 +188,7 @@ input{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-r
   <div class="modal-actions" style="grid-template-columns:1fr"><button id="saveBtn" class="primary" onclick="saveResultsClick()">Save Results</button></div>
 </div></div>
 
-<div class="confirm" id="confirm"><div class="confirm-card"><div class="confirm-title" id="confirmTitle">Are you sure?</div><div class="confirm-text" id="confirmText"></div><div class="confirm-actions"><button onclick="closeConfirm()">Cancel</button><button class="danger" id="confirmOk">Continue</button></div></div></div>
+<div class="confirm" id="confirm"><div class="confirm-card"><div class="confirm-title" id="confirmTitle">Are you sure?</div><div class="confirm-text" id="confirmText"></div><div class="confirm-actions"><button id="confirmCancel" onclick="closeConfirm()">Cancel</button><button class="danger" id="confirmOk">Continue</button></div></div></div>
 <div class="confirm" id="linkAccountModal">
   <div class="confirm-card">
     <div class="confirm-title">Link Team to Account</div>
@@ -619,16 +622,36 @@ function updatePrizeLocks(){
 function renderResults(map){
   $('resultsList').innerHTML=resultRows.length?resultRows.map((tm,i)=>{
     const r=map.get(tm.id)||{};
+    const isGuest=!tm.submitted_by;
     const uidBadge=tm.profiles?.user_number?`<span class="team-uid">UID #${tm.profiles.user_number}</span>`:`<span class="team-uid guest">Guest</span>`;
-    return `<div class="result-row" data-team="${tm.id}">
+    const prizeVal=r.prize_won??0;
+    return `<div class="result-row" data-team="${tm.id}" data-submitted-by="${tm.submitted_by||''}" data-credited="${r.prize_credited?'true':'false'}" data-original-prize="${r.prize_credited?prizeVal:0}" data-guest="${isGuest?'1':'0'}">
       <div class="rank ${rankBadgeClass(i)}">${i+1}</div>
       <div class="result-name-wrap"><div class="rname">${esc(tm.team_name)}</div>${uidBadge}</div>
       <input class="prize" type="number" min="0" placeholder="৳" value="${r.prize_won??''}">
       <input class="points" type="number" min="0" placeholder="PTS" value="${r.total_points??''}">
       <div class="updown"><button onclick="moveResultRow('${tm.id}',-1)" ${i===0?'disabled':''}>▲</button><button onclick="moveResultRow('${tm.id}',1)" ${i===resultRows.length-1?'disabled':''}>▼</button></div>
+      ${isGuest?`<div class="guest-payout${prizeVal>0?' show':''}">
+        <select class="guestMethod"><option value="Bkash">bKash</option><option value="Nagad">Nagad</option></select>
+        <input type="text" class="guestAccount" placeholder="01XXXXXXXXX" maxlength="11">
+      </div>`:''}
     </div>`
   }).join(''):'<div class="empty">No confirmed teams for this lobby.</div>';
   updatePrizeLocks();
+  attachGuestPrizeToggles();
+}
+// Guest/manually-added teams have no wallet, so their prize can't go through
+// credit-prize.php. Instead their bKash/Nagad box only appears once a prize
+// amount is actually entered.
+function attachGuestPrizeToggles(){
+  document.querySelectorAll('#resultsList .result-row[data-guest="1"]').forEach(row=>{
+    const prizeInp=row.querySelector('.prize');
+    const payout=row.querySelector('.guest-payout');
+    if(!prizeInp||!payout)return;
+    prizeInp.addEventListener('input',()=>{
+      payout.classList.toggle('show',(+prizeInp.value||0)>0);
+    });
+  });
 }
 // DOM-based move/sort (no DB re-fetch) so unsaved point/prize edits are never lost.
 function moveResultRow(teamId,dir){
@@ -674,9 +697,146 @@ async function saveResults(){
   await logActivity('lobby_results_saved',currentLobby.id,fmtShort(currentLobby.lobby_date)+' '+currentLobby.time_label,{narration:'saved results for the lobby.'});
   return true
 }
+// Signed-in winners get their prize credited straight to their wallet
+// (withdrawable balance). Guest/manually-added teams have no wallet, so
+// instead — if a bKash/Nagad number was entered for them — their prize is
+// auto-submitted as a PENDING withdraw request (same panel/flow as a normal
+// user withdraw), which the admin then pays out from admin-withdraw.html.
+// Either path flags the row prize_credited=true in lobby_results so
+// re-saving this lobby later never double-pays anyone.
+async function creditPrizes(){
+  const rows=[...document.querySelectorAll('#resultsList .result-row')];
+  const lobbyId=currentLobby.id;
+  const warnings=[];
+
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){msg('Could not credit prize money — please sign in again.');return '';}
+
+  /* ---- Signed-in winners: direct wallet credit ---- */
+  const toCredit=rows.filter(row=>{
+    const uid=row.dataset.submittedBy;
+    const already=row.dataset.credited==='true';
+    const prize=+row.querySelector('.prize').value||0;
+    return uid && !already && prize>0;
+  });
+  if(toCredit.length){
+    const credits=toCredit.map(row=>({
+      supabase_uid: row.dataset.submittedBy,
+      amount: +row.querySelector('.prize').value||0,
+      lobby_id: lobbyId, team_id: row.dataset.team
+    }));
+    try{
+      const res=await fetch('https://chteo-api.onrender.com/api/credit-prize.php',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({access_token:session.access_token,credits})
+      });
+      const j=await res.json();
+      if(!j.success){
+        warnings.push('Prize crediting failed: '+(j.message||'unknown error'));
+      }else{
+        const updates=toCredit.map(row=>({lobby_id:lobbyId,team_id:row.dataset.team,prize_credited:true}));
+        const {error}=await sb.from('lobby_results').upsert(updates,{onConflict:'lobby_id,team_id'});
+        if(error)warnings.push('Prize credited, but marking it as credited failed — check lobby_results manually: '+error.message);
+        else toCredit.forEach(row=>{row.dataset.credited='true';});
+      }
+    }catch(e){
+      warnings.push('Could not reach the wallet server — prize money was NOT credited. Try Save again.');
+    }
+  }
+
+  /* ---- Guest/manual winners: auto withdraw-request ---- */
+  const guestCandidates=rows.filter(row=>{
+    const already=row.dataset.credited==='true';
+    const prize=+row.querySelector('.prize').value||0;
+    return row.dataset.guest==='1' && !already && prize>0;
+  });
+  const guestItems=[]; // {row, payload} — only rows with a valid number
+  guestCandidates.forEach(row=>{
+    const acc=(row.querySelector('.guestAccount')?.value||'').trim();
+    const method=row.querySelector('.guestMethod')?.value||'Bkash';
+    const prize=+row.querySelector('.prize').value||0;
+    const name=row.querySelector('.rname')?.textContent.trim()||('team '+row.dataset.team);
+    if(!/^01[0-9]{9}$/.test(acc)){
+      warnings.push('Enter a valid bKash/Nagad number for '+name+' (৳'+prize+') — not submitted yet.');
+      return;
+    }
+    guestItems.push({row,payload:{
+      lobby_id: lobbyId, team_id: row.dataset.team,
+      amount: prize, method, account_number: acc,
+      guest_note: 'Tournament Prize — '+name+' (Guest)'
+    }});
+  });
+  if(guestItems.length){
+    try{
+      const res=await fetch('https://chteo-api.onrender.com/api/submit-guest-prize-withdraw.php',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({access_token:session.access_token,withdrawals:guestItems.map(g=>g.payload)})
+      });
+      const j=await res.json();
+      if(!j.success){
+        warnings.push('Guest withdraw request failed: '+(j.message||'unknown error'));
+      }else{
+        const updates=guestItems.map(g=>({lobby_id:lobbyId,team_id:g.row.dataset.team,prize_credited:true}));
+        const {error}=await sb.from('lobby_results').upsert(updates,{onConflict:'lobby_id,team_id'});
+        if(error)warnings.push('Guest withdraw request submitted, but marking it as done failed: '+error.message);
+        else{
+          guestItems.forEach(g=>{g.row.dataset.credited='true';});
+          warnings.push(guestItems.length+' guest withdraw request(s) sent to the Withdraw Requests panel — pay them from there.');
+        }
+      }
+    }catch(e){
+      warnings.push('Could not reach the wallet server — guest withdraw request(s) NOT submitted. Try Save again.');
+    }
+  }
+
+  return warnings.join(' ');
+}
+// Rows that were already credited before, where the prize amount now
+// differs from what's actually in the wallet — saving these will move
+// real money (up or down), so they need an explicit confirmation.
+function getChangedCreditedRows(){
+  return [...document.querySelectorAll('#resultsList .result-row')].filter(row=>{
+    if(row.dataset.credited!=='true')return false;
+    const oldAmt=+row.dataset.originalPrize||0;
+    const newAmt=+row.querySelector('.prize').value||0;
+    return Math.abs(newAmt-oldAmt)>=0.005;
+  });
+}
 async function saveResultsClick(){
-  if(resultSubmitting)return;resultSubmitting=true;$('saveBtn').disabled=true;$('saveBtn').textContent='Saving…';
-  try{if(await saveResults())msg('Results saved.')}finally{resultSubmitting=false;$('saveBtn').disabled=false;$('saveBtn').textContent='Save Results'}
+  if(resultSubmitting)return;
+  resultSubmitting=true;$('saveBtn').disabled=true;$('saveBtn').textContent='Saving…';
+  const finish=()=>{resultSubmitting=false;$('saveBtn').disabled=false;$('saveBtn').textContent='Save Results'};
+
+  let saved;
+  try{saved=await saveResults()}catch(e){finish();throw e}
+  if(!saved){finish();return}
+
+  const changed=getChangedCreditedRows();
+  if(!changed.length){
+    try{const warning=await creditPrizes();msg(warning?('Results saved. '+warning):'Results saved and prizes credited.')}
+    finally{finish()}
+    return;
+  }
+
+  // Already-credited amounts changed — confirm before touching any balance.
+  const lines=changed.map(row=>{
+    const name=row.querySelector('.rname')?.textContent.trim()||('team '+row.dataset.team);
+    const oldAmt=+row.dataset.originalPrize||0;
+    const newAmt=+row.querySelector('.prize').value||0;
+    const diff=+(newAmt-oldAmt).toFixed(2);
+    return name+': ৳'+oldAmt+' → ৳'+newAmt+'  ('+(diff>=0?'+':'')+diff+' balance)';
+  }).join('\n');
+  $('confirmCancel').onclick=()=>{closeConfirm();$('confirmCancel').onclick=closeConfirm;finish()};
+  askConfirm(
+    'Balance পরিবর্তন নিশ্চিত করুন',
+    'নিচের prize গুলো আগেই credit হয়ে গিয়েছিল। এখন Save করলে এই পরিবর্তন সরাসরি সংশ্লিষ্ট ইউজারের balance-এ প্রয়োগ হবে:\n\n'+lines,
+    async()=>{
+      try{const warning=await creditPrizes();msg(warning?('Results saved. '+warning):'Results saved and prizes credited/adjusted.')}
+      finally{finish();$('confirmCancel').onclick=closeConfirm}
+    }
+  );
 }
 document.addEventListener('DOMContentLoaded',async()=>{if(await auth())await load()});
 </script>
