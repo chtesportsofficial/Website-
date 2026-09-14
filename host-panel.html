@@ -712,12 +712,18 @@ async function creditPrizes(){
   const {data:{session}}=await sb.auth.getSession();
   if(!session){msg('Could not credit prize money — please sign in again.');return '';}
 
-  /* ---- Signed-in winners: direct wallet credit ---- */
+  const changedTeamIds=new Set(getChangedCreditedRows().map(row=>row.dataset.team));
+
+  /* ---- Signed-in winners: direct wallet credit ----
+     Already-credited rows are still included here if their prize amount
+     changed (changedTeamIds) — the server (credit-prize.php) detects the
+     existing prize_<lobby>_<team> reference and applies only the diff. */
   const toCredit=rows.filter(row=>{
     const uid=row.dataset.submittedBy;
     const already=row.dataset.credited==='true';
+    const changed=changedTeamIds.has(row.dataset.team);
     const prize=+row.querySelector('.prize').value||0;
-    return uid && !already && prize>0;
+    return uid && (!already||changed) && prize>0;
   });
   if(toCredit.length){
     const credits=toCredit.map(row=>({
