@@ -28,8 +28,7 @@
  * integer wallet_users.id. This file queries each table with the correct id
  * for that reason.
  *
- * DB connection: db.php exposes the mysqli connection as $conn (matching
- * submit-withdraw-request.php), not $mysqli.
+ * DB connection: db.php exposes the PDO (Postgres) connection as $conn.
  *
  * Supabase URL/anon key are hardcoded below to match the rest of the
  * codebase's convention, since Render's env vars don't include
@@ -47,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-require_once __DIR__ . '/db.php'; // must expose a connected mysqli instance as $conn
+require_once __DIR__ . '/db.php'; // must expose a connected PDO (Postgres) instance as $conn
 
 function respond($arr) {
     echo json_encode($arr);
@@ -109,10 +108,8 @@ if (!$supabaseUid) {
 
 // --- Map supabase_uid -> wallet_users.id (integer id used by most tables) ---
 $stmt = $conn->prepare("SELECT id FROM wallet_users WHERE supabase_uid = ? LIMIT 1");
-$stmt->bind_param('s', $supabaseUid);
-$stmt->execute();
-$row = $stmt->get_result()->fetch_assoc();
-$stmt->close();
+$stmt->execute([$supabaseUid]);
+$row = $stmt->fetch();
 
 if (!$row) {
     respond(['success' => false, 'message' => 'Wallet user not found']);
@@ -140,10 +137,8 @@ $stmt = $conn->prepare(
      ORDER BY created_at DESC
      LIMIT 50"
 );
-$stmt->bind_param('i', $userId);
-$stmt->execute();
-$res = $stmt->get_result();
-while ($r = $res->fetch_assoc()) {
+$stmt->execute([$userId]);
+while ($r = $stmt->fetch()) {
     $history[] = [
         'category'   => normalizeType($r['type']),
         'direction'  => directionFor($r['type']),
@@ -153,7 +148,6 @@ while ($r = $res->fetch_assoc()) {
         'created_at' => $r['created_at'],
     ];
 }
-$stmt->close();
 
 // 2) Pending / rejected deposit requests (approved ones already appear above
 //    via wallet_transactions, so we skip 'approved' here to avoid duplicates)
@@ -164,10 +158,8 @@ $stmt = $conn->prepare(
      ORDER BY created_at DESC
      LIMIT 50"
 );
-$stmt->bind_param('i', $userId);
-$stmt->execute();
-$res = $stmt->get_result();
-while ($r = $res->fetch_assoc()) {
+$stmt->execute([$userId]);
+while ($r = $stmt->fetch()) {
     $history[] = [
         'category'   => 'deposit',
         'direction'  => 'credit',
@@ -177,7 +169,6 @@ while ($r = $res->fetch_assoc()) {
         'created_at' => $r['created_at'],
     ];
 }
-$stmt->close();
 
 // 3) ALL withdraw requests (pending/approved/rejected) - unlike deposits,
 //    approving a withdraw does NOT currently write a new wallet_transactions
@@ -194,10 +185,8 @@ $stmt = $conn->prepare(
      ORDER BY created_at DESC
      LIMIT 50"
 );
-$stmt->bind_param('s', $supabaseUid);
-$stmt->execute();
-$res = $stmt->get_result();
-while ($r = $res->fetch_assoc()) {
+$stmt->execute([$supabaseUid]);
+while ($r = $stmt->fetch()) {
     $history[] = [
         'category'   => 'withdraw',
         'direction'  => 'debit',
@@ -207,7 +196,6 @@ while ($r = $res->fetch_assoc()) {
         'created_at' => $r['created_at'],
     ];
 }
-$stmt->close();
 
 // Merge everything, sort by newest first, cap the list
 usort($history, function ($a, $b) {
