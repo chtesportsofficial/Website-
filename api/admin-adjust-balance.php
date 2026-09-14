@@ -179,13 +179,25 @@ try {
 
     $delta = $type === 'add' ? $amount : -$amount;
 
+    // Compute the new values ourselves rather than letting a single UPDATE
+    // statement reference withdrawable_balance/non_withdrawable_balance —
+    // unlike MySQL (which evaluates SET assignments left-to-right within one
+    // statement), Postgres evaluates every SET expression against the row's
+    // values from BEFORE the statement, so "balance = withdrawable_balance +
+    // non_withdrawable_balance" would silently use the OLD (pre-update)
+    // column value and end up one step stale.
+    $newWithdrawableCalc = $currentWithdrawable + ($balanceType === 'withdrawable' ? $delta : 0);
+    $newNonWithdrawableCalc = $currentNonWithdrawable + ($balanceType === 'non_withdrawable' ? $delta : 0);
+    $newBalanceCalc = $newWithdrawableCalc + $newNonWithdrawableCalc;
+
     $stmt = $conn->prepare(
         "UPDATE wallet_users
-         SET $column = $column + ?,
-             balance = withdrawable_balance + non_withdrawable_balance
+         SET withdrawable_balance = ?,
+             non_withdrawable_balance = ?,
+             balance = ?
          WHERE email = ?"
     );
-    $stmt->execute([$delta, $targetEmail]);
+    $stmt->execute([$newWithdrawableCalc, $newNonWithdrawableCalc, $newBalanceCalc, $targetEmail]);
 
     if ($stmt->rowCount() === 0) {
         throw new Exception('Failed to update balance');
@@ -199,20 +211,10 @@ try {
     );
     $stmt->execute([$targetUserId, $targetEmail, $amount, $type, $reason, $adminEmail]);
 
-    // ---- Fetch the new balance to return to the client ----
-    $stmt = $conn->prepare(
-        "SELECT balance, withdrawable_balance, non_withdrawable_balance
-         FROM wallet_users WHERE email = ?"
-    );
-    $stmt->execute([$targetEmail]);
-    $newBalance = null;
-    $newWithdrawable = null;
-    $newNonWithdrawable = null;
-    if ($row = $stmt->fetch()) {
-        $newBalance = (float)$row['balance'];
-        $newWithdrawable = (float)$row['withdrawable_balance'];
-        $newNonWithdrawable = (float)$row['non_withdrawable_balance'];
-    }
+    // These are already exactly what's now in the DB — no need to re-select.
+    $newBalance = $newBalanceCalc;
+    $newWithdrawable = $newWithdrawableCalc;
+    $newNonWithdrawable = $newNonWithdrawableCalc;
 
     // ---- Also log into wallet_transactions so this shows up in the user's
     //      Recent Transactions / wallet history (get-wallet-history.php).
