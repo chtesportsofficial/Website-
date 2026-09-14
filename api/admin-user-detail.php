@@ -147,12 +147,28 @@ if (!$targetProfile) {
 
 $targetEmail = $targetProfile['email'];
 
-// ---- Fetch wallet balance (wallet_users is keyed by email) ----
+/* Same category/direction normalization as get-wallet-history.php (the
+   endpoint the user's own wallet page calls), so the admin panel shows
+   the exact same unified deposit+withdraw+prize+adjustment history. */
+function normalizeHistoryType($type) {
+    $type = strtolower(trim((string) $type));
+    if ($type === 'deposit') return 'deposit';
+    if ($type === 'prize')   return 'prize';
+    if ($type === 'withdraw') return 'withdraw';
+    return 'other';
+}
+function historyDirectionFor($type) {
+    $type = strtolower(trim((string) $type));
+    if ($type === 'debit') return 'debit';
+    return 'credit';
+}
+
+// ---- Fetch wallet balance + unified history (wallet_users is keyed by email) ----
 $balance = null;
 $withdrawableBalance = 0.0;
 $nonWithdrawableBalance = 0.0;
 $walletUserId = null;
-$deposits = [];
+$history = [];
 try {
     $stmt = $conn->prepare(
         "SELECT id, balance, withdrawable_balance, non_withdrawable_balance
@@ -166,25 +182,88 @@ try {
         $balance = $withdrawableBalance + $nonWithdrawableBalance;
     }
 
-    // ---- Fetch this user's deposit request history ----
-    // wallet_deposit_requests.user_id is the internal numeric wallet_users.id,
-    // NOT the Supabase UUID ($targetUserId) — using the UUID here would crash
-    // on Postgres ("invalid input syntax for type integer"), unlike MySQL
-    // which silently coerced it. Only run this if we found a wallet row.
+    // ---- Unified wallet history — same 3-source merge as get-wallet-history.php ----
+    // wallet_transactions / wallet_deposit_requests are keyed by the internal
+    // numeric wallet_users.id ($walletUserId); wallet_withdraw_requests is
+    // keyed by the raw Supabase UID ($targetUserId, varchar column) — see
+    // get-wallet-history.php's comments for why these two differ.
+    // Only run this if we found a wallet row.
     if ($walletUserId !== null) {
+
+        // 1) Completed ledger entries: deposits (approved), prizes, and
+        //    manual admin balance adjustments — NOT withdraws (see below).
         $stmt = $conn->prepare(
-            "SELECT id, method, sender_number, trx_id, amount, status, admin_note, created_at, reviewed_at
-             FROM wallet_deposit_requests
+            "SELECT type, amount, description, status, created_at
+             FROM wallet_transactions
              WHERE user_id = ?
              ORDER BY created_at DESC
              LIMIT 50"
         );
         $stmt->execute([$walletUserId]);
-
-        while ($row = $stmt->fetch()) {
-            $row['amount'] = (float)$row['amount'];
-            $deposits[] = $row;
+        while ($r = $stmt->fetch()) {
+            $history[] = [
+                'category'   => normalizeHistoryType($r['type']),
+                'direction'  => historyDirectionFor($r['type']),
+                'amount'     => (float)$r['amount'],
+                'method'     => $r['description'] ?: ucfirst($r['type']),
+                'status'     => $r['status'] ?: 'approved',
+                'created_at' => $r['created_at'],
+            ];
         }
+
+        // 2) Pending / rejected deposit requests (approved ones already
+        //    appear above via wallet_transactions, so skip 'approved' here
+        //    to avoid duplicates). Extra admin-useful fields kept here.
+        $stmt = $conn->prepare(
+            "SELECT method, sender_number, trx_id, amount, status, admin_note, created_at
+             FROM wallet_deposit_requests
+             WHERE user_id = ? AND status IN ('pending','rejected')
+             ORDER BY created_at DESC
+             LIMIT 50"
+        );
+        $stmt->execute([$walletUserId]);
+        while ($r = $stmt->fetch()) {
+            $history[] = [
+                'category'      => 'deposit',
+                'direction'     => 'credit',
+                'amount'        => (float)$r['amount'],
+                'method'        => $r['method'],
+                'status'        => $r['status'],
+                'created_at'    => $r['created_at'],
+                'sender_number' => $r['sender_number'],
+                'trx_id'        => $r['trx_id'],
+                'admin_note'    => $r['admin_note'],
+            ];
+        }
+
+        // 3) ALL withdraw requests, every status — this table (not
+        //    wallet_transactions) is the only source of truth for withdraws,
+        //    at every status, since approving one doesn't write a new
+        //    wallet_transactions row (balance is reserved/deducted at
+        //    submission time already). Keyed by the raw Supabase UID.
+        $stmt = $conn->prepare(
+            "SELECT amount, method, status, created_at
+             FROM wallet_withdraw_requests
+             WHERE user_id = ?
+             ORDER BY created_at DESC
+             LIMIT 50"
+        );
+        $stmt->execute([$targetUserId]);
+        while ($r = $stmt->fetch()) {
+            $history[] = [
+                'category'   => 'withdraw',
+                'direction'  => 'debit',
+                'amount'     => (float)$r['amount'],
+                'method'     => $r['method'],
+                'status'     => $r['status'],
+                'created_at' => $r['created_at'],
+            ];
+        }
+
+        usort($history, function ($a, $b) {
+            return strtotime($b['created_at']) <=> strtotime($a['created_at']);
+        });
+        $history = array_slice($history, 0, 50);
     }
 } catch (PDOException $e) {
     http_response_code(500);
@@ -203,7 +282,7 @@ echo json_encode([
         'withdrawable_balance' => $withdrawableBalance,
         'non_withdrawable_balance' => $nonWithdrawableBalance
     ],
-    'deposits' => $deposits
+    'history' => $history
 ]);
 
 exit;
