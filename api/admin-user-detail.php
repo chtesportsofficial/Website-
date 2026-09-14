@@ -151,31 +151,45 @@ $targetEmail = $targetProfile['email'];
 $balance = null;
 $withdrawableBalance = 0.0;
 $nonWithdrawableBalance = 0.0;
-$stmt = $conn->prepare(
-    "SELECT balance, withdrawable_balance, non_withdrawable_balance
-     FROM wallet_users WHERE email = ?"
-);
-$stmt->execute([$targetEmail]);
-if ($row = $stmt->fetch()) {
-    $withdrawableBalance = (float)$row['withdrawable_balance'];
-    $nonWithdrawableBalance = (float)$row['non_withdrawable_balance'];
-    $balance = $withdrawableBalance + $nonWithdrawableBalance;
-}
-
-// ---- Fetch this user's deposit request history ----
-$stmt = $conn->prepare(
-    "SELECT id, method, sender_number, trx_id, amount, status, admin_note, created_at, reviewed_at
-     FROM wallet_deposit_requests
-     WHERE user_id = ?
-     ORDER BY created_at DESC
-     LIMIT 50"
-);
-$stmt->execute([$targetUserId]);
-
+$walletUserId = null;
 $deposits = [];
-while ($row = $stmt->fetch()) {
-    $row['amount'] = (float)$row['amount'];
-    $deposits[] = $row;
+try {
+    $stmt = $conn->prepare(
+        "SELECT id, balance, withdrawable_balance, non_withdrawable_balance
+         FROM wallet_users WHERE email = ?"
+    );
+    $stmt->execute([$targetEmail]);
+    if ($row = $stmt->fetch()) {
+        $walletUserId = (int)$row['id'];
+        $withdrawableBalance = (float)$row['withdrawable_balance'];
+        $nonWithdrawableBalance = (float)$row['non_withdrawable_balance'];
+        $balance = $withdrawableBalance + $nonWithdrawableBalance;
+    }
+
+    // ---- Fetch this user's deposit request history ----
+    // wallet_deposit_requests.user_id is the internal numeric wallet_users.id,
+    // NOT the Supabase UUID ($targetUserId) — using the UUID here would crash
+    // on Postgres ("invalid input syntax for type integer"), unlike MySQL
+    // which silently coerced it. Only run this if we found a wallet row.
+    if ($walletUserId !== null) {
+        $stmt = $conn->prepare(
+            "SELECT id, method, sender_number, trx_id, amount, status, admin_note, created_at, reviewed_at
+             FROM wallet_deposit_requests
+             WHERE user_id = ?
+             ORDER BY created_at DESC
+             LIMIT 50"
+        );
+        $stmt->execute([$walletUserId]);
+
+        while ($row = $stmt->fetch()) {
+            $row['amount'] = (float)$row['amount'];
+            $deposits[] = $row;
+        }
+    }
+} catch (PDOException $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Database query failed', 'error' => $e->getMessage()]);
+    exit;
 }
 
 echo json_encode([
