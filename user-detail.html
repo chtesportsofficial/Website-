@@ -862,6 +862,36 @@ async function deleteUserPermanently(){
   }
 }
 
+/* ── Body scroll lock (used by both modals) ──
+   Without this, a fixed-position overlay still lets the page behind it
+   scroll/drag on mobile (iOS/Android Chrome touch quirk) — locking the
+   body's scroll while any modal is open, and restoring the exact scroll
+   position on close, fixes it for both modals. */
+let _scrollLockY = 0;
+let _scrollLockCount = 0;
+function lockBodyScroll(){
+  if(_scrollLockCount === 0){
+    _scrollLockY = window.scrollY || window.pageYOffset || 0;
+    document.body.style.position = 'fixed';
+    document.body.style.top = (-_scrollLockY) + 'px';
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+  }
+  _scrollLockCount++;
+}
+function unlockBodyScroll(){
+  _scrollLockCount = Math.max(0, _scrollLockCount - 1);
+  if(_scrollLockCount === 0){
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    window.scrollTo(0, _scrollLockY);
+  }
+}
+
 /* ── Adjust Balance logic ── */
 let _adjType = 'add';
 
@@ -874,6 +904,7 @@ function adjOpen(){
   document.getElementById('adjBalSpinner').style.display = 'inline-block';
   adjSetType('add');
   document.getElementById('adjOverlay').style.display = 'flex';
+  lockBodyScroll();
 
   // Fetch balance fresh when modal opens
   supabaseClient.auth.getSession().then(function(r){
@@ -909,6 +940,7 @@ function adjOpen(){
 
 function adjClose(){
   document.getElementById('adjOverlay').style.display = 'none';
+  unlockBodyScroll();
 }
 
 document.getElementById('adjOverlay').addEventListener('click', function(e){
@@ -980,9 +1012,11 @@ function renderDeposits(history){
 
 function openHistoryModal(){
   document.getElementById('historyOverlay').style.display = 'flex';
+  lockBodyScroll();
 }
 function closeHistoryModal(){
   document.getElementById('historyOverlay').style.display = 'none';
+  unlockBodyScroll();
 }
 document.getElementById('historyOverlay').addEventListener('click', function(e){
   if(e.target === this) closeHistoryModal();
