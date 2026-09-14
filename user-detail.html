@@ -328,6 +328,62 @@
   .adj-msg.ok{color:var(--success);}
   .adj-msg.err{color:var(--error);}
   /* ── end Adjust Balance ── */
+
+  /* ── Deposit History card ── */
+  .dep-card{
+    background:var(--white);
+    border-radius:18px;
+    padding:12px;
+    box-shadow:0 14px 30px -20px rgba(0,0,0,.28);
+    margin-top:14px;
+  }
+  .dep-heading{
+    display:flex; align-items:center; gap:7px;
+    font-size:10px; font-weight:900;
+    text-transform:uppercase; letter-spacing:.5px;
+    color:var(--ink); margin:0 2px 8px;
+  }
+  .dep-heading-bar{ width:4px;height:15px;border-radius:999px;background:var(--accent); }
+  .dep-loading, .dep-empty{
+    text-align:center; color:var(--muted); font-size:12.5px; padding:14px 8px;
+  }
+  .dep-list{ display:flex; flex-direction:column; gap:8px; }
+  .dep-item{
+    background:#f6f7fb; border-radius:13px; padding:10px 12px;
+  }
+  .dep-item-top{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+  }
+  .dep-method{
+    font-size:12px; font-weight:800; color:var(--ink); text-transform:capitalize;
+  }
+  .dep-category{
+    font-size:8.5px; font-weight:900; text-transform:uppercase; letter-spacing:.4px;
+    color:var(--muted); margin-top:1px;
+  }
+  .dep-status{
+    font-size:9.5px; font-weight:900; padding:3px 9px; border-radius:999px;
+    text-transform:uppercase; letter-spacing:.3px; flex-shrink:0;
+  }
+  .dep-status.dep-approved{ background:rgba(28,124,77,0.12); color:var(--success); }
+  .dep-status.dep-pending{ background:rgba(180,120,0,0.12); color:#b47800; }
+  .dep-status.dep-rejected{ background:rgba(229,72,77,0.12); color:var(--error); }
+  .dep-amount{
+    font-size:17px; font-weight:900; color:var(--ink); margin-top:5px;
+  }
+  .dep-amount.dep-credit{ color:var(--success); }
+  .dep-amount.dep-debit{ color:var(--error); }
+  .dep-meta{
+    font-size:11px; color:var(--muted); margin-top:3px; overflow-wrap:anywhere;
+  }
+  .dep-date{
+    font-size:10px; color:var(--muted); margin-top:4px;
+  }
+  .dep-note{
+    font-size:11px; color:var(--muted); margin-top:5px;
+    background:#eef0f7; border-radius:8px; padding:6px 8px; overflow-wrap:anywhere;
+  }
+  /* ── end Deposit History ── */
 </style>
 </head>
 <body>
@@ -396,6 +452,11 @@
       <div class="other-card" id="otherSection" style="display:none;">
         <div class="other-heading"><span class="other-heading-bar"></span><span>OTHER DETAILS</span></div>
         <div class="other-grid" id="otherList"></div>
+      </div>
+
+      <div class="dep-card" id="depositSection">
+        <div class="dep-heading"><span class="dep-heading-bar"></span><span>WALLET HISTORY</span></div>
+        <div id="depositList"><div class="dep-loading">Loading wallet history...</div></div>
       </div>
 
       <div class="actions-row">
@@ -854,6 +915,48 @@ function adjSetType(type){
   }
 }
 
+// admin-user-detail.php now returns a UNIFIED history (same shape as
+// get-wallet-history.php, which the user's own wallet page uses):
+// {category: 'deposit'|'withdraw'|'prize'|'other', direction: 'credit'|'debit',
+//  amount, method, status, created_at, [sender_number, trx_id, admin_note for deposits]}
+const CATEGORY_LABELS = { deposit: 'Deposit', withdraw: 'Withdraw', prize: 'Prize', other: 'Adjustment' };
+
+function renderDeposits(history){
+  const list = document.getElementById('depositList');
+  if(!history || !history.length){
+    list.innerHTML = '<div class="dep-empty">No wallet activity yet.</div>';
+    return;
+  }
+  list.innerHTML = '<div class="dep-list">' + history.map(h => {
+    const status = (h.status || 'approved').toLowerCase();
+    const statusClass = status === 'approved' || status === 'completed' ? 'dep-approved'
+      : status === 'rejected' ? 'dep-rejected'
+      : 'dep-pending';
+    const dirClass = h.direction === 'debit' ? 'dep-debit' : 'dep-credit';
+    const sign = h.direction === 'debit' ? '−' : '+';
+    const date = h.created_at ? new Date(h.created_at).toLocaleString() : '';
+    const catLabel = CATEGORY_LABELS[h.category] || 'Adjustment';
+    const metaBits = [];
+    if(h.sender_number) metaBits.push('From: ' + h.sender_number);
+    if(h.trx_id) metaBits.push('TrxID: ' + h.trx_id);
+    return `
+      <div class="dep-item">
+        <div class="dep-item-top">
+          <div>
+            <div class="dep-method">${escapeHtml(h.method || catLabel)}</div>
+            <div class="dep-category">${escapeHtml(catLabel)}</div>
+          </div>
+          <div class="dep-status ${statusClass}">${escapeHtml((h.status || 'approved').toUpperCase())}</div>
+        </div>
+        <div class="dep-amount ${dirClass}">${sign}৳${escapeHtml(h.amount)}</div>
+        ${metaBits.length ? `<div class="dep-meta">${escapeHtml(metaBits.join(' • '))}</div>` : ''}
+        ${date ? `<div class="dep-date">${escapeHtml(date)}</div>` : ''}
+        ${h.admin_note ? `<div class="dep-note">Note: ${escapeHtml(h.admin_note)}</div>` : ''}
+      </div>
+    `;
+  }).join('') + '</div>';
+}
+
 async function loadBalance(){
   const { data: { session } } = await supabaseClient.auth.getSession();
   if(!session) return;
@@ -868,8 +971,13 @@ async function loadBalance(){
       const bal = data.user.balance !== null ? '৳' + data.user.balance : '৳0';
       document.getElementById('balanceVal').textContent = bal;
       document.getElementById('balanceRow').style.display = 'flex';
+      renderDeposits(data.history);
+    } else {
+      document.getElementById('depositList').innerHTML = '<div class="dep-empty">Could not load wallet history.</div>';
     }
-  } catch(e){ /* silent fail */ }
+  } catch(e){
+    document.getElementById('depositList').innerHTML = '<div class="dep-empty">Could not load wallet history.</div>';
+  }
 }
 
 async function adjSubmit(){
