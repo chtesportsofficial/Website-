@@ -448,14 +448,7 @@
   <!-- ADD MONEY PANEL -->
   <div id="panelAdd" class="panel active">
     <div class="card">
-      <select id="depositMethod">
-        <option value="" disabled selected data-i18n="wallet.selectMethod">Select Payment Method</option>
-        <option value="bkash">Bkash</option>
-        <option value="nagad">Nagad</option>
-      </select>
       <input type="number" id="depositAmount" placeholder="Enter the Amount" data-i18n-placeholder="wallet.enterAmount">
-      <input type="text" id="depositSenderNumber" placeholder="Your bKash/Nagad number (sent from)" data-i18n-placeholder="wallet.senderNumber">
-      <input type="text" id="depositTrxId" placeholder="Transaction ID" data-i18n-placeholder="wallet.trxId">
       <div id="depositMsg" style="font-size:13px;margin-bottom:10px;"></div>
       <button class="btn btn-deposit" id="depositSubmitBtn" data-i18n="wallet.deposit">Deposit</button>
     </div>
@@ -910,10 +903,7 @@ document.getElementById('depositModalClose').addEventListener('click', function(
 
 document.getElementById('depositSubmitBtn').addEventListener('click', async function(){
   const btn = document.getElementById('depositSubmitBtn');
-  const method = document.getElementById('depositMethod').value;
   const amount = document.getElementById('depositAmount').value;
-  const senderNumber = document.getElementById('depositSenderNumber').value.trim();
-  const trxId = document.getElementById('depositTrxId').value.trim();
 
   showDepositMsg('', false);
 
@@ -922,56 +912,37 @@ document.getElementById('depositSubmitBtn').addEventListener('click', async func
     showDepositMsg('Please sign in first.', true);
     return;
   }
-  if(!method){
-    showDepositMsg('Select a payment method.', true);
-    return;
-  }
   if(!amount || Number(amount) <= 0){
     showDepositMsg('Enter a valid amount.', true);
     return;
   }
-  if(!/^01[0-9]{9}$/.test(senderNumber)){
-    showDepositMsg('Enter a valid 11-digit number (01XXXXXXXXX).', true);
-    return;
-  }
-  if(!trxId || trxId.length < 6){
-    showDepositMsg('Enter a valid Transaction ID.', true);
-    return;
-  }
 
   btn.disabled = true;
-  btn.textContent = 'Submitting...';
+  btn.textContent = 'Redirecting...';
 
-  fetch('https://chteo-api.onrender.com/submit-deposit-request.php', {
+  fetch('https://chteo-api.onrender.com/api/create-zinipay-invoice.php', {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       access_token: accessToken,
-      method: method,
-      amount: amount,
-      sender_number: senderNumber,
-      trx_id: trxId
+      amount: amount
     })
   })
     .then(function(r){ return r.json(); })
     .then(function(res){
-      btn.disabled = false;
-      btn.textContent = 'Deposit';
-      if(res && res.status){
-        showDepositModal(
-          true,
-          'Request Submitted',
-          res.message || 'Your deposit request was submitted and will be reviewed by an admin shortly. Need it faster or have an issue? Message us on WhatsApp.'
-        );
-        document.getElementById('depositAmount').value = '';
-        document.getElementById('depositSenderNumber').value = '';
-        document.getElementById('depositTrxId').value = '';
-        document.getElementById('depositMethod').selectedIndex = 0;
+      if(res && res.success && res.payment_url){
+        // Send the user to ZiniPay's hosted page to actually pay via
+        // bKash/Nagad — the deposit is credited automatically once
+        // ZiniPay confirms payment (see zinipay-webhook.php), no admin
+        // review needed anymore.
+        window.location.href = res.payment_url;
       } else {
+        btn.disabled = false;
+        btn.textContent = 'Deposit';
         showDepositModal(
           false,
           'Submission Failed',
-          (res && res.message) || 'Something went wrong submitting your deposit request. Please try again, or contact us on WhatsApp.'
+          (res && res.message) || 'Something went wrong starting the payment. Please try again, or contact us on WhatsApp.'
         );
       }
     })
