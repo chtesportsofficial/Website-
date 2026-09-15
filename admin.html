@@ -269,14 +269,24 @@ function escapeHtml(str){
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// MySQL's NOW() on the server stores created_at/reviewed_at in UTC (the
-// server's timezone). Displayed raw, that's ~6 hours behind Bangladesh
-// time. Parse it explicitly as UTC, then format in Asia/Dhaka.
-function formatDhakaTime(mysqlDatetime){
-  if (!mysqlDatetime) return '';
-  const isoUtc = mysqlDatetime.replace(' ', 'T') + 'Z';
-  const d = new Date(isoUtc);
-  if (isNaN(d.getTime())) return mysqlDatetime; // fallback if format is unexpected
+// This project's data now lives in Postgres, whose created_at/reviewed_at
+// columns come back as "YYYY-MM-DD HH:MM:SS.ffffff+00" (already carrying a
+// UTC offset) rather than the bare MySQL-era format this originally
+// assumed — blindly appending "Z" on top of an existing "+00" produced an
+// invalid date and silently fell back to showing the raw string.
+function formatDhakaTime(datetimeStr){
+  if (!datetimeStr) return '';
+  let s = String(datetimeStr).trim().replace(' ', 'T');
+  const hasOffset = /(Z|[+-]\d{2}(:?\d{2})?)$/i.test(s);
+  if (!hasOffset) {
+    s += 'Z';
+  } else {
+    // Normalize a bare "+00"/"-05" offset (no minutes, no colon) to
+    // "+00:00" so every browser's Date parser accepts it consistently.
+    s = s.replace(/([+-]\d{2})$/, '$1:00');
+  }
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return datetimeStr; // fallback if format is unexpected
   return d.toLocaleString('en-GB', {
     timeZone: 'Asia/Dhaka',
     year: 'numeric', month: '2-digit', day: '2-digit',

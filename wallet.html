@@ -574,11 +574,24 @@ function formatBDT(amount){
 
 // wallet_deposit_requests.created_at is stored in the server's UTC time;
 // convert explicitly to Asia/Dhaka for display.
-function formatDhakaTime(mysqlDatetime){
-  if (!mysqlDatetime) return '';
-  const isoUtc = mysqlDatetime.replace(' ', 'T') + 'Z';
-  const d = new Date(isoUtc);
-  if (isNaN(d.getTime())) return mysqlDatetime;
+function formatDhakaTime(datetimeStr){
+  if (!datetimeStr) return '';
+  // Handles two shapes: the old bare "YYYY-MM-DD HH:MM:SS" (no timezone —
+  // assumed UTC, so we append "Z"), and Postgres's own
+  // "YYYY-MM-DD HH:MM:SS.ffffff+00" (already has a UTC offset — appending
+  // "Z" on top of that made it invalid and silently fell back to showing
+  // the raw string, which is what was happening before this fix).
+  let s = String(datetimeStr).trim().replace(' ', 'T');
+  const hasOffset = /(Z|[+-]\d{2}(:?\d{2})?)$/i.test(s);
+  if (!hasOffset) {
+    s += 'Z';
+  } else {
+    // Normalize a bare "+00"/"-05" offset (no minutes, no colon) to
+    // "+00:00" so every browser's Date parser accepts it consistently.
+    s = s.replace(/([+-]\d{2})$/, '$1:00');
+  }
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return datetimeStr;
   return d.toLocaleString('en-GB', {
     timeZone: 'Asia/Dhaka',
     year: 'numeric', month: '2-digit', day: '2-digit',
