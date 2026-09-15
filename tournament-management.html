@@ -858,6 +858,7 @@ function renderLobbies(){
     <div class="lobby-item">
       <div class="lobby-top"><div class="lobby-date">${lobbyLabel(l)}</div>${badgeHtml}</div>
       <div class="lobby-meta">${l.joined_count||0}/${l.total_slots||0} joined</div>
+      <div class="lobby-actions"><button class="mini t-delete" onclick="cancelLobby('${l.id}')">Cancel Lobby</button></div>
     </div>`;
   }).join(''):'<div class="empty">No active lobbies.</div>';
 }
@@ -1049,6 +1050,49 @@ async function setLobbyStatus(id,status){
   if(!data||data.length===0)return msg('Update blocked (0 rows) — check the UPDATE RLS policy on tournament_lobbies.');
   await logActivity('lobby_status_changed','tournament','tournament_lobby',id,l?`${fmtLobbyDate(l.lobby_date)} ${l.time_label}`:null,{narration:`set lobby ${l?fmtLobbyDate(l.lobby_date)+' '+l.time_label:''} to ${status}.`});
   await loadLobbies(currentLobbyTournament.id);
+}
+// Cancelling a lobby marks it cancelled (same as setLobbyStatus elsewhere)
+// AND auto-refunds every joined team that actually paid via wallet balance
+// (payment_method==='balance') — manually-added/offline teams never touched
+// the wallet, so they're skipped here. The refund call is safe to retry:
+// refund-lobby.php checks each team individually before crediting, so
+// re-cancelling (or a page reload + click again) never double-refunds.
+async function cancelLobby(id){
+  const l=lobbies.find(x=>x.id===id);
+  askConfirm(
+    'Cancel lobby?',
+    'This marks the lobby CANCELLED and refunds every joined team\'s entry fee that was paid from wallet balance. This cannot be undone.',
+    async()=>{
+      await setLobbyStatus(id,'cancelled');
+      const {data,error}=await sb.from('lobby_teams').select('id,submitted_by,payment_method').eq('lobby_id',id);
+      if(error){msg('Lobby cancelled, but could not load its teams to refund: '+error.message);return;}
+      const feeAmount=Number(currentLobbyTournament?.entry_fee)||0;
+      const toRefund=(data||[]).filter(t=>t.payment_method==='balance'&&t.submitted_by&&feeAmount>0);
+      if(!toRefund.length){msg('Lobby cancelled. No wallet-paid entries needed a refund.');return;}
+      const {data:{session}}=await sb.auth.getSession();
+      if(!session){msg('Lobby cancelled, but could not refund — please sign in again, then open this lobby\'s history and click Cancel Lobby once more to retry (already-cancelled status is untouched by that retry).');return;}
+      try{
+        const res=await fetch('https://chteo-api.onrender.com/api/refund-lobby.php',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            access_token:session.access_token,
+            lobby_id:id,
+            refunds:toRefund.map(t=>({team_id:t.id,supabase_uid:t.submitted_by,amount:feeAmount}))
+          })
+        });
+        const j=await res.json();
+        if(!j.success){msg('Lobby cancelled, but refund failed: '+(j.message||'unknown error')+' — reopen this tournament\'s Lobbies and click Cancel Lobby again to retry.');return;}
+        const refundedN=(j.refunded||[]).length, skippedN=(j.skipped||[]).length, failedN=(j.failed||[]).length;
+        let out=`Lobby cancelled. Refunded ${refundedN} team(s).`;
+        if(skippedN)out+=` ${skippedN} already refunded.`;
+        if(failedN)out+=` ${failedN} FAILED — check wallet_transactions/lobby_teams manually.`;
+        msg(out);
+      }catch(e){
+        msg('Lobby cancelled, but could not reach the wallet server to refund. Reopen this tournament\'s Lobbies and click Cancel Lobby again to retry — teams already refunded will not be double-refunded.');
+      }
+    }
+  );
 }
 async function deleteLobby(id){
   askConfirm('Delete lobby?','This lobby slot will be permanently removed.',async()=>{
