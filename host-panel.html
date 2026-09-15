@@ -23,6 +23,9 @@ button{cursor:pointer}
 .today-title{font-size:13px;font-weight:950}
 .today-title small{display:block;color:var(--muted);font-size:9px;font-weight:700;margin-top:4px}
 .refresh{border:1px solid #293650;background:#111827;color:#e9edf5;border-radius:11px;padding:9px 12px;font-size:9px;font-weight:900}
+.day-nav{display:flex;gap:7px;margin-top:10px}
+.day-nav button{flex:1;border:1px solid #293650;background:#0e1420;color:#e8ebf2;border-radius:10px;padding:8px 10px;font-size:9px;font-weight:900}
+.day-nav .today-jump{color:#f6c453;flex:0 0 auto;padding:8px 14px}
 
 
 .notice{background:#141b2b;border:1px solid #27334c;border-radius:15px;padding:12px 13px;color:#aeb7c7;font-size:9px;line-height:1.5;margin-bottom:12px}
@@ -154,8 +157,13 @@ input{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-r
 
   <section class="today-panel">
     <div class="today-head">
-      <div class="today-title">Today's Active Lobbies<small id="todayLabel">Loading date…</small></div>
+      <div class="today-title" id="todayTitle">Today's Active Lobbies<small id="todayLabel">Loading date…</small></div>
       <button class="refresh" onclick="load()">↻ Refresh</button>
+    </div>
+    <div class="day-nav">
+      <button onclick="shiftDay(-1)">◀ Prev Day</button>
+      <button class="today-jump" id="jumpTodayBtn" onclick="jumpToday()" style="display:none">Today</button>
+      <button onclick="shiftDay(1)">Next Day ▶</button>
     </div>
   </section>
   <div id="content"><div class="loading">Loading…</div></div>
@@ -289,21 +297,42 @@ async function applyAutoStatus(list){
   if(live.length)await sb.from('tournament_lobbies').update({status:'live'}).in('id',live);
   if(done.length)await sb.from('tournament_lobbies').update({status:'completed'}).in('id',done);
 }
-async function load(){
+// viewDate lets the host step back to a previous day (e.g. last night's
+// leftover lobbies that never got Entered/Completed before midnight) without
+// losing today's default view. Only TODAY's own rows ever get the automatic
+// upcoming->live->completed clock applied (applyAutoStatus) and the
+// active-only status filter — a past date is shown as-is, every status
+// included, so nothing the host still needs to finish (Room ID, Enter
+// Result, Off) is hidden or silently auto-completed out from under them.
+let viewDate=null;
+async function load(dateStr){
   $('content').innerHTML='<div class="loading">Loading…</div>';
-  const today=ymd(new Date());
-  $('todayLabel').textContent=fmtDate(today);
-  const tr=await sb.from('tournaments').select('id,title,status,default_slots,total_slots,prize_distribution').neq('status','archived');
+  const realToday=ymd(new Date());
+  viewDate=dateStr||viewDate||realToday;
+  const isToday=viewDate===realToday;
+  $('todayLabel').textContent=fmtDate(viewDate);
+  $('todayTitle').childNodes[0].textContent=isToday?"Today's Active Lobbies":(viewDate<realToday?'Past Lobbies — ':'Upcoming Lobbies — ');
+  $('jumpTodayBtn').style.display=isToday?'none':'inline-block';
+  const tr=await sb.from('tournaments').select('id,title,status,default_slots,total_slots,prize_distribution,entry_fee').neq('status','archived');
   if(tr.error){$('content').innerHTML='<div class="empty">Could not load tournaments: '+esc(tr.error.message)+'</div>';return}
   tournaments=new Map((tr.data||[]).map(t=>[t.id,t]));
-  const lr=await sb.from('tournament_lobbies').select('*').eq('lobby_date',today).in('status',['upcoming','live','full','cancelled']).order('time_label');
+  let q=sb.from('tournament_lobbies').select('*').eq('lobby_date',viewDate).order('time_label');
+  if(isToday)q=q.in('status',['upcoming','live','full','cancelled']);
+  const lr=await q;
   if(lr.error){$('content').innerHTML='<div class="empty">Could not load lobbies: '+esc(lr.error.message)+'</div>';return}
   lobbies=lr.data||[];
-  await applyAutoStatus(lobbies);
-  // Keep only today's rows after the client-side status refresh (cancelled ones stay so Off lobbies remain manageable).
-  lobbies=lobbies.filter(l=>l.lobby_date===today&&['upcoming','live','full','cancelled'].includes(l.status));
+  if(isToday){
+    await applyAutoStatus(lobbies);
+    // Keep only today's rows after the client-side status refresh (cancelled ones stay so Off lobbies remain manageable).
+    lobbies=lobbies.filter(l=>l.lobby_date===realToday&&['upcoming','live','full','cancelled'].includes(l.status));
+  }
   render();
 }
+function shiftDay(delta){
+  const d=new Date(viewDate+'T00:00:00');d.setDate(d.getDate()+delta);
+  load(ymd(d));
+}
+function jumpToday(){load(ymd(new Date()))}
 function render(){
   const groups=new Map();
   lobbies.forEach(l=>{
@@ -337,6 +366,7 @@ function renderLobby(l){
   const live=liveBadge(l);
   let badge='';
   if(l.status==='cancelled') badge='<div class="lobby-status off">● OFF</div>';
+  else if(l.status==='completed') badge='<div class="lobby-status" style="background:#182a1e;color:#5ee98b">✔ COMPLETED</div>';
   else if(l.status==='full') badge='<div class="lobby-status full">● FULL</div>';
   else if(live) badge=`<div class="lobby-status ${live.cls||''}">● ${live.text}</div>`;
   else badge='<div class="lobby-status">○ UPCOMING</div>';
@@ -409,14 +439,54 @@ async function refreshLobby(id){
 async function changeStatus(id,status){
   const l=lobbies.find(x=>x.id===id);if(!l)return;
   const label=status==='cancelled'?'Off':status==='full'?'Full':'On';
-  askConfirm(label+' lobby?',`Set ${fmtShort(l.lobby_date)} ${l.time_label} to ${status==='cancelled'?'OFF':status.toUpperCase()}?`,async()=>{
+  const extraWarn=status==='cancelled'?'\n\nJoined teams that paid from wallet balance will be refunded automatically.':'';
+  askConfirm(label+' lobby?',`Set ${fmtShort(l.lobby_date)} ${l.time_label} to ${status==='cancelled'?'OFF':status.toUpperCase()}?`+extraWarn,async()=>{
     const r=await sb.from('tournament_lobbies').update({status}).eq('id',id).select();
     if(r.error)return msg(r.error.message);
     if(!r.data?.length)return msg('Update blocked (0 rows) — check tournament_lobbies UPDATE RLS.');
     await logActivity('lobby_status_changed',id,fmtShort(l.lobby_date)+' '+l.time_label,{narration:`set lobby ${fmtShort(l.lobby_date)} ${l.time_label} to ${status}.`});
     if(status!=='cancelled')l.status=status;else l.status='cancelled';
     render();
+    if(status==='cancelled')await refundOffLobby(l);
   })
+}
+// Off = cancelled: refund every team in this lobby that actually paid its
+// entry fee from wallet balance (payment_method==='balance') — manually-
+// added/offline teams never touched the wallet and are skipped here. Safe
+// to run again on the same lobby (turning Off twice, a retry after a
+// network error, etc.) — refund-lobby.php checks each team individually
+// before crediting, so nobody is ever refunded twice.
+async function refundOffLobby(l){
+  const t=tournaments.get(l.tournament_id);
+  const feeAmount=Number(t?.entry_fee)||0;
+  if(feeAmount<=0)return;
+  const r=await sb.from('lobby_teams').select('id,submitted_by,payment_method').eq('lobby_id',l.id);
+  if(r.error){msg('Lobby set to Off, but could not load its teams to refund: '+esc(r.error.message));return}
+  const toRefund=(r.data||[]).filter(x=>x.payment_method==='balance'&&x.submitted_by);
+  if(!toRefund.length)return;
+  const {data:{session:s}}=await sb.auth.getSession();
+  if(!s){msg('Lobby set to Off, but could not refund — please sign in again, then set it back On and Off once more to retry.');return}
+  try{
+    const res=await fetch('https://chteo-api.onrender.com/api/refund-lobby.php',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        access_token:s.access_token,
+        lobby_id:l.id,
+        refunds:toRefund.map(x=>({team_id:x.id,supabase_uid:x.submitted_by,amount:feeAmount}))
+      })
+    });
+    const j=await res.json();
+    if(!j.success){msg('Lobby set to Off, but refund failed: '+(j.message||'unknown error'));return}
+    const refundedN=(j.refunded||[]).length,skippedN=(j.skipped||[]).length,failedN=(j.failed||[]).length;
+    if(!refundedN&&!failedN)return; // everyone was already refunded — nothing new to report
+    let out=`Refunded ${refundedN} team(s) for this Off lobby.`;
+    if(skippedN)out+=` ${skippedN} already refunded.`;
+    if(failedN)out+=` ${failedN} FAILED — check wallet_transactions manually.`;
+    msg(out);
+  }catch(e){
+    msg('Lobby set to Off, but could not reach the wallet server to refund. Set it back On and Off again to retry — anyone already refunded will not be double-refunded.');
+  }
 }
 async function openRoom(id){
   currentLobby=lobbies.find(x=>x.id===id);if(!currentLobby)return;
