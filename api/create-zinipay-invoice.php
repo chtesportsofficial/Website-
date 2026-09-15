@@ -131,7 +131,7 @@ try {
     $stmt = $conn->prepare(
         "INSERT INTO wallet_deposit_requests
             (user_id, email, method, sender_number, trx_id, amount, status)
-         VALUES (:user_id, :email, 'ZiniPay', 'Pending (ZiniPay)', NULL, :amount, 'pending')
+         VALUES (:user_id, :email, 'ZiniPay', 'Pending (ZiniPay)', 'pending-zinipay', :amount, 'pending')
          RETURNING id"
     );
     $stmt->execute([
