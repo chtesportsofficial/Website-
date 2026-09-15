@@ -189,6 +189,12 @@ input{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-r
   <div class="modal-actions" style="grid-template-columns:1fr"><button id="saveBtn" class="primary" onclick="saveResultsClick()">Save Results</button></div>
 </div></div>
 
+<div class="modal" id="msgModal"><div class="box" style="padding-top:17px;text-align:center">
+  <div style="font-size:34px;line-height:1;margin-bottom:8px" id="msgIcon">✅</div>
+  <div style="font-size:13px;line-height:1.5;color:#e8ebf2;white-space:pre-line" id="msgText"></div>
+  <div class="modal-actions" style="grid-template-columns:1fr;margin-top:16px"><button class="primary" onclick="closeModal('msgModal')">ঠিক আছে</button></div>
+</div></div>
+
 <div class="confirm" id="confirm"><div class="confirm-card"><div class="confirm-title" id="confirmTitle">Are you sure?</div><div class="confirm-text" id="confirmText"></div><div class="confirm-actions"><button id="confirmCancel" onclick="closeConfirm()">Cancel</button><button class="danger" id="confirmOk">Continue</button></div></div></div>
 <div class="confirm" id="linkAccountModal">
   <div class="confirm-card">
@@ -243,7 +249,13 @@ function openModal(id){
   _modalOpenCount++;
   $(id).classList.add('open');
 }
-function msg(text){alert(text)}
+function msg(text){
+  const t=String(text||'');
+  const isBad=/failed|error|could not|required|invalid|blocked|not submitted/i.test(t) && !/\d+\s*(new|pending).*submitted|credited/i.test(t);
+  $('msgIcon').textContent=isBad?'⚠️':'✅';
+  $('msgText').textContent=t;
+  openModal('msgModal');
+}
 function askConfirm(title,text,action){
   $('confirmTitle').textContent=title;$('confirmText').textContent=text;$('confirm').classList.add('open');
   $('confirmOk').onclick=async()=>{closeConfirm();await action()};
