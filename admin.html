@@ -185,6 +185,7 @@
   .status-approved{background:rgba(34,197,94,0.12);color:var(--green);}
   .status-rejected{background:rgba(239,68,68,0.12);color:var(--red);}
   .status-pending{background:rgba(255,122,26,0.12);color:var(--orange);}
+  .first-deposit-chip{background:rgba(34,197,94,0.12);color:var(--green);}
 </style>
 </head>
 <body>
@@ -274,6 +275,16 @@ function formatDhakaTime(mysqlDatetime){
 
 function statusChip(status){
   return '<span class="status-chip status-' + status + '">' + (BN_STATUS[status] || status.toUpperCase()) + '</span>';
+}
+
+// Shows admin, before they approve, that this pending request will trigger
+// the 10% first-deposit referral bonus on approval. Shown only when true —
+// repeat deposits and non-referred users get no badge, since neither
+// triggers this bonus tier.
+function depositTierChip(isFirstDeposit){
+  return isFirstDeposit
+    ? '<span class="status-chip first-deposit-chip">🆕 ১ম ডিপোজিট (১০% বোনাস)</span>'
+    : '';
 }
 
 // Bangladeshi/Indian digit grouping: last 3 digits together, then every
@@ -369,6 +380,7 @@ function buildCard(req){
         (isPending ? '' : statusChip(req.status)) +
       '</div>' +
     '</div>' +
+    (req.is_first_deposit ? '<div style="margin:2px 0 4px;">' + depositTierChip(true) + '</div>' : '') +
     '<div class="req-row"><span class="lbl">ইউজার আইডি</span><span class="val"><a href="user-detail.html?uid=' + encodeURIComponent(req.supabase_uid || '') + '" style="color:inherit;text-decoration:underline;">#' + escapeHtml(req.display_uid) + '</a></span></div>' +
     '<div class="req-row"><span class="lbl">সেন্ডার নম্বর</span><span class="val">' + escapeHtml(req.sender_number) + '</span></div>' +
     '<div class="req-row"><span class="lbl">ট্রাঞ্জেকশন আইডি</span><span class="val">' + escapeHtml(req.trx_id) + '</span></div>' +
