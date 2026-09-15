@@ -805,6 +805,16 @@ const HISTORY_CATEGORY_META = {
   other:    { icon: '&#8595;', label: 'Transaction' }
 };
 
+// A first-deposit referral bonus gets approved with a description like
+// "Manual bKash/Nagad deposit approval (৳1000 + ৳100 referral bonus)" —
+// pull the two numbers out so the headline amount can show "৳1000+100"
+// instead of the combined "৳1100", matching the breakdown in the subtext.
+function extractBonusBreakdown(text){
+  const m = /৳\s*([\d,]+(?:\.\d+)?)\s*\+\s*৳\s*([\d,]+(?:\.\d+)?)\s*referral bonus/i.exec(String(text || ''));
+  if (!m) return null;
+  return { base: m[1].replace(/,/g, ''), bonus: m[2].replace(/,/g, '') };
+}
+
 function renderHistory(entries){
   const area = document.getElementById('historyArea');
   if (!area) return;
@@ -825,11 +835,17 @@ function renderHistory(entries){
     const sign = isDebit ? '-' : '+';
     const amountClass = isDebit ? 'withdraw' : cat; // reuse withdraw's red styling for any debit
     const sub = e.method ? (escapeHtmlWallet(e.method) + ' &middot; ') : '';
+    // e.method carries the raw description text through for deposits — see
+    // isTournamentFee above for the same pattern on debit entries.
+    const breakdown = (cat === 'deposit' && !isDebit) ? extractBonusBreakdown(e.method || e.description) : null;
+    const amountText = breakdown
+      ? '+৳' + formatBDT(breakdown.base) + '+' + formatBDT(breakdown.bonus)
+      : sign + '৳' + formatBDT(e.amount);
     return '<div class="history-entry">' +
       '<div class="he-left">' +
         '<div class="he-icon ' + cat + '">' + meta.icon + '</div>' +
         '<div>' +
-          '<div class="he-amount ' + amountClass + '">' + sign + '৳' + formatBDT(e.amount) + '</div>' +
+          '<div class="he-amount ' + amountClass + '">' + amountText + '</div>' +
           '<div class="he-sub">' + displayLabel + ' &middot; ' + sub + escapeHtmlWallet(formatDhakaTime(e.created_at)) + '</div>' +
         '</div>' +
       '</div>' +

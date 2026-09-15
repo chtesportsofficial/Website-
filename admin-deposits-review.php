@@ -152,8 +152,13 @@ try {
         ]);
 
         $type = 'deposit';
+        // Format without a trailing ".00" for whole-number amounts, matching
+        // how amounts display elsewhere on the site (৳500, not ৳500.00).
+        $fmtAmt = function ($n) {
+            return (floor($n) == $n) ? number_format($n, 0) : number_format($n, 2);
+        };
         $description = $bonus_amount > 0
-            ? 'Manual bKash/Nagad deposit approval (+10% referral bonus)'
+            ? 'Manual bKash/Nagad deposit approval (৳' . $fmtAmt($deposit_amount) . ' + ৳' . $fmtAmt($bonus_amount) . ' referral bonus)'
             : 'Manual bKash/Nagad deposit approval';
         $tx_status = 'completed';
         $stmt = $conn->prepare(
