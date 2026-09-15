@@ -26,6 +26,7 @@ button{cursor:pointer}
 .day-nav{display:flex;gap:7px;margin-top:10px}
 .day-nav button{flex:1;border:1px solid #293650;background:#0e1420;color:#e8ebf2;border-radius:10px;padding:8px 10px;font-size:9px;font-weight:900}
 .day-nav .today-jump{color:#f6c453;flex:0 0 auto;padding:8px 14px}
+.day-nav button:disabled{opacity:.35;cursor:not-allowed}
 
 
 .notice{background:#141b2b;border:1px solid #27334c;border-radius:15px;padding:12px 13px;color:#aeb7c7;font-size:9px;line-height:1.5;margin-bottom:12px}
@@ -163,7 +164,7 @@ input{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-r
     <div class="day-nav">
       <button onclick="shiftDay(-1)">◀ Prev Day</button>
       <button class="today-jump" id="jumpTodayBtn" onclick="jumpToday()" style="display:none">Today</button>
-      <button onclick="shiftDay(1)">Next Day ▶</button>
+      <button onclick="shiftDay(1)" id="nextDayBtn">Next Day ▶</button>
     </div>
   </section>
   <div id="content"><div class="loading">Loading…</div></div>
@@ -313,6 +314,7 @@ async function load(dateStr){
   $('todayLabel').textContent=fmtDate(viewDate);
   $('todayTitle').childNodes[0].textContent=isToday?"Today's Active Lobbies":(viewDate<realToday?'Past Lobbies — ':'Upcoming Lobbies — ');
   $('jumpTodayBtn').style.display=isToday?'none':'inline-block';
+  $('nextDayBtn').disabled=isToday;
   const tr=await sb.from('tournaments').select('id,title,status,default_slots,total_slots,prize_distribution,entry_fee').neq('status','archived');
   if(tr.error){$('content').innerHTML='<div class="empty">Could not load tournaments: '+esc(tr.error.message)+'</div>';return}
   tournaments=new Map((tr.data||[]).map(t=>[t.id,t]));
@@ -330,7 +332,9 @@ async function load(dateStr){
 }
 function shiftDay(delta){
   const d=new Date(viewDate+'T00:00:00');d.setDate(d.getDate()+delta);
-  load(ymd(d));
+  const next=ymd(d);
+  if(next>ymd(new Date()))return; // future dates have no lobbies yet — nothing to browse to
+  load(next);
 }
 function jumpToday(){load(ymd(new Date()))}
 function render(){
