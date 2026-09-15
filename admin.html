@@ -185,7 +185,19 @@
   .status-approved{background:rgba(34,197,94,0.12);color:var(--green);}
   .status-rejected{background:rgba(239,68,68,0.12);color:var(--red);}
   .status-pending{background:rgba(255,122,26,0.12);color:var(--orange);}
-  .first-deposit-chip{background:rgba(34,197,94,0.12);color:var(--green);}
+  .first-deposit-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    background:rgba(34,197,94,0.14);
+    border:1px solid rgba(34,197,94,0.4);
+    border-radius:999px;
+    padding:3px 10px 3px 8px;
+    font-size:11px;
+    font-weight:700;
+    color:var(--green);
+    white-space:nowrap;
+  }
 </style>
 </head>
 <body>
@@ -283,7 +295,7 @@ function statusChip(status){
 // triggers this bonus tier.
 function depositTierChip(isFirstDeposit){
   return isFirstDeposit
-    ? '<span class="status-chip first-deposit-chip">🆕 ১ম ডিপোজিট (১০% বোনাস)</span>'
+    ? '<span class="first-deposit-chip">🎁 ১ম ডিপোজিট (১০%)</span>'
     : '';
 }
 
@@ -374,13 +386,15 @@ function buildCard(req){
 
   card.innerHTML =
     '<div class="req-top">' +
-      '<div class="req-amount">৳' + formatBDT(req.amount) + '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+        '<div class="req-amount">৳' + formatBDT(req.amount) + '</div>' +
+        depositTierChip(!!req.is_first_deposit) +
+      '</div>' +
       '<div style="display:flex;gap:8px;align-items:center;">' +
         '<div class="req-method">' + escapeHtml(req.method) + '</div>' +
         (isPending ? '' : statusChip(req.status)) +
       '</div>' +
     '</div>' +
-    (req.is_first_deposit ? '<div style="margin:2px 0 4px;">' + depositTierChip(true) + '</div>' : '') +
     '<div class="req-row"><span class="lbl">ইউজার আইডি</span><span class="val"><a href="user-detail.html?uid=' + encodeURIComponent(req.supabase_uid || '') + '" style="color:inherit;text-decoration:underline;">#' + escapeHtml(req.display_uid) + '</a></span></div>' +
     '<div class="req-row"><span class="lbl">সেন্ডার নম্বর</span><span class="val">' + escapeHtml(req.sender_number) + '</span></div>' +
     '<div class="req-row"><span class="lbl">ট্রাঞ্জেকশন আইডি</span><span class="val">' + escapeHtml(req.trx_id) + '</span></div>' +

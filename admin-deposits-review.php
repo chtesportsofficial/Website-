@@ -97,23 +97,31 @@ try {
 
         /*
         |----------------------------------------------------------------
-        | Is this the depositor's FIRST ever approved deposit?
+        | Is this the depositor's FIRST ever deposit?
         |----------------------------------------------------------------
-        | Checked against referral_commissions rather than
-        | wallet_deposit_requests, since commission rows only exist for
-        | referred users — this also naturally handles the case where
-        | the depositor has no referrer at all (no rows either way).
+        | Tied to which request was submitted earliest (created_at, id as
+        | tiebreaker) among the user's non-rejected requests — NOT to
+        | admin's approval order. Without this, if a user has two pending
+        | requests and admin happens to approve the 2nd one first, that
+        | one would wrongly grab the 10% bonus. This way the 10% always
+        | lands on the same fixed request (the one the admin panel badges
+        | as "1st deposit"), no matter which order they get approved in.
+        | Rejected requests don't count as "the" deposit, so they're
+        | skipped when finding the earliest one.
         */
         $is_first_deposit = true;
 
         if ($referred_by) {
             $stmt = $conn->prepare(
-                "SELECT COUNT(*) AS cnt FROM referral_commissions WHERE referred_id = ?"
+                "SELECT id FROM wallet_deposit_requests
+                 WHERE user_id = ? AND status != 'rejected'
+                 ORDER BY created_at ASC, id ASC
+                 LIMIT 1"
             );
             $stmt->execute([$req['user_id']]);
-            $priorCount = (int)($stmt->fetch()['cnt'] ?? 0);
+            $earliest = $stmt->fetch();
 
-            $is_first_deposit = ($priorCount === 0);
+            $is_first_deposit = $earliest && ((int)$earliest['id'] === (int)$req['id']);
         }
 
         // Base deposit credit — always non-withdrawable.

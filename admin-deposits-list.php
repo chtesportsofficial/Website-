@@ -95,61 +95,35 @@ if (!empty($requests)) {
     unset($r);
 
     // is_first_deposit: mirrors admin-deposits-review.php's own check exactly
-    // (see the "Is this the depositor's FIRST ever approved deposit?" block
-    // there) — it counts rows in referral_commissions for the depositor,
-    // NOT approved wallet_deposit_requests or wallet_transactions rows.
-    // That also means it only ever matters for a REFERRED user: if
-    // wallet_users.referred_by is null, no commission or bonus fires either
-    // way on approval, so we mark those false too (nothing to flag).
-    $commissionCountByUser = []; // referred_id => count
+    // (see the "Is this the depositor's FIRST ever deposit?" block there) —
+    // it's the user's earliest non-rejected wallet_deposit_requests row
+    // (by created_at, id as tiebreaker), a fixed fact independent of which
+    // order admin happens to approve pending requests in. Only matters for
+    // a REFERRED user: if wallet_users.referred_by is null, no commission
+    // or bonus fires either way on approval, so those are marked false too.
+    $earliestRequestIdByUser = []; // user_id => id of their earliest non-rejected request
     $referredIds = array_values(array_filter($uniqueIds, function ($uid) use ($referredByMap) {
         return !empty($referredByMap[$uid]);
     }));
     if (!empty($referredIds)) {
         $refPlaceholders = implode(',', array_fill(0, count($referredIds), '?'));
-        $commissionStmt = $conn->prepare(
-            "SELECT referred_id, COUNT(*) AS cnt FROM referral_commissions
-             WHERE referred_id IN ($refPlaceholders) GROUP BY referred_id"
+        $earliestStmt = $conn->prepare(
+            "SELECT DISTINCT ON (user_id) user_id, id
+             FROM wallet_deposit_requests
+             WHERE user_id IN ($refPlaceholders) AND status != 'rejected'
+             ORDER BY user_id, created_at ASC, id ASC"
         );
-        $commissionStmt->execute($referredIds);
-        while ($row = $commissionStmt->fetch()) {
-            $commissionCountByUser[(int)$row['referred_id']] = (int)$row['cnt'];
-        }
-    }
-
-    // Walk oldest-first so that, when a referred user has several pending
-    // requests in this list with zero prior commission rows, only the
-    // earliest one claims the "first deposit" slot — the rest are flagged
-    // as repeats so admin doesn't approve two 10% bonuses for the same user.
-    $byAge = $requests;
-    usort($byAge, function ($a, $b) { return strcmp($a['created_at'], $b['created_at']); });
-
-    $firstSlotClaimed = [];
-    $isFirstMap = [];
-    foreach ($byAge as $r) {
-        $uid = (int)$r['user_id'];
-
-        if (empty($referredByMap[$uid])) {
-            $isFirstMap[$r['id']] = false; // not referred — commission tier is moot
-            continue;
-        }
-
-        $priorCount = $commissionCountByUser[$uid] ?? 0;
-        if ($priorCount > 0) {
-            $isFirstMap[$r['id']] = false;
-            continue;
-        }
-
-        if (empty($firstSlotClaimed[$uid])) {
-            $firstSlotClaimed[$uid] = true;
-            $isFirstMap[$r['id']] = true;
-        } else {
-            $isFirstMap[$r['id']] = false;
+        $earliestStmt->execute($referredIds);
+        while ($row = $earliestStmt->fetch()) {
+            $earliestRequestIdByUser[(int)$row['user_id']] = (int)$row['id'];
         }
     }
 
     foreach ($requests as &$r) {
-        $r['is_first_deposit'] = $isFirstMap[$r['id']] ?? false;
+        $uid = (int)$r['user_id'];
+        $r['is_first_deposit'] = !empty($referredByMap[$uid])
+            && isset($earliestRequestIdByUser[$uid])
+            && $earliestRequestIdByUser[$uid] === (int)$r['id'];
     }
     unset($r);
 }
