@@ -1,31 +1,28 @@
 <?php
 // refund-lobby.php
-// Called by tournament-management.html's cancelLobby() right after an admin
-// cancels a lobby. Refunds every team in that lobby that actually paid its
-// entry fee from wallet balance (payment_method === 'balance' on the
-// Supabase lobby_teams row) — manually-added/offline teams never touched
-// the wallet and are filtered out on the frontend before this is called.
+// Called by host-panel.html's "Off" action (changeStatus -> refundOffLobby)
+// right after an admin turns a lobby Off. Refunds every team in that lobby
+// that actually paid its entry fee from wallet balance (payment_method ===
+// 'balance' on the Supabase lobby_teams row) — manually-added/offline teams
+// never touched the wallet and are filtered out on the frontend before this
+// is called.
 //
 // Request body:
-//   { access_token, lobby_id, refunds: [ {team_id, supabase_uid, amount}, ... ] }
+//   { access_token, lobby_id, refunds: [
+//       {team_id, supabase_uid, from_withdrawable, from_non_withdrawable}, ...
+//   ] }
+//
+// EXACT BUCKET MATCH: each team's join-time deduction split (how much was
+// taken from withdrawable vs non_withdrawable) is stored on the lobby_teams
+// row at join time (see deduct-balance.php's from_withdrawable/
+// from_non_withdrawable response + tournament-details.html's submitJoin).
+// The frontend reads that split and sends it here; this endpoint just
+// credits each bucket back by its own amount — no guessing.
 //
 // IDEMPOTENCY: each refund is checked individually (by a reference string
 // unique to that lobby+team) before crediting, inside its own SAVEPOINT —
 // so calling this endpoint twice for the same lobby (retry after a network
-// error, or clicking "Cancel Lobby" again) never double-refunds anyone.
-// Teams already refunded are reported back as "skipped", not re-credited.
-//
-// BALANCE BUCKET NOTE: deduct-balance.php (join-lobby's debit) consumes
-// non_withdrawable_balance first, then withdrawable_balance for the
-// remainder — and one deduct-balance.php call can cover several entries/
-// lobbies at once, so the exact withdrawable/non-withdrawable split for
-// ONE team's share of that call isn't separately recorded anywhere. To
-// avoid ever upgrading non-withdrawable (bonus) money into real
-// withdrawable cash through a join+cancel cycle, every refund here is
-// credited entirely to non_withdrawable_balance. If you need exact
-// bucket-for-bucket reversal instead, deduct-balance.php and the
-// lobby_teams insert would need to start persisting the split per team
-// at join time — flag it and we can add that.
+// error, or toggling Off again) never double-refunds anyone.
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
@@ -72,9 +69,11 @@ $conn->beginTransaction();
 
 try {
     foreach ($refunds as $r) {
-        $team_id      = trim((string)($r['team_id'] ?? ''));
-        $supabase_uid = trim((string)($r['supabase_uid'] ?? ''));
-        $amount       = isset($r['amount']) ? (float)$r['amount'] : 0;
+        $team_id             = trim((string)($r['team_id'] ?? ''));
+        $supabase_uid        = trim((string)($r['supabase_uid'] ?? ''));
+        $fromWithdrawable    = isset($r['from_withdrawable']) ? (float)$r['from_withdrawable'] : 0;
+        $fromNonWithdrawable = isset($r['from_non_withdrawable']) ? (float)$r['from_non_withdrawable'] : 0;
+        $amount              = $fromWithdrawable + $fromNonWithdrawable;
 
         if ($team_id === '' || $supabase_uid === '' || $amount <= 0) {
             $failed[] = ['team_id' => $team_id, 'message' => 'Invalid refund item'];
@@ -102,7 +101,7 @@ try {
             }
 
             $stmt = $conn->prepare(
-                "SELECT id, balance, non_withdrawable_balance
+                "SELECT id, balance, withdrawable_balance, non_withdrawable_balance
                  FROM wallet_users WHERE supabase_uid = ? LIMIT 1 FOR UPDATE"
             );
             $stmt->execute([$supabase_uid]);
@@ -115,16 +114,18 @@ try {
             }
 
             $balance_before          = (float)$wallet['balance'];
+            $withdrawable_before     = (float)$wallet['withdrawable_balance'];
             $non_withdrawable_before = (float)$wallet['non_withdrawable_balance'];
             $balance_after           = $balance_before + $amount;
-            $non_withdrawable_after  = $non_withdrawable_before + $amount;
+            $withdrawable_after      = $withdrawable_before + $fromWithdrawable;
+            $non_withdrawable_after  = $non_withdrawable_before + $fromNonWithdrawable;
 
             $stmt = $conn->prepare(
                 "UPDATE wallet_users
-                 SET balance = ?, non_withdrawable_balance = ?
+                 SET balance = ?, withdrawable_balance = ?, non_withdrawable_balance = ?
                  WHERE id = ?"
             );
-            $stmt->execute([$balance_after, $non_withdrawable_after, $wallet['id']]);
+            $stmt->execute([$balance_after, $withdrawable_after, $non_withdrawable_after, $wallet['id']]);
 
             $stmt = $conn->prepare(
                 "INSERT INTO wallet_transactions

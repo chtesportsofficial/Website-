@@ -145,7 +145,7 @@ try {
     //         actual payment response if Telegram is down/misconfigured).
     notifyTelegramSlotPurchase($authUser['email'] ?? $verifiedUid, $amount, $reference, $slotTimes, $entries, $whatsapp, $uid);
 
-    echo json_encode(["success" => true, "balance" => (float)$newBalance, "withdrawable_balance" => (float)$newWithdrawable, "non_withdrawable_balance" => (float)$newNonWithdrawable]);
+    echo json_encode(["success" => true, "balance" => (float)$newBalance, "withdrawable_balance" => (float)$newWithdrawable, "non_withdrawable_balance" => (float)$newNonWithdrawable, "from_withdrawable" => (float)$fromWithdrawable, "from_non_withdrawable" => (float)$fromNonWithdrawable]);
 } catch (Exception $e) {
     $conn->rollBack();
     echo json_encode(["success" => false, "message" => "Server error: " . $e->getMessage()]);
