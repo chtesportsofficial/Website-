@@ -29,10 +29,11 @@ $zinipayApiKey   = getenv('ZINIPAY_API_KEY') ?: '';
 $zinipayBaseUrl  = 'https://api.zinipay.com';
 $webhookUrl      = getenv('ZINIPAY_WEBHOOK_URL') ?: '';
 
-// TODO: replace these with your real GitHub Pages URLs once you confirm them.
-// redirect_url's domain must match the website domain registered on the ZiniPay brand.
-$redirectUrlBase = 'https://chtesportsofficial.github.io/Website-/deposit-success.html';
-$cancelUrlBase    = 'https://chtesportsofficial.github.io/Website-/deposit-cancel.html';
+// Redirect straight back to the wallet page — no separate success/cancel
+// pages needed. The real balance credit happens via webhook regardless of
+// what the user sees here; this URL is just where they land visually.
+$redirectUrlBase = 'https://chtesportsofficial.github.io/Website-/wallet.html';
+$cancelUrlBase    = 'https://chtesportsofficial.github.io/Website-/wallet.html';
 
 if ($zinipayApiKey === '' || $webhookUrl === '') {
     http_response_code(500);
