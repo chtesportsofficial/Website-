@@ -95,33 +95,76 @@ if ($profileResponse === false || $profileCode < 200 || $profileCode >= 300 || !
     exit;
 }
 
-/* For each guest winner: no wallet exists to deduct/credit, so this just
-   files a PENDING withdraw request directly (skipping the "deduct from
-   balance" step that submit-withdraw-request.php does for real users).
-   The admin pays it out manually via admin-withdraw.html like any other
-   withdraw request.
+/* For each guest winner: no wallet exists to deduct/credit, so this files
+   a withdraw request directly (skipping the "deduct from balance" step
+   that submit-withdraw-request.php does for real users). The admin pays
+   it out manually via admin-withdraw.html like any other withdraw request.
 
-   Same duplicate-guard as credit-prize.php: a row is inserted into
-   wallet_prize_credits FIRST, keyed on reference = prize_<lobby_id>_<team_id>
-   with a sentinel user_id of 0 (guests have no wallet_users.id). Because
-   that reference is UNIQUE, Postgres itself blocks a double-click / retry
-   from ever filing the same guest prize twice — and it also blocks a mixup
-   with credit-prize.php ever double-paying the same team through both
-   paths, since they share the exact same reference format. */
+   wallet_prize_credits (reference = prize_<lobby_id>_<team_id>, UNIQUE,
+   sentinel user_id = 0 for guests) now tracks the RUNNING TOTAL prize
+   claimed for this exact team/lobby — same role it plays in
+   credit-prize.php for signed-in winners — instead of just being a
+   one-shot duplicate guard. wallet_withdraw_requests.reference (same
+   value, NOT unique on that table) links back to it so a resubmit can
+   find the request it should update.
+
+   - First time this reference is seen: insert the wallet_prize_credits
+     row, insert a new PENDING wallet_withdraw_requests row for the full
+     amount.
+   - Reference already exists (host edited the prize and saved again) —
+     look up the most recent wallet_withdraw_requests row for it:
+       - status = 'pending' (admin hasn't paid yet): that SAME row is
+         updated in place to the new full amount/method/number. Only one
+         pending entry ever exists per team/lobby, so the admin never
+         sees confusing duplicate rows for one payout.
+       - any other status (approved/rejected/etc — money already moved,
+         or the request is otherwise closed): that row can't be edited
+         retroactively. Only the DIFFERENCE between the new and old total
+         is filed as a brand-new, separate "adjustment" request. A
+         downward change here is skipped (not silently dropped) since a
+         request that's already been paid can't be safely reduced/undone
+         automatically — the admin has to handle that one manually.
+   - If the amount is unchanged, nothing happens (no-op skip).
+
+   IMPORTANT Postgres difference from MySQL: once any statement inside a
+   transaction errors, Postgres aborts the WHOLE transaction — every
+   further statement fails until a ROLLBACK, even unrelated ones. MySQL
+   just fails that one statement. So each attempt here runs inside its
+   own SAVEPOINT: on a duplicate-key race (SQLSTATE 23505, two requests
+   inserting the same brand-new reference at once) we roll back only to
+   that savepoint, keeping the outer transaction alive for the rest of
+   the loop. */
 $conn->beginTransaction();
 
 try {
-    $refStmt = $conn->prepare(
+    $refInsertStmt = $conn->prepare(
         "INSERT INTO wallet_prize_credits (reference, user_id, amount) VALUES (:reference, 0, :amount)"
     );
-    $insertStmt = $conn->prepare(
+    $existingCreditStmt = $conn->prepare(
+        "SELECT amount FROM wallet_prize_credits WHERE reference = :reference FOR UPDATE"
+    );
+    $updateCreditStmt = $conn->prepare(
+        "UPDATE wallet_prize_credits SET amount = :new_amount WHERE reference = :reference"
+    );
+    $latestRequestStmt = $conn->prepare(
+        "SELECT id, status FROM wallet_withdraw_requests
+         WHERE reference = :reference
+         ORDER BY created_at DESC LIMIT 1"
+    );
+    $updatePendingStmt = $conn->prepare(
+        "UPDATE wallet_withdraw_requests
+         SET amount = :amount, method = :method, account_number = :account_number, guest_note = :guest_note
+         WHERE id = :id"
+    );
+    $insertRequestStmt = $conn->prepare(
         "INSERT INTO wallet_withdraw_requests
-            (user_id, email, amount, method, account_number, status, is_guest, guest_note, created_at)
-         VALUES ('', 'Guest', :amount, :method, :account_number, 'pending', true, :guest_note, NOW())
+            (user_id, email, amount, method, account_number, status, is_guest, guest_note, reference, created_at)
+         VALUES ('', 'Guest', :amount, :method, :account_number, 'pending', true, :guest_note, :reference, NOW())
          RETURNING id"
     );
 
-    $submitted = [];
+    $submitted = []; // rows that resulted in a NEW request (for Telegram notify)
+    $updated = [];   // rows that updated an existing pending request
     $skipped = [];
 
     foreach ($withdrawals as $w) {
@@ -147,57 +190,112 @@ try {
 
         $reference = 'prize_' . $lobbyId . '_' . $teamId;
 
-        // Atomically claim this exact prize. Duplicate => already processed.
-        // Postgres reports a unique-violation as SQLSTATE 23505 (MySQL used
-        // errno 1062 for the same thing).
-        //
-        // IMPORTANT Postgres difference from MySQL: once any statement
-        // inside a transaction errors, Postgres marks the WHOLE transaction
-        // "aborted" and refuses every further statement until a ROLLBACK —
-        // unlike MySQL, which just fails that one statement and lets you
-        // keep going. Since this loop must keep processing the remaining
-        // withdrawals after skipping a duplicate, each attempt runs inside
-        // its own SAVEPOINT so only that one claim gets rolled back on
-        // failure, not the whole transaction.
-        $ok = false;
         $conn->exec('SAVEPOINT prize_claim');
+
         try {
-            $ok = $refStmt->execute(['reference' => $reference, 'amount' => $amount]);
+            $existingCreditStmt->execute(['reference' => $reference]);
+            $existingCreditRow = $existingCreditStmt->fetch();
+
+            if ($existingCreditRow === false) {
+                // First time this exact team/lobby prize is being requested.
+                $refInsertStmt->execute(['reference' => $reference, 'amount' => $amount]);
+
+                $insertRequestStmt->execute([
+                    'amount' => $amount,
+                    'method' => $method,
+                    'account_number' => $accountNumber,
+                    'guest_note' => $guestNote,
+                    'reference' => $reference
+                ]);
+                $insertedRow = $insertRequestStmt->fetch();
+
+                $submitted[] = [
+                    'lobby_id' => $lobbyId, 'team_id' => $teamId,
+                    'amount' => $amount, 'request_id' => (int)$insertedRow['id']
+                ];
+                $conn->exec('RELEASE SAVEPOINT prize_claim');
+                continue;
+            }
+
+            // Reference already claimed before — figure out what to do
+            // with the difference based on the latest request's status.
+            $oldAmount = (float)$existingCreditRow['amount'];
+            $diff = round($amount - $oldAmount, 2);
+
+            if (abs($diff) < 0.005) {
+                $conn->exec('RELEASE SAVEPOINT prize_claim');
+                $skipped[] = $w + ['reason' => 'already submitted (amount unchanged)'];
+                continue;
+            }
+
+            $latestRequestStmt->execute(['reference' => $reference]);
+            $latestRequest = $latestRequestStmt->fetch();
+
+            if ($latestRequest && $latestRequest['status'] === 'pending') {
+                // Not paid yet — safe to edit that same request in place,
+                // to the new FULL amount (not the diff).
+                $updateCreditStmt->execute(['new_amount' => $amount, 'reference' => $reference]);
+                $updatePendingStmt->execute([
+                    'amount' => $amount,
+                    'method' => $method,
+                    'account_number' => $accountNumber,
+                    'guest_note' => $guestNote,
+                    'id' => $latestRequest['id']
+                ]);
+                $updated[] = [
+                    'lobby_id' => $lobbyId, 'team_id' => $teamId,
+                    'amount' => $amount, 'request_id' => (int)$latestRequest['id']
+                ];
+                $conn->exec('RELEASE SAVEPOINT prize_claim');
+                continue;
+            }
+
+            // Latest request is already approved/rejected/closed (or
+            // missing entirely) — it can't be edited retroactively.
+            if ($diff < 0) {
+                $conn->exec('ROLLBACK TO SAVEPOINT prize_claim');
+                $skipped[] = $w + ['reason' => 'prize lowered after the earlier request was already processed — adjust it manually'];
+                continue;
+            }
+
+            // Diff is positive: file a brand-new adjustment request for
+            // just the extra amount, sharing the same reference for
+            // traceability (this table's reference is NOT unique).
+            $updateCreditStmt->execute(['new_amount' => $amount, 'reference' => $reference]);
+            $adjNote = 'Adjustment (+৳' . $diff . ') — ' . $guestNote;
+            $insertRequestStmt->execute([
+                'amount' => $diff,
+                'method' => $method,
+                'account_number' => $accountNumber,
+                'guest_note' => $adjNote,
+                'reference' => $reference
+            ]);
+            $insertedRow = $insertRequestStmt->fetch();
+
+            $submitted[] = [
+                'lobby_id' => $lobbyId, 'team_id' => $teamId,
+                'amount' => $diff, 'request_id' => (int)$insertedRow['id'], 'adjustment' => true
+            ];
             $conn->exec('RELEASE SAVEPOINT prize_claim');
         } catch (PDOException $ex) {
             $conn->exec('ROLLBACK TO SAVEPOINT prize_claim');
             $sqlState = $ex->errorInfo[0] ?? null;
             if ($sqlState === '23505') {
-                $skipped[] = $w + ['reason' => 'already submitted'];
+                $skipped[] = $w + ['reason' => 'already submitted (concurrent request)'];
                 continue;
             }
-            throw new Exception('Could not reserve prize reference: ' . $ex->getMessage());
+            throw new Exception('Could not reserve/update prize reference: ' . $ex->getMessage());
         }
-
-        $insertStmt->execute([
-            'amount' => $amount,
-            'method' => $method,
-            'account_number' => $accountNumber,
-            'guest_note' => $guestNote
-        ]);
-        $insertedRow = $insertStmt->fetch();
-        $requestId = (int)$insertedRow['id'];
-
-        $submitted[] = [
-            'lobby_id' => $lobbyId,
-            'team_id' => $teamId,
-            'amount' => $amount,
-            'request_id' => $requestId
-        ];
     }
 
     $conn->commit();
 
     // Best-effort Telegram notify (mirrors submit-withdraw-request.php) —
-    // never allowed to fail the response.
+    // only for genuinely NEW requests, never for in-place pending updates,
+    // and never allowed to fail the response.
     foreach ($submitted as $s) {
         $telegramText =
-            "🟣 New GUEST Prize Withdraw Request\n" .
+            (!empty($s['adjustment']) ? "🟣 GUEST Prize Adjustment Request\n" : "🟣 New GUEST Prize Withdraw Request\n") .
             "Amount: ৳" . number_format($s['amount'], 2) . "\n" .
             "Lobby: " . $s['lobby_id'] . " / Team: " . $s['team_id'] . "\n" .
             "Request ID: " . $s['request_id'] . "\n" .
@@ -219,8 +317,9 @@ try {
 
     echo json_encode([
         'success' => true,
-        'message' => count($submitted) . ' guest withdraw request(s) submitted.',
+        'message' => count($submitted) . ' new request(s), ' . count($updated) . ' pending request(s) updated.',
         'submitted' => $submitted,
+        'updated' => $updated,
         'skipped' => $skipped
     ]);
 } catch (Exception $e) {
