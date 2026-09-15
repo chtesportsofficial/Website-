@@ -464,7 +464,7 @@ async function refundOffLobby(l){
   const t=tournaments.get(l.tournament_id);
   const feeAmount=Number(t?.entry_fee)||0;
   if(feeAmount<=0)return;
-  const r=await sb.from('lobby_teams').select('id,submitted_by,payment_method').eq('lobby_id',l.id);
+  const r=await sb.from('lobby_teams').select('id,submitted_by,payment_method,paid_withdrawable,paid_non_withdrawable').eq('lobby_id',l.id);
   if(r.error){msg('Lobby set to Off, but could not load its teams to refund: '+esc(r.error.message));return}
   const toRefund=(r.data||[]).filter(x=>x.payment_method==='balance'&&x.submitted_by);
   if(!toRefund.length)return;
@@ -477,7 +477,18 @@ async function refundOffLobby(l){
       body:JSON.stringify({
         access_token:s.access_token,
         lobby_id:l.id,
-        refunds:toRefund.map(x=>({team_id:x.id,supabase_uid:x.submitted_by,amount:feeAmount}))
+        refunds:toRefund.map(x=>{
+          // Rows joined before the split-tracking change have no
+          // paid_withdrawable/paid_non_withdrawable saved — fall back to
+          // the old all-non-withdrawable assumption for those only.
+          const hasSplit=x.paid_withdrawable!=null||x.paid_non_withdrawable!=null;
+          return{
+            team_id:x.id,
+            supabase_uid:x.submitted_by,
+            from_withdrawable:hasSplit?(Number(x.paid_withdrawable)||0):0,
+            from_non_withdrawable:hasSplit?(Number(x.paid_non_withdrawable)||0):feeAmount
+          };
+        })
       })
     });
     const j=await res.json();

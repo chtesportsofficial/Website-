@@ -869,6 +869,12 @@ async function submitJoin(){
       walletBalance=j.balance;
       paymentRef='Wallet balance ✓';
       confirmationStatus='confirmed';
+      // Split is for the WHOLE call (lobbyCount entries can share one deduct
+      // call) — divide evenly since every entry here pays the same fee.
+      // Stored per-team so a later refund (host cancels/offs the lobby) can
+      // credit back the exact same bucket instead of guessing.
+      var perPaidWithdrawable=(Number(j.from_withdrawable)||0)/lobbyCount;
+      var perPaidNonWithdrawable=(Number(j.from_non_withdrawable)||0)/lobbyCount;
     }catch(e){
       errBox.textContent='Payment failed: could not reach wallet service.';
       btn.disabled=false; btn.textContent='Submit';
@@ -885,7 +891,9 @@ async function submitJoin(){
     payment_reference:paymentRef,
     payment_method:payMethod,
     submitted_by:sessionUser?.id||null,
-    confirmation_status:confirmationStatus
+    confirmation_status:confirmationStatus,
+    paid_withdrawable:payMethod==='balance'?perPaidWithdrawable:null,
+    paid_non_withdrawable:payMethod==='balance'?perPaidNonWithdrawable:null
   }));
 
   const {error}=await sb.from('lobby_teams').insert(rows);
