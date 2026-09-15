@@ -842,7 +842,9 @@ async function loadLobbies(tid,opts){
   renderLobbies();
 }
 function renderLobbies(){
-  const active=[...lobbies].filter(l=>l.status!=='completed').sort((a,b)=>{
+  // Cancelled lobbies are done too — same as completed, they shouldn't
+  // sit in Active forever.
+  const active=[...lobbies].filter(l=>l.status!=='completed'&&l.status!=='cancelled').sort((a,b)=>{
     if(a.lobby_date!==b.lobby_date)return a.lobby_date<b.lobby_date?-1:1;
     const da=parseLobbyDateTime(a.lobby_date,a.time_label),db=parseLobbyDateTime(b.lobby_date,b.time_label);
     if(da&&db)return da-db;
