@@ -235,8 +235,14 @@
             .subscribe();
         } catch (e) {}
 
-        // Layer 2: fallback poll every 20s.
-        setInterval(checkNow, 20000);
+        // Layer 2 (fallback poll) removed — this was calling Supabase
+        // every 20s (later 5min) from every open page/tab regardless of
+        // whether a ban ever happened, which is what caused the Cached
+        // Egress quota to blow past its limit. Realtime (Layer 1) above
+        // already catches a ban the instant it happens by listening for
+        // the actual UPDATE event, so no polling is needed anymore.
+        // Trade-off: if the Realtime connection ever drops, a ban won't
+        // be caught until the user refreshes or navigates to a new page.
       }).catch(function () {});
     });
   }
