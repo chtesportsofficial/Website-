@@ -224,13 +224,19 @@ try {
         }
     }
 
-    // Fill in the real method/trx_id now that ZiniPay confirmed them, and mark approved.
+    // wallet_deposit_requests.method has a CHECK constraint allowing only
+    // Bkash/Nagad — map ZiniPay's payment_method into one of those so the
+    // final UPDATE below doesn't hit the same constraint violation.
+    $methodLower = strtolower((string)$verifiedMethod);
+    $mappedMethod = (strpos($methodLower, 'nagad') !== false) ? 'Nagad' : 'Bkash';
+
+    // Fill in the real trx_id now that ZiniPay confirmed it, and mark approved.
     $stmt = $conn->prepare(
         "UPDATE wallet_deposit_requests
-         SET status = 'approved', method = ?, trx_id = ?, sender_number = 'Auto-verified (ZiniPay)', admin_note = 'Auto-approved via ZiniPay webhook', reviewed_at = NOW()
+         SET status = 'approved', method = ?, trx_id = ?, sender_number = 'Auto (ZiniPay)', admin_note = 'Auto-approved via ZiniPay webhook', reviewed_at = NOW()
          WHERE id = ?"
     );
-    $stmt->execute([ucfirst($verifiedMethod), $verifiedTrxId, $req['id']]);
+    $stmt->execute([$mappedMethod, $verifiedTrxId, $req['id']]);
 
     $conn->commit();
     http_response_code(200);
