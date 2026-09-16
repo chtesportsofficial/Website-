@@ -617,12 +617,40 @@ function renderMapBoxes(prefill){
   </div>`;
  }).join('');
 }
+// Resize + JPEG-compress before uploading to Supabase Storage. Uncompressed
+// phone-camera screenshots (often 3-5MB each) were the main driver of the
+// account's "Cached Egress Exceeded" quota block — every visitor downloads
+// these on the homepage/tournament page, so shrinking them here cuts that
+// egress at the source instead of just trying to cache it better client-side.
+function compressImageFile(file,maxDim,quality){
+ return new Promise((resolve)=>{
+  const reader=new FileReader();
+  reader.onload=function(e){
+   const img=new Image();
+   img.onload=function(){
+    let w=img.width,h=img.height;
+    if(w>maxDim||h>maxDim){
+     if(w>h){h=Math.round(h*maxDim/w);w=maxDim;}
+     else{w=Math.round(w*maxDim/h);h=maxDim;}
+    }
+    const canvas=document.createElement('canvas');
+    canvas.width=w;canvas.height=h;
+    canvas.getContext('2d').drawImage(img,0,0,w,h);
+    canvas.toBlob(function(blob){ resolve(blob||file); },'image/jpeg',quality);
+   };
+   img.onerror=function(){ resolve(file); }; // fall back to original file if it won't decode
+   img.src=e.target.result;
+  };
+  reader.onerror=function(){ resolve(file); };
+  reader.readAsDataURL(file);
+ });
+}
 async function uploadMany(files){
  const urls=[];
  for(const file of files){
-  let ext=(file.name.split('.').pop()||'jpg').toLowerCase();if(!['jpg','jpeg','png','webp'].includes(ext))ext='jpg';
-  let path=crypto.randomUUID()+'.'+ext;
-  let u=await sb.storage.from('tournament-banners').upload(path,file,{upsert:false,contentType:file.type});
+  const compressed=await compressImageFile(file,1280,0.8);
+  let path=crypto.randomUUID()+'.jpg';
+  let u=await sb.storage.from('tournament-banners').upload(path,compressed,{upsert:false,contentType:'image/jpeg'});
   if(u.error)throw u.error;
   urls.push(sb.storage.from('tournament-banners').getPublicUrl(path).data.publicUrl);
  }
@@ -664,7 +692,7 @@ async function saveTournament(){
  const saveBtn=$('saveTournamentBtn'),saveBtnOriginalText=saveBtn.textContent;
  saveBtn.disabled=true;saveBtn.textContent='Saving...';
  try{
-  if(file){let ext=(file.name.split('.').pop()||'jpg').toLowerCase();if(!['jpg','jpeg','png','webp'].includes(ext))ext='jpg';let path=crypto.randomUUID()+'.'+ext;let u=await sb.storage.from('tournament-banners').upload(path,file,{upsert:false,contentType:file.type});if(u.error)throw u.error;banner=sb.storage.from('tournament-banners').getPublicUrl(path).data.publicUrl}
+  if(file){let path=crypto.randomUUID()+'.jpg';let compressed=await compressImageFile(file,1280,0.8);let u=await sb.storage.from('tournament-banners').upload(path,compressed,{upsert:false,contentType:'image/jpeg'});if(u.error)throw u.error;banner=sb.storage.from('tournament-banners').getPublicUrl(path).data.publicUrl}
 
   const prizeDistribution=[...document.querySelectorAll('.prizeAmt')].map(el=>({rank:+el.dataset.rank,amount:+el.value||0}));
   const prizePool=prizeDistribution.reduce((s,x)=>s+x.amount,0);

@@ -174,7 +174,7 @@ function start(){
     listEl.innerHTML=ranked.map((r,i)=>`
       <div class="lb-row${uid && r.id===uid?' me':''}">
         <div class="lb-rank ${medalClass(i)}">${i+1}</div>
-        <div class="lb-avatar">${r.logo?`<img src="${esc(r.logo)}" alt="" loading="lazy" onerror="this.style.display='none';">`:''}</div>
+        <div class="lb-avatar">${r.logo?`<img src="${esc(r.logo)}" alt="" loading="lazy" decoding="async" onerror="this.style.display='none';">`:''}</div>
         <div class="lb-name">${esc(r.team_name)}</div>
         <div class="lb-amt">${r.points} ${lbText('points')}</div>
       </div>`).join('');
