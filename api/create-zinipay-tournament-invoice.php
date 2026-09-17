@@ -54,6 +54,7 @@ $lobbyIds    = isset($input['lobby_ids']) && is_array($input['lobby_ids']) ? $in
 $whatsapp    = isset($input['whatsapp']) ? trim((string)$input['whatsapp']) : '';
 $uidNumber   = isset($input['uid']) ? trim((string)$input['uid']) : '';
 $title       = isset($input['tournament_title']) ? trim((string)$input['tournament_title']) : '';
+$tournamentId= isset($input['tournament_id']) ? trim((string)$input['tournament_id']) : '';
 
 if ($accessToken === '') {
     http_response_code(401);
@@ -83,19 +84,25 @@ if ($whatsapp === '') {
     echo json_encode(['success' => false, 'message' => 'WhatsApp number is required']);
     exit;
 }
+if ($tournamentId === '') {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Missing tournament_id']);
+    exit;
+}
 
 try {
     // ---- Insert the pending invoice record first (self-contained table —
     //      not wallet_deposit_requests, this never touches wallet balance) ----
     $stmt = $conn->prepare(
         "INSERT INTO zinipay_tournament_invoices
-            (supabase_uid, uid_number, amount, whatsapp, tournament_title, lobby_ids, entries, status)
-         VALUES (:supabase_uid, :uid_number, :amount, :whatsapp, :tournament_title, :lobby_ids, :entries, 'pending')
+            (supabase_uid, uid_number, tournament_id, amount, whatsapp, tournament_title, lobby_ids, entries, status)
+         VALUES (:supabase_uid, :uid_number, :tournament_id, :amount, :whatsapp, :tournament_title, :lobby_ids, :entries, 'pending')
          RETURNING id"
     );
     $stmt->execute([
         'supabase_uid'     => $verifiedUid,
         'uid_number'       => $uidNumber,
+        'tournament_id'    => $tournamentId,
         'amount'           => $amount,
         'whatsapp'         => $whatsapp,
         'tournament_title' => $title,
@@ -108,8 +115,11 @@ try {
     $payload = [
         'amount'       => $amount,
         'metadata'     => ['record_id' => $recordId, 'kind' => 'tournament_entry'],
-        'redirect_url' => $redirectUrlBase . '?entry_paid=' . $recordId,
-        'cancel_url'   => $cancelUrlBase . '?entry_cancelled=' . $recordId,
+        // Must keep ?id=<tournament_id> too — tournament-details.html can't
+        // render at all without it, so dropping it here would break the page
+        // the user lands back on after paying.
+        'redirect_url' => $redirectUrlBase . '?id=' . urlencode($tournamentId) . '&entry_paid=' . $recordId,
+        'cancel_url'   => $cancelUrlBase . '?id=' . urlencode($tournamentId) . '&entry_cancelled=' . $recordId,
         'webhook_url'  => $webhookUrl
     ];
 

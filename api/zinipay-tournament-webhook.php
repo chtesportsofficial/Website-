@@ -1,20 +1,25 @@
 <?php
 // zinipay-tournament-webhook.php
-// Called by ZiniPay after a tournament-entry payment update. Verifies with
-// ZiniPay directly (never trusts the webhook body alone), then — since there
-// is no logged-in user session at this point — inserts the lobby_teams
-// row(s) and decrements booked_slots itself via the Supabase REST API using
-// the service role key (same pattern as admin-auth.php's verify_admin_token,
-// which also needs to bypass RLS).
+// Called by ZiniPay after a tournament-entry payment update: {invoice_id, status}
+// as JSON body OR as query params (?invoice_id=...&status=...).
+// Mirrors zinipay-webhook.php's "never trust the webhook body, always call
+// /v1/payment/verify ourselves" pattern — but instead of crediting a wallet,
+// it creates the lobby_teams row(s) and decrements booked_slots for the
+// pending zinipay_tournament_invoices record created by
+// create-zinipay-tournament-invoice.php, because the user left this page to
+// pay, so no lobby_teams row exists yet.
+//
+// Always responds 200 to ZiniPay (even on internal errors) so it doesn't
+// keep retrying forever; real problems are written to error_log for us to check.
 
 header('Content-Type: application/json; charset=utf-8');
 
-require_once __DIR__ . '/../db.php';        // exposes $conn (PDO, Postgres)
-require_once __DIR__ . '/../admin-auth.php'; // exposes supabase_curl(), SUPABASE_URL, SUPABASE_SERVICE_KEY
+require_once __DIR__ . '/../db.php'; // exposes $conn (PDO, Postgres)
 
 $zinipayApiKey  = getenv('ZINIPAY_API_KEY') ?: '';
 $zinipayBaseUrl = 'https://api.zinipay.com';
 
+// ---- Read invoice_id from JSON body first, then fall back to query params ----
 $rawInput = file_get_contents('php://input');
 $body = json_decode($rawInput, true);
 
@@ -25,14 +30,21 @@ if (is_array($body) && !empty($body['invoice_id'])) {
     $invoiceId = trim($_GET['invoice_id']);
 }
 
-if ($invoiceId === '' || $zinipayApiKey === '') {
-    error_log('[zinipay-tournament-webhook] Missing invoice_id or API key. Payload: ' . $rawInput);
-    http_response_code(200);
-    echo json_encode(['success' => false, 'message' => 'Missing invoice_id or server not configured']);
+if ($invoiceId === '') {
+    error_log('[zinipay-tournament-webhook] Missing invoice_id in payload: ' . $rawInput);
+    http_response_code(200); // acknowledge anyway, nothing to retry
+    echo json_encode(['success' => false, 'message' => 'Missing invoice_id']);
     exit;
 }
 
-// ---- Verify with ZiniPay directly ----
+if ($zinipayApiKey === '') {
+    error_log('[zinipay-tournament-webhook] ZINIPAY_API_KEY not configured');
+    http_response_code(200);
+    echo json_encode(['success' => false, 'message' => 'Server not configured']);
+    exit;
+}
+
+// ---- Verify the invoice directly with ZiniPay before trusting anything ----
 $ch = curl_init($zinipayBaseUrl . '/v1/payment/verify');
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
@@ -50,152 +62,155 @@ $verifyHttpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 curl_close($ch);
 
 if ($verifyResponse === false) {
-    error_log('[zinipay-tournament-webhook] Could not reach ZiniPay verify for ' . $invoiceId);
+    error_log('[zinipay-tournament-webhook] Could not reach ZiniPay verify endpoint for invoice ' . $invoiceId);
     http_response_code(200);
     echo json_encode(['success' => false, 'message' => 'Could not verify with ZiniPay']);
     exit;
 }
 
 $verifyData = json_decode($verifyResponse, true);
+
 if ($verifyHttpCode < 200 || $verifyHttpCode >= 300 || !is_array($verifyData)) {
-    error_log('[zinipay-tournament-webhook] Bad verify response for ' . $invoiceId . ': ' . $verifyResponse);
+    error_log('[zinipay-tournament-webhook] Bad verify response for invoice ' . $invoiceId . ': ' . $verifyResponse);
     http_response_code(200);
     echo json_encode(['success' => false, 'message' => 'Verify failed']);
     exit;
 }
 
-if (($verifyData['status'] ?? '') !== 'COMPLETED') {
+$paymentStatus = $verifyData['status'] ?? '';
+
+if ($paymentStatus !== 'COMPLETED') {
+    // PENDING or FAILED — nothing to book yet. Just acknowledge.
     http_response_code(200);
-    echo json_encode(['success' => true, 'message' => 'Noted, not completed yet', 'status' => $verifyData['status'] ?? null]);
+    echo json_encode(['success' => true, 'message' => 'Noted, not completed yet', 'status' => $paymentStatus]);
     exit;
 }
 
 $verifiedAmount = isset($verifyData['amount']) ? (float)$verifyData['amount'] : 0;
-$verifiedMethod = $verifyData['payment_method'] ?? 'zinipay';
+$verifiedMethod = $verifyData['payment_method'] ?? 'ZiniPay';
 $verifiedTrxId  = $verifyData['transaction_id'] ?? null;
 
 $conn->beginTransaction();
 
 try {
+    // Lock the matching invoice record.
     $stmt = $conn->prepare(
-        "SELECT id, supabase_uid, uid_number, amount, whatsapp, lobby_ids, entries, status
-         FROM zinipay_tournament_invoices WHERE zinipay_invoice_id = ? FOR UPDATE"
+        "SELECT id, supabase_uid, amount, whatsapp, lobby_ids, entries, status
+         FROM zinipay_tournament_invoices
+         WHERE zinipay_invoice_id = ? FOR UPDATE"
     );
     $stmt->execute([$invoiceId]);
-    $record = $stmt->fetch();
+    $req = $stmt->fetch();
 
-    if (!$record) {
+    if (!$req) {
         throw new Exception('No matching tournament invoice for ' . $invoiceId);
     }
 
-    // Idempotency — webhook can fire more than once.
-    if ($record['status'] !== 'pending') {
+    // Idempotency: if this was already processed (webhook fired twice), don't
+    // create duplicate lobby_teams rows or decrement slots twice.
+    if ($req['status'] !== 'pending') {
         $conn->commit();
         http_response_code(200);
         echo json_encode(['success' => true, 'message' => 'Already processed']);
         exit;
     }
 
-    if (abs($verifiedAmount - (float)$record['amount']) > 0.01) {
-        throw new Exception('Amount mismatch: expected ' . $record['amount'] . ' but ZiniPay verified ' . $verifiedAmount);
+    // Sanity check: the verified amount should match what we asked for.
+    if (abs($verifiedAmount - (float)$req['amount']) > 0.01) {
+        throw new Exception('Amount mismatch: requested ' . $req['amount'] . ' but ZiniPay verified ' . $verifiedAmount);
     }
 
-    $entries  = json_decode($record['entries'], true) ?: [];
-    $lobbyIds = json_decode($record['lobby_ids'], true) ?: [];
-
-    if (empty($entries)) {
-        throw new Exception('No entries stored for this invoice');
+    $entries  = json_decode($req['entries'], true) ?: [];
+    $lobbyIds = json_decode($req['lobby_ids'], true) ?: [];
+    if (empty($entries) || empty($lobbyIds)) {
+        throw new Exception('Invoice record ' . $req['id'] . ' has no entries/lobby_ids');
     }
 
-    // ---- Insert lobby_teams rows via Supabase REST (service key bypasses RLS,
-    //      since there is no user session at webhook time) ----
-    $rows = array_map(function ($e) use ($record, $verifiedMethod) {
-        return [
-            'lobby_id'            => $e['lobbyId'] ?? null,
-            'team_name'           => $e['teamName'] ?? null,
-            'owner_team_name'     => $e['ownerTeamName'] ?? null,
-            'players'             => [['name' => $e['playerName'] ?? null]],
-            'contact_number'      => $record['whatsapp'],
-            'payment_reference'   => 'ZiniPay (' . $verifiedMethod . ') ✓',
-            'payment_method'      => 'manual',
-            'submitted_by'        => $record['supabase_uid'],
-            'confirmation_status' => 'confirmed'
-        ];
-    }, $entries);
+    // wallet_deposit_requests.method has a CHECK constraint (Bkash/Nagad only);
+    // lobby_teams.payment_method has no such constraint, so we can label it
+    // clearly as ZiniPay-verified here instead of mapping to just those two.
+    $methodLower   = strtolower((string)$verifiedMethod);
+    $displayMethod = (strpos($methodLower, 'nagad') !== false) ? 'Nagad (ZiniPay)' : 'Bkash (ZiniPay)';
 
-    // supabase_curl() (from admin-auth.php) only takes (url, headers) for
-    // GET-style calls — POST needs its own cURL here since it doesn't
-    // accept a body/method param.
-    $ch = curl_init(SUPABASE_URL . '/rest/v1/lobby_teams');
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 15,
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => json_encode($rows),
-        CURLOPT_HTTPHEADER => [
-            'apikey: ' . SUPABASE_SERVICE_KEY,
-            'Authorization: Bearer ' . SUPABASE_SERVICE_KEY,
-            'Content-Type: application/json',
-            'Prefer: return=minimal'
-        ]
-    ]);
-    curl_exec($ch);
-    $insertHttpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
+    // ---- Same shape as the balance-payment insert in submitJoin(), just
+    //      built server-side now that payment is confirmed ----
+    $insertStmt = $conn->prepare(
+        "INSERT INTO lobby_teams
+            (lobby_id, team_name, owner_team_name, players, contact_number,
+             payment_reference, payment_method, submitted_by, confirmation_status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'confirmed')"
+    );
 
-    if ($insertHttpCode < 200 || $insertHttpCode >= 300) {
-        throw new Exception('Failed to insert lobby_teams rows (HTTP ' . $insertHttpCode . ')');
-    }
+    $firstOwnerTeamName = null;
+    $insertedCount = 0;
+    foreach ($entries as $e) {
+        $lobbyId       = $e['lobby_id'] ?? null;
+        $teamName      = trim((string)($e['team_name'] ?? ''));
+        $playerName    = trim((string)($e['player_name'] ?? ''));
+        $ownerTeamName = trim((string)($e['owner_team_name'] ?? $teamName));
+        if ($firstOwnerTeamName === null && $ownerTeamName !== '') {
+            $firstOwnerTeamName = $ownerTeamName;
+        }
+        if ($lobbyId === null || $teamName === '' || $playerName === '') {
+            error_log('[zinipay-tournament-webhook] Skipping malformed entry on invoice ' . $req['id'] . ': ' . json_encode($e));
+            continue;
+        }
 
-    // ---- Decrement booked_slots for each lobby (mirrors decrementBookedSlotsAfterJoin) ----
-    foreach ($lobbyIds as $lobbyId) {
-        $ch = curl_init(SUPABASE_URL . '/rest/v1/tournament_lobbies?id=eq.' . urlencode($lobbyId) . '&select=booked_slots');
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 10,
-            CURLOPT_HTTPHEADER => [
-                'apikey: ' . SUPABASE_SERVICE_KEY,
-                'Authorization: Bearer ' . SUPABASE_SERVICE_KEY
-            ]
+        $insertStmt->execute([
+            $lobbyId,
+            $teamName,
+            $ownerTeamName,
+            json_encode([['name' => $playerName]]),
+            $req['whatsapp'],
+            $verifiedTrxId,
+            $displayMethod,
+            $req['supabase_uid']
         ]);
-        $lobbyRes = curl_exec($ch);
-        curl_close($ch);
-        $lobbyRows = json_decode($lobbyRes, true);
-        $currentBooked = is_array($lobbyRows) && !empty($lobbyRows[0]['booked_slots']) ? (int)$lobbyRows[0]['booked_slots'] : 0;
+        $insertedCount++;
+    }
 
-        if ($currentBooked > 0) {
-            $ch = curl_init(SUPABASE_URL . '/rest/v1/tournament_lobbies?id=eq.' . urlencode($lobbyId));
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 10,
-                CURLOPT_CUSTOMREQUEST => 'PATCH',
-                CURLOPT_POSTFIELDS => json_encode(['booked_slots' => $currentBooked - 1]),
-                CURLOPT_HTTPHEADER => [
-                    'apikey: ' . SUPABASE_SERVICE_KEY,
-                    'Authorization: Bearer ' . SUPABASE_SERVICE_KEY,
-                    'Content-Type: application/json',
-                    'Prefer: return=minimal'
-                ]
-            ]);
-            curl_exec($ch);
-            curl_close($ch);
+    if ($insertedCount === 0) {
+        throw new Exception('No valid entries could be inserted for invoice ' . $req['id']);
+    }
+
+    // Decrement booked_slots once per unique selected lobby — 1 slot per
+    // lobby regardless of how many teammate sub-entries it has, exactly like
+    // decrementBookedSlotsAfterJoin() does on the balance-payment path.
+    foreach (array_unique($lobbyIds) as $lobbyId) {
+        $slotStmt = $conn->prepare("SELECT booked_slots FROM tournament_lobbies WHERE id = ? FOR UPDATE");
+        $slotStmt->execute([$lobbyId]);
+        $lobbyRow = $slotStmt->fetch();
+        if (!$lobbyRow) continue;
+        $current = max(0, (int)$lobbyRow['booked_slots']);
+        if ($current <= 0) continue;
+        $upd = $conn->prepare("UPDATE tournament_lobbies SET booked_slots = ? WHERE id = ?");
+        $upd->execute([$current - 1, $lobbyId]);
+    }
+
+    // First-time team name: mirrors submitJoin()'s client-side profile sync —
+    // only fill it in if the profile doesn't have one yet.
+    if ($firstOwnerTeamName) {
+        $profStmt = $conn->prepare("SELECT full_name FROM profiles WHERE id = ?");
+        $profStmt->execute([$req['supabase_uid']]);
+        $prof = $profStmt->fetch();
+        if ($prof && trim((string)($prof['full_name'] ?? '')) === '') {
+            $updProf = $conn->prepare("UPDATE profiles SET full_name = ? WHERE id = ?");
+            $updProf->execute([$firstOwnerTeamName, $req['supabase_uid']]);
         }
     }
 
-    $stmt = $conn->prepare(
-        "UPDATE zinipay_tournament_invoices
-         SET status = 'completed', trx_id = ?, completed_at = NOW()
-         WHERE id = ?"
+    $doneStmt = $conn->prepare(
+        "UPDATE zinipay_tournament_invoices SET status = 'completed', zinipay_transaction_id = ? WHERE id = ?"
     );
-    $stmt->execute([$verifiedTrxId, $record['id']]);
+    $doneStmt->execute([$verifiedTrxId, $req['id']]);
 
     $conn->commit();
     http_response_code(200);
-    echo json_encode(['success' => true, 'message' => 'Tournament entry confirmed']);
+    echo json_encode(['success' => true, 'message' => 'Tournament entry confirmed', 'entries_created' => $insertedCount]);
 
 } catch (Exception $e) {
     $conn->rollBack();
     error_log('[zinipay-tournament-webhook] Failed for invoice ' . $invoiceId . ': ' . $e->getMessage());
-    http_response_code(200);
+    http_response_code(200); // still 200 so ZiniPay doesn't hammer retries; we log for ourselves
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
