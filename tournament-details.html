@@ -894,7 +894,7 @@ async function submitJoin(){
       });
       const j=await res.json();
       if(!j.success||!j.payment_url){
-        errBox.textContent='Payment failed: '+(j.message||'could not start ZiniPay payment.')+(j.error?(' — '+j.error):'');
+        errBox.textContent='Payment failed: '+(j.message||'could not start ZiniPay payment.')+(j.error?(' — '+j.error):'')+(j.zinipay_response?(' — ZiniPay: '+JSON.stringify(j.zinipay_response)):'');
         btn.disabled=false; btn.textContent='Submit';
         return;
       }
