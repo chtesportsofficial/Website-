@@ -423,6 +423,23 @@ async function initUser(){
   }
   currentTournament=t;
 
+  // ZiniPay sends the user back here with ?entry_paid=<id> or
+  // ?entry_cancelled=<id> after the hosted bKash/Nagad payment page. The
+  // actual lobby_teams row is created by zinipay-tournament-webhook.php once
+  // ZiniPay confirms the payment server-side, so this is just a status note —
+  // clean the param off the URL so a refresh doesn't re-show it.
+  const entryPaidId=new URLSearchParams(location.search).get('entry_paid');
+  const entryCancelledId=new URLSearchParams(location.search).get('entry_cancelled');
+  if(entryPaidId||entryCancelledId){
+    history.replaceState(null,'','tournament-details.html?id='+encodeURIComponent(id));
+    if(entryPaidId){
+      openPopup('✅ পেমেন্ট প্রসেস হচ্ছে',
+        'আপনার bKash/Nagad পেমেন্ট গ্রহণ করা হয়েছে।<br><br>পেমেন্ট কনফার্ম হওয়ার সাথে সাথেই (সাধারণত কয়েক সেকেন্ডের মধ্যে) আপনার স্লট অটোমেটিক বুক হয়ে যাবে।<br><br>"My Tournaments" পেজে গিয়ে একটু পর স্ট্যাটাস চেক করে নিন। সমস্যা মনে হলে WhatsApp-এ যোগাযোগ করুন।');
+    }else{
+      openPopup('❌ পেমেন্ট বাতিল হয়েছে','পেমেন্ট সম্পন্ন হয়নি, তাই কোনো স্লট বুক হয়নি। আবার চেষ্টা করতে পারেন।');
+    }
+  }
+
   document.getElementById('hTitle').textContent=t.title||'Tournament';
 
   const prizeDist=Array.isArray(t.prize_distribution)?[...t.prize_distribution].sort((a,b)=>a.rank-b.rank):[];
@@ -778,29 +795,31 @@ function renderPaymentOptions(){
   if(canPayBalance){
     html+=`<label class="jf-pay-opt ${enough?'':'disabled'}"><input type="radio" name="jfPay" value="balance" ${enough?'checked':'disabled'} onchange="renderPaymentExtra()"><span class="pay-icon">💰</span><span class="pay-text"><b>Pay ৳${fee} from balance</b><span>Wallet balance: ৳${walletBalance}</span></span></label>`;
   }
-  html+=`<label class="jf-pay-opt disabled" onclick="event.preventDefault();showManualComingSoon();"><input type="radio" name="jfPay" value="manual" disabled><span class="pay-icon">📱</span><span class="pay-text"><b>Pay via bKash/Nagad</b><span>শীঘ্রই আসছে</span></span></label>`;
+  if(sessionUser){
+    html+=`<label class="jf-pay-opt"><input type="radio" name="jfPay" value="zinipay" ${enough?'':'checked'} onchange="renderPaymentExtra()"><span class="pay-icon">📱</span><span class="pay-text"><b>Pay ৳${fee} via bKash/Nagad</b><span>ZiniPay দিয়ে সরাসরি পেমেন্ট</span></span></label>`;
+  }else{
+    html+=`<label class="jf-pay-opt disabled"><input type="radio" name="jfPay" value="zinipay" disabled><span class="pay-icon">📱</span><span class="pay-text"><b>Pay via bKash/Nagad</b><span>আগে লগইন করুন</span></span></label>`;
+  }
   if(!sessionUser){
-    html+=`<div class="jf-note">স্লট বুক করতে আগে লগইন করুন এবং ওয়ালেট ব্যালেন্স থেকে পে করুন।</div>`;
+    html+=`<div class="jf-note">স্লট বুক করতে আগে লগইন করুন।</div>`;
   }else if(walletBalanceLoading){
     html+=`<div class="jf-note">ব্যালেন্স লোড হচ্ছে…</div>`;
   }else if(walletBalanceError){
     html+=`<div class="jf-note">ব্যালেন্স লোড করা যায়নি (নেটওয়ার্ক/সার্ভার সমস্যা)${walletBalanceErrorDetail?': <span style="opacity:.75">'+esc(walletBalanceErrorDetail)+'</span>':''}. <button type="button" class="jf-copy-btn" onclick="retryWalletBalance()">🔄 আবার চেষ্টা করুন</button></div>`;
   }else if(!enough){
-    html+=`<div class="jf-note">ব্যালেন্স যথেষ্ট নয় — স্লট বুক করতে ওয়ালেটে টাকা যোগ করুন।</div>`;
+    html+=`<div class="jf-note">ব্যালেন্স যথেষ্ট নয় — ওয়ালেটে টাকা যোগ করুন, অথবা bKash/Nagad দিয়ে সরাসরি পে করুন।</div>`;
   }
   document.getElementById('jfPaymentOptions').innerHTML=html;
   renderPaymentExtra();
 }
-function showManualComingSoon(){
-  openPopup('📱 bKash/Nagad পেমেন্ট',
-    'এখনও অটো পেমেন্ট সিস্টেম যোগ করা হয়নি।<br><br>খুব শীঘ্রই bKash/Nagad পেমেন্ট অপশন চালু করা হবে — কাজ চলছে, একটু ধৈর্য ধরুন 🙏<br><br>ততক্ষণ ওয়ালেট ব্যালেন্স থেকে পেমেন্ট করে স্লট বুক করতে পারবেন।');
-}
 function renderPaymentExtra(){
   const sel=document.querySelector('input[name="jfPay"]:checked')?.value;
   const box=document.getElementById('jfPaymentExtra');
+  const fee=(Number(currentTournament?.entry_fee)||0)*(totalEntryCount()||1);
   if(sel==='balance'){
-    const fee=(Number(currentTournament?.entry_fee)||0)*(totalEntryCount()||1);
     box.innerHTML=`<div class="jf-note">সাবমিট করলেই আপনার ওয়ালেট ব্যালেন্স থেকে ৳${fee} কেটে নেওয়া হবে${totalEntryCount()>1?` (${totalEntryCount()}টি এন্ট্রি)`:''}।</div>`;
+  }else if(sel==='zinipay'){
+    box.innerHTML=`<div class="jf-note">সাবমিট করলে আপনাকে bKash/Nagad পেমেন্ট পেজে (ZiniPay) নিয়ে যাওয়া হবে। পেমেন্ট সম্পন্ন হলে স্লট অটোমেটিক বুক হয়ে যাবে।</div>`;
   }else{
     box.innerHTML='';
   }
@@ -838,13 +857,56 @@ async function submitJoin(){
   if(!whatsapp){errBox.textContent='WhatsApp number is required.';return}
 
   const payMethod=document.querySelector('input[name="jfPay"]:checked')?.value;
-  if(payMethod!=='balance'){errBox.textContent='ওয়ালেট ব্যালেন্স থেকে পে করেই এখন স্লট বুক করা যাচ্ছে — bKash/Nagad পেমেন্ট এখনো চালু হয়নি।';return}
+  if(payMethod!=='balance' && payMethod!=='zinipay'){errBox.textContent='একটি পেমেন্ট পদ্ধতি বেছে নিন।';return}
 
   const btn=document.getElementById('jfSubmitBtn');
   btn.disabled=true; btn.textContent='Submitting...';
 
-  let confirmationStatus='pending', paymentRef=null;
   const lobbyCount=teamData.entries.length||1;
+
+  // bKash/Nagad via ZiniPay: no lobby_teams row is created here. The user is
+  // sent to ZiniPay's hosted page, and zinipay-tournament-webhook.php creates
+  // the row (and decrements booked_slots) once ZiniPay confirms the payment —
+  // exactly the same "leave the page to pay" pattern as the wallet deposit flow.
+  if(payMethod==='zinipay'){
+    try{
+      const {data:{session}}=await sb.auth.getSession();
+      const fee=(Number(currentTournament?.entry_fee)||0)*lobbyCount;
+      const entries=teamData.entries.map(e=>({
+        lobby_id:e.lobbyId,
+        team_name:e.teamName,
+        player_name:e.playerName,
+        owner_team_name:e.ownerTeamName
+      }));
+      const res=await fetch('https://chteo-api.onrender.com/api/create-zinipay-tournament-invoice.php',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          access_token:session.access_token,
+          amount:fee,
+          entries:entries,
+          lobby_ids:currentJoinLobbyIds,
+          whatsapp:whatsapp,
+          uid:userProfile?.user_number||'',
+          tournament_id:currentTournament?.id||'',
+          tournament_title:currentTournament?.title||''
+        })
+      });
+      const j=await res.json();
+      if(!j.success||!j.payment_url){
+        errBox.textContent='Payment failed: '+(j.message||'could not start ZiniPay payment.');
+        btn.disabled=false; btn.textContent='Submit';
+        return;
+      }
+      window.location.href=j.payment_url;
+    }catch(e){
+      errBox.textContent='Payment failed: could not reach payment service.';
+      btn.disabled=false; btn.textContent='Submit';
+    }
+    return;
+  }
+
+  let confirmationStatus='pending', paymentRef=null;
   {
     try{
       const {data:{session}}=await sb.auth.getSession();
