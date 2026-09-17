@@ -184,20 +184,20 @@
         <path d="M19 12H5M12 19l-7-7 7-7"/>
       </svg>
     </button>
-    <h1>My Tournaments</h1>
+    <h1 data-i18n="myt.title">My Tournaments</h1>
   </div>
 
   <div class="filter-bar" id="filterBar" style="display:none">
-    <button type="button" class="filter-chip active" data-filter="today">Today</button>
-    <button type="button" class="filter-chip" data-filter="yesterday">Yesterday</button>
-    <button type="button" class="filter-chip" data-filter="upcoming">Upcoming</button>
+    <button type="button" class="filter-chip active" data-filter="today" data-i18n="myt.filter.today">Today</button>
+    <button type="button" class="filter-chip" data-filter="yesterday" data-i18n="myt.filter.yesterday">Yesterday</button>
+    <button type="button" class="filter-chip" data-filter="upcoming" data-i18n="myt.filter.upcoming">Upcoming</button>
     <div class="filter-date-wrap">
       <input type="date" class="filter-date-input" id="filterDateInput">
     </div>
-    <button type="button" class="filter-chip" data-filter="all">All</button>
+    <button type="button" class="filter-chip" data-filter="all" data-i18n="myt.filter.all">All</button>
   </div>
 
-  <div class="loading-wrap" id="loadingWrap">Loading your tournaments...</div>
+  <div class="loading-wrap" id="loadingWrap" data-i18n="myt.loading">Loading your tournaments...</div>
 
   <div class="empty-wrap" id="emptyWrap" style="display:none">
     <div class="empty-icon">
@@ -212,7 +212,7 @@
 
   <div class="t-list" id="listWrap" style="display:none"></div>
 
-  <div class="filter-empty" id="filterEmptyMsg" style="display:none">No tournaments match this filter.</div>
+  <div class="filter-empty" id="filterEmptyMsg" style="display:none" data-i18n="myt.filterEmpty">No tournaments match this filter.</div>
 
 </div>
 
@@ -222,6 +222,11 @@ const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
 const KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
 const sb=window.supabase.createClient(SUPABASE_URL,KEY);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+function t(key){
+  const lang=(window.CHTEO&&CHTEO.getLangPref&&CHTEO.getLangPref())||'bn';
+  const dict=(window.CHTEO&&CHTEO.translations&&CHTEO.translations[lang])||{};
+  return dict[key]!=null?dict[key]:key;
+}
 
 function showEmpty(title,sub,btnText,btnHref){
   document.getElementById('loadingWrap').style.display='none';
@@ -249,7 +254,7 @@ function credBox(label,val){
   return `<div class="t-cred-box">
     <div class="t-cred-label">${esc(label)}</div>
     <div class="t-cred-val">
-      <span class="${has?'':'muted'}">${has?esc(val):'Not published yet'}</span>
+      <span class="${has?'':'muted'}">${has?esc(val):esc(t('myt.cred.notPublished'))}</span>
       ${has?`<button type="button" class="t-copy-btn" onclick="copyCred(this,'${esc(val).replace(/'/g,"&#39;")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>`:''}
     </div>
   </div>`;
@@ -298,10 +303,10 @@ function groupRows(rows){
   const order=[];
   rows.forEach(row=>{
     const lobby=row.tournament_lobbies||{};
-    const t=lobby.tournaments||{};
-    const key=(t.id||t.title||'unknown')+'::'+(lobby.lobby_date||'');
+    const trn=lobby.tournaments||{};
+    const key=(trn.id||trn.title||'unknown')+'::'+(lobby.lobby_date||'');
     if(!map.has(key)){
-      map.set(key,{title:t.title||'Tournament',lobby_date:lobby.lobby_date||'',slotMap:new Map(),slotOrder:[]});
+      map.set(key,{title:trn.title||t('myt.defaultTournament'),lobby_date:lobby.lobby_date||'',slotMap:new Map(),slotOrder:[]});
       order.push(key);
     }
     const g=map.get(key);
@@ -365,26 +370,26 @@ function renderSlot(slot){
   const lobby=slot.lobby||{};
   const confirmed=slot.confirmed;
   const cancelled=lobby.status==='cancelled';
-  const timeLabel=esc(lobby.time_label||'Scrim')+(lobby.custom_title?' · '+esc(lobby.custom_title):'');
+  const timeLabel=esc(lobby.time_label||t('myt.defaultScrim'))+(lobby.custom_title?' · '+esc(lobby.custom_title):'');
   const teamLabel=esc(slot.rows.map(r=>r.team_name).filter(Boolean).join(', '));
   const hasResult=lobby.id&&resultsLobbyIds.has(lobby.id);
 
   const credsOrResult = cancelled ? `
-    <div class="t-pending-note">❌ This lobby has been cancelled by the host. Any wallet payment for this slot has been refunded automatically.</div>
+    <div class="t-pending-note">${esc(t('myt.note.cancelled'))}</div>
   ` : confirmed ? `
     <div class="t-cred-grid">
-      ${credBox('Room ID',lobby.room_id)}
-      ${credBox('Password',lobby.room_password)}
+      ${credBox(t('myt.cred.roomId'),lobby.room_id)}
+      ${credBox(t('myt.cred.password'),lobby.room_password)}
     </div>
-    <button type="button" class="t-result-btn" ${hasResult?`onclick="location.href='lobby-results.html?id=${encodeURIComponent(lobby.id)}'"`:'disabled'}>${hasResult?'View Result':'Result not published'}</button>
+    <button type="button" class="t-result-btn" ${hasResult?`onclick="location.href='lobby-results.html?id=${encodeURIComponent(lobby.id)}'"`:'disabled'}>${hasResult?esc(t('myt.result.view')):esc(t('myt.result.notPublished'))}</button>
   ` : `
-    <div class="t-pending-note">📝 Your slot request is being verified. ID, password and result will show here once the admin confirms your payment.</div>
+    <div class="t-pending-note">${esc(t('myt.note.pending'))}</div>
   `;
 
   return `<div class="t-slot">
     <div class="t-lobby-row">
       <div><div class="t-lobby-time">${timeLabel}</div><div class="t-lobby-date">${teamLabel}</div></div>
-      <div class="t-status ${cancelled?'cancelled':confirmed?'confirmed':'pending'}">${cancelled?'CANCELLED':confirmed?'CONFIRMED':'PENDING'}</div>
+      <div class="t-status ${cancelled?'cancelled':confirmed?'confirmed':'pending'}">${cancelled?esc(t('myt.status.cancelled')):confirmed?esc(t('myt.status.confirmed')):esc(t('myt.status.pending'))}</div>
     </div>
     ${credsOrResult}
   </div>`;
@@ -393,7 +398,7 @@ function renderSlot(slot){
 function renderCard(group){
   return `<div class="t-card">
     <div class="t-card-body">
-      <div class="t-title">${esc(group.title)}</div>
+      <div class="t-title">${esc(group.title||t('myt.defaultTournament'))}</div>
       <div class="t-org">${esc(group.lobby_date)}</div>
       <div class="t-slots">
         ${group.slots.map(renderSlot).join('')}
@@ -410,7 +415,7 @@ function renderCard(group){
   }catch(e){}
 
   if(!session){
-    showEmpty('Please log in','Log in to see the tournaments you have joined and their match details.','Log In','chteo_auth.html');
+    showEmpty(t('myt.empty.loginTitle'),t('myt.empty.loginSub'),t('myt.empty.loginBtn'),'chteo_auth.html');
     return;
   }
 
@@ -421,12 +426,12 @@ function renderCard(group){
 
   if(error){
     console.error('lobby_teams load error:',error);
-    showEmpty('Could not load',(error.message||'Unknown error')+(error.hint?' — '+error.hint:''),'Retry','tournaments.html');
+    showEmpty(t('myt.empty.errorTitle'),(error.message||'Unknown error')+(error.hint?' — '+error.hint:''),t('myt.empty.retryBtn'),'tournaments.html');
     return;
   }
 
   if(!data||!data.length){
-    showEmpty('You haven\'t joined any tournament','Tournaments you register for will show up here, along with your slot and match details.','Browse Tournaments','index.html');
+    showEmpty(t('myt.empty.title'),t('myt.empty.sub'),t('myt.empty.browse'),'index.html');
     return;
   }
 
