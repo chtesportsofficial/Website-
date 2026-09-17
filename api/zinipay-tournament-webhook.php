@@ -126,11 +126,15 @@ try {
         throw new Exception('Invoice record ' . $req['id'] . ' has no entries/lobby_ids');
     }
 
-    // wallet_deposit_requests.method has a CHECK constraint (Bkash/Nagad only);
-    // lobby_teams.payment_method has no such constraint, so we can label it
-    // clearly as ZiniPay-verified here instead of mapping to just those two.
-    $methodLower   = strtolower((string)$verifiedMethod);
-    $displayMethod = (strpos($methodLower, 'nagad') !== false) ? 'Nagad (ZiniPay)' : 'Bkash (ZiniPay)';
+    // lobby_teams.payment_method has a CHECK constraint allowing only
+    // 'balance' or 'manual' — unlike wallet_deposit_requests.method, it does
+    // NOT accept a free-form label. Use 'manual' and put the ZiniPay-specific
+    // detail (which method, transaction id) into payment_reference instead,
+    // so admins can still see it was auto-verified via ZiniPay.
+    $methodLower = strtolower((string)$verifiedMethod);
+    $methodLabel = (strpos($methodLower, 'nagad') !== false) ? 'Nagad' : 'Bkash';
+    $paymentMethodValue    = 'manual';
+    $paymentReferenceValue = 'ZiniPay auto-verified (' . $methodLabel . ') — trx: ' . $verifiedTrxId;
 
     // ---- Same shape as the balance-payment insert in submitJoin(), just
     //      built server-side now that payment is confirmed ----
@@ -162,8 +166,8 @@ try {
             $ownerTeamName,
             json_encode([['name' => $playerName]]),
             $req['whatsapp'],
-            $verifiedTrxId,
-            $displayMethod,
+            $paymentReferenceValue,
+            $paymentMethodValue,
             $req['supabase_uid']
         ]);
         $insertedCount++;
