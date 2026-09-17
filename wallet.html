@@ -448,7 +448,8 @@
   <!-- ADD MONEY PANEL -->
   <div id="panelAdd" class="panel active">
     <div class="card">
-      <input type="number" id="depositAmount" placeholder="Enter the Amount" data-i18n-placeholder="wallet.enterAmount">
+      <div class="min-withdraw-note" data-i18n="wallet.minDeposit">Minimum Deposit: 35 BDT</div>
+      <input type="number" id="depositAmount" min="35" step="0.01" placeholder="Enter the Amount" data-i18n-placeholder="wallet.enterAmount">
       <div id="depositMsg" style="font-size:13px;margin-bottom:10px;"></div>
       <button class="btn btn-deposit" id="depositSubmitBtn" data-i18n="wallet.deposit">Deposit</button>
     </div>
@@ -912,8 +913,8 @@ document.getElementById('depositSubmitBtn').addEventListener('click', async func
     showDepositMsg('Please sign in first.', true);
     return;
   }
-  if(!amount || Number(amount) <= 0){
-    showDepositMsg('Enter a valid amount.', true);
+  if(!amount || Number(amount) < 35){
+    showDepositMsg('Minimum deposit is 35 BDT.', true);
     return;
   }
 
