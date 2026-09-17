@@ -122,10 +122,12 @@
   .filter-bar::-webkit-scrollbar{display:none;}
   .filter-chip{flex-shrink:0;padding:8px 14px;border-radius:20px;background:var(--card);border:1px solid var(--card-border);color:var(--text-secondary);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;transition:background .15s ease,color .15s ease;}
   .filter-chip.active{background:var(--accent);color:#fff;border-color:var(--accent);}
-  .filter-date-wrap{flex-shrink:0;position:relative;width:36px;height:34px;}
-  .filter-date-input{flex-shrink:0;width:36px;height:34px;padding:0;border-radius:20px;background:var(--card);border:1px solid var(--card-border);color:transparent;font-size:12px;font-family:inherit;cursor:pointer;text-align:center;}
-  .filter-date-input.active{background:var(--accent);color:transparent;border-color:var(--accent);}
-  .filter-date-input::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.6;cursor:pointer;position:absolute;left:0;top:0;width:100%;height:100%;margin:0;}
+  .filter-date-wrap{flex-shrink:0;position:relative;width:36px;height:34px;border-radius:20px;background:var(--card);border:1px solid var(--card-border);display:flex;align-items:center;justify-content:center;}
+  .filter-date-wrap.active{background:var(--accent);border-color:var(--accent);}
+  .filter-date-icon{width:16px;height:16px;color:var(--text-secondary);pointer-events:none;}
+  .filter-date-wrap.active .filter-date-icon{color:#fff;}
+  .filter-date-input{position:absolute;inset:0;width:100%;height:100%;padding:0;margin:0;border:none;background:transparent;opacity:0;cursor:pointer;}
+  .filter-date-input::-webkit-calendar-picker-indicator{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer;}
 
   .filter-empty{text-align:center;color:var(--text-secondary);font-size:13px;padding:50px 20px;}
 
@@ -192,7 +194,11 @@
     <button type="button" class="filter-chip" data-filter="yesterday" data-i18n="myt.filter.yesterday">Yesterday</button>
     <button type="button" class="filter-chip" data-filter="upcoming" data-i18n="myt.filter.upcoming">Upcoming</button>
     <button type="button" class="filter-chip" data-filter="all" data-i18n="myt.filter.all">All</button>
-    <div class="filter-date-wrap">
+    <div class="filter-date-wrap" id="filterDateWrap">
+      <svg class="filter-date-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="5" width="18" height="16" rx="2"/>
+        <path d="M16 3v4M8 3v4M3 10h18"/>
+      </svg>
       <input type="date" class="filter-date-input" id="filterDateInput">
     </div>
   </div>
@@ -344,7 +350,7 @@ function applyFilter(){
 }
 function setActiveChip(el){
   document.querySelectorAll('.filter-chip').forEach(b=>b.classList.remove('active'));
-  document.getElementById('filterDateInput').classList.remove('active');
+  document.getElementById('filterDateWrap').classList.remove('active');
   el.classList.add('active');
 }
 document.querySelectorAll('.filter-chip[data-filter]').forEach(btn=>{
@@ -359,7 +365,7 @@ document.querySelectorAll('.filter-chip[data-filter]').forEach(btn=>{
 document.getElementById('filterDateInput').addEventListener('change',function(){
   if(!this.value)return;
   document.querySelectorAll('.filter-chip').forEach(b=>b.classList.remove('active'));
-  this.classList.add('active');
+  document.getElementById('filterDateWrap').classList.add('active');
   currentFilter='date';
   currentCustomDate=new Date(this.value+'T00:00:00');
   applyFilter();
