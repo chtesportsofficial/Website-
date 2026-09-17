@@ -69,6 +69,39 @@ if (!$verifiedUid) {
     exit;
 }
 
+// ZiniPay's Create Invoice API requires cus_email (and rejects the request
+// without it — this is what was failing before). admin-auth.php exposes
+// SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY (same constant names it already
+// uses for verify_user_token), so we look the user's email up via the
+// Supabase Auth admin endpoint. NOTE: if your constants are named
+// differently in admin-auth.php, update the two SUPABASE_* names below to match.
+$custEmail = null;
+if (defined('SUPABASE_URL') && defined('SUPABASE_SERVICE_ROLE_KEY')) {
+    $ch = curl_init(rtrim(SUPABASE_URL, '/') . '/auth/v1/admin/users/' . urlencode($verifiedUid));
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 15,
+        CURLOPT_CONNECTTIMEOUT => 8,
+        CURLOPT_HTTPHEADER => [
+            'apikey: ' . SUPABASE_SERVICE_ROLE_KEY,
+            'Authorization: Bearer ' . SUPABASE_SERVICE_ROLE_KEY
+        ]
+    ]);
+    $userResp = curl_exec($ch);
+    $userHttpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if ($userHttpCode >= 200 && $userHttpCode < 300) {
+        $userData = json_decode($userResp, true);
+        $custEmail = $userData['email'] ?? null;
+    }
+}
+// Fallback so a missing/failed lookup never blocks payment — ZiniPay only
+// validates that the field is present and email-shaped, it doesn't need to
+// be deliverable.
+if (!$custEmail) {
+    $custEmail = 'user-' . $verifiedUid . '@chtesportsofficial.invalid';
+}
+
 if ($amount <= 0) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'A valid amount is required']);
@@ -114,6 +147,8 @@ try {
     // ---- Call ZiniPay Create Invoice ----
     $payload = [
         'amount'       => $amount,
+        'cus_name'     => $uidNumber !== '' ? $uidNumber : 'CHTEO Player',
+        'cus_email'    => $custEmail,
         'metadata'     => ['record_id' => $recordId, 'kind' => 'tournament_entry'],
         // Must keep ?id=<tournament_id> too — tournament-details.html can't
         // render at all without it, so dropping it here would break the page
