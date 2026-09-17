@@ -445,11 +445,13 @@ async function changeStatus(id,status){
   const label=status==='cancelled'?'Off':status==='full'?'Full':'On';
   const extraWarn=status==='cancelled'?'\n\nJoined teams that paid from wallet balance will be refunded automatically.':'';
   askConfirm(label+' lobby?',`Set ${fmtShort(l.lobby_date)} ${l.time_label} to ${status==='cancelled'?'OFF':status.toUpperCase()}?`+extraWarn,async()=>{
-    const r=await sb.from('tournament_lobbies').update({status}).eq('id',id).select();
+    const patch={status};
+    if(status==='cancelled')patch.joined_count=0;
+    const r=await sb.from('tournament_lobbies').update(patch).eq('id',id).select();
     if(r.error)return msg(r.error.message);
     if(!r.data?.length)return msg('Update blocked (0 rows) — check tournament_lobbies UPDATE RLS.');
     await logActivity('lobby_status_changed',id,fmtShort(l.lobby_date)+' '+l.time_label,{narration:`set lobby ${fmtShort(l.lobby_date)} ${l.time_label} to ${status}.`});
-    if(status!=='cancelled')l.status=status;else l.status='cancelled';
+    if(status!=='cancelled'){l.status=status}else{l.status='cancelled';l.joined_count=0}
     render();
     if(status==='cancelled'){
       // Mark every joined team's row as cancelled too — not just the lobby.
