@@ -612,7 +612,8 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
       // UID) to fix in Supabase, not something to paper over here.
       const {data,error}=await sb.from('leaderboard_rows')
         .select('team_name,owner_team_name,points,team_logo,user_number')
-        .gte('lobby_date',monthStart);
+        .gte('lobby_date',monthStart)
+        .not('user_number','is',null);
       if(error||!data){
         console.warn('[Index] leaderboard load failed:',error?.message);
         box.innerHTML='<div class="lb-row"><div class="lb-name" style="color:var(--text-dim)">লোড করা যায়নি।</div></div>';

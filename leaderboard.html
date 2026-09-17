@@ -187,7 +187,8 @@ function start(){
     listEl.innerHTML=`<div class="empty">${lbText('loading')}</div>`;
     const {data,error}=await sb.from('leaderboard_rows')
       .select('team_name,owner_team_name,prize_won,points,team_logo,user_number')
-      .gte('lobby_date',from).lt('lobby_date',to);
+      .gte('lobby_date',from).lt('lobby_date',to)
+      .not('user_number','is',null);
     if(error){
       listEl.innerHTML=`<div class="empty">${lbText('loadError')}</div>`;
       console.error('[Leaderboard]',error);
@@ -199,7 +200,8 @@ function start(){
   async function loadAllTime(){
     listEl.innerHTML=`<div class="empty">${lbText('loading')}</div>`;
     const {data,error}=await sb.from('leaderboard_rows')
-      .select('team_name,owner_team_name,prize_won,points,team_logo,user_number');
+      .select('team_name,owner_team_name,prize_won,points,team_logo,user_number')
+      .not('user_number','is',null);
     if(error){
       listEl.innerHTML=`<div class="empty">${lbText('loadError')}</div>`;
       console.error('[Leaderboard]',error);
