@@ -458,8 +458,11 @@ async function changeStatus(id,status){
       // here, turning the lobby back On later (status -> 'upcoming') would
       // make these old joins look active/confirmed again even though they
       // were already refunded. Rejected rows are left alone.
+      const existing=await sb.from('lobby_teams').select('id').eq('lobby_id',id).neq('confirmation_status','rejected');
+      const expectedN=(existing.data||[]).length;
       const cr=await sb.from('lobby_teams').update({confirmation_status:'cancelled'}).eq('lobby_id',id).neq('confirmation_status','rejected').select();
       if(cr.error)msg('Lobby set to Off, but could not mark joined teams as cancelled: '+cr.error.message);
+      else if(expectedN>0&&!cr.data?.length)msg(`Lobby set to Off, but 0 of ${expectedN} team row(s) were marked cancelled — check the lobby_teams UPDATE RLS policy (host/admin needs update access on confirmation_status).`);
       await refundOffLobby(l);
     }
   })
