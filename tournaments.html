@@ -316,7 +316,12 @@ function groupRows(rows){
       order.push(key);
     }
     const g=map.get(key);
-    const lobbyKey=lobby.id||(lobby.time_label+'::'+lobby.room_id+'::'+lobby.room_password);
+    const baseKey=lobby.id||(lobby.time_label+'::'+lobby.room_id+'::'+lobby.room_password);
+    // A cancelled join and a fresh rejoin can share the same lobby (id
+    // unchanged, just turned Off then On again) — keep cancelled rows in
+    // their own card so they don't swallow a newer active join into the
+    // same "any row cancelled -> whole slot cancelled" bucket.
+    const lobbyKey=row.confirmation_status==='cancelled'?baseKey+'::cancelled':baseKey;
     if(!g.slotMap.has(lobbyKey)){
       g.slotMap.set(lobbyKey,{lobby,rows:[],confirmed:false,cancelled:false});
       g.slotOrder.push(lobbyKey);
