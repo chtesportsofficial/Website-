@@ -154,6 +154,7 @@ input{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-r
       </svg>
     </button>
     <div><h1>Host Panel</h1></div>
+    <button type="button" class="refresh" style="margin-left:auto" onclick="openEmailFind()">🔎 Find by Email</button>
   </div>
 
   <section class="today-panel">
@@ -198,6 +199,13 @@ input{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-r
   <div class="modal-actions" style="grid-template-columns:1fr"><button id="saveBtn" class="primary" onclick="saveResultsClick()">Save Results</button></div>
 </div></div>
 
+<div class="modal" id="emailModal"><div class="box">
+  <div class="mh"><b>Find & Remove by Email</b><button type="button" class="close" onclick="closeModal('emailModal')">×</button></div>
+  <label>Player's account email</label>
+  <input id="emailSearchInput" type="email" placeholder="name@example.com" inputmode="email" onkeydown="if(event.key==='Enter')searchByEmail()">
+  <div class="modal-actions" style="grid-template-columns:1fr"><button type="button" class="primary" onclick="searchByEmail()">Search</button></div>
+  <div id="emailTeamsList" style="margin-top:14px"></div>
+</div></div>
 <div class="modal" id="msgModal"><div class="box" style="padding-top:17px;text-align:center">
   <div style="font-size:34px;line-height:1;margin-bottom:8px" id="msgIcon">✅</div>
   <div style="font-size:13px;line-height:1.5;color:#e8ebf2;white-space:pre-line" id="msgText"></div>
@@ -626,12 +634,90 @@ async function deleteTeam(teamId){
     await sb.from('lobby_results').delete().eq('team_id',teamId);
     const r=await sb.from('lobby_teams').delete().eq('id',teamId);
     if(r.error)return msg(r.error.message);
+    const newCount=Math.max(0,(Number(currentLobby.joined_count)||0)-1);
+    await sb.from('tournament_lobbies').update({joined_count:newCount}).eq('id',currentLobby.id);
+    currentLobby.joined_count=newCount;
     await logActivity('team_deleted',currentLobby.id,tm?.team_name||null,{
       narration:`deleted team "${tm?.team_name||''}" from the lobby.`,
       highlight_targets:[tm?.team_name||null]
     });
     await openTeams(currentLobby.id);
     await load();
+  });
+}
+// Find-by-email tool: for cleaning up the host's own test/self-testing
+// slots (or anyone's) across ALL lobbies/tournaments at once, by their
+// account email, instead of hunting lobby-by-lobby in the Teams modal.
+let emailTeamsCache=[];
+function openEmailFind(){
+  $('emailSearchInput').value='';
+  emailTeamsCache=[];
+  $('emailTeamsList').innerHTML='';
+  openModal('emailModal');
+  setTimeout(()=>$('emailSearchInput').focus(),50);
+}
+async function searchByEmail(){
+  const email=($('emailSearchInput').value||'').trim();
+  if(!email)return msg('Enter an email to search.');
+  $('emailTeamsList').innerHTML='<div class="loading">Searching…</div>';
+  const pr=await sb.from('profiles').select('id,email,full_name,user_number').ilike('email',email).maybeSingle();
+  if(pr.error||!pr.data){$('emailTeamsList').innerHTML='<div class="empty">No account found with that email.</div>';return}
+  const r=await sb.from('lobby_teams').select('*, tournament_lobbies(id,lobby_date,time_label,status,joined_count,tournaments(title,entry_fee))').eq('submitted_by',pr.data.id).order('joined_at',{ascending:false});
+  if(r.error){$('emailTeamsList').innerHTML='<div class="empty">Could not load: '+esc(r.error.message)+'</div>';return}
+  emailTeamsCache=r.data||[];
+  renderEmailTeamsList();
+}
+function renderEmailTeamsList(){
+  $('emailTeamsList').innerHTML=emailTeamsCache.length?emailTeamsCache.map(tm=>{
+    const lb=tm.tournament_lobbies||{};
+    const trn=lb.tournaments||{};
+    const status=tm.confirmation_status||'pending';
+    const payBadge=tm.payment_method==='balance'?`<span class="team-pay balance">Balance</span>`:`<span class="team-pay manual">Manual</span>`;
+    return `<div class="team-item">
+      <div class="team-top"><b>${esc(trn.title||'Tournament')} — ${esc(fmtShort(lb.lobby_date))} ${esc(lb.time_label||'')}</b><span class="team-status ${esc(status)}">${esc(status)}</span></div>
+      <div class="team-meta">${esc(tm.team_name)} · ${payBadge}</div>
+      <div class="team-actions"><button class="mini red" onclick="removeEmailTeam('${tm.id}')">Delete${tm.payment_method==='balance'?' & Refund':''}</button></div>
+    </div>`;
+  }).join(''):'<div class="empty">No slots found for this email.</div>';
+}
+async function removeEmailTeam(teamId){
+  const tm=emailTeamsCache.find(t=>t.id===teamId);if(!tm)return;
+  const lb=tm.tournament_lobbies||{};
+  const trn=lb.tournaments||{};
+  const isBalance=tm.payment_method==='balance';
+  askConfirm('Delete this slot?',`Remove "${tm.team_name}" from ${fmtShort(lb.lobby_date)} ${lb.time_label}?`+(isBalance?'\n\nThe entry fee paid from wallet balance will be refunded automatically.':''),async()=>{
+    if(isBalance){
+      const feeAmount=Number(trn.entry_fee)||0;
+      if(feeAmount>0){
+        const {data:{session:s}}=await sb.auth.getSession();
+        if(!s){msg('Could not refund — please sign in again. Slot not deleted.');return}
+        const hasSplit=tm.paid_withdrawable!=null||tm.paid_non_withdrawable!=null;
+        try{
+          const res=await fetch('https://chteo-api.onrender.com/api/refund-lobby.php',{
+            method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({access_token:s.access_token,lobby_id:lb.id,refunds:[{
+              team_id:tm.id,supabase_uid:tm.submitted_by,
+              from_withdrawable:hasSplit?(Number(tm.paid_withdrawable)||0):0,
+              from_non_withdrawable:hasSplit?(Number(tm.paid_non_withdrawable)||0):feeAmount
+            }]})
+          });
+          const j=await res.json();
+          if(!j.success){msg('Could not refund: '+(j.message||'unknown error')+' — slot not deleted.');return}
+        }catch(e){msg('Could not reach the wallet server to refund — slot not deleted. Try again.');return}
+      }
+    }
+    await sb.from('lobby_results').delete().eq('team_id',teamId);
+    const dr=await sb.from('lobby_teams').delete().eq('id',teamId);
+    if(dr.error)return msg(dr.error.message);
+    if(lb.id){
+      const newCount=Math.max(0,(Number(lb.joined_count)||0)-1);
+      await sb.from('tournament_lobbies').update({joined_count:newCount}).eq('id',lb.id);
+    }
+    await logActivity('team_deleted',lb.id||teamId,tm.team_name,{narration:`removed slot "${tm.team_name}" via email lookup.`});
+    emailTeamsCache=emailTeamsCache.filter(t=>t.id!==teamId);
+    renderEmailTeamsList();
+    msg('Removed.');
+    load();
   });
 }
 
