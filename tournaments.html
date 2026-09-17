@@ -143,6 +143,7 @@
   .t-status{font-size:9.5px;font-weight:700;padding:4px 9px;border-radius:20px;letter-spacing:.02em;white-space:nowrap;}
   .t-status.confirmed{background:rgba(46,204,113,.14);color:#3ddc84;}
   .t-status.pending{background:rgba(255,183,3,.14);color:#ffb703;}
+  .t-status.cancelled{background:rgba(231,76,60,.14);color:#ff5c4d;}
 
   .t-pending-note{font-size:11px;color:var(--text-secondary);background:rgba(255,183,3,.06);border:1px dashed rgba(255,183,3,.35);border-radius:10px;padding:10px 11px;margin-bottom:2px;line-height:1.55;}
 
@@ -187,13 +188,13 @@
   </div>
 
   <div class="filter-bar" id="filterBar" style="display:none">
-    <button type="button" class="filter-chip" data-filter="today">Today</button>
+    <button type="button" class="filter-chip active" data-filter="today">Today</button>
     <button type="button" class="filter-chip" data-filter="yesterday">Yesterday</button>
     <button type="button" class="filter-chip" data-filter="upcoming">Upcoming</button>
     <div class="filter-date-wrap">
       <input type="date" class="filter-date-input" id="filterDateInput">
     </div>
-    <button type="button" class="filter-chip active" data-filter="all">All</button>
+    <button type="button" class="filter-chip" data-filter="all">All</button>
   </div>
 
   <div class="loading-wrap" id="loadingWrap">Loading your tournaments...</div>
@@ -255,7 +256,7 @@ function credBox(label,val){
 }
 
 let allRows=[];
-let currentFilter='all';
+let currentFilter='today';
 let currentCustomDate=null;
 
 function parseLobbyDate(row){
@@ -363,11 +364,14 @@ let resultsLobbyIds=new Set();
 function renderSlot(slot){
   const lobby=slot.lobby||{};
   const confirmed=slot.confirmed;
+  const cancelled=lobby.status==='cancelled';
   const timeLabel=esc(lobby.time_label||'Scrim')+(lobby.custom_title?' · '+esc(lobby.custom_title):'');
   const teamLabel=esc(slot.rows.map(r=>r.team_name).filter(Boolean).join(', '));
   const hasResult=lobby.id&&resultsLobbyIds.has(lobby.id);
 
-  const credsOrResult = confirmed ? `
+  const credsOrResult = cancelled ? `
+    <div class="t-pending-note">❌ This lobby has been cancelled by the host. Any wallet payment for this slot has been refunded automatically.</div>
+  ` : confirmed ? `
     <div class="t-cred-grid">
       ${credBox('Room ID',lobby.room_id)}
       ${credBox('Password',lobby.room_password)}
@@ -380,7 +384,7 @@ function renderSlot(slot){
   return `<div class="t-slot">
     <div class="t-lobby-row">
       <div><div class="t-lobby-time">${timeLabel}</div><div class="t-lobby-date">${teamLabel}</div></div>
-      <div class="t-status ${confirmed?'confirmed':'pending'}">${confirmed?'CONFIRMED':'PENDING'}</div>
+      <div class="t-status ${cancelled?'cancelled':confirmed?'confirmed':'pending'}">${cancelled?'CANCELLED':confirmed?'CONFIRMED':'PENDING'}</div>
     </div>
     ${credsOrResult}
   </div>`;
