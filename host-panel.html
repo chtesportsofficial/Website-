@@ -451,7 +451,17 @@ async function changeStatus(id,status){
     await logActivity('lobby_status_changed',id,fmtShort(l.lobby_date)+' '+l.time_label,{narration:`set lobby ${fmtShort(l.lobby_date)} ${l.time_label} to ${status}.`});
     if(status!=='cancelled')l.status=status;else l.status='cancelled';
     render();
-    if(status==='cancelled')await refundOffLobby(l);
+    if(status==='cancelled'){
+      // Mark every joined team's row as cancelled too — not just the lobby.
+      // My Tournaments derives a slot's cancelled/confirmed look mainly from
+      // this per-row status, so if we only flipped tournament_lobbies.status
+      // here, turning the lobby back On later (status -> 'upcoming') would
+      // make these old joins look active/confirmed again even though they
+      // were already refunded. Rejected rows are left alone.
+      const cr=await sb.from('lobby_teams').update({confirmation_status:'cancelled'}).eq('lobby_id',id).neq('confirmation_status','rejected').select();
+      if(cr.error)msg('Lobby set to Off, but could not mark joined teams as cancelled: '+cr.error.message);
+      await refundOffLobby(l);
+    }
   })
 }
 // Off = cancelled: refund every team in this lobby that actually paid its

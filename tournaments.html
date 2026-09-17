@@ -318,12 +318,13 @@ function groupRows(rows){
     const g=map.get(key);
     const lobbyKey=lobby.id||(lobby.time_label+'::'+lobby.room_id+'::'+lobby.room_password);
     if(!g.slotMap.has(lobbyKey)){
-      g.slotMap.set(lobbyKey,{lobby,rows:[],confirmed:false});
+      g.slotMap.set(lobbyKey,{lobby,rows:[],confirmed:false,cancelled:false});
       g.slotOrder.push(lobbyKey);
     }
     const slot=g.slotMap.get(lobbyKey);
     slot.rows.push(row);
     if(row.confirmation_status==='confirmed')slot.confirmed=true;
+    if(row.confirmation_status==='cancelled')slot.cancelled=true;
   });
   const groups=order.map(k=>{
     const g=map.get(k);
@@ -375,7 +376,7 @@ let resultsLobbyIds=new Set();
 function renderSlot(slot){
   const lobby=slot.lobby||{};
   const confirmed=slot.confirmed;
-  const cancelled=lobby.status==='cancelled';
+  const cancelled=slot.cancelled||lobby.status==='cancelled';
   const timeLabel=esc(lobby.time_label||t('myt.defaultScrim'))+(lobby.custom_title?' · '+esc(lobby.custom_title):'');
   const teamLabel=esc(slot.rows.map(r=>r.team_name).filter(Boolean).join(', '));
   const hasResult=lobby.id&&resultsLobbyIds.has(lobby.id);
