@@ -493,6 +493,16 @@
   </div>
 </div>
 
+<!-- SIMPLE VALIDATION ALERT MODAL (no WhatsApp CTA - just a heads-up) -->
+<div id="alertModalOverlay" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-icon">&#9888;&#65039;</div>
+    <div id="alertModalText" class="modal-text"></div>
+    <button id="alertModalClose" class="btn btn-modal-close" data-i18n="wallet.ok">OK</button>
+  </div>
+</div>
+
+
 
 <script>
 function getProfile(){
@@ -902,6 +912,17 @@ document.getElementById('depositModalClose').addEventListener('click', function(
   document.getElementById('depositModalOverlay').classList.remove('active');
 });
 
+// Simple centered popup for quick validation messages (min amount, missing
+// field, etc.) - used instead of the small red text under the inputs.
+function showAlertModal(text){
+  document.getElementById('alertModalText').textContent = text;
+  document.getElementById('alertModalOverlay').classList.add('active');
+}
+
+document.getElementById('alertModalClose').addEventListener('click', function(){
+  document.getElementById('alertModalOverlay').classList.remove('active');
+});
+
 document.getElementById('depositSubmitBtn').addEventListener('click', async function(){
   const btn = document.getElementById('depositSubmitBtn');
   const amount = document.getElementById('depositAmount').value;
@@ -914,7 +935,7 @@ document.getElementById('depositSubmitBtn').addEventListener('click', async func
     return;
   }
   if(!amount || Number(amount) < 35){
-    showDepositMsg('Minimum deposit is 35 BDT.', true);
+    showAlertModal('Minimum deposit is 35 BDT.');
     return;
   }
 
@@ -984,7 +1005,7 @@ document.getElementById('withdrawSubmitBtn').addEventListener('click', async fun
     return;
   }
   if(!amount || amount < 50){
-    showWithdrawMsg('Minimum withdraw is 50 BDT.', true);
+    showAlertModal('Minimum withdraw is 50 BDT.');
     return;
   }
   if(!/^01[0-9]{9}$/.test(accountNumber)){
