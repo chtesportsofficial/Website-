@@ -331,8 +331,21 @@ function passesFilter(row){
   if(currentFilter==='all')return true;
   const d=parseLobbyDate(row);
   if(!d)return false;
-  const today=new Date(); today.setHours(0,0,0,0);
-  if(currentFilter==='today')return isSameDate(d,today);
+  const now=new Date();
+  const today=new Date(now); today.setHours(0,0,0,0);
+  if(currentFilter==='today'){
+    if(isSameDate(d,today))return true;
+    // Grace period: a 12 AM lobby is stored under the PREVIOUS day's
+    // lobby_date (see tournament-details.html's parseLobbyDateTime comment),
+    // so the instant the calendar rolls to a new day it would otherwise
+    // vanish from "Today" straight into "Yesterday". Keep it under Today
+    // for 2 hours after midnight so it doesn't feel like it disappeared.
+    if(now.getHours()<2){
+      const y=new Date(today); y.setDate(y.getDate()-1);
+      if(isSameDate(d,y))return true;
+    }
+    return false;
+  }
   if(currentFilter==='yesterday'){
     const y=new Date(today); y.setDate(y.getDate()-1);
     return isSameDate(d,y);
