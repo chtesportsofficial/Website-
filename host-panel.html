@@ -417,7 +417,6 @@ function renderLobby(l){
       <button class="mini green" onclick="openTeams('${l.id}')">Teams</button>
       <button class="mini" onclick="openRoom('${l.id}')">Room ID/Pass</button>
       <button class="mini" onclick="openResults('${l.id}')">Enter Result</button>
-      <button class="mini gold" onclick="openCG('${l.id}')">CG</button>
       ${l.status==='cancelled'
         ? (timeOver
             // This lobby's time slot has already passed — turning it back
@@ -437,7 +436,9 @@ function renderLobby(l){
                 ? `<button class="mini gold" onclick="changeStatus('${l.id}','upcoming')">Unfull</button>`
                 : `<button class="mini gold" onclick="changeStatus('${l.id}','full')">Full</button>`}
                <button class="mini red" onclick="changeStatus('${l.id}','cancelled')">Off</button>`}
+      <button class="mini green" style="margin-left:auto" onclick="openCG('${l.id}')">CG</button>
     </div>
+
   </div>`;
 }
 async function deleteLobbyRow(id){
