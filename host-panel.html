@@ -436,7 +436,7 @@ function renderLobby(l){
                 ? `<button class="mini gold" onclick="changeStatus('${l.id}','upcoming')">Unfull</button>`
                 : `<button class="mini gold" onclick="changeStatus('${l.id}','full')">Full</button>`}
                <button class="mini red" onclick="changeStatus('${l.id}','cancelled')">Off</button>`}
-      <button class="mini green" style="margin-left:auto" onclick="openCG('${l.id}')">CG</button>
+      <button class="mini ${l.cg_link?'gold':'green'}" style="margin-left:auto" onclick="openCG('${l.id}')">CG</button>
     </div>
 
   </div>`;
