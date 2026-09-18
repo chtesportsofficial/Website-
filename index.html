@@ -823,15 +823,20 @@ document.getElementById("vipModal").addEventListener("click", function(e){
   // ---------------------------------------------------------------
 
   // Pull team logo / team name / UID from the same localStorage keys
-  // edit_profile.html already saves to.
+  // edit_profile.html already saves to. These keys are NOT cleared on
+  // logout (per-device cache, not per-account), so gate them behind
+  // chteo_logged_in too — otherwise the drawer keeps showing the last
+  // logged-in user's name/UID/photo even as a logged-out guest.
+  const isLoggedIn = localStorage.getItem('chteo_logged_in') === 'true';
+
   function getProfile(){
     try { return JSON.parse(localStorage.getItem('user_profile') || '{}'); }
     catch(e){ return {}; }
   }
-  const savedProfile = getProfile();
-  const savedPicture = localStorage.getItem('profile_picture');
+  const savedProfile = isLoggedIn ? getProfile() : {};
+  const savedPicture = isLoggedIn ? localStorage.getItem('profile_picture') : null;
 
-  if (savedProfile.teamName) orgNameEl.textContent = savedProfile.teamName;
+  orgNameEl.textContent = savedProfile.teamName || (isLoggedIn ? 'Your Team Name' : 'Guest');
 
   if (savedPicture){
     logoImg.src = savedPicture;
@@ -841,8 +846,8 @@ document.getElementById("vipModal").addEventListener("click", function(e){
 
   // UID — change 'user_uid' below if your account system stores it under
   // a different key (e.g. inside a bigger account/user object).
-  const savedUid = localStorage.getItem('user_uid') || savedProfile.uid;
-  if (savedUid) uidText.textContent = 'UID : #' + savedUid;
+  const savedUid = isLoggedIn ? (localStorage.getItem('user_uid') || savedProfile.uid) : null;
+  uidText.textContent = savedUid ? ('UID : #' + savedUid) : (isLoggedIn ? 'UID : —' : 'লগইন করা নেই');
 
   chatAdminLink.href = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(WHATSAPP_MSG);
 
