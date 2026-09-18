@@ -238,7 +238,7 @@ const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
 const KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
 const sb=window.supabase.createClient(SUPABASE_URL,KEY);
 
-let session=null, profile=null, lobbies=[], tournaments=new Map(), currentLobby=null, currentTournament=null, lobbyTeamsCache=[], resultRows=[], resultSubmitting=false;
+let session=null, profile=null, lobbies=[], tournaments=new Map(), currentLobby=null, currentTournament=null, lobbyTeamsCache=[], resultRows=[], resultSubmitting=false, resultsLobbyIds=new Set();
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
@@ -342,6 +342,11 @@ async function load(dateStr){
     // Keep only today's rows after the client-side status refresh (cancelled ones stay so Off lobbies remain manageable).
     lobbies=lobbies.filter(l=>l.lobby_date===realToday&&['upcoming','live','full','cancelled'].includes(l.status));
   }
+  resultsLobbyIds=new Set();
+  if(lobbies.length){
+    const rr=await sb.from('lobby_results').select('lobby_id').in('lobby_id',lobbies.map(l=>l.id));
+    if(!rr.error)(rr.data||[]).forEach(row=>resultsLobbyIds.add(row.lobby_id));
+  }
   render();
 }
 function shiftDay(delta){
@@ -416,7 +421,7 @@ function renderLobby(l){
     <div class="lobby-actions">
       <button class="mini green" onclick="openTeams('${l.id}')">Teams</button>
       <button class="mini" onclick="openRoom('${l.id}')">Room ID/Pass</button>
-      <button class="mini" onclick="openResults('${l.id}')">Enter Result</button>
+      <button class="mini ${resultsLobbyIds.has(l.id)?'gold':''}" onclick="openResults('${l.id}')">Enter Result</button>
       ${l.status==='cancelled'
         ? (timeOver
             // This lobby's time slot has already passed — turning it back
@@ -1102,6 +1107,7 @@ async function saveResultsClick(){
   let saved;
   try{saved=await saveResults()}catch(e){finish();throw e}
   if(!saved){finish();return}
+  if(currentLobby){resultsLobbyIds.add(currentLobby.id);render()}
 
   const changed=getChangedCreditedRows();
   if(!changed.length){
