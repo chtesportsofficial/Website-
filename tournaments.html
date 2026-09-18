@@ -46,6 +46,13 @@
     gap:14px;
     margin-bottom:26px;
   }
+  .topbar h1{flex:1}
+
+  .slot-refresh{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--accent);background:none;border:none;padding:6px 0 2px;cursor:pointer;font-family:inherit}
+  .slot-refresh svg{width:13px;height:13px;transition:transform .2s ease}
+  .slot-refresh.spinning svg{animation:refresh-spin .7s linear infinite}
+  .slot-refresh:disabled{opacity:.55;cursor:default}
+  @keyframes refresh-spin{to{transform:rotate(360deg)}}
 
   .back-btn{
     width:44px; height:44px;
@@ -215,6 +222,8 @@
     <div class="empty-sub" id="emptySub">Tournaments you register for will show up here, along with your slot and match details.</div>
     <button class="browse-btn" id="emptyBtn" onclick="window.location.href='index.html'">Browse Tournaments</button>
   </div>
+
+  <div class="filter-empty" id="refreshErrMsg" style="display:none;color:#ff5c4d"></div>
 
   <div class="t-list" id="listWrap" style="display:none"></div>
 
@@ -386,6 +395,11 @@ function renderSlot(slot){
   const teamLabel=esc(slot.rows.map(r=>r.team_name).filter(Boolean).join(', '));
   const hasResult=lobby.id&&resultsLobbyIds.has(lobby.id);
 
+  const refreshLink = `<button type="button" class="slot-refresh" onclick="loadTournaments(true,this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+    রিফ্রেশ
+  </button>`;
+
   const credsOrResult = cancelled ? `
     <div class="t-pending-note">${esc(t('myt.note.cancelled'))}</div>
   ` : confirmed ? `
@@ -393,9 +407,11 @@ function renderSlot(slot){
       ${credBox(t('myt.cred.roomId'),lobby.room_id)}
       ${credBox(t('myt.cred.password'),lobby.room_password)}
     </div>
+    ${(!lobby.room_id||!lobby.room_password)?refreshLink:''}
     <button type="button" class="t-result-btn" ${hasResult?`onclick="location.href='lobby-results.html?id=${encodeURIComponent(lobby.id)}'"`:'disabled'}>${hasResult?esc(t('myt.result.view')):esc(t('myt.result.notPublished'))}</button>
   ` : `
     <div class="t-pending-note">${esc(t('myt.note.pending'))}</div>
+    ${refreshLink}
   `;
 
   return `<div class="t-slot">
@@ -419,45 +435,81 @@ function renderCard(group){
   </div>`;
 }
 
-(async function(){
-  let session=null;
+let mySession=null;
+
+async function loadTournaments(isRefresh,btnEl){
+  const refreshErrMsg=document.getElementById('refreshErrMsg');
+  if(isRefresh && btnEl){
+    btnEl.disabled=true;
+    btnEl.classList.add('spinning');
+    refreshErrMsg.style.display='none';
+  }
+
   try{
-    const r=await sb.auth.getSession();
-    session=r?.data?.session||null;
-  }catch(e){}
+    if(!mySession){
+      let session=null;
+      try{
+        const r=await sb.auth.getSession();
+        session=r?.data?.session||null;
+      }catch(e){}
+      if(!session){
+        showEmpty(t('myt.empty.loginTitle'),t('myt.empty.loginSub'),t('myt.empty.loginBtn'),'chteo_auth.html');
+        return;
+      }
+      mySession=session;
+    }
 
-  if(!session){
-    showEmpty(t('myt.empty.loginTitle'),t('myt.empty.loginSub'),t('myt.empty.loginBtn'),'chteo_auth.html');
-    return;
+    const {data,error}=await sb.from('lobby_teams')
+      .select('*, tournament_lobbies(*, tournaments(id,title,banner_url))')
+      .eq('submitted_by',mySession.user.id)
+      .order('joined_at',{ascending:false});
+
+    if(error){
+      console.error('lobby_teams load error:',error);
+      if(isRefresh){
+        // A refresh keeps showing whatever was already on screen — swapping
+        // the whole page for a full-screen error on a failed refresh would
+        // be more disruptive than just leaving the last-known data visible.
+        refreshErrMsg.textContent=(error.message||'রিফ্রেশ ব্যর্থ হয়েছে')+(error.hint?' — '+error.hint:'');
+        refreshErrMsg.style.display='block';
+      }else{
+        showEmpty(t('myt.empty.errorTitle'),(error.message||'Unknown error')+(error.hint?' — '+error.hint:''),t('myt.empty.retryBtn'),'tournaments.html');
+      }
+      return;
+    }
+
+    if(!data||!data.length){
+      if(isRefresh){
+        allRows=[];
+        applyFilter();
+      }else{
+        showEmpty(t('myt.empty.title'),t('myt.empty.sub'),t('myt.empty.browse'),'index.html');
+      }
+      return;
+    }
+
+    const lobbyIds=[...new Set(data.map(r=>r.tournament_lobbies?.id).filter(Boolean))];
+    if(lobbyIds.length){
+      const {data:resultsData,error:resultsErr}=await sb.from('lobby_results').select('lobby_id').in('lobby_id',lobbyIds);
+      if(!resultsErr) resultsLobbyIds=new Set((resultsData||[]).map(r=>r.lobby_id));
+    }
+
+    allRows=data;
+    document.getElementById('loadingWrap').style.display='none';
+    document.getElementById('filterBar').style.display='flex';
+    applyFilter();
+  } finally {
+    // On success the whole list (incl. this button) just got re-rendered by
+    // applyFilter() above, so there's nothing left to un-spin. This only
+    // actually matters on the error path, where the old DOM is untouched.
+    if(isRefresh && btnEl && document.body.contains(btnEl)){
+      btnEl.disabled=false;
+      btnEl.classList.remove('spinning');
+    }
   }
+}
 
-  const {data,error}=await sb.from('lobby_teams')
-    .select('*, tournament_lobbies(*, tournaments(id,title,banner_url))')
-    .eq('submitted_by',session.user.id)
-    .order('joined_at',{ascending:false});
-
-  if(error){
-    console.error('lobby_teams load error:',error);
-    showEmpty(t('myt.empty.errorTitle'),(error.message||'Unknown error')+(error.hint?' — '+error.hint:''),t('myt.empty.retryBtn'),'tournaments.html');
-    return;
-  }
-
-  if(!data||!data.length){
-    showEmpty(t('myt.empty.title'),t('myt.empty.sub'),t('myt.empty.browse'),'index.html');
-    return;
-  }
-
-  const lobbyIds=[...new Set(data.map(r=>r.tournament_lobbies?.id).filter(Boolean))];
-  if(lobbyIds.length){
-    const {data:resultsData,error:resultsErr}=await sb.from('lobby_results').select('lobby_id').in('lobby_id',lobbyIds);
-    if(!resultsErr) resultsLobbyIds=new Set((resultsData||[]).map(r=>r.lobby_id));
-  }
-
-  allRows=data;
-  document.getElementById('loadingWrap').style.display='none';
-  document.getElementById('filterBar').style.display='flex';
-  applyFilter();
-})();
+loadTournaments(false);
 
 window.addEventListener('pageshow', function(event){
   if (event.persisted) {
