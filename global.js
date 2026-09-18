@@ -819,6 +819,10 @@
   }
 
   function getSavedProfilePicture() {
+    // profile_picture is a per-device cache, not cleared by every logout
+    // path — gate it behind chteo_logged_in too, or a logged-out guest on
+    // this device keeps seeing the last logged-in user's photo in the nav.
+    if (localStorage.getItem(AUTH_KEY) !== "true") return "";
     try { return localStorage.getItem("profile_picture") || ""; }
     catch (e) { return ""; }
   }
