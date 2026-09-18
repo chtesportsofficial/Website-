@@ -95,7 +95,7 @@ $conn->beginTransaction();
 try {
     // Lock the matching invoice record.
     $stmt = $conn->prepare(
-        "SELECT id, supabase_uid, amount, whatsapp, lobby_ids, entries, status
+        "SELECT id, supabase_uid, uid_number, amount, whatsapp, lobby_ids, entries, status
          FROM zinipay_tournament_invoices
          WHERE zinipay_invoice_id = ? FOR UPDATE"
     );
@@ -126,6 +126,22 @@ try {
         throw new Exception('Invoice record ' . $req['id'] . ' has no entries/lobby_ids');
     }
 
+    // ---- Look up each lobby's time_label for Telegram routing ----
+    // Unlike the balance-payment path (deduct-balance.php), the entries saved
+    // on this invoice don't carry time_label (create-zinipay-tournament-invoice.php
+    // never receives it from the frontend for this payment method), so we pull
+    // it here from tournament_lobbies keyed by lobby_id instead.
+    $timeLabelByLobbyId = [];
+    $uniqueLobbyIdsForLabels = array_unique($lobbyIds);
+    if (!empty($uniqueLobbyIdsForLabels)) {
+        $placeholders = implode(',', array_fill(0, count($uniqueLobbyIdsForLabels), '?'));
+        $labelStmt = $conn->prepare("SELECT id, time_label FROM tournament_lobbies WHERE id IN ($placeholders)");
+        $labelStmt->execute(array_values($uniqueLobbyIdsForLabels));
+        foreach ($labelStmt->fetchAll() as $lobbyRow2) {
+            $timeLabelByLobbyId[$lobbyRow2['id']] = $lobbyRow2['time_label'];
+        }
+    }
+
     // lobby_teams.payment_method has a CHECK constraint allowing only
     // 'balance' or 'manual' — unlike wallet_deposit_requests.method, it does
     // NOT accept a free-form label. Use 'manual' and put the ZiniPay-specific
@@ -147,6 +163,7 @@ try {
 
     $firstOwnerTeamName = null;
     $insertedCount = 0;
+    $entriesForNotify = [];
     foreach ($entries as $e) {
         $lobbyId       = $e['lobby_id'] ?? null;
         $teamName      = trim((string)($e['team_name'] ?? ''));
@@ -171,6 +188,12 @@ try {
             $req['supabase_uid']
         ]);
         $insertedCount++;
+
+        $entriesForNotify[] = [
+            'team_name'   => $teamName,
+            'player_name' => $playerName,
+            'time_label'  => $timeLabelByLobbyId[$lobbyId] ?? ''
+        ];
     }
 
     if ($insertedCount === 0) {
@@ -209,6 +232,16 @@ try {
     $doneStmt->execute([$verifiedTrxId, $req['id']]);
 
     $conn->commit();
+
+    // ---- Notify admin on Telegram, routed to the group for THIS purchase's
+    //      slot time(s) — same as the balance-payment path in deduct-balance.php,
+    //      just ported here since ZiniPay-confirmed joins never had this call
+    //      (best-effort — never breaks the response if Telegram is down/misconfigured).
+    $slotTimesForNotify = array_values(array_unique(array_filter(
+        array_map(function($lid) use ($timeLabelByLobbyId) { return $timeLabelByLobbyId[$lid] ?? ''; }, array_unique($lobbyIds))
+    )));
+    notifyTelegramSlotPurchase($req['supabase_uid'], $verifiedAmount, $paymentReferenceValue, $slotTimesForNotify, $entriesForNotify, $req['whatsapp'], $req['uid_number']);
+
     http_response_code(200);
     echo json_encode(['success' => true, 'message' => 'Tournament entry confirmed', 'entries_created' => $insertedCount]);
 
@@ -217,4 +250,69 @@ try {
     error_log('[zinipay-tournament-webhook] Failed for invoice ' . $invoiceId . ': ' . $e->getMessage());
     http_response_code(200); // still 200 so ZiniPay doesn't hammer retries; we log for ourselves
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+}
+
+// ---- Telegram notification (routed by slot time) ----
+// Copied from deduct-balance.php so both payment paths (wallet balance and
+// ZiniPay bKash/Nagad auto-verify) notify the same "SLOT UPDATES" groups.
+// If the bot token or any chat id ever changes, update it in BOTH files.
+function notifyTelegramSlotPurchase($who, $amount, $reference, $slotTimes, $entries, $whatsapp, $uid) {
+    $BOT_TOKEN = '8946675932:AAHxGR-v1JoGVDmpKJYnpqriKpF7swjSKkE'; // <-- same bot token as deduct-balance.php
+    $CHAT_ID_BY_HOUR = [
+        9  => '-5357739634',  // 9 PM SLOT UPDATES
+        10 => '-5143302387',  // 10 PM SLOT UPDATES
+        11 => '-5378353079',  // 11 PM SLOT UPDATES
+        12 => '-5374244237',  // 12 AM SLOT UPDATES
+        3  => '-5147853479',  // 3 PM SLOT UPDATES
+        4  => '-5587751748',  // 4 PM SLOT UPDATES
+        5  => '-5524224556',  // 5 PM SLOT UPDATES
+        7  => '-5502010780',  // 7 PM SLOT UPDATES
+        8  => '-5483654693',  // 8 PM SLOT UPDATES
+    ];
+    if ($BOT_TOKEN === '' || empty($slotTimes) || !is_array($slotTimes)) return;
+
+    function extractHourZiniTournament($t) {
+        return preg_match('/^(\d{1,2}):/', trim((string)$t), $m) ? (int)$m[1] : null;
+    }
+
+    $entriesByHour = [];
+    foreach ($entries as $e) {
+        $hour = extractHourZiniTournament($e['time_label'] ?? '');
+        if ($hour === null) continue;
+        $entriesByHour[$hour][] = $e;
+    }
+
+    $hours = [];
+    foreach ($slotTimes as $t) {
+        $hour = extractHourZiniTournament($t);
+        if ($hour !== null) $hours[$hour] = true;
+    }
+
+    foreach (array_keys($hours) as $hour) {
+        if (empty($CHAT_ID_BY_HOUR[$hour])) continue;
+        $chatId = $CHAT_ID_BY_HOUR[$hour];
+
+        $lines = [];
+        $theseEntries = $entriesByHour[$hour] ?? [];
+        foreach ($theseEntries as $e) {
+            $lines[] = "TEAM NAME: " . ($e['team_name'] ?? '-') . "\n"
+                     . "PLAYER NAME: " . ($e['player_name'] ?? '-');
+        }
+
+        $text = "UID: " . ($uid !== '' ? '#'.$uid : '-') . "\n"
+              . "WHATSAPP NUMBER: " . ($whatsapp ?: '-');
+        if ($lines) {
+            $text .= "\n\n" . implode("\n\n", $lines);
+        }
+
+        $ch = curl_init("https://api.telegram.org/bot{$BOT_TOKEN}/sendMessage");
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => http_build_query(['chat_id' => $chatId, 'text' => $text]),
+            CURLOPT_TIMEOUT => 5,
+        ]);
+        curl_exec($ch);
+        curl_close($ch);
+    }
 }
