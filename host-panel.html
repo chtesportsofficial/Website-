@@ -376,18 +376,24 @@ function render(){
 
 function renderLobby(l){
   const live=liveBadge(l);
+  const dt=parseLobbyDateTime(l.lobby_date,l.time_label);
+  const timeOver=dt&&dt.getTime()<=Date.now();
+
   let badge='';
   if(l.status==='cancelled') badge='<div class="lobby-status off">● OFF</div>';
   else if(l.status==='completed') badge='<div class="lobby-status" style="background:#182a1e;color:#5ee98b">✔ COMPLETED</div>';
   else if(l.status==='full') badge='<div class="lobby-status full">● FULL</div>';
   else if(live) badge=`<div class="lobby-status ${live.cls||''}">● ${live.text}</div>`;
+  // Safety net: a lobby can only be sitting here as "upcoming" with its time
+  // already passed if it was turned Off then back On on some earlier day
+  // (today's own clock — applyAutoStatus — already turns real overdue
+  // "upcoming" rows into "completed"). Never show UPCOMING for a slot
+  // that's already in the past.
+  else if(timeOver) badge='<div class="lobby-status" style="background:#182a1e;color:#5ee98b">✔ COMPLETED</div>';
   else badge='<div class="lobby-status">○ UPCOMING</div>';
 
   const room=l.room_id||'Not set';
   const pass=l.room_password||'Not set';
-
-  const dt=parseLobbyDateTime(l.lobby_date,l.time_label);
-  const timeOver=dt&&dt.getTime()<=Date.now();
 
   return `<div class="lobby-item">
     <div class="lobby-top">
@@ -406,14 +412,24 @@ function renderLobby(l){
       <button class="mini" onclick="openRoom('${l.id}')">Room ID/Pass</button>
       <button class="mini" onclick="openResults('${l.id}')">Enter Result</button>
       ${l.status==='cancelled'
-        ? `<button class="mini green" onclick="changeStatus('${l.id}','upcoming')">On</button>
-           <button class="mini red" onclick="deleteLobbyRow('${l.id}')">Delete</button>`
-        : timeOver
-          ? `<button class="mini green" onclick="completeLobbyRow('${l.id}')">Complete</button>`
-          : `${l.status==='full'
-              ? `<button class="mini gold" onclick="changeStatus('${l.id}','upcoming')">Unfull</button>`
-              : `<button class="mini gold" onclick="changeStatus('${l.id}','full')">Full</button>`}
-             <button class="mini red" onclick="changeStatus('${l.id}','cancelled')">Off</button>`}
+        ? (timeOver
+            // This lobby's time slot has already passed — turning it back
+            // "On" would just mislabel it as UPCOMING for a time that's
+            // already gone (see the badge bug this used to cause). Keep it
+            // OFF permanently; Delete is still useful for cleanup.
+            ? `<button class="mini red" onclick="deleteLobbyRow('${l.id}')">Delete</button>`
+            : `<button class="mini green" onclick="changeStatus('${l.id}','upcoming')">On</button>
+               <button class="mini red" onclick="deleteLobbyRow('${l.id}')">Delete</button>`)
+        : l.status==='completed'
+          // Already COMPLETED — a second "Complete" button here served no
+          // purpose (and it was unclear what re-completing would even do).
+          ? ''
+          : timeOver
+            ? `<button class="mini green" onclick="completeLobbyRow('${l.id}')">Complete</button>`
+            : `${l.status==='full'
+                ? `<button class="mini gold" onclick="changeStatus('${l.id}','upcoming')">Unfull</button>`
+                : `<button class="mini gold" onclick="changeStatus('${l.id}','full')">Full</button>`}
+               <button class="mini red" onclick="changeStatus('${l.id}','cancelled')">Off</button>`}
     </div>
   </div>`;
 }
