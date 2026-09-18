@@ -181,6 +181,8 @@
   .t-cg-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 12px;border-radius:11px;border:1px solid rgba(37,211,102,.35);background:rgba(37,211,102,.12);color:#25d366;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-decoration:none;min-width:0;}
   .t-cg-btn svg{width:14px;height:14px;flex-shrink:0;}
   .t-cg-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .t-host-btn{flex-shrink:0;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px 11px;border-radius:10px;border:1px solid rgba(124,92,255,.4);background:rgba(124,92,255,.14);color:#a995ff;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;text-decoration:none;}
+  .t-host-btn svg{width:13px;height:13px;flex-shrink:0;}
   .t-cg-note{font-size:11px;color:var(--text-secondary);background:rgba(255,255,255,.03);border:1px dashed var(--card-border);border-radius:10px;padding:10px 11px;margin-bottom:10px;line-height:1.55;}
 </style>
 <style>
@@ -282,6 +284,19 @@ function credBox(label,val){
       ${has?`<button type="button" class="t-copy-btn" onclick="copyCred(this,'${esc(val).replace(/'/g,"&#39;")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>`:''}
     </div>
   </div>`;
+}
+
+// Small "Host" button — takes the refresh button's place once the host has saved Room ID, Password
+// and their WhatsApp number from the Host Panel. Opens the host's WhatsApp
+// inbox directly (wa.me needs digits only: country code + number, no "+").
+function hostBtn(lobby){
+  if(!lobby||!lobby.room_id||!lobby.room_password||!lobby.host_whatsapp)return '';
+  const num=String(lobby.host_country_code||'880').replace(/\D/g,'')+String(lobby.host_whatsapp).replace(/\D/g,'');
+  if(num.length<8)return '';
+  return `<a href="https://wa.me/${num}" target="_blank" rel="noopener" class="t-host-btn" title="Contact host on WhatsApp">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <span>Host</span>
+  </a>`;
 }
 
 function cgRow(link){
@@ -432,7 +447,7 @@ function renderSlot(slot){
         ${credBox(t('myt.cred.roomId'),lobby.room_id)}
         ${credBox(t('myt.cred.password'),lobby.room_password)}
       </div>
-      ${(!lobby.room_id||!lobby.room_password)?refreshBtn:''}
+      ${(!lobby.room_id||!lobby.room_password)?refreshBtn:hostBtn(lobby)}
     </div>
     ${cgRow(lobby.cg_link)}
     <button type="button" class="t-result-btn" ${hasResult?`onclick="location.href='lobby-results.html?id=${encodeURIComponent(lobby.id)}'"`:'disabled'}>${hasResult?esc(t('myt.result.view')):esc(t('myt.result.notPublished'))}</button>

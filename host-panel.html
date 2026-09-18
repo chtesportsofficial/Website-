@@ -187,8 +187,14 @@ input{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-r
 </div></div>
 <div class="modal" id="roomModal"><div class="box">
   <div class="mh"><b>Room ID / Password</b><button class="close" onclick="closeModal('roomModal')">×</button></div>
-  <label>Room ID</label><input id="roomId" placeholder="Room ID">
-  <label>Password</label><input id="roomPass" placeholder="Room Password">
+  <label>Room ID *</label><input id="roomId" placeholder="Room ID">
+  <label>Password *</label><input id="roomPass" placeholder="Room Password">
+  <label>Host WhatsApp Number *</label>
+  <div style="display:flex;gap:8px">
+    <input id="hostCC" value="+880" inputmode="tel" maxlength="5" style="width:74px;flex:0 0 74px;text-align:center" aria-label="Country code">
+    <input id="hostWa" placeholder="01XXXXXXXXX" inputmode="tel" style="flex:1;min-width:0">
+  </div>
+  <div style="font-size:9px;color:#7f8ba0;margin-top:6px;line-height:1.5">Default is Bangladesh (+880) — change the code if the number is from another country. Players will contact the host on this number via WhatsApp.</div>
   <div class="modal-actions"><button onclick="closeModal('roomModal')">Cancel</button><button class="primary" onclick="saveRoom()">Save</button></div>
 </div></div>
 <div class="modal" id="cgModal"><div class="box">
@@ -557,15 +563,34 @@ async function refundOffLobby(l){
 }
 async function openRoom(id){
   currentLobby=lobbies.find(x=>x.id===id);if(!currentLobby)return;
-  $('roomId').value=currentLobby.room_id||'';$('roomPass').value=currentLobby.room_password||'';openModal('roomModal')
+  $('roomId').value=currentLobby.room_id||'';$('roomPass').value=currentLobby.room_password||'';
+  $('hostCC').value='+'+(currentLobby.host_country_code||'880');
+  $('hostWa').value=currentLobby.host_whatsapp||'';
+  openModal('roomModal')
+}
+// Turns whatever the host typed (01712-345678, +8801712345678, 1712345678…)
+// into a clean {cc, num}: digits only, no leading 0 / repeated country code,
+// so cc+num is always a valid wa.me target.
+function cleanHostWa(){
+  const cc=($('hostCC').value.replace(/\D/g,''))||'';
+  let num=$('hostWa').value.replace(/\D/g,'');
+  if(cc&&num.startsWith(cc)&&num.length>cc.length+6)num=num.slice(cc.length);
+  num=num.replace(/^0+/,'');
+  return {cc,num};
 }
 async function saveRoom(){
   if(!currentLobby)return;
   const roomId=$('roomId').value.trim(),roomPassword=$('roomPass').value.trim();
-  const r=await sb.from('tournament_lobbies').update({room_id:roomId,room_password:roomPassword}).eq('id',currentLobby.id).select();
+  const {cc,num}=cleanHostWa();
+  if(!roomId||!roomPassword||!num)return msg('Room ID, Password and Host WhatsApp Number are all required.');
+  if(!/^\d{1,4}$/.test(cc))return msg('Enter a valid country code (e.g. +880).');
+  if(cc==='880'?!/^1\d{9}$/.test(num):!/^\d{6,12}$/.test(num))
+    return msg(cc==='880'?'Enter a valid Bangladesh number (e.g. 01712345678).':'Enter a valid WhatsApp number.');
+  const patch={room_id:roomId,room_password:roomPassword,host_country_code:cc,host_whatsapp:num};
+  const r=await sb.from('tournament_lobbies').update(patch).eq('id',currentLobby.id).select();
   if(r.error)return msg(r.error.message);if(!r.data?.length)return msg('Update blocked (0 rows) — check tournament_lobbies UPDATE RLS.');
-  currentLobby.room_id=roomId;currentLobby.room_password=roomPassword;
-  await logActivity('room_credentials_updated',currentLobby.id,fmtShort(currentLobby.lobby_date)+' '+currentLobby.time_label,{narration:'updated the Room ID and password.'});
+  Object.assign(currentLobby,patch);
+  await logActivity('room_credentials_updated',currentLobby.id,fmtShort(currentLobby.lobby_date)+' '+currentLobby.time_label,{narration:'updated the Room ID, password and host WhatsApp number.'});
   closeModal('roomModal');render();
 }
 async function openCG(id){
