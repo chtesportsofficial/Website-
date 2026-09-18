@@ -176,6 +176,12 @@
 
   .t-result-btn{display:block;width:100%;padding:11px;border:none;border-radius:11px;background:var(--accent);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;text-align:center;letter-spacing:.02em;}
   .t-result-btn:disabled{background:#232838;color:var(--text-secondary);cursor:not-allowed;}
+
+  .t-cg-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+  .t-cg-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 12px;border-radius:11px;border:1px solid rgba(37,211,102,.35);background:rgba(37,211,102,.12);color:#25d366;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-decoration:none;min-width:0;}
+  .t-cg-btn svg{width:14px;height:14px;flex-shrink:0;}
+  .t-cg-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .t-cg-note{font-size:11px;color:var(--text-secondary);background:rgba(255,255,255,.03);border:1px dashed var(--card-border);border-radius:10px;padding:10px 11px;margin-bottom:10px;line-height:1.55;}
 </style>
 <style>
 :root{
@@ -275,6 +281,21 @@ function credBox(label,val){
       <span class="${has?'':'muted'}">${has?esc(val):esc(t('myt.cred.notPublished'))}</span>
       ${has?`<button type="button" class="t-copy-btn" onclick="copyCred(this,'${esc(val).replace(/'/g,"&#39;")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>`:''}
     </div>
+  </div>`;
+}
+
+function cgRow(link){
+  const has=link&&String(link).trim();
+  if(!has){
+    return `<div class="t-cg-note">এখনো CG গ্রুপ যোগ করা হয়নি, একটু পর আবার চেক করুন।</div>`;
+  }
+  const safe=esc(link).replace(/'/g,"&#39;");
+  return `<div class="t-cg-row">
+    <a href="${esc(link)}" target="_blank" rel="noopener" class="t-cg-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 14.4c-.3-.1-1.6-.8-1.9-.9-.2-.1-.4-.1-.6.1-.2.3-.7.9-.8 1-.2.2-.3.2-.5.1-1.4-.7-2.4-1.3-3.3-2.9-.3-.4.3-.4.7-1.3.1-.2 0-.4 0-.5-.1-.1-.6-1.5-.8-2-.2-.5-.4-.4-.6-.5h-.5c-.2 0-.5.1-.7.3-.3.3-1 1-1 2.4s1 2.8 1.2 3c.1.2 2 3.1 4.9 4.3 2.5 1 2.5.7 2.9.6.4 0 1.4-.5 1.5-1.1.2-.5.2-1 .1-1.1-.1-.1-.2-.2-.5-.3z"/><path d="M12 21a9 9 0 1 0-7.8-4.5L3 21l4.6-1.2A9 9 0 0 0 12 21z"/></svg>
+      <span>Join CG: Confirmation Group</span>
+    </a>
+    <button type="button" class="t-copy-btn" onclick="copyCred(this,'${safe}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
   </div>`;
 }
 
@@ -412,6 +433,7 @@ function renderSlot(slot){
       </div>
       ${(!lobby.room_id||!lobby.room_password)?refreshBtn:''}
     </div>
+    ${cgRow(lobby.cg_link)}
     <button type="button" class="t-result-btn" ${hasResult?`onclick="location.href='lobby-results.html?id=${encodeURIComponent(lobby.id)}'"`:'disabled'}>${hasResult?esc(t('myt.result.view')):esc(t('myt.result.notPublished'))}</button>
   ` : `
     <div class="t-pending-note t-pending-note-row">

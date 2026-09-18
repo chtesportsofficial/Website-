@@ -191,6 +191,12 @@ input{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-r
   <label>Password</label><input id="roomPass" placeholder="Room Password">
   <div class="modal-actions"><button onclick="closeModal('roomModal')">Cancel</button><button class="primary" onclick="saveRoom()">Save</button></div>
 </div></div>
+<div class="modal" id="cgModal"><div class="box">
+  <div class="mh"><b>CG — Confirmation Group</b><button class="close" onclick="closeModal('cgModal')">×</button></div>
+  <label>WhatsApp Group Link</label>
+  <input id="cgLink" placeholder="https://chat.whatsapp.com/...">
+  <div class="modal-actions"><button onclick="closeModal('cgModal')">Cancel</button><button class="primary" onclick="saveCG()">Save</button></div>
+</div></div>
 
 <div class="modal" id="resultsModal"><div class="box">
   <div class="mh"><b id="resultsTitle">Enter Result</b><button class="close" onclick="closeModal('resultsModal')">×</button></div>
@@ -411,6 +417,7 @@ function renderLobby(l){
       <button class="mini green" onclick="openTeams('${l.id}')">Teams</button>
       <button class="mini" onclick="openRoom('${l.id}')">Room ID/Pass</button>
       <button class="mini" onclick="openResults('${l.id}')">Enter Result</button>
+      <button class="mini gold" onclick="openCG('${l.id}')">CG</button>
       ${l.status==='cancelled'
         ? (timeOver
             // This lobby's time slot has already passed — turning it back
@@ -554,6 +561,19 @@ async function saveRoom(){
   currentLobby.room_id=roomId;currentLobby.room_password=roomPassword;
   await logActivity('room_credentials_updated',currentLobby.id,fmtShort(currentLobby.lobby_date)+' '+currentLobby.time_label,{narration:'updated the Room ID and password.'});
   closeModal('roomModal');render();
+}
+async function openCG(id){
+  currentLobby=lobbies.find(x=>x.id===id);if(!currentLobby)return;
+  $('cgLink').value=currentLobby.cg_link||'';openModal('cgModal')
+}
+async function saveCG(){
+  if(!currentLobby)return;
+  const cgLink=$('cgLink').value.trim();
+  const r=await sb.from('tournament_lobbies').update({cg_link:cgLink}).eq('id',currentLobby.id).select();
+  if(r.error)return msg(r.error.message);if(!r.data?.length)return msg('Update blocked (0 rows) — check tournament_lobbies UPDATE RLS.');
+  currentLobby.cg_link=cgLink;
+  await logActivity('cg_link_updated',currentLobby.id,fmtShort(currentLobby.lobby_date)+' '+currentLobby.time_label,{narration:'updated the CG (confirmation group) link.'});
+  closeModal('cgModal');render();
 }
 async function openTeams(id){
   currentLobby=lobbies.find(x=>x.id===id);if(!currentLobby)return;
