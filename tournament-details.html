@@ -253,6 +253,7 @@ function getProfile(){
 }
 let currentTournament=null, currentJoinLobbyIds=[];
 
+function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 // A lobby's "BUY SLOT" stays open right up to 10 minutes after its own
 // scheduled time (e.g. a 3:20 lobby closes at 3:30) — after that the match
 // has effectively started, so joining is pointless even if slots aren't
@@ -499,10 +500,16 @@ async function initUser(){
   `;
 
   // load lobbies
+  // status alone isn't reliable here — a lobby only flips 'full'/'upcoming'
+  // -> 'completed' when the host panel happens to be open that day
+  // (applyAutoStatus runs client-side there). If it never got opened,
+  // an old lobby can stay stuck as 'full' forever. So date is filtered
+  // here too, not just status, to guarantee old lobbies never resurface.
   const {data:lobbies,error:lerr}=await sb.from('tournament_lobbies')
     .select('*')
     .eq('tournament_id',id)
     .in('status',['upcoming','live','full'])
+    .gte('lobby_date',ymd(new Date()))
     .order('lobby_date',{ascending:true});
 
   const lobbyBox=document.getElementById('lobbyList');
