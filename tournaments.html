@@ -48,11 +48,14 @@
   }
   .topbar h1{flex:1}
 
-  .slot-refresh{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--accent);background:none;border:none;padding:6px 0 2px;cursor:pointer;font-family:inherit}
+  .slot-refresh{flex-shrink:0;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--accent);background:rgba(124,92,255,.1);border:1px solid rgba(124,92,255,.3);cursor:pointer;padding:0}
   .slot-refresh svg{width:13px;height:13px;transition:transform .2s ease}
   .slot-refresh.spinning svg{animation:refresh-spin .7s linear infinite}
   .slot-refresh:disabled{opacity:.55;cursor:default}
   @keyframes refresh-spin{to{transform:rotate(360deg)}}
+  .t-cred-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .t-cred-row .t-cred-grid{margin-bottom:0;flex:1;min-width:0}
+  .t-pending-note-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
 
   .back-btn{
     width:44px; height:44px;
@@ -395,23 +398,26 @@ function renderSlot(slot){
   const teamLabel=esc(slot.rows.map(r=>r.team_name).filter(Boolean).join(', '));
   const hasResult=lobby.id&&resultsLobbyIds.has(lobby.id);
 
-  const refreshLink = `<button type="button" class="slot-refresh" onclick="loadTournaments(true,this)">
+  const refreshBtn = `<button type="button" class="slot-refresh" title="${esc(t('myt.refresh'))}" onclick="loadTournaments(true,this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
-    ${esc(t('myt.refresh'))}
   </button>`;
 
   const credsOrResult = cancelled ? `
     <div class="t-pending-note">${esc(t('myt.note.cancelled'))}</div>
   ` : confirmed ? `
-    <div class="t-cred-grid">
-      ${credBox(t('myt.cred.roomId'),lobby.room_id)}
-      ${credBox(t('myt.cred.password'),lobby.room_password)}
+    <div class="t-cred-row">
+      <div class="t-cred-grid">
+        ${credBox(t('myt.cred.roomId'),lobby.room_id)}
+        ${credBox(t('myt.cred.password'),lobby.room_password)}
+      </div>
+      ${(!lobby.room_id||!lobby.room_password)?refreshBtn:''}
     </div>
-    ${(!lobby.room_id||!lobby.room_password)?refreshLink:''}
     <button type="button" class="t-result-btn" ${hasResult?`onclick="location.href='lobby-results.html?id=${encodeURIComponent(lobby.id)}'"`:'disabled'}>${hasResult?esc(t('myt.result.view')):esc(t('myt.result.notPublished'))}</button>
   ` : `
-    <div class="t-pending-note">${esc(t('myt.note.pending'))}</div>
-    ${refreshLink}
+    <div class="t-pending-note t-pending-note-row">
+      <span>${esc(t('myt.note.pending'))}</span>
+      ${refreshBtn}
+    </div>
   `;
 
   return `<div class="t-slot">
