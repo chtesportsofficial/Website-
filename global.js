@@ -324,6 +324,7 @@
       "myt.note.cancelled": "❌ This lobby has been cancelled by the host. Any wallet payment for this slot has been refunded automatically.",
       "myt.defaultTournament": "Tournament",
       "myt.defaultScrim": "Scrim",
+      "myt.refresh": "Refresh",
 
       "index.otherFeatures": "Other Features",
       "index.idBuySell": "ID Buy/Sell Zone",
@@ -559,6 +560,7 @@
       "myt.note.cancelled": "❌ হোস্ট এই লবিটি বাতিল করেছেন। এই স্লটের জন্য ওয়ালেট থেকে করা যেকোনো পেমেন্ট স্বয়ংক্রিয়ভাবে ফেরত দেওয়া হয়েছে।",
       "myt.defaultTournament": "টুর্নামেন্ট",
       "myt.defaultScrim": "স্ক্রিম",
+      "myt.refresh": "রিফ্রেশ",
 
       "index.otherFeatures": "অন্যান্য ফিচার",
       "index.idBuySell": "আইডি বাই/সেল জোন",
