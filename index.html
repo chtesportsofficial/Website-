@@ -554,6 +554,31 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
     var el = $('profileSpotlight');
     if(el) el.style.display = 'none';
     window.removeEventListener('resize', positionSpotlight);
+    unlockBackgroundScroll();
+  }
+
+  // The hole/tip are position:fixed and only computed once (on show) — if
+  // the page is scrolled while the spotlight is up, the target moves out
+  // from under the hole and the whole thing looks broken/orphaned. Lock the
+  // page in place (classic iOS-Safari-safe technique: body itself becomes
+  // position:fixed, not just overflow:hidden, since overflow alone doesn't
+  // reliably stop touch-scroll on mobile) for as long as the tour is showing.
+  var _lockedScrollY = 0;
+  function lockBackgroundScroll(){
+    _lockedScrollY = window.scrollY || window.pageYOffset || 0;
+    document.body.style.position = 'fixed';
+    document.body.style.top = (-_lockedScrollY) + 'px';
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+  }
+  function unlockBackgroundScroll(){
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    window.scrollTo(0, _lockedScrollY);
   }
 
   function goToAuth(){ window.location.href = 'chteo_auth.html'; }
@@ -569,6 +594,12 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
       textEl.textContent = 'প্রথমবার এসেছেন? উপরে Login / Register বাটনে গিয়ে অ্যাকাউন্ট করে নিন।';
       ctaEl.textContent = 'Login / Register';
     }
+
+    // Scroll to the very top FIRST (where the topbar/target actually is),
+    // then lock scrolling there, then measure — in that order, or the hole
+    // gets positioned against wherever the page happened to be scrolled to.
+    window.scrollTo(0, 0);
+    lockBackgroundScroll();
 
     var el = $('profileSpotlight');
     el.style.display = 'block';
