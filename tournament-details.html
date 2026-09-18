@@ -433,8 +433,14 @@ async function initUser(){
   if(entryPaidId||entryCancelledId){
     history.replaceState(null,'','tournament-details.html?id='+encodeURIComponent(id));
     if(entryPaidId){
-      openPopup('✅ পেমেন্ট প্রসেস হচ্ছে',
-        'আপনার bKash/Nagad পেমেন্ট গ্রহণ করা হয়েছে।<br><br>পেমেন্ট কনফার্ম হওয়ার সাথে সাথেই (সাধারণত কয়েক সেকেন্ডের মধ্যে) আপনার স্লট অটোমেটিক বুক হয়ে যাবে।<br><br>"My Tournaments" পেজে গিয়ে একটু পর স্ট্যাটাস চেক করে নিন। সমস্যা মনে হলে WhatsApp-এ যোগাযোগ করুন।');
+      const paidHtml=`
+        <div class="success-body">
+          <div class="success-icon">✅</div>
+          <div class="success-title">পেমেন্ট গ্রহণ করা হয়েছে</div>
+          <div class="success-text">পেমেন্ট কনফার্ম হওয়ার সাথে সাথেই (সাধারণত কয়েক সেকেন্ডের মধ্যে) আপনার স্লট অটোমেটিক বুক হয়ে যাবে। সমস্যা মনে হলে WhatsApp-এ যোগাযোগ করুন।</div>
+          <button type="button" class="success-goto-btn" onclick="window.location.href='tournaments.html'">Go to my tournaments</button>
+        </div>`;
+      openPopup('✅ পেমেন্ট প্রসেস হচ্ছে', paidHtml);
     }else{
       openPopup('❌ পেমেন্ট বাতিল হয়েছে','পেমেন্ট সম্পন্ন হয়নি, তাই কোনো স্লট বুক হয়নি। আবার চেষ্টা করতে পারেন।');
     }
