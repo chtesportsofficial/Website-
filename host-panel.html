@@ -197,6 +197,11 @@ input{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-r
   <div style="font-size:9px;color:#7f8ba0;margin-top:6px;line-height:1.5">Default is Bangladesh (+880) — change the code if the number is from another country. Players will contact the host on this number via WhatsApp.</div>
   <div class="modal-actions"><button onclick="closeModal('roomModal')">Cancel</button><button class="primary" onclick="saveRoom()">Save</button></div>
 </div></div>
+<div class="modal" id="linksModal"><div class="box">
+  <div class="mh"><b>Guest Link</b><button class="close" onclick="closeModal('linksModal')">×</button></div>
+  <div style="font-size:9px;color:#7f8ba0;margin-bottom:8px;line-height:1.5">Room ID/Password সেভ হয়েছে। নিচের এই একটা link WhatsApp গ্রুপে পেস্ট করে দিন — আগে যেমন ID/Password লিখতেন, এখন এর বদলে এই link দিন। এই লবিতে join করা যে কেউ এটা দিয়ে credentials দেখতে পারবে।</div>
+  <div id="linksList"><div class="loading">Loading…</div></div>
+</div></div>
 <div class="modal" id="cgModal"><div class="box">
   <div class="mh"><b>CG — Confirmation Group</b><button class="close" onclick="closeModal('cgModal')">×</button></div>
   <label>WhatsApp Group Link</label>
@@ -592,6 +597,33 @@ async function saveRoom(){
   Object.assign(currentLobby,patch);
   await logActivity('room_credentials_updated',currentLobby.id,fmtShort(currentLobby.lobby_date)+' '+currentLobby.time_label,{narration:'updated the Room ID, password and host WhatsApp number.'});
   closeModal('roomModal');render();
+  showGuestLink(currentLobby.id);
+}
+
+// Opens right after Room ID/Password is saved — ONE link for the whole
+// lobby (lazily generated on tournament_lobbies.guest_token, reused on
+// repeat saves), meant to be pasted ONCE in the WhatsApp group exactly like
+// the raw Room ID/Password used to be, instead of one link per team.
+async function showGuestLink(lobbyId){
+  openModal('linksModal');
+  $('linksList').innerHTML='<div class="loading">Loading…</div>';
+  let token=currentLobby.guest_token;
+  if(!token){
+    token=crypto.randomUUID?crypto.randomUUID():(Date.now().toString(36)+Math.random().toString(36).slice(2));
+    const r=await sb.from('tournament_lobbies').update({guest_token:token}).eq('id',lobbyId).select();
+    if(r.error){$('linksList').innerHTML='<div class="empty">Could not generate link.</div>';return}
+    currentLobby.guest_token=token;
+  }
+  const link=location.origin+'/guest-view.html?token='+token;
+  $('linksList').innerHTML=`
+    <div class="team-item">
+      <div class="team-meta" style="word-break:break-all">${esc(link)}</div>
+      <div class="team-actions"><button class="mini primary" onclick="copyLobbyLink('${token}')">Copy Link</button></div>
+    </div>`;
+}
+function copyLobbyLink(token){
+  const link=location.origin+'/guest-view.html?token='+token;
+  navigator.clipboard?.writeText(link).then(()=>msg('Link copied — WhatsApp গ্রুপে পেস্ট করে দিন।'));
 }
 async function openCG(id){
   currentLobby=lobbies.find(x=>x.id===id);if(!currentLobby)return;

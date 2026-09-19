@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Room ID/Password · CHT ESP ORG</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+  :root{
+    --bg:#0b0d14; --card:#141826; --card-border:#232838; --accent:#7c5cff;
+    --text-primary:#f2f3f7; --text-secondary:#8b8fa3;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{ background:var(--bg); min-height:100vh; display:flex; align-items:flex-start; justify-content:center; font-family:'Inter','Hind Siliguri',sans-serif; color:var(--text-primary); }
+  .screen{ width:100%; max-width:380px; min-height:100vh; background:var(--bg); padding:20px 18px 28px; display:flex; flex-direction:column; }
+  .topbar{ margin-bottom:20px; }
+  .topbar h1{ font-size:18px; font-weight:750; }
+  .topbar-sub{ font-size:11.5px; color:var(--text-secondary); margin-top:3px; }
+
+  .loading-wrap{ flex:1; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); font-size:13px; padding:60px 20px; }
+  .empty-wrap{ flex:1; display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:40px 16px; }
+  .empty-icon{ width:64px; height:64px; border-radius:18px; background:var(--card); border:1px solid var(--card-border); display:flex; align-items:center; justify-content:center; margin-bottom:18px; color:var(--text-secondary); }
+  .empty-icon svg{ width:30px; height:30px; }
+  .empty-title{ font-size:15.5px; font-weight:700; margin-bottom:6px; }
+  .empty-sub{ font-size:12.5px; color:var(--text-secondary); line-height:1.6; max-width:260px; }
+
+  .t-list{ display:flex; flex-direction:column; gap:14px; }
+  .t-card{ background:var(--card); border:1px solid var(--card-border); border-radius:16px; overflow:hidden; }
+  .t-card-body{ padding:14px 15px 15px; }
+  .t-title{ font-size:14px; font-weight:700; margin-bottom:2px; }
+  .t-org{ font-size:10.5px; color:var(--text-secondary); margin-bottom:10px; }
+  .t-slots{ display:flex; flex-direction:column; gap:12px; }
+  .t-slot{ padding-top:12px; }
+  .t-slot:first-child{ padding-top:0; }
+  .t-slot:not(:first-child){ border-top:1px dashed var(--card-border); }
+
+  .t-lobby-row{ display:flex; align-items:center; justify-content:space-between; background:rgba(124,92,255,.08); border:1px solid var(--card-border); border-radius:11px; padding:9px 12px; margin-bottom:10px; }
+  .t-lobby-time{ font-size:12.5px; font-weight:700; }
+  .t-lobby-date{ font-size:10px; color:var(--text-secondary); margin-top:1px; }
+  .t-status{ font-size:9.5px; font-weight:700; padding:4px 9px; border-radius:20px; letter-spacing:.02em; white-space:nowrap; }
+  .t-status.confirmed{ background:rgba(46,204,113,.14); color:#3ddc84; }
+  .t-status.pending{ background:rgba(255,183,3,.14); color:#ffb703; }
+  .t-status.cancelled{ background:rgba(231,76,60,.14); color:#ff5c4d; }
+
+  .t-pending-note{ font-size:11px; color:var(--text-secondary); background:rgba(255,183,3,.06); border:1px dashed rgba(255,183,3,.35); border-radius:10px; padding:10px 11px; line-height:1.55; }
+  .t-pending-note-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+
+  .t-cred-row{ display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .t-cred-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:0; flex:1; min-width:0; }
+  .t-cred-box{ background:var(--bg); border:1px solid var(--card-border); border-radius:10px; padding:8px 10px; min-width:0; }
+  .t-cred-label{ font-size:9px; font-weight:700; letter-spacing:.04em; color:var(--text-secondary); text-transform:uppercase; margin-bottom:3px; }
+  .t-cred-val{ display:flex; align-items:center; gap:6px; justify-content:space-between; }
+  .t-cred-val span{ font-size:12.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .t-cred-val span.muted{ color:var(--text-secondary); font-weight:500; font-size:11px; }
+  .t-copy-btn{ flex-shrink:0; width:22px; height:22px; border-radius:6px; border:1px solid var(--card-border); background:var(--card); color:var(--text-secondary); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .t-copy-btn svg{ width:12px; height:12px; }
+  .t-copy-btn.copied{ color:#3ddc84; border-color:#3ddc84; }
+
+  .t-result-btn{ display:block; width:100%; padding:11px; border:none; border-radius:11px; background:var(--accent); color:#fff; font-size:12.5px; font-weight:700; cursor:pointer; font-family:inherit; text-align:center; letter-spacing:.02em; }
+  .t-result-btn:disabled{ background:#232838; color:var(--text-secondary); cursor:not-allowed; }
+
+  .t-cg-row{ display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .t-cg-btn{ flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:10px 12px; border-radius:11px; border:1px solid rgba(37,211,102,.35); background:rgba(37,211,102,.12); color:#25d366; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; text-decoration:none; min-width:0; }
+  .t-cg-btn svg{ width:14px; height:14px; flex-shrink:0; }
+  .t-cg-btn span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .t-host-btn{ flex-shrink:0; display:flex; align-items:center; justify-content:center; gap:5px; padding:8px 11px; border-radius:10px; border:1px solid rgba(124,92,255,.4); background:rgba(124,92,255,.14); color:#a995ff; font-size:11.5px; font-weight:700; cursor:pointer; font-family:inherit; text-decoration:none; }
+  .t-host-btn svg{ width:13px; height:13px; flex-shrink:0; }
+  .t-cg-note{ font-size:11px; color:var(--text-secondary); background:rgba(255,255,255,.03); border:1px dashed var(--card-border); border-radius:10px; padding:10px 11px; margin-bottom:10px; line-height:1.55; }
+
+  .slot-refresh{ flex-shrink:0; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--accent); background:rgba(124,92,255,.1); border:1px solid rgba(124,92,255,.3); cursor:pointer; padding:0; }
+  .slot-refresh svg{ width:13px; height:13px; transition:transform .2s ease; }
+  .slot-refresh.spinning svg{ animation:refresh-spin .7s linear infinite; }
+  @keyframes refresh-spin{ to{ transform:rotate(360deg); } }
+</style>
+<style>
+:root{
+  --bg: var(--g-bg);
+  --card: var(--g-surface);
+  --card-border: var(--g-border);
+  --text-primary: var(--g-text);
+  --text-secondary: var(--g-muted);
+}
+</style>
+</head>
+<body>
+
+<div class="screen">
+  <div class="topbar">
+    <h1>Room ID/Password</h1>
+    <div class="topbar-sub">Ei link ta shudhu apnar join-er jonno</div>
+  </div>
+
+  <div id="loadingWrap" class="loading-wrap">Loading…</div>
+
+  <div id="emptyWrap" class="empty-wrap">
+    <div class="empty-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+    </div>
+    <div class="empty-title" id="emptyTitle">Link ta valid na</div>
+    <div class="empty-sub" id="emptySub">Ei link tar meyad shesh hoye geche, othoba link ta bhul.</div>
+  </div>
+
+  <div id="listWrap" class="t-list" style="display:none"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
+const KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+const sb=window.supabase.createClient(SUPABASE_URL,KEY);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+const GRACE_DAYS=2; // link stays valid until this many days after the lobby's date
+
+function copyCred(btn,val){
+  if(!val)return;
+  navigator.clipboard?.writeText(val).then(()=>{
+    btn.classList.add('copied');
+    setTimeout(()=>btn.classList.remove('copied'),1200);
+  });
+}
+window.copyCred=copyCred;
+
+function credBox(label,val){
+  const has=val&&String(val).trim();
+  return `<div class="t-cred-box">
+    <div class="t-cred-label">${esc(label)}</div>
+    <div class="t-cred-val">
+      <span class="${has?'':'muted'}">${has?esc(val):'Ekhono deya hoyni'}</span>
+      ${has?`<button type="button" class="t-copy-btn" onclick="copyCred(this,'${esc(val).replace(/'/g,"&#39;")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>`:''}
+    </div>
+  </div>`;
+}
+
+function hostBtn(lobby){
+  if(!lobby||!lobby.room_id||!lobby.room_password||!lobby.host_whatsapp)return '';
+  const num=String(lobby.host_country_code||'880').replace(/\D/g,'')+String(lobby.host_whatsapp).replace(/\D/g,'');
+  if(num.length<8)return '';
+  return `<a href="https://wa.me/${num}" target="_blank" rel="noopener" class="t-host-btn" title="Contact host on WhatsApp">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <span>Host</span>
+  </a>`;
+}
+
+function cgRow(link){
+  const has=link&&String(link).trim();
+  if(!has){
+    return `<div class="t-cg-note">এখনো CG গ্রুপ যোগ করা হয়নি, একটু পর আবার চেক করুন।</div>`;
+  }
+  return `<div class="t-cg-row">
+    <a href="${esc(link)}" target="_blank" rel="noopener" class="t-cg-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 14.4c-.3-.1-1.6-.8-1.9-.9-.2-.1-.4-.1-.6.1-.2.3-.7.9-.8 1-.2.2-.3.2-.5.1-1.4-.7-2.4-1.3-3.3-2.9-.3-.4.3-.4.7-1.3.1-.2 0-.4 0-.5-.1-.1-.6-1.5-.8-2-.2-.5-.4-.4-.6-.5h-.5c-.2 0-.5.1-.7.3-.3.3-1 1-1 2.4s1 2.8 1.2 3c.1.2 2 3.1 4.9 4.3 2.5 1 2.5.7 2.9.6.4 0 1.4-.5 1.5-1.1.2-.5.2-1 .1-1.1-.1-.1-.2-.2-.5-.3z"/><path d="M12 21a9 9 0 1 0-7.8-4.5L3 21l4.6-1.2A9 9 0 0 0 12 21z"/></svg>
+      <span>CG Group</span>
+    </a>
+  </div>`;
+}
+
+function extractHourValue(timeLabel){
+  const s=String(timeLabel||'');
+  const m=s.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if(!m)return 9999;
+  let h=parseInt(m[1],10);
+  const min=parseInt(m[2],10);
+  const ap=m[3].toUpperCase();
+  if(ap==='AM'){ if(h===12)h=0; }
+  else{ if(h!==12)h+=12; }
+  return h*60+min;
+}
+
+let resultsLobbyIds=new Set();
+
+function renderSlot(slot){
+  const lobby=slot.lobby||{};
+  const confirmed=slot.confirmed;
+  const cancelled=slot.cancelled||lobby.status==='cancelled';
+  const timeLabel=esc(lobby.time_label||'Lobby')+(lobby.custom_title?' · '+esc(lobby.custom_title):'');
+  const teamLabel=esc(slot.rows.map(r=>r.team_name).filter(Boolean).join(', '));
+  const hasResult=lobby.id&&resultsLobbyIds.has(lobby.id);
+
+  const refreshBtn=`<button type="button" class="slot-refresh" title="Refresh" onclick="location.reload()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+  </button>`;
+
+  const credsOrResult=cancelled?`
+    <div class="t-pending-note">Ei join cancel kora hoyeche.</div>
+  `:confirmed?`
+    <div class="t-cred-row">
+      <div class="t-cred-grid">
+        ${credBox('Room ID',lobby.room_id)}
+        ${credBox('Password',lobby.room_password)}
+      </div>
+      ${(!lobby.room_id||!lobby.room_password)?refreshBtn:hostBtn(lobby)}
+    </div>
+    ${cgRow(lobby.cg_link)}
+    <button type="button" class="t-result-btn" ${hasResult?`onclick="location.href='lobby-results.html?id=${encodeURIComponent(lobby.id)}'"`:'disabled'}>${hasResult?'Result Dekhun':'Result ekhono deya hoyni'}</button>
+  `:`
+    <div class="t-pending-note t-pending-note-row">
+      <span>Confirm howar opekkhay ache</span>
+      ${refreshBtn}
+    </div>
+  `;
+
+  return `<div class="t-slot">
+    <div class="t-lobby-row">
+      <div><div class="t-lobby-time">${timeLabel}</div><div class="t-lobby-date">${teamLabel}</div></div>
+      <div class="t-status ${cancelled?'cancelled':confirmed?'confirmed':'pending'}">${cancelled?'Cancelled':confirmed?'Confirmed':'Pending'}</div>
+    </div>
+    ${credsOrResult}
+  </div>`;
+}
+
+function renderCard(group){
+  return `<div class="t-card">
+    <div class="t-card-body">
+      <div class="t-title">${esc(group.title||'Tournament')}</div>
+      <div class="t-org">${esc(group.lobby_date)}</div>
+      <div class="t-slots">${group.slots.map(renderSlot).join('')}</div>
+    </div>
+  </div>`;
+}
+
+function groupRows(rows){
+  const map=new Map();
+  const order=[];
+  rows.forEach(row=>{
+    const lobby=row.tournament_lobbies||{};
+    const trn=lobby.tournaments||{};
+    const key=(trn.id||trn.title||'unknown')+'::'+(lobby.lobby_date||'');
+    if(!map.has(key)){
+      map.set(key,{title:trn.title||'Tournament',lobby_date:lobby.lobby_date||'',slotMap:new Map(),slotOrder:[]});
+      order.push(key);
+    }
+    const g=map.get(key);
+    const baseKey=lobby.id||(lobby.time_label+'::'+lobby.room_id+'::'+lobby.room_password);
+    const lobbyKey=row.confirmation_status==='cancelled'?baseKey+'::cancelled':baseKey;
+    if(!g.slotMap.has(lobbyKey)){
+      g.slotMap.set(lobbyKey,{lobby,rows:[],confirmed:false,cancelled:false});
+      g.slotOrder.push(lobbyKey);
+    }
+    const slot=g.slotMap.get(lobbyKey);
+    slot.rows.push(row);
+    if(row.confirmation_status==='confirmed')slot.confirmed=true;
+    if(row.confirmation_status==='cancelled')slot.cancelled=true;
+  });
+  return order.map(k=>{
+    const g=map.get(k);
+    const slots=g.slotOrder.map(lk=>g.slotMap.get(lk));
+    slots.sort((a,b)=>extractHourValue(a.lobby.time_label)-extractHourValue(b.lobby.time_label));
+    return {title:g.title,lobby_date:g.lobby_date,slots};
+  });
+}
+
+function showEmpty(title,sub){
+  document.getElementById('loadingWrap').style.display='none';
+  document.getElementById('emptyTitle').textContent=title;
+  document.getElementById('emptySub').textContent=sub;
+  document.getElementById('emptyWrap').style.display='flex';
+}
+
+async function loadByToken(){
+  const params=new URLSearchParams(location.search);
+  const token=params.get('token');
+  if(!token){
+    showEmpty('Link ta bhul','Kono token pawa jaini ei link e.');
+    return;
+  }
+
+  // A lobby-wide link (shared once in the WhatsApp group) is checked first —
+  // this is the normal case for WhatsApp-booked/manually-added teams.
+  const lr=await sb.from('tournament_lobbies').select('*, tournaments(id,title,banner_url)').eq('guest_token',token).maybeSingle();
+  if(lr.error){
+    showEmpty('Error hoyeche',(lr.error.message||'Unknown error')+(lr.error.hint?' — '+lr.error.hint:''));
+    return;
+  }
+  if(lr.data){
+    await loadLobbyToken(lr.data);
+    return;
+  }
+
+  // Otherwise it's a per-team link, auto-issued to a website self-join.
+  const {data,error}=await sb.from('lobby_teams')
+    .select('*, tournament_lobbies(*, tournaments(id,title,banner_url))')
+    .eq('guest_token',token);
+
+  if(error){
+    showEmpty('Error hoyeche',(error.message||'Unknown error')+(error.hint?' — '+error.hint:''));
+    return;
+  }
+  if(!data||!data.length){
+    showEmpty('Link ta valid na','Ei link tar meyad shesh hoye geche, othoba link ta bhul.');
+    return;
+  }
+
+  if(!checkNotExpired(data.map(r=>r.tournament_lobbies?.lobby_date)))return;
+
+  const lobbyIds=[...new Set(data.map(r=>r.tournament_lobbies?.id).filter(Boolean))];
+  if(lobbyIds.length){
+    const {data:resultsData,error:resultsErr}=await sb.from('lobby_results').select('lobby_id').in('lobby_id',lobbyIds);
+    if(!resultsErr) resultsLobbyIds=new Set((resultsData||[]).map(r=>r.lobby_id));
+  }
+
+  document.getElementById('loadingWrap').style.display='none';
+  const groups=groupRows(data);
+  const listWrap=document.getElementById('listWrap');
+  listWrap.innerHTML=groups.map(renderCard).join('');
+  listWrap.style.display='flex';
+}
+
+// Lobby-wide link: show one card covering this single lobby, with the
+// (non-cancelled) joined team names listed and credentials always shown
+// (the link itself is the access control, not each team's confirmation
+// status — mirrors the old "post ID/Password once in the group" habit).
+async function loadLobbyToken(lobby){
+  if(!checkNotExpired([lobby.lobby_date]))return;
+
+  const tr=await sb.from('lobby_teams').select('team_name').eq('lobby_id',lobby.id).neq('confirmation_status','cancelled').order('joined_at');
+  const teamRows=tr.data||[];
+
+  const rr=await sb.from('lobby_results').select('lobby_id').eq('lobby_id',lobby.id);
+  resultsLobbyIds=new Set((rr.data||[]).map(r=>r.lobby_id));
+
+  document.getElementById('loadingWrap').style.display='none';
+  const group={
+    title:lobby.tournaments?.title||'Tournament',
+    lobby_date:lobby.lobby_date||'',
+    slots:[{lobby,rows:teamRows,confirmed:true,cancelled:lobby.status==='cancelled'}]
+  };
+  const listWrap=document.getElementById('listWrap');
+  listWrap.innerHTML=renderCard(group);
+  listWrap.style.display='flex';
+}
+
+function checkNotExpired(lobbyDates){
+  const dates=lobbyDates.filter(Boolean).sort();
+  const latest=dates[dates.length-1];
+  if(!latest)return true;
+  const expiry=new Date(latest+'T00:00:00');
+  expiry.setDate(expiry.getDate()+GRACE_DAYS+1); // +1 so the whole "+2 days" day itself is still included
+  if(new Date()>=expiry){
+    showEmpty('Link tar meyad shesh','Ei link ta ar kaj korbe na — lobby date theke '+GRACE_DAYS+' din por link ta expire hoye jay.');
+    return false;
+  }
+  return true;
+}
+
+loadByToken();
+</script>
+</body>
+</html>
