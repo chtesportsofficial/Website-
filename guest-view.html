@@ -89,7 +89,7 @@
 <div class="screen">
   <div class="topbar">
     <h1>Room ID/Password</h1>
-    <div class="topbar-sub">Ei link ta shudhu apnar join-er jonno</div>
+    <div class="topbar-sub">এই লিংকটা শুধু আপনার জয়েনের জন্য</div>
   </div>
 
   <div id="loadingWrap" class="loading-wrap">Loading…</div>
@@ -98,8 +98,8 @@
     <div class="empty-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
     </div>
-    <div class="empty-title" id="emptyTitle">Link ta valid na</div>
-    <div class="empty-sub" id="emptySub">Ei link tar meyad shesh hoye geche, othoba link ta bhul.</div>
+    <div class="empty-title" id="emptyTitle">লিংকটা সঠিক না</div>
+    <div class="empty-sub" id="emptySub">এই লিংকের মেয়াদ শেষ হয়ে গেছে, অথবা লিংকটা ভুল।</div>
   </div>
 
   <div id="listWrap" class="t-list" style="display:none"></div>
@@ -127,7 +127,7 @@ function credBox(label,val){
   return `<div class="t-cred-box">
     <div class="t-cred-label">${esc(label)}</div>
     <div class="t-cred-val">
-      <span class="${has?'':'muted'}">${has?esc(val):'Ekhono deya hoyni'}</span>
+      <span class="${has?'':'muted'}">${has?esc(val):'এখনো দেয়া হয়নি'}</span>
       ${has?`<button type="button" class="t-copy-btn" onclick="copyCred(this,'${esc(val).replace(/'/g,"&#39;")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>`:''}
     </div>
   </div>`;
@@ -183,7 +183,7 @@ function renderSlot(slot){
   </button>`;
 
   const credsOrResult=cancelled?`
-    <div class="t-pending-note">Ei join cancel kora hoyeche.</div>
+    <div class="t-pending-note">এই জয়েন ক্যান্সেল করা হয়েছে।</div>
   `:confirmed?`
     <div class="t-cred-row">
       <div class="t-cred-grid">
@@ -193,10 +193,10 @@ function renderSlot(slot){
       ${(!lobby.room_id||!lobby.room_password)?refreshBtn:hostBtn(lobby)}
     </div>
     ${cgRow(lobby.cg_link)}
-    <button type="button" class="t-result-btn" ${hasResult?`onclick="location.href='lobby-results.html?id=${encodeURIComponent(lobby.id)}'"`:'disabled'}>${hasResult?'Result Dekhun':'Result ekhono deya hoyni'}</button>
+    <button type="button" class="t-result-btn" ${hasResult?`onclick="location.href='lobby-results.html?id=${encodeURIComponent(lobby.id)}'"`:'disabled'}>${hasResult?'Result দেখুন':'Result এখনো দেয়া হয়নি'}</button>
   `:`
     <div class="t-pending-note t-pending-note-row">
-      <span>Confirm howar opekkhay ache</span>
+      <span>কনফার্ম হওয়ার অপেক্ষায় আছে</span>
       ${refreshBtn}
     </div>
   `;
@@ -262,7 +262,7 @@ async function loadByToken(){
   const params=new URLSearchParams(location.search);
   const token=params.get('token');
   if(!token){
-    showEmpty('Link ta bhul','Kono token pawa jaini ei link e.');
+    showEmpty('লিংকটা ভুল','এই লিংকে কোনো টোকেন পাওয়া যায়নি।');
     return;
   }
 
@@ -270,7 +270,7 @@ async function loadByToken(){
   // this is the normal case for WhatsApp-booked/manually-added teams.
   const lr=await sb.from('tournament_lobbies').select('*, tournaments(id,title,banner_url)').eq('guest_token',token).maybeSingle();
   if(lr.error){
-    showEmpty('Error hoyeche',(lr.error.message||'Unknown error')+(lr.error.hint?' — '+lr.error.hint:''));
+    showEmpty('একটা সমস্যা হয়েছে',(lr.error.message||'Unknown error')+(lr.error.hint?' — '+lr.error.hint:''));
     return;
   }
   if(lr.data){
@@ -284,11 +284,11 @@ async function loadByToken(){
     .eq('guest_token',token);
 
   if(error){
-    showEmpty('Error hoyeche',(error.message||'Unknown error')+(error.hint?' — '+error.hint:''));
+    showEmpty('একটা সমস্যা হয়েছে',(error.message||'Unknown error')+(error.hint?' — '+error.hint:''));
     return;
   }
   if(!data||!data.length){
-    showEmpty('Link ta valid na','Ei link tar meyad shesh hoye geche, othoba link ta bhul.');
+    showEmpty('লিংকটা সঠিক না','এই লিংকের মেয়াদ শেষ হয়ে গেছে, অথবা লিংকটা ভুল।');
     return;
   }
 
@@ -338,7 +338,7 @@ function checkNotExpired(lobbyDates){
   const expiry=new Date(latest+'T00:00:00');
   expiry.setDate(expiry.getDate()+GRACE_DAYS+1); // +1 so the whole "+2 days" day itself is still included
   if(new Date()>=expiry){
-    showEmpty('Link tar meyad shesh','Ei link ta ar kaj korbe na — lobby date theke '+GRACE_DAYS+' din por link ta expire hoye jay.');
+    showEmpty('লিংকের মেয়াদ শেষ','এই লিংকটা আর কাজ করবে না — লবি ডেটের '+GRACE_DAYS+' দিন পর লিংকটা এক্সপায়ার হয়ে যায়।');
     return false;
   }
   return true;
