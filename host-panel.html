@@ -252,6 +252,13 @@ const sb=window.supabase.createClient(SUPABASE_URL,KEY);
 let session=null, profile=null, lobbies=[], tournaments=new Map(), currentLobby=null, currentTournament=null, lobbyTeamsCache=[], resultRows=[], resultSubmitting=false, resultsLobbyIds=new Set();
 
 const $=id=>document.getElementById(id);
+// Builds links from the current page's own folder (e.g. ".../Website-/")
+// instead of assuming the site lives at the domain root, since GitHub
+// Pages project sites are served under a subpath.
+function siteBase(){
+  const p=location.pathname;
+  return location.origin+p.substring(0,p.lastIndexOf('/')+1);
+}
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function fmtDate(d){try{return new Date(d+'T00:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric'})}catch(e){return d}}
@@ -614,7 +621,7 @@ async function showGuestLink(lobbyId){
     if(r.error){$('linksList').innerHTML='<div class="empty">Could not generate link.</div>';return}
     currentLobby.guest_token=token;
   }
-  const link=location.origin+'/guest-view.html?token='+token;
+  const link=siteBase()+'guest-view.html?token='+token;
   $('linksList').innerHTML=`
     <div class="team-item">
       <div class="team-meta" style="word-break:break-all">${esc(link)}</div>
@@ -622,7 +629,7 @@ async function showGuestLink(lobbyId){
     </div>`;
 }
 function copyLobbyLink(token){
-  const link=location.origin+'/guest-view.html?token='+token;
+  const link=siteBase()+'guest-view.html?token='+token;
   navigator.clipboard?.writeText(link).then(()=>msg('Link copied — WhatsApp গ্রুপে পেস্ট করে দিন।'));
 }
 async function openCG(id){
