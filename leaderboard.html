@@ -201,6 +201,7 @@ function start(){
     if(uids.length){
       const {data:profs,error:profErr}=await sb.rpc('get_team_countries',{uids});
       if(profErr) console.error('get_team_countries RPC failed (flags will be hidden):', profErr);
+      alert('DEBUG uids: '+JSON.stringify(uids)+'\nprofs: '+JSON.stringify(profs)+'\nerror: '+JSON.stringify(profErr)); // TEMP — remove after debugging
       (profs||[]).forEach(p=>{ if(p.user_number!=null) countryByUid[String(p.user_number)]=p.country; });
     }
 
