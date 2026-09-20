@@ -1108,6 +1108,7 @@ async function saveCountryEdit(){
   renderTarget();
   closeCountryEdit();
 }
+function openTeamHistoryModal(){
   document.getElementById('teamHistoryOverlay').style.display = 'flex';
   lockBodyScroll();
   loadTeamHistory();
