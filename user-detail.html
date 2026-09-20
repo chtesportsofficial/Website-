@@ -141,17 +141,18 @@
   }
   .head-meta{
     display:flex; align-items:center; gap:8px; margin-top:7px;
-    flex-wrap:wrap; min-width:0;
+    flex-wrap:nowrap; min-width:0;
   }
-  .head-meta .sep{ color:#d8dbea; font-weight:900; }
+  .head-meta .sep{ color:#d8dbea; font-weight:900; flex-shrink:0; }
+  .country-pill{ flex-shrink:0; cursor:pointer; }
+  .country-pill .edit-hint{ font-size:9px; opacity:.55; margin-left:1px; }
+  .location-inline{ overflow:hidden; }
+  .location-inline span:last-child{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .country-pill span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .flag-dot{
-    width:13px; height:13px; border-radius:50%; flex-shrink:0;
-    background:#046a38; position:relative; overflow:hidden;
-  }
-  .flag-dot::after{
-    content:""; position:absolute; width:6px; height:6px; border-radius:50%;
-    background:#c8102e; top:50%; left:46%; transform:translate(-50%,-50%);
+    width:14px; height:14px; border-radius:50%; flex-shrink:0;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:11px; line-height:1; overflow:hidden;
   }
 
   .card-head{
@@ -431,7 +432,7 @@
           <div class="head-text">
             <div class="name" id="nameEl">----</div>
             <div class="head-meta">
-              <div class="country-pill" id="countryPill" style="display:none;"><span class="flag-dot"></span><span id="countryPillText"></span></div>
+              <div class="country-pill" id="countryPill" style="display:none;" onclick="openCountryEdit()"><span class="flag-dot"></span><span id="countryPillText"></span><span class="edit-hint">✎</span></div>
               <span class="sep" id="metaSep" style="display:none;">•</span>
               <div class="location-inline" id="locationInline" style="display:none;"><span class="loc-dot">⌖</span><span id="locationText">----</span></div>
             </div>
@@ -555,6 +556,26 @@
     </div>
   </div>
   <!-- ── end Team Name History Modal ── -->
+
+  <!-- ── Country Edit Modal ── -->
+  <div id="countryEditOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(8,12,25,.65);backdrop-filter:blur(5px);align-items:center;justify-content:center;padding:20px;">
+    <div style="width:100%;max-width:360px;background:#fff;border-radius:20px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+      <div style="font-size:15px;font-weight:900;color:var(--ink);margin-bottom:4px;">Edit Country</div>
+      <div style="font-size:11.5px;color:var(--muted);margin-bottom:14px;">এই user-এর country বদলান (default সবার জন্য Bangladesh)।</div>
+      <input id="countryEditInput" list="countryEditList" type="text" placeholder="e.g. Bangladesh, India, Nepal..." style="width:100%;padding:11px 13px;border-radius:12px;border:1.5px solid #e4e6f0;font-size:13.5px;font-weight:600;color:var(--ink);box-sizing:border-box;">
+      <datalist id="countryEditList">
+        <option value="Bangladesh"><option value="India"><option value="Pakistan"><option value="Nepal">
+        <option value="Sri Lanka"><option value="Myanmar"><option value="Malaysia"><option value="Indonesia">
+        <option value="Saudi Arabia"><option value="United Arab Emirates"><option value="United States"><option value="United Kingdom">
+      </datalist>
+      <div style="display:flex;gap:8px;margin-top:16px;">
+        <button type="button" onclick="closeCountryEdit()" style="flex:1;padding:11px;border-radius:12px;border:1.5px solid #e4e6f0;background:#fff;color:var(--muted);font-weight:800;font-size:12.5px;cursor:pointer;">Cancel</button>
+        <button type="button" onclick="saveCountryEdit()" style="flex:1;padding:11px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-weight:800;font-size:12.5px;cursor:pointer;">Save</button>
+      </div>
+      <div id="countryEditMsg" style="font-size:11.5px;font-weight:700;text-align:center;margin-top:10px;min-height:16px;"></div>
+    </div>
+  </div>
+  <!-- ── end Country Edit Modal ── -->
 
   <div class="toast" id="toast"></div>
 
@@ -702,11 +723,21 @@ function renderTarget(){
     else { adminCorner.classList.add('user'); roleText.textContent = 'USER'; }
   }
 
+  const COUNTRY_FLAGS = {
+    'bangladesh':'🇧🇩','india':'🇮🇳','pakistan':'🇵🇰','nepal':'🇳🇵','sri lanka':'🇱🇰',
+    'myanmar':'🇲🇲','malaysia':'🇲🇾','indonesia':'🇮🇩','saudi arabia':'🇸🇦',
+    'united arab emirates':'🇦🇪','uae':'🇦🇪','united states':'🇺🇸','usa':'🇺🇸',
+    'united kingdom':'🇬🇧','uk':'🇬🇧'
+  };
   const countryPill = document.getElementById('countryPill');
   const locationInline = document.getElementById('locationInline');
   const metaSep = document.getElementById('metaSep');
   if(p.country){
     document.getElementById('countryPillText').textContent = p.country;
+    const flagEl = countryPill.querySelector('.flag-dot');
+    const emoji = COUNTRY_FLAGS[String(p.country).trim().toLowerCase()];
+    if(emoji){ flagEl.textContent = emoji; flagEl.style.background = 'transparent'; }
+    else { flagEl.textContent = ''; flagEl.style.background = '#8b95ad'; } // unmapped country — neutral grey dot, not a wrong flag
     countryPill.style.display = 'flex';
   } else { countryPill.style.display = 'none'; }
   if(p.location){
@@ -1046,7 +1077,37 @@ document.getElementById('historyOverlay').addEventListener('click', function(e){
   if(e.target === this) closeHistoryModal();
 });
 
-function openTeamHistoryModal(){
+function openCountryEdit(){
+  document.getElementById('countryEditInput').value = (targetProfile && targetProfile.country) || 'Bangladesh';
+  document.getElementById('countryEditMsg').textContent = '';
+  document.getElementById('countryEditOverlay').style.display = 'flex';
+  lockBodyScroll();
+}
+function closeCountryEdit(){
+  document.getElementById('countryEditOverlay').style.display = 'none';
+  unlockBodyScroll();
+}
+document.getElementById('countryEditOverlay').addEventListener('click', function(e){
+  if(e.target === this) closeCountryEdit();
+});
+async function saveCountryEdit(){
+  const newCountry = document.getElementById('countryEditInput').value.trim();
+  const msg = document.getElementById('countryEditMsg');
+  if(!newCountry){ msg.style.color = 'var(--error)'; msg.textContent = 'Country খালি রাখা যাবে না।'; return; }
+  msg.style.color = 'var(--muted)'; msg.textContent = 'Saving...';
+  const { data, error } = await supabaseClient.from('profiles').update({ country: newCountry }).eq('id', targetUid).select();
+  if(error){
+    msg.style.color = 'var(--error)'; msg.textContent = 'Failed: ' + error.message;
+    return;
+  }
+  if(!data || !data.length){
+    msg.style.color = 'var(--error)'; msg.textContent = 'Update matched 0 rows — RLS check করুন।';
+    return;
+  }
+  targetProfile.country = newCountry;
+  renderTarget();
+  closeCountryEdit();
+}
   document.getElementById('teamHistoryOverlay').style.display = 'flex';
   lockBodyScroll();
   loadTeamHistory();
