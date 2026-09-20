@@ -128,6 +128,7 @@
     padding:5px 8px;
     color:var(--text);
     white-space:nowrap;
+    flex-shrink:0;
   }
   .flag-dot{
     width:13px;height:13px;
@@ -145,13 +146,17 @@
     display:inline-flex;
     align-items:center;
     gap:4px;
+    flex:1;
     min-width:0;
-    overflow:hidden;
-    text-overflow:ellipsis;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
     white-space:nowrap;
   }
+  .location-text::-webkit-scrollbar{ display:none; }
   .location-text svg{width:12px;height:12px;flex-shrink:0;color:var(--green);}
-  .meta-dot{color:var(--border);font-size:12px;}
+  .location-text span{ flex-shrink:0; }
+  .meta-dot{color:var(--border);font-size:12px;flex-shrink:0;}
   .slogan-box{
     margin-top:12px;
     background:var(--card-2);
