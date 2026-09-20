@@ -122,6 +122,8 @@ html[data-theme="light"] .lb-card{background:linear-gradient(135deg,rgba(33,230,
 .lb-avatar img{width:100%;height:100%;display:block;object-fit:cover;border-radius:50%}
 .lb-avatar.logo-error{background:var(--surface-2)}
 .lb-name{font-weight:700;font-size:12px;flex:1}.lb-name .s{display:block;font-size:10px;color:var(--text-dimmer);font-weight:500}
+.lb-name-top{display:flex;align-items:center;gap:5px}
+.lb-flag{font-size:11px;line-height:1;flex-shrink:0}
 .lb-amt{font-weight:800;font-size:11px;color:var(--green);white-space:nowrap}
 .lb-see{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;padding:9px 0;border-radius:10px;background:var(--surface-2);border:1px solid var(--line);font-size:11px;font-weight:700;color:var(--text-dim)}
 .app-footer{text-align:center;font-size:10.5px;color:var(--text-dimmer);padding:18px 16px 4px}
@@ -764,6 +766,26 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
   const normalize=v=>String(v??'').trim().toLowerCase().replace(/\s+/g,' ');
   function medalClass(i){return i===0?'gold':i===1?'silver':'';}
+  // Bangladesh is the default/public-site country, so its flag is never
+  // shown — only teams the admin manually set to another country (see
+  // user-detail.html's country picker) get a flag, so a viewer can tell
+  // at a glance that a foreign team is playing here too.
+  const COUNTRY_FLAGS={
+    'india':'🇮🇳','pakistan':'🇵🇰','nepal':'🇳🇵','sri lanka':'🇱🇰','myanmar':'🇲🇲','bhutan':'🇧🇹',
+    'indonesia':'🇮🇩','malaysia':'🇲🇾','singapore':'🇸🇬','thailand':'🇹🇭','vietnam':'🇻🇳',
+    'philippines':'🇵🇭','cambodia':'🇰🇭','brazil':'🇧🇷','mexico':'🇲🇽','colombia':'🇨🇴',
+    'argentina':'🇦🇷','peru':'🇵🇪','chile':'🇨🇱','united states':'🇺🇸','usa':'🇺🇸','canada':'🇨🇦',
+    'united kingdom':'🇬🇧','uk':'🇬🇧','saudi arabia':'🇸🇦','united arab emirates':'🇦🇪','uae':'🇦🇪',
+    'egypt':'🇪🇬','iraq':'🇮🇶','jordan':'🇯🇴','kuwait':'🇰🇼','qatar':'🇶🇦','oman':'🇴🇲','bahrain':'🇧🇭',
+    'turkey':'🇹🇷','russia':'🇷🇺','taiwan':'🇹🇼','hong kong':'🇭🇰','nigeria':'🇳🇬','south africa':'🇿🇦'
+  };
+  function countryFlagHtml(country){
+    if(!country) return '';
+    const key=String(country).trim().toLowerCase();
+    if(key==='bangladesh' || key==='bd') return '';
+    const emoji=COUNTRY_FLAGS[key];
+    return emoji ? `<span class="lb-flag" title="${esc(country)}">${emoji}</span>` : '';
+  }
   function start(){
     if(!window.supabase?.createClient){setTimeout(start,250);return}
     const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
@@ -790,14 +812,24 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
         const display=String(r.owner_team_name||r.team_name||'').trim();
         if(!display)return;
         const id=r.user_number!=null?String(r.user_number):normalize(display);
-        const cur=totals.get(id)||{team_name:display,points:0,logo:''};
+        const cur=totals.get(id)||{team_name:display,points:0,logo:'',uid:r.user_number};
         cur.points+=Number(r.points)||0;
         if(!cur.logo && r.team_logo) cur.logo=r.team_logo;
         totals.set(id,cur);
       });
       const ranked=[...totals.values()].filter(r=>r.points>0).sort((a,b)=>b.points-a.points).slice(0,10);
       if(!ranked.length){box.innerHTML='<div class="lb-row"><div class="lb-name" style="color:var(--text-dim)">এই মাসে এখনো কোনো ফলাফল নেই।</div></div>';return}
-      box.innerHTML=ranked.map((r,i)=>`<div class="lb-row"><div class="lb-rank ${medalClass(i)}">${i+1}</div><div class="lb-avatar">${r.logo?`<img src="${esc(r.logo)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.parentElement.classList.add('logo-error');this.remove();">`:''}</div><div class="lb-name">${esc(r.team_name)}<span class="s">স্কোয়াড</span></div><div class="lb-amt">${r.points} পয়েন্ট</div></div>`).join('');
+
+      // Look up each shown team's country so a non-Bangladesh team can
+      // show its flag next to its name (see COUNTRY_FLAGS note above).
+      const uids=[...new Set(ranked.map(r=>r.uid).filter(v=>v!=null))];
+      const countryByUid={};
+      if(uids.length){
+        const {data:profs}=await sb.from('profiles').select('user_number,country').in('user_number',uids);
+        (profs||[]).forEach(p=>{ if(p.user_number!=null) countryByUid[String(p.user_number)]=p.country; });
+      }
+
+      box.innerHTML=ranked.map((r,i)=>`<div class="lb-row"><div class="lb-rank ${medalClass(i)}">${i+1}</div><div class="lb-avatar">${r.logo?`<img src="${esc(r.logo)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.parentElement.classList.add('logo-error');this.remove();">`:''}</div><div class="lb-name"><span class="lb-name-top">${countryFlagHtml(countryByUid[String(r.uid)])}${esc(r.team_name)}</span><span class="s">স্কোয়াড</span></div><div class="lb-amt">${r.points} পয়েন্ট</div></div>`).join('');
     }
     load();
   }

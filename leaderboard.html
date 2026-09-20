@@ -60,7 +60,8 @@ html[data-theme="light"] .lb-rank.gold{color:#b8860b}
 html[data-theme="light"] .lb-rank.silver{color:#5b6b85}
 html[data-theme="light"] .lb-rank.bronze{color:#a85f2a}
 .lb-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(145deg,#26344a,#111722);border:1px solid var(--line);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center}.lb-avatar img{width:100%;height:100%;display:block;object-fit:cover;border-radius:50%;}
-.lb-name{flex:1;font-size:12.5px;font-weight:700;display:flex;flex-direction:column;gap:2px}
+.lb-name{flex:1;font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:6px}
+.lb-flag{font-size:12px;line-height:1;flex-shrink:0}
 .lb-name .s{font-size:9px;font-weight:600;color:var(--text-dim)}
 .lb-amt{font-size:12px;font-weight:900;color:var(--green);white-space:nowrap}
 .lb-sub{font-size:9px;color:var(--text-dim);font-weight:600;white-space:nowrap}
@@ -106,6 +107,26 @@ const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
 const SUPABASE_KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 function medalClass(i){return i===0?'gold':i===1?'silver':i===2?'bronze':'';}
+// Bangladesh is the default/public-site country, so its flag is never
+// shown — only teams the admin manually set to another country (see
+// user-detail.html's country picker) get a flag, so a viewer can tell
+// at a glance that a foreign team is playing here too.
+const COUNTRY_FLAGS={
+  'india':'🇮🇳','pakistan':'🇵🇰','nepal':'🇳🇵','sri lanka':'🇱🇰','myanmar':'🇲🇲','bhutan':'🇧🇹',
+  'indonesia':'🇮🇩','malaysia':'🇲🇾','singapore':'🇸🇬','thailand':'🇹🇭','vietnam':'🇻🇳',
+  'philippines':'🇵🇭','cambodia':'🇰🇭','brazil':'🇧🇷','mexico':'🇲🇽','colombia':'🇨🇴',
+  'argentina':'🇦🇷','peru':'🇵🇪','chile':'🇨🇱','united states':'🇺🇸','usa':'🇺🇸','canada':'🇨🇦',
+  'united kingdom':'🇬🇧','uk':'🇬🇧','saudi arabia':'🇸🇦','united arab emirates':'🇦🇪','uae':'🇦🇪',
+  'egypt':'🇪🇬','iraq':'🇮🇶','jordan':'🇯🇴','kuwait':'🇰🇼','qatar':'🇶🇦','oman':'🇴🇲','bahrain':'🇧🇭',
+  'turkey':'🇹🇷','russia':'🇷🇺','taiwan':'🇹🇼','hong kong':'🇭🇰','nigeria':'🇳🇬','south africa':'🇿🇦'
+};
+function countryFlagHtml(country){
+  if(!country) return '';
+  const key=String(country).trim().toLowerCase();
+  if(key==='bangladesh' || key==='bd') return '';
+  const emoji=COUNTRY_FLAGS[key];
+  return emoji ? `<span class="lb-flag" title="${esc(country)}">${emoji}</span>` : '';
+}
 const BN_MONTHS=['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
 const EN_MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 function currentLang(){
@@ -171,12 +192,23 @@ function start(){
       listEl.innerHTML=`<div class="empty">${lbText('noResults')}</div>`;
       return;
     }
+
+    // Look up each shown team's country so a non-Bangladesh team can
+    // show its flag next to its name (see COUNTRY_FLAGS note above).
+    // id is the row's user_number wherever one exists (see loop above).
+    const uids=[...new Set(ranked.map(r=>r.id).filter(v=>v!=null && /^\d+$/.test(v)))];
+    const countryByUid={};
+    if(uids.length){
+      const {data:profs}=await sb.from('profiles').select('user_number,country').in('user_number',uids);
+      (profs||[]).forEach(p=>{ if(p.user_number!=null) countryByUid[String(p.user_number)]=p.country; });
+    }
+
     const uid=myUid();
     listEl.innerHTML=ranked.map((r,i)=>`
       <div class="lb-row${uid && r.id===uid?' me':''}">
         <div class="lb-rank ${medalClass(i)}">${i+1}</div>
         <div class="lb-avatar">${r.logo?`<img src="${esc(r.logo)}" alt="" loading="lazy" decoding="async" onerror="this.style.display='none';">`:''}</div>
-        <div class="lb-name">${esc(r.team_name)}</div>
+        <div class="lb-name">${countryFlagHtml(countryByUid[r.id])}${esc(r.team_name)}</div>
         <div class="lb-amt">${r.points} ${lbText('points')}</div>
       </div>`).join('');
   }
