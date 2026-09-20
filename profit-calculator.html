@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Profit Calculator — CHT ESP ORG</title>
+<style>
+:root{--bg:#080b12;--surface:#121827;--surface2:#171f31;--line:#26324a;--muted:#8b96aa;--green:#25d366;--green2:#39e77b;--red:#ff5d6c;--gold:#f6c453;--card:#121827;--border:#26324a;--text:#f4f6fb}
+*{box-sizing:border-box}
+html{background:#080b12}
+body{margin:0;min-height:100vh;background:radial-gradient(circle at 12% 0%,rgba(255,255,255,.06) 0%,rgba(255,255,255,0) 40%),linear-gradient(160deg,#1b2140 0%,#2a3266 55%,#333c7a 100%);color:#f4f6fb;font-family:Inter,system-ui,-apple-system,sans-serif}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.wrap{max-width:760px;margin:auto;padding:20px 14px 60px}
+.head{display:flex;gap:12px;align-items:center;margin-bottom:16px}
+.back-btn{width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.back-btn svg{width:20px;height:20px}
+.head h1{font-size:19px;margin:0;font-weight:750}
+.sub{font-size:10px;color:var(--muted);margin-top:4px}
+
+.tabs{display:flex;gap:6px;margin-bottom:14px}
+.tab{flex:1;text-align:center;padding:11px 2px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-size:10.5px;font-weight:800}
+.tab.active{background:linear-gradient(135deg,#7c5cff,#5b3df0);color:#fff;border-color:transparent}
+
+.card{background:linear-gradient(180deg,#141b2b,#111827);border:1px solid #27334c;border-radius:19px;padding:14px;margin-bottom:12px;box-shadow:0 12px 30px #0003}
+.card h2{font-size:12px;font-weight:900;margin:0 0 10px;color:#e8ebf2}
+label{display:block;font-size:9px;font-weight:800;color:var(--muted);text-transform:uppercase;margin:10px 0 5px}
+label:first-of-type{margin-top:0}
+input,select{width:100%;background:#0e1420;border:1px solid #293650;border-radius:11px;padding:10px 12px;color:var(--text);font-size:13px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+.slot-picker{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+.slot-btn{flex:1;min-width:34px;padding:9px 0;text-align:center;border-radius:9px;border:1px solid #293650;background:#0e1420;color:#c9d0e0;font-size:11px;font-weight:800}
+.slot-btn.active{background:var(--gold);color:#241705;border-color:var(--gold)}
+
+.sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.sum-box{background:#0e1420;border:1px solid #293650;border-radius:12px;padding:10px 12px}
+.sum-box span{display:block;color:#7f8ba0;font-size:8.5px;font-weight:900;text-transform:uppercase}
+.sum-box b{display:block;font-size:16px;margin-top:4px;color:#f0f3f8}
+.sum-box.profit b{color:var(--green2)}
+.sum-box.loss b{color:var(--red)}
+.sum-box.full{grid-column:1/-1}
+
+.date-tabs{display:flex;gap:6px;margin-bottom:10px}
+.date-tabs button{flex:1;border:1px solid #293650;background:#0e1420;color:#c9d0e0;border-radius:10px;padding:9px 4px;font-size:9.5px;font-weight:800}
+.date-tabs button.active{background:#7c5cff;color:#fff;border-color:transparent}
+
+.lobby-row{background:#0e1420;border:1px solid #293650;border-radius:12px;padding:10px 11px;margin-top:8px}
+.lobby-row-top{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;font-weight:800}
+.lobby-row-meta{font-size:9.5px;color:#8e98ab;margin-top:4px}
+.lobby-row-net{font-size:9.5px;margin-top:6px;font-weight:800}
+.lobby-row-net.pos{color:var(--green2)}
+.lobby-row-net.neg{color:var(--red)}
+
+.extra-row{display:flex;gap:6px;margin-top:8px}
+.extra-row input:first-child{flex:1.3}
+.extra-row input:last-child{flex:1}
+.extra-row .rm{flex:0 0 auto;width:36px;border-radius:10px;border:1px solid #293650;background:#0e1420;color:var(--red);font-size:15px;font-weight:900}
+.add-cost{margin-top:9px;width:100%;padding:9px;border-radius:10px;border:1px dashed #3a4a6c;background:transparent;color:#a995ff;font-size:10.5px;font-weight:800}
+
+.note{font-size:9px;color:#7f8ba0;line-height:1.6;margin-top:10px}
+.empty,.loading{text-align:center;color:var(--muted);font-size:11px;padding:24px 12px}
+.btn{display:block;width:100%;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#7c5cff,#5b3df0);color:#fff;font-size:12px;font-weight:800;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <button class="back-btn" onclick="history.back()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <div><h1>Profit Calculator</h1><div class="sub">Daily / Qualifier planning + real profit check</div></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" id="tabDaily" onclick="switchTab('daily')">Daily</div>
+    <div class="tab" id="tabQual" onclick="switchTab('qual')">Qualifier</div>
+    <div class="tab" id="tabReal" onclick="switchTab('real')">Real</div>
+  </div>
+
+  <!-- ================= DAILY ================= -->
+  <div id="dailyPane">
+    <div class="card">
+      <h2>Daily Tournament</h2>
+      <label>Entry Fee (৳/slot)</label>
+      <input id="dFee" type="number" value="35">
+
+      <label style="margin-top:12px">Slots Filled</label>
+      <select id="dSlotsSelect" onchange="onDailySelectSlot()"></select>
+
+      <label style="margin-top:12px">Prize Pool (৳)</label>
+      <input id="dPrize" type="number" value="0" oninput="calcDaily()">
+
+      <label style="margin-top:12px">Other Costs (Host Fee, Point Table Maker Fee — whatever applies)</label>
+      <div id="dExtra"></div>
+      <button type="button" class="add-cost" onclick="addDailyCost()">+ Add Cost</button>
+    </div>
+
+    <div class="card">
+      <h2>Result</h2>
+      <div class="sum-grid">
+        <div class="sum-box"><span>Revenue</span><b id="dRevenue">৳0</b></div>
+        <div class="sum-box"><span>Prize Pool</span><b id="dPrizeOut">৳0</b></div>
+        <div class="sum-box"><span>Other Costs</span><b id="dCostOut">৳0</b></div>
+        <div class="sum-box full profit" id="dNetBox"><span>Net Profit</span><b id="dNet">৳0</b></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= QUALIFIER ================= -->
+  <div id="qualPane" style="display:none">
+    <div class="card">
+      <h2>Qualifier Tournament</h2>
+      <label>Entry Fee (৳/slot)</label>
+      <input id="qFee" type="number" value="35">
+
+      <label style="margin-top:12px">Slots</label>
+      <div class="slot-picker" id="qSlots"></div>
+      <label style="margin-top:8px">Custom Slot Count</label>
+      <input id="qSlotsCustom" type="number" placeholder="e.g. 18" oninput="onCustomSlot()">
+
+      <label style="margin-top:12px">Prize Pool (৳)</label>
+      <input id="qPrize" type="number" value="0" oninput="calcQual()">
+
+      <label style="margin-top:12px">Other Costs (Host Fee, GFX, Live, Schedule — whatever applies)</label>
+      <div id="qExtra"></div>
+      <button type="button" class="add-cost" onclick="addExtraCost()">+ Add Cost</button>
+    </div>
+
+    <div class="card">
+      <h2>Result</h2>
+      <div class="sum-grid">
+        <div class="sum-box"><span>Revenue</span><b id="qRevenue">৳0</b></div>
+        <div class="sum-box"><span>Prize Pool</span><b id="qPrizeOut">৳0</b></div>
+        <div class="sum-box"><span>Other Costs</span><b id="qCostOut">৳0</b></div>
+        <div class="sum-box full profit" id="qNetBox"><span>Net Profit</span><b id="qNet">৳0</b></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= REAL DASHBOARD ================= -->
+  <div id="realPane" style="display:none">
+    <div class="card">
+      <div class="date-tabs">
+        <button class="active" onclick="setRange('today')">Today</button>
+        <button onclick="setRange('week')">This Week</button>
+        <button onclick="setRange('month')">This Month</button>
+      </div>
+      <div class="row2">
+        <div><label>From</label><input type="date" id="rFrom"></div>
+        <div><label>To</label><input type="date" id="rTo"></div>
+      </div>
+      <button class="btn" style="margin-top:10px" onclick="loadReal()">Load</button>
+    </div>
+
+    <div class="card" id="realLobbyPickCard" style="display:none">
+      <label>Specific Lobby (optional — দেখতে চাইলে Tournament, তারিখ ও সময় বেছে নিন)</label>
+      <select id="rLobbyPick" onchange="onPickLobby()"><option value="">সব লবি একসাথে (Summary)</option></select>
+    </div>
+
+    <div class="card" id="realSummaryCard" style="display:none">
+      <h2>Summary</h2>
+      <div class="sum-grid">
+        <div class="sum-box"><span>Revenue</span><b id="rRevenue">৳0</b></div>
+        <div class="sum-box"><span>Prize Paid</span><b id="rPrize">৳0</b></div>
+        <div class="sum-box"><span>Host Fee (est.)</span><b id="rHost">৳0</b></div>
+        <div class="sum-box full profit" id="rNetBox"><span>Net Profit (approx)</span><b id="rNet">৳0</b></div>
+      </div>
+      <div class="note">এটা শুধু entry revenue − actual prize paid − ৳২০/lobby host fee ধরে হিসাব করে। Qualifier-এর GFX/Live/Schedule cost বা referral commission cost কোথাও DB-তে track হয় না, তাই এখানে যোগ হয়নি — ওগুলো Daily/Qualifier ট্যাবে manually ধরে নিতে হবে।</div>
+    </div>
+
+    <div class="card" id="realListCard" style="display:none">
+      <h2>Lobby-wise Breakdown</h2>
+      <div id="realList"></div>
+    </div>
+
+    <div id="realEmpty" class="empty" style="display:none">Ei range-e kono lobby paoya jaini.</div>
+    <div id="realLoading" class="loading" style="display:none">Loading…</div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
+const KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+const sb=window.supabase.createClient(SUPABASE_URL,KEY);
+const $=id=>document.getElementById(id);
+const money=n=>'৳'+Math.round(n||0).toLocaleString('en-BD');
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+
+function switchTab(tab){
+  $('tabDaily').classList.toggle('active',tab==='daily');
+  $('tabQual').classList.toggle('active',tab==='qual');
+  $('tabReal').classList.toggle('active',tab==='real');
+  $('dailyPane').style.display=tab==='daily'?'block':'none';
+  $('qualPane').style.display=tab==='qual'?'block':'none';
+  $('realPane').style.display=tab==='real'?'block':'none';
+}
+
+/* ================= DAILY ================= */
+let dSlotsVal=12;
+function buildDailySlots(){
+  $('dSlotsSelect').innerHTML=Array.from({length:12},(_,i)=>i+1).map(n=>
+    `<option value="${n}" ${n===dSlotsVal?'selected':''}>${n} slot${n>1?'s':''}</option>`
+  ).join('');
+}
+function onDailySelectSlot(){
+  dSlotsVal=Number($('dSlotsSelect').value);
+  calcDaily();
+}
+function addDailyCost(label,val){
+  const row=document.createElement('div');
+  row.className='extra-row';
+  row.innerHTML=`<input type="text" placeholder="Cost name (e.g. Prize Pool)" value="${label?label.replace(/"/g,'&quot;'):''}">
+    <input type="number" placeholder="৳" value="${val??''}">
+    <button type="button" class="rm" onclick="this.parentElement.remove();calcDaily()">×</button>`;
+  row.querySelectorAll('input').forEach(inp=>inp.addEventListener('input',calcDaily));
+  $('dExtra').appendChild(row);
+}
+function calcDaily(){
+  const fee=Number($('dFee').value)||0;
+  const prize=Number($('dPrize').value)||0;
+  let cost=0;
+  document.querySelectorAll('#dExtra .extra-row').forEach(row=>{
+    cost+=Number(row.querySelectorAll('input')[1].value)||0;
+  });
+  const revenue=fee*dSlotsVal;
+  const net=revenue-prize-cost;
+  $('dRevenue').textContent=money(revenue);
+  $('dPrizeOut').textContent=money(prize);
+  $('dCostOut').textContent=money(cost);
+  $('dNet').textContent=money(net);
+  $('dNetBox').className='sum-box full '+(net>=0?'profit':'loss');
+}
+$('dFee').addEventListener('input',calcDaily);
+
+/* ================= QUALIFIER ================= */
+let qSlotsVal=24;
+const Q_PRESETS=[12,18,24,36,48,72,96];
+function buildQualSlots(){
+  $('qSlots').innerHTML=Q_PRESETS.map(n=>
+    `<button type="button" class="slot-btn ${n===qSlotsVal?'active':''}" onclick="pickQualSlot(${n})">${n}</button>`
+  ).join('');
+}
+function pickQualSlot(n){
+  qSlotsVal=n;
+  $('qSlotsCustom').value='';
+  document.querySelectorAll('#qSlots .slot-btn').forEach(b=>b.classList.toggle('active',+b.textContent===n));
+  calcQual();
+}
+function onCustomSlot(){
+  const v=Number($('qSlotsCustom').value);
+  if(v>0){
+    qSlotsVal=v;
+    document.querySelectorAll('#qSlots .slot-btn').forEach(b=>b.classList.remove('active'));
+    calcQual();
+  }
+}
+function addExtraCost(label,val){
+  const row=document.createElement('div');
+  row.className='extra-row';
+  row.innerHTML=`<input type="text" placeholder="Cost name (e.g. Editor)" value="${label?label.replace(/"/g,'&quot;'):''}">
+    <input type="number" placeholder="৳" value="${val??''}">
+    <button type="button" class="rm" onclick="this.parentElement.remove();calcQual()">×</button>`;
+  row.querySelectorAll('input').forEach(inp=>inp.addEventListener('input',calcQual));
+  $('qExtra').appendChild(row);
+}
+function calcQual(){
+  const fee=Number($('qFee').value)||0;
+  const prize=Number($('qPrize').value)||0;
+  let cost=0;
+  document.querySelectorAll('#qExtra .extra-row').forEach(row=>{
+    cost+=Number(row.querySelectorAll('input')[1].value)||0;
+  });
+  const revenue=fee*qSlotsVal;
+  const net=revenue-prize-cost;
+  $('qRevenue').textContent=money(revenue);
+  $('qPrizeOut').textContent=money(prize);
+  $('qCostOut').textContent=money(cost);
+  $('qNet').textContent=money(net);
+  $('qNetBox').className='sum-box full '+(net>=0?'profit':'loss');
+}
+$('qFee').addEventListener('input',calcQual);
+
+/* ================= REAL DASHBOARD ================= */
+function fmtDate(d){return d.toISOString().slice(0,10)}
+function setRange(kind){
+  document.querySelectorAll('.date-tabs button').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+  const today=new Date();
+  let from=new Date(today),to=new Date(today);
+  if(kind==='week'){from.setDate(today.getDate()-today.getDay())}
+  else if(kind==='month'){from=new Date(today.getFullYear(),today.getMonth(),1)}
+  $('rFrom').value=fmtDate(from);
+  $('rTo').value=fmtDate(to);
+  loadReal();
+}
+async function loadReal(){
+  const from=$('rFrom').value,to=$('rTo').value;
+  if(!from||!to)return;
+  $('realLoading').style.display='block';
+  $('realLobbyPickCard').style.display='none';
+  $('realSummaryCard').style.display='none';
+  $('realListCard').style.display='none';
+  $('realEmpty').style.display='none';
+
+  const {data:lobbiesData,error}=await sb.from('tournament_lobbies')
+    .select('id,lobby_date,time_label,status,tournaments(title,entry_fee)')
+    .gte('lobby_date',from).lte('lobby_date',to)
+    .eq('status','completed')
+    .order('lobby_date');
+
+  $('realLoading').style.display='none';
+  if(error){$('realEmpty').textContent='Error: '+error.message;$('realEmpty').style.display='block';return}
+  if(!lobbiesData||!lobbiesData.length){$('realEmpty').style.display='block';return}
+
+  const lobbyIds=lobbiesData.map(l=>l.id);
+  const [{data:teamsData},{data:resultsData}]=await Promise.all([
+    sb.from('lobby_teams').select('lobby_id').in('lobby_id',lobbyIds).eq('confirmation_status','confirmed'),
+    sb.from('lobby_results').select('lobby_id,prize_won').in('lobby_id',lobbyIds)
+  ]);
+  const teamCounts={};
+  (teamsData||[]).forEach(r=>{teamCounts[r.lobby_id]=(teamCounts[r.lobby_id]||0)+1});
+  const prizeSums={};
+  (resultsData||[]).forEach(r=>{prizeSums[r.lobby_id]=(prizeSums[r.lobby_id]||0)+(Number(r.prize_won)||0)});
+
+  const HOST_FEE=20;
+  realRows=lobbiesData.map(l=>{
+    const slots=teamCounts[l.id]||0;
+    const fee=Number(l.tournaments?.entry_fee)||0;
+    const revenue=slots*fee;
+    const prize=prizeSums[l.id]||0;
+    return {id:l.id,title:l.tournaments?.title||'Tournament',date:l.lobby_date,time:l.time_label,slots,revenue,prize,net:revenue-HOST_FEE-prize};
+  });
+
+  $('rLobbyPick').innerHTML='<option value="">সব লবি একসাথে (Summary)</option>'+
+    realRows.map(r=>`<option value="${r.id}">${esc(r.title)} — ${r.date} · ${r.time||''}</option>`).join('');
+  $('realLobbyPickCard').style.display='block';
+
+  renderRealSummary(realRows);
+  $('realList').innerHTML=realRows.map(r=>`
+    <div class="lobby-row">
+      <div class="lobby-row-top"><span>${r.title}</span><span>${r.slots} teams</span></div>
+      <div class="lobby-row-meta">${r.date} · ${r.time||''}</div>
+      <div class="lobby-row-net ${r.net>=0?'pos':'neg'}">Revenue ${money(r.revenue)} − Prize ${money(r.prize)} − Host ${money(HOST_FEE)} = Net ${money(r.net)}</div>
+    </div>`).join('');
+  $('realListCard').style.display='block';
+}
+
+let realRows=[];
+const HOST_FEE_CONST=20;
+function renderRealSummary(rows){
+  const totalRevenue=rows.reduce((s,r)=>s+r.revenue,0);
+  const totalPrize=rows.reduce((s,r)=>s+r.prize,0);
+  const totalHost=rows.length*HOST_FEE_CONST;
+  const netTotal=totalRevenue-totalHost-totalPrize;
+  $('rRevenue').textContent=money(totalRevenue);
+  $('rPrize').textContent=money(totalPrize);
+  $('rHost').textContent=money(totalHost);
+  $('rNet').textContent=money(netTotal);
+  $('rNetBox').className='sum-box full '+(netTotal>=0?'profit':'loss');
+  $('realSummaryCard').style.display='block';
+}
+function onPickLobby(){
+  const id=$('rLobbyPick').value;
+  if(!id){renderRealSummary(realRows);return}
+  const r=realRows.find(x=>x.id===id);
+  if(r)renderRealSummary([r]);
+  $('realListCard').style.display='block';
+}
+
+(function init(){
+  buildDailySlots();calcDaily();
+  buildQualSlots();calcQual();
+  const today=fmtDate(new Date());
+  $('rFrom').value=today;$('rTo').value=today;
+  loadReal(); // auto-load today's real numbers on open, no click needed
+})();
+</script>
+</body>
+</html>
