@@ -733,6 +733,18 @@ document.getElementById('profileForm').addEventListener('submit', async e=>{
         const { data: userRes } = await client.auth.getUser();
         const user = userRes && userRes.user;
         if(user){
+          // Read the live full_name (Team Name) BEFORE overwriting it, so we
+          // can log the change to team_name_history if it's actually different.
+          // Reading from Supabase here (not localStorage) avoids logging a
+          // "change" that's really just localStorage being stale.
+          let oldTeamName = null;
+          try{
+            const { data: oldProfile } = await client.from('profiles').select('full_name').eq('id', user.id).single();
+            oldTeamName = oldProfile ? oldProfile.full_name : null;
+          }catch(err){
+            console.warn('Could not read previous team name for history log:', err);
+          }
+
           const updatePayload = {
             whatsapp: data.whatsapp,
             // Team Name is stored in the 'full_name' column on Supabase.
@@ -795,6 +807,19 @@ document.getElementById('profileForm').addEventListener('submit', async e=>{
             console.warn('Profile Supabase update matched 0 rows for user', user.id);
             showToast('Save did not reach the server — no matching profile row was updated.','error');
             syncFailed = true;
+          } else if(oldTeamName && data.teamName && oldTeamName !== data.teamName){
+            // Team Name actually changed — log it for Admin User Details to
+            // show as history, so a user can't quietly rebrand their team
+            // without a trace.
+            try{
+              await client.from('team_name_history').insert({
+                user_id: user.id,
+                old_name: oldTeamName,
+                new_name: data.teamName
+              });
+            }catch(err){
+              console.warn('Could not log team name history (non-fatal):', err);
+            }
           }
         }
       }catch(err){

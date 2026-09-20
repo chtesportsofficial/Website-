@@ -473,6 +473,13 @@
         </div>
       </div>
 
+      <div class="dep-card" id="teamHistorySection" onclick="openTeamHistoryModal()" style="cursor:pointer;">
+        <div class="dep-summary-row">
+          <div class="dep-heading" style="margin:0;"><span class="dep-heading-bar"></span><span>TEAM NAME HISTORY</span></div>
+          <span class="dep-chevron">›</span>
+        </div>
+      </div>
+
       <div class="actions-row">
         <button class="action-btn make-admin" id="adminToggleBtn">Make Admin</button>
         <button class="action-btn block" id="banToggleBtn">Block User</button>
@@ -531,6 +538,23 @@
     </div>
   </div>
   <!-- ── end Wallet History Modal ── -->
+
+  <!-- ── Team Name History Modal ── -->
+  <div id="teamHistoryOverlay" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(8,12,25,.65);backdrop-filter:blur(5px);align-items:flex-end;justify-content:center;">
+    <div id="teamHistoryModal" style="width:100%;max-width:480px;max-height:82vh;background:#fff;border-radius:24px 24px 0 0;padding:22px 20px 26px;box-shadow:0 -20px 60px rgba(0,0,0,.28);display:flex;flex-direction:column;overflow-y:auto;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-shrink:0;">
+        <div style="font-size:15px;font-weight:900;color:var(--ink);">Team Name History</div>
+        <button onclick="closeTeamHistoryModal()" style="width:32px;height:32px;border-radius:8px;border:none;background:#f0f1f7;color:var(--muted);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">×</button>
+      </div>
+
+      <div class="dep-heading" style="margin:6px 2px 8px;">PROFILE NAME CHANGES</div>
+      <div id="nameChangeList"><div class="dep-loading">Loading...</div></div>
+
+      <div class="dep-heading" style="margin:18px 2px 8px;">NAMES USED WHILE JOINING TOURNAMENTS</div>
+      <div id="joinNameList"><div class="dep-loading">Loading...</div></div>
+    </div>
+  </div>
+  <!-- ── end Team Name History Modal ── -->
 
   <div class="toast" id="toast"></div>
 
@@ -1021,6 +1045,87 @@ function closeHistoryModal(){
 document.getElementById('historyOverlay').addEventListener('click', function(e){
   if(e.target === this) closeHistoryModal();
 });
+
+function openTeamHistoryModal(){
+  document.getElementById('teamHistoryOverlay').style.display = 'flex';
+  lockBodyScroll();
+  loadTeamHistory();
+}
+function closeTeamHistoryModal(){
+  document.getElementById('teamHistoryOverlay').style.display = 'none';
+  unlockBodyScroll();
+}
+document.getElementById('teamHistoryOverlay').addEventListener('click', function(e){
+  if(e.target === this) closeTeamHistoryModal();
+});
+
+let teamHistoryLoaded = false;
+async function loadTeamHistory(){
+  if(teamHistoryLoaded) return; // modal data doesn't change while open — load once per page visit
+  teamHistoryLoaded = true;
+
+  // Section 1: profile Team Name (full_name) changes, logged by edit_profile.html
+  try{
+    const { data, error } = await supabaseClient
+      .from('team_name_history')
+      .select('old_name,new_name,changed_at')
+      .eq('user_id', targetUid)
+      .order('changed_at', { ascending: false });
+    const el = document.getElementById('nameChangeList');
+    if(error){
+      el.innerHTML = `<div class="dep-empty">Could not load: ${escapeHtml(error.message)}</div>`;
+    } else if(!data || !data.length){
+      el.innerHTML = `<div class="dep-empty">No name changes recorded.</div>`;
+    } else {
+      el.innerHTML = '<div class="dep-list">' + data.map(h => `
+        <div class="dep-item">
+          <div class="dep-method">${escapeHtml(h.old_name || '(empty)')} → ${escapeHtml(h.new_name || '(empty)')}</div>
+          <div class="dep-date">${h.changed_at ? new Date(h.changed_at).toLocaleString() : ''}</div>
+        </div>
+      `).join('') + '</div>';
+    }
+  }catch(err){
+    document.getElementById('nameChangeList').innerHTML = `<div class="dep-empty">Could not load history.</div>`;
+  }
+
+  // Section 2: distinct team names this user has entered when joining lobbies
+  // (lobby_teams.team_name), so admin can trace which past joins belong to
+  // this user even if the name used doesn't match their current profile name.
+  try{
+    const { data, error } = await supabaseClient
+      .from('lobby_teams')
+      .select('team_name,joined_at')
+      .eq('submitted_by', targetUid)
+      .order('joined_at', { ascending: false });
+    const el = document.getElementById('joinNameList');
+    if(error){
+      el.innerHTML = `<div class="dep-empty">Could not load: ${escapeHtml(error.message)}</div>`;
+    } else if(!data || !data.length){
+      el.innerHTML = `<div class="dep-empty">No tournament joins found.</div>`;
+    } else {
+      const grouped = {};
+      data.forEach(r => {
+        const name = r.team_name || '(empty)';
+        if(!grouped[name]) grouped[name] = { count: 0, last: r.joined_at, first: r.joined_at };
+        grouped[name].count++;
+        if(r.joined_at > grouped[name].last) grouped[name].last = r.joined_at;
+        if(r.joined_at < grouped[name].first) grouped[name].first = r.joined_at;
+      });
+      const names = Object.keys(grouped).sort((a,b) => (grouped[b].last||'').localeCompare(grouped[a].last||''));
+      el.innerHTML = '<div class="dep-list">' + names.map(name => `
+        <div class="dep-item">
+          <div class="dep-item-top">
+            <div class="dep-method">${escapeHtml(name)}</div>
+            <div class="dep-status dep-approved">${grouped[name].count}× used</div>
+          </div>
+          <div class="dep-date">Last used: ${grouped[name].last ? new Date(grouped[name].last).toLocaleDateString() : '—'}</div>
+        </div>
+      `).join('') + '</div>';
+    }
+  }catch(err){
+    document.getElementById('joinNameList').innerHTML = `<div class="dep-empty">Could not load join history.</div>`;
+  }
+}
 
 async function loadBalance(){
   const { data: { session } } = await supabaseClient.auth.getSession();
