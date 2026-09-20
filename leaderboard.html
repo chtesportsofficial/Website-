@@ -196,10 +196,10 @@ function start(){
     // Look up each shown team's country so a non-Bangladesh team can
     // show its flag next to its name (see COUNTRY_FLAGS note above).
     // id is the row's user_number wherever one exists (see loop above).
-    const uids=[...new Set(ranked.map(r=>r.id).filter(v=>v!=null && /^\d+$/.test(v)))];
+    const uids=[...new Set(ranked.map(r=>r.id).filter(v=>v!=null && /^\d+$/.test(v)).map(Number))];
     const countryByUid={};
     if(uids.length){
-      const {data:profs}=await sb.from('profiles').select('user_number,country').in('user_number',uids);
+      const {data:profs}=await sb.rpc('get_team_countries',{uids});
       (profs||[]).forEach(p=>{ if(p.user_number!=null) countryByUid[String(p.user_number)]=p.country; });
     }
 
