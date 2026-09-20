@@ -130,22 +130,16 @@
     white-space:nowrap;
   }
   .flag-dot{
-    width:11px;height:11px;
+    width:13px;height:13px;
     border-radius:50%;
-    background:#0b3d1f;
-    position:relative;
+    background:#8b95ad;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
     overflow:hidden;
-    display:inline-block;
     flex-shrink:0;
-  }
-  .flag-dot::after{
-    content:"";
-    position:absolute;
-    width:5px;height:5px;
-    border-radius:50%;
-    background:#c8102e;
-    top:50%;left:45%;
-    transform:translate(-50%,-50%);
+    font-size:11px;
+    line-height:1;
   }
   .location-text{
     display:inline-flex;
@@ -613,6 +607,20 @@ function getProfile(){
   catch(e){ return {}; }
 }
 
+// Same country → flag mapping as admin's user-detail.html, so a team's
+// flag always matches whatever country the admin set for them there.
+const COUNTRY_FLAGS = {
+  'bangladesh':'🇧🇩','india':'🇮🇳','pakistan':'🇵🇰','nepal':'🇳🇵','sri lanka':'🇱🇰',
+  'myanmar':'🇲🇲','bhutan':'🇧🇹','indonesia':'🇮🇩','malaysia':'🇲🇾','singapore':'🇸🇬',
+  'thailand':'🇹🇭','vietnam':'🇻🇳','philippines':'🇵🇭','cambodia':'🇰🇭',
+  'brazil':'🇧🇷','mexico':'🇲🇽','colombia':'🇨🇴','argentina':'🇦🇷','peru':'🇵🇪','chile':'🇨🇱',
+  'united states':'🇺🇸','usa':'🇺🇸','canada':'🇨🇦','united kingdom':'🇬🇧','uk':'🇬🇧',
+  'saudi arabia':'🇸🇦','united arab emirates':'🇦🇪','uae':'🇦🇪','egypt':'🇪🇬',
+  'iraq':'🇮🇶','jordan':'🇯🇴','kuwait':'🇰🇼','qatar':'🇶🇦','oman':'🇴🇲','bahrain':'🇧🇭',
+  'turkey':'🇹🇷','russia':'🇷🇺','taiwan':'🇹🇼','hong kong':'🇭🇰',
+  'nigeria':'🇳🇬','south africa':'🇿🇦'
+};
+
 function copyValue(id){
   const el=document.getElementById(id);
   if(!el) return;
@@ -645,7 +653,14 @@ function renderProfile(){
   if(emailEl) emailEl.textContent = profile.email || '----';
 
   const countryEl=document.getElementById('countryBadgeText');
-  if(countryEl) countryEl.textContent = (profile.country || 'Bangladesh').toUpperCase();
+  const countryName = profile.country || 'Bangladesh';
+  if(countryEl) countryEl.textContent = countryName.toUpperCase();
+  const flagEl=document.querySelector('.country-pill .flag-dot');
+  if(flagEl){
+    const emoji = COUNTRY_FLAGS[countryName.trim().toLowerCase()];
+    if(emoji){ flagEl.textContent = emoji; flagEl.style.background = 'transparent'; }
+    else { flagEl.textContent = ''; flagEl.style.background = '#8b95ad'; }
+  }
 
   const locationEl=document.getElementById('location');
   if(locationEl) locationEl.textContent = profile.location || '----';

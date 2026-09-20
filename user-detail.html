@@ -141,13 +141,13 @@
   }
   .head-meta{
     display:flex; align-items:center; gap:8px; margin-top:7px;
-    flex-wrap:nowrap; min-width:0;
+    flex-wrap:wrap; min-width:0;
   }
   .head-meta .sep{ color:#d8dbea; font-weight:900; flex-shrink:0; }
   .country-pill{ flex-shrink:0; cursor:pointer; }
   .country-pill .edit-hint{ font-size:9px; opacity:.55; margin-left:1px; }
-  .location-inline{ overflow:hidden; }
-  .location-inline span:last-child{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .location-inline{ overflow:visible; flex-basis:100%; }
+  .location-inline span:last-child{ overflow:visible; text-overflow:clip; white-space:normal; overflow-wrap:anywhere; }
   .country-pill span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .flag-dot{
     width:14px; height:14px; border-radius:50%; flex-shrink:0;
@@ -562,12 +562,7 @@
     <div style="width:100%;max-width:360px;background:#fff;border-radius:20px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3);">
       <div style="font-size:15px;font-weight:900;color:var(--ink);margin-bottom:4px;">Edit Country</div>
       <div style="font-size:11.5px;color:var(--muted);margin-bottom:14px;">এই user-এর country বদলান (default সবার জন্য Bangladesh)।</div>
-      <input id="countryEditInput" list="countryEditList" type="text" placeholder="e.g. Bangladesh, India, Nepal..." style="width:100%;padding:11px 13px;border-radius:12px;border:1.5px solid #e4e6f0;font-size:13.5px;font-weight:600;color:var(--ink);box-sizing:border-box;">
-      <datalist id="countryEditList">
-        <option value="Bangladesh"><option value="India"><option value="Pakistan"><option value="Nepal">
-        <option value="Sri Lanka"><option value="Myanmar"><option value="Malaysia"><option value="Indonesia">
-        <option value="Saudi Arabia"><option value="United Arab Emirates"><option value="United States"><option value="United Kingdom">
-      </datalist>
+      <select id="countryEditInput" style="width:100%;padding:11px 13px;border-radius:12px;border:1.5px solid #e4e6f0;font-size:13.5px;font-weight:600;color:var(--ink);box-sizing:border-box;background:#fff;"></select>
       <div style="display:flex;gap:8px;margin-top:16px;">
         <button type="button" onclick="closeCountryEdit()" style="flex:1;padding:11px;border-radius:12px;border:1.5px solid #e4e6f0;background:#fff;color:var(--muted);font-weight:800;font-size:12.5px;cursor:pointer;">Cancel</button>
         <button type="button" onclick="saveCountryEdit()" style="flex:1;padding:11px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-weight:800;font-size:12.5px;cursor:pointer;">Save</button>
@@ -584,6 +579,55 @@
 <script>
 const SUPABASE_URL = 'https://myfficbwcbgbxbdqjexv.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+
+// Countries covering Free Fire's regional servers (South Asia, SEA, MENA,
+// Latin America, NA/EU, CIS, East Asia). Bangladesh stays first/default —
+// everyone starts as Bangladesh, admin manually switches a team to its
+// real country for international-server tournaments.
+const COUNTRY_LIST = [
+  ['Bangladesh','🇧🇩'], ['India','🇮🇳'], ['Pakistan','🇵🇰'], ['Nepal','🇳🇵'],
+  ['Sri Lanka','🇱🇰'], ['Myanmar','🇲🇲'], ['Bhutan','🇧🇹'],
+  ['Indonesia','🇮🇩'], ['Malaysia','🇲🇾'], ['Singapore','🇸🇬'], ['Thailand','🇹🇭'],
+  ['Vietnam','🇻🇳'], ['Philippines','🇵🇭'], ['Cambodia','🇰🇭'],
+  ['Brazil','🇧🇷'], ['Mexico','🇲🇽'], ['Colombia','🇨🇴'], ['Argentina','🇦🇷'],
+  ['Peru','🇵🇪'], ['Chile','🇨🇱'],
+  ['United States','🇺🇸'], ['Canada','🇨🇦'], ['United Kingdom','🇬🇧'],
+  ['Saudi Arabia','🇸🇦'], ['United Arab Emirates','🇦🇪'], ['Egypt','🇪🇬'],
+  ['Iraq','🇮🇶'], ['Jordan','🇯🇴'], ['Kuwait','🇰🇼'], ['Qatar','🇶🇦'],
+  ['Oman','🇴🇲'], ['Bahrain','🇧🇭'], ['Turkey','🇹🇷'],
+  ['Russia','🇷🇺'], ['Taiwan','🇹🇼'], ['Hong Kong','🇭🇰'],
+  ['Nigeria','🇳🇬'], ['South Africa','🇿🇦']
+];
+const COUNTRY_FLAGS = Object.fromEntries(
+  COUNTRY_LIST.map(([name, emoji]) => [name.toLowerCase(), emoji])
+);
+// A few extra short-form aliases some old records might already use.
+Object.assign(COUNTRY_FLAGS, {
+  'uae':'🇦🇪', 'usa':'🇺🇸', 'uk':'🇬🇧'
+});
+function populateCountrySelect(selectEl, currentValue){
+  selectEl.innerHTML = '';
+  let matched = false;
+  COUNTRY_LIST.forEach(([name]) => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    if(currentValue && name.toLowerCase() === String(currentValue).trim().toLowerCase()){
+      opt.selected = true;
+      matched = true;
+    }
+    selectEl.appendChild(opt);
+  });
+  // If the saved country isn't in our list (an older/typed value), keep it
+  // selectable instead of silently switching it to Bangladesh.
+  if(currentValue && !matched){
+    const opt = document.createElement('option');
+    opt.value = currentValue;
+    opt.textContent = currentValue + ' (current)';
+    opt.selected = true;
+    selectEl.insertBefore(opt, selectEl.firstChild);
+  }
+}
 
 const params = new URLSearchParams(window.location.search);
 const targetUid = params.get('uid');
@@ -723,12 +767,6 @@ function renderTarget(){
     else { adminCorner.classList.add('user'); roleText.textContent = 'USER'; }
   }
 
-  const COUNTRY_FLAGS = {
-    'bangladesh':'🇧🇩','india':'🇮🇳','pakistan':'🇵🇰','nepal':'🇳🇵','sri lanka':'🇱🇰',
-    'myanmar':'🇲🇲','malaysia':'🇲🇾','indonesia':'🇮🇩','saudi arabia':'🇸🇦',
-    'united arab emirates':'🇦🇪','uae':'🇦🇪','united states':'🇺🇸','usa':'🇺🇸',
-    'united kingdom':'🇬🇧','uk':'🇬🇧'
-  };
   const countryPill = document.getElementById('countryPill');
   const locationInline = document.getElementById('locationInline');
   const metaSep = document.getElementById('metaSep');
@@ -740,13 +778,12 @@ function renderTarget(){
     else { flagEl.textContent = ''; flagEl.style.background = '#8b95ad'; } // unmapped country — neutral grey dot, not a wrong flag
     countryPill.style.display = 'flex';
   } else { countryPill.style.display = 'none'; }
+  metaSep.style.display = 'none'; // location now wraps to its own full-width line, no dot needed
   if(p.location){
     document.getElementById('locationText').textContent = p.location;
     locationInline.style.display = 'flex';
-    metaSep.style.display = p.country ? 'inline' : 'none';
   } else {
     locationInline.style.display = 'none';
-    metaSep.style.display = 'none';
   }
 
   // Slogan box, under the avatar/name
@@ -1078,7 +1115,8 @@ document.getElementById('historyOverlay').addEventListener('click', function(e){
 });
 
 function openCountryEdit(){
-  document.getElementById('countryEditInput').value = (targetProfile && targetProfile.country) || 'Bangladesh';
+  const current = (targetProfile && targetProfile.country) || 'Bangladesh';
+  populateCountrySelect(document.getElementById('countryEditInput'), current);
   document.getElementById('countryEditMsg').textContent = '';
   document.getElementById('countryEditOverlay').style.display = 'flex';
   lockBodyScroll();
