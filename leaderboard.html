@@ -199,7 +199,8 @@ function start(){
     const uids=[...new Set(ranked.map(r=>r.id).filter(v=>v!=null && /^\d+$/.test(v)).map(Number))];
     const countryByUid={};
     if(uids.length){
-      const {data:profs}=await sb.rpc('get_team_countries',{uids});
+      const {data:profs,error:profErr}=await sb.rpc('get_team_countries',{uids});
+      if(profErr) console.error('get_team_countries RPC failed (flags will be hidden):', profErr);
       (profs||[]).forEach(p=>{ if(p.user_number!=null) countryByUid[String(p.user_number)]=p.country; });
     }
 
