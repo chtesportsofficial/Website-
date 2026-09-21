@@ -426,9 +426,42 @@ function computeLobbyBadge(lobby,hasResult){
   const remain=target.getTime()-now.getTime();
   return{cls:'accentbadge',text:formatCountdown(remain)};
 }
+// Only one slot is "featured" (top) at a time within a day's list:
+//  - a match that started within the last FRESH_MIN minutes (still fresh/
+//    just went live), or if none is currently fresh,
+//  - the single soonest upcoming (not yet started) lobby.
+// Everything else non-completed sits in the middle (sorted by time);
+// completed always sinks to the bottom. This mirrors computeLobbyBadge's
+// own time math but needs the whole day's slots at once to pick "next".
+const FEATURED_FRESH_MIN=15;
+function pickFeaturedSlot(slots){
+  const now=Date.now();
+  let freshLive=null,nextUpcoming=null;
+  slots.forEach(s=>{
+    if(!(s.confirmed&&!s.cancelled))return;
+    if(resultsLobbyIds.has(s.lobby.id))return;
+    const effectiveTimeLabel=s.lobby.match_start_time||s.lobby.time_label;
+    const dt=parseLobbyDateTime(s.lobby.lobby_date,effectiveTimeLabel);
+    if(!dt)return;
+    const ms=dt.getTime();
+    if(ms<=now){
+      const minsSince=(now-ms)/60000;
+      if(minsSince<FEATURED_FRESH_MIN&&(!freshLive||ms>freshLive.ms))freshLive={slot:s,ms};
+    }else if(!nextUpcoming||ms<nextUpcoming.ms){
+      nextUpcoming={slot:s,ms};
+    }
+  });
+  return freshLive?freshLive.slot:(nextUpcoming?nextUpcoming.slot:null);
+}
+function lobbyPriorityTier(slot,featured,hasResult){
+  if(slot===featured)return 0;
+  if(hasResult)return 2;
+  return 1;
+}
 // lobby.id -> lobby object for every currently-rendered "confirmed" slot —
 // rebuilt on every applyFilter() render, read every second by the ticker.
 let lobbiesById=new Map();
+setInterval(()=>{ if(allRows.length)applyFilter(); },60000);
 setInterval(()=>{
   document.querySelectorAll('[data-lobby-badge]').forEach(el=>{
     const lobby=lobbiesById.get(el.getAttribute('data-lobby-badge'));
@@ -481,7 +514,13 @@ function groupRows(rows){
   const groups=order.map(k=>{
     const g=map.get(k);
     const slots=g.slotOrder.map(lk=>g.slotMap.get(lk));
-    slots.sort((a,b)=>extractHourValue(a.lobby.time_label)-extractHourValue(b.lobby.time_label));
+    const featured=pickFeaturedSlot(slots);
+    slots.sort((a,b)=>{
+      const tierA=lobbyPriorityTier(a,featured,resultsLobbyIds.has(a.lobby.id));
+      const tierB=lobbyPriorityTier(b,featured,resultsLobbyIds.has(b.lobby.id));
+      if(tierA!==tierB)return tierA-tierB;
+      return extractHourValue(a.lobby.time_label)-extractHourValue(b.lobby.time_label);
+    });
     return {title:g.title,lobby_date:g.lobby_date,slots};
   });
   return groups;
