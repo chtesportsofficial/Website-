@@ -195,6 +195,10 @@ input{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-r
     <input id="hostWa" placeholder="01XXXXXXXXX" inputmode="tel" style="flex:1;min-width:0">
   </div>
   <div style="font-size:9px;color:#7f8ba0;margin-top:6px;line-height:1.5">Default is Bangladesh (+880) — change the code if the number is from another country. Players will contact the host on this number via WhatsApp.</div>
+
+  <label>ID/Pass Release Time (optional)</label>
+  <input id="idpassTime" placeholder="e.g. 8:05 PM">
+  <div style="font-size:9px;color:#7f8ba0;margin-top:6px;line-height:1.5">যদি ID/Pass ঠিক ম্যাচ শুরুর সময়ের আগে আলাদাভাবে দেওয়া হয়, সেই সময়টা এখানে দাও — তখন My Tournaments পেজে player-দের countdown আগে এই সময় পর্যন্ত চলবে, তারপর ম্যাচ শুরুর সময় দেখাবে। খালি রাখলে countdown সরাসরি ম্যাচ শুরুর সময় পর্যন্ত চলবে।</div>
   <div id="roomLinkRow" style="display:none;margin-top:10px;background:#171f31;border:1px solid #293650;border-radius:12px;padding:9px 10px">
     <div style="font-size:9px;color:#7f8ba0;margin-bottom:6px">Guest Link (WhatsApp গ্রুপে পেস্ট করার জন্য)</div>
     <div style="display:flex;gap:8px;align-items:center">
@@ -592,6 +596,7 @@ async function openRoom(id){
   $('roomId').value=currentLobby.room_id||'';$('roomPass').value=currentLobby.room_password||'';
   $('hostCC').value='+'+(currentLobby.host_country_code||'880');
   $('hostWa').value=currentLobby.host_whatsapp||'';
+  $('idpassTime').value=currentLobby.idpass_time||'';
   refreshRoomLinkRow();
   openModal('roomModal')
 }
@@ -616,15 +621,18 @@ function cleanHostWa(){
 async function saveRoom(){
   if(!currentLobby)return;
   const roomId=$('roomId').value.trim(),roomPassword=$('roomPass').value.trim();
+  const idpassTime=$('idpassTime').value.trim();
   const {cc,num}=cleanHostWa();
   if(!roomId||!roomPassword||!num)return msg('Room ID, Password and Host WhatsApp Number are all required.');
   if(!/^\d{1,4}$/.test(cc))return msg('Enter a valid country code (e.g. +880).');
   if(cc==='880'?!/^1\d{9}$/.test(num):!/^\d{6,12}$/.test(num))
     return msg(cc==='880'?'Enter a valid Bangladesh number (e.g. 01712345678).':'Enter a valid WhatsApp number.');
+  if(idpassTime&&!/^\d{1,2}:\d{2}\s*(AM|PM)$/i.test(idpassTime))
+    return msg('ID/Pass Release Time-টা এই ফরম্যাটে দাও: 8:05 PM (অথবা খালি রাখো)।');
   const btn=$('roomSaveBtn');
   btn.disabled=true;btn.textContent='Saving…';
   try{
-    const patch={room_id:roomId,room_password:roomPassword,host_country_code:cc,host_whatsapp:num};
+    const patch={room_id:roomId,room_password:roomPassword,host_country_code:cc,host_whatsapp:num,idpass_time:idpassTime||null};
     const r=await sb.from('tournament_lobbies').update(patch).eq('id',currentLobby.id).select();
     if(r.error){msg(r.error.message);return}
     if(!r.data?.length){msg('Update blocked (0 rows) — check tournament_lobbies UPDATE RLS.');return}

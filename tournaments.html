@@ -157,6 +157,7 @@
   .t-status.confirmed{background:rgba(46,204,113,.14);color:#3ddc84;}
   .t-status.pending{background:rgba(255,183,3,.14);color:#ffb703;}
   .t-status.cancelled{background:rgba(231,76,60,.14);color:#ff5c4d;}
+  .t-status.accentbadge{background:rgba(124,92,255,.16);color:var(--accent);}
 
   .t-pending-note{font-size:11px;color:var(--text-secondary);background:rgba(255,183,3,.06);border:1px dashed rgba(255,183,3,.35);border-radius:10px;padding:10px 11px;margin-bottom:2px;line-height:1.55;}
 
@@ -377,6 +378,62 @@ function passesFilter(row){
   if(currentFilter==='date')return currentCustomDate&&isSameDate(d,currentCustomDate);
   return true;
 }
+// Same parser as host-panel.html — turns a lobby's date + "8:00 PM"-style
+// time_label into a real Date instant (12 AM lobbies roll to the next
+// calendar day, matching how host-panel.html treats them).
+function parseLobbyDateTime(date,label){
+  const m=/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec((label||'').trim()); if(!m)return null;
+  let h=(+m[1])%12;if(/pm/i.test(m[3]))h+=12;
+  const d=new Date(date+'T00:00:00');d.setHours(h,+m[2],0,0);if(h===0)d.setDate(d.getDate()+1);return d;
+}
+function pad2(n){return String(n).padStart(2,'0');}
+function formatCountdown(ms){
+  if(ms<0)ms=0;
+  const totalSec=Math.floor(ms/1000);
+  const h=Math.floor(totalSec/3600),m=Math.floor((totalSec%3600)/60),s=totalSec%60;
+  return h+':'+pad2(m)+':'+pad2(s);
+}
+// The single source of truth for what a "confirmed" slot's status badge
+// shows, moment to moment:
+//  1) result already saved -> COMPLETED
+//  2) match time has passed -> MATCH ON (first 60 min), then PENDING
+//  3) match time still ahead:
+//     - Room ID/Pass already submitted AND a distinct idpass_time was set
+//       -> "Start: <match time>" (never based on the countdown reaching
+//         zero by itself — only on the host actually having submitted,
+//         since a host can run late)
+//     - otherwise -> live countdown to idpass_time if set (and not yet
+//       submitted), else straight to match time
+function computeLobbyBadge(lobby,hasResult){
+  if(hasResult)return{cls:'confirmed',text:'COMPLETED'};
+  const matchDt=parseLobbyDateTime(lobby.lobby_date,lobby.time_label);
+  if(!matchDt)return{cls:'confirmed',text:'CONFIRMED'};
+  const now=new Date();
+  if(matchDt.getTime()<=now.getTime()){
+    const minsSince=(now.getTime()-matchDt.getTime())/60000;
+    return minsSince<60?{cls:'accentbadge',text:'● MATCH ON'}:{cls:'pending',text:'PENDING'};
+  }
+  const idHasSet=!!(lobby.room_id&&lobby.room_password);
+  const idpassDt=lobby.idpass_time?parseLobbyDateTime(lobby.lobby_date,lobby.idpass_time):null;
+  const idpassDiffers=idpassDt&&idpassDt.getTime()!==matchDt.getTime();
+  if(idHasSet&&idpassDiffers)return{cls:'accentbadge',text:'Start: '+lobby.time_label};
+  const target=(idpassDt&&!idHasSet)?idpassDt:matchDt;
+  const remain=target.getTime()-now.getTime();
+  return{cls:'accentbadge',text:formatCountdown(remain)};
+}
+// lobby.id -> lobby object for every currently-rendered "confirmed" slot —
+// rebuilt on every applyFilter() render, read every second by the ticker.
+let lobbiesById=new Map();
+setInterval(()=>{
+  document.querySelectorAll('[data-lobby-badge]').forEach(el=>{
+    const lobby=lobbiesById.get(el.getAttribute('data-lobby-badge'));
+    if(!lobby)return;
+    const bs=computeLobbyBadge(lobby,resultsLobbyIds.has(lobby.id));
+    el.className='t-status '+bs.cls;
+    el.textContent=bs.text;
+  });
+},1000);
+
 function extractHourValue(timeLabel){
   const s=String(timeLabel||'');
   const m=s.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
@@ -435,6 +492,8 @@ function applyFilter(){
     return;
   }
   emptyMsg.style.display='none';
+  lobbiesById=new Map();
+  filtered.forEach(row=>{const l=row.tournament_lobbies;if(l&&l.id)lobbiesById.set(l.id,l);});
   const groups=groupRows(filtered);
   listWrap.innerHTML=groups.map(renderCard).join('');
   listWrap.style.display='flex';
@@ -497,10 +556,17 @@ function renderSlot(slot){
     </div>
   `;
 
+  const liveBadge=confirmed&&!cancelled?computeLobbyBadge(lobby,hasResult):null;
+  const badgeHtml=cancelled
+    ? `<div class="t-status cancelled">${esc(t('myt.status.cancelled'))}</div>`
+    : confirmed
+      ? `<div class="t-status ${liveBadge.cls}" data-lobby-badge="${esc(lobby.id)}">${esc(liveBadge.text)}</div>`
+      : `<div class="t-status pending">${esc(t('myt.status.pending'))}</div>`;
+
   return `<div class="t-slot">
     <div class="t-lobby-row">
       <div><div class="t-lobby-time">${timeLabel}</div><div class="t-lobby-date">${teamLabel}</div></div>
-      <div class="t-status ${cancelled?'cancelled':confirmed?'confirmed':'pending'}">${cancelled?esc(t('myt.status.cancelled')):confirmed?esc(t('myt.status.confirmed')):esc(t('myt.status.pending'))}</div>
+      ${badgeHtml}
     </div>
     ${credsOrResult}
   </div>`;
