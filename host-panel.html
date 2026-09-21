@@ -623,7 +623,7 @@ async function saveRoom(){
   const idpassTime=$('idpassTime').value.trim();
   const {cc,num}=cleanHostWa();
   if(idpassTime&&!/^\d{1,2}:\d{2}\s*(AM|PM)$/i.test(idpassTime))
-    return msg('ID/Pass Release Time এই ফরম্যাটে দাও: 8:05 PM (অথবা খালি রাখো)।');
+    return msg('Invalid ID/Pass Release Time format — এই ফরম্যাটে দাও: 8:05 PM (অথবা খালি রাখো)। কিছুই সেভ হয়নি।');
   // Room ID/Password/WhatsApp are only required if the host is actually
   // trying to save one of them — idpassTime alone (all three still empty)
   // is a valid, independent save (set the release time well before the
@@ -672,31 +672,6 @@ function copyLobbyLinkForCurrent(){
   navigator.clipboard?.writeText(link).then(()=>msg('Link copied — WhatsApp গ্রুপে পেস্ট করে দিন।'));
 }
 
-async function openIdpassModal(id){
-  currentLobby=lobbies.find(x=>x.id===id);if(!currentLobby)return;
-  $('idpassTime').value=currentLobby.idpass_time||'';
-  openModal('idpassModal');
-}
-async function saveIdpassTime(){
-  if(!currentLobby)return;
-  const idpassTime=$('idpassTime').value.trim();
-  if(idpassTime&&!/^\d{1,2}:\d{2}\s*(AM|PM)$/i.test(idpassTime))
-    return msg('এই ফরম্যাটে দাও: 8:05 PM (অথবা খালি রেখে সেভ করলে এটা মুছে যাবে)।');
-  const btn=$('idpassSaveBtn');
-  btn.disabled=true;btn.textContent='Saving…';
-  try{
-    const r=await sb.from('tournament_lobbies').update({idpass_time:idpassTime||null}).eq('id',currentLobby.id).select();
-    if(r.error){msg(r.error.message);return}
-    if(!r.data?.length){msg('Update blocked (0 rows) — check tournament_lobbies UPDATE RLS.');return}
-    currentLobby.idpass_time=idpassTime||null;
-    render();
-    closeModal('idpassModal');
-  }catch(e){
-    msg('Save failed: '+(e?.message||e));
-  }finally{
-    btn.textContent='Save';btn.disabled=false;
-  }
-}
 async function openCG(id){
   currentLobby=lobbies.find(x=>x.id===id);if(!currentLobby)return;
   $('cgLink').value=currentLobby.cg_link||'';openModal('cgModal')
