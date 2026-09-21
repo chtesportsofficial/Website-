@@ -406,7 +406,12 @@ function formatCountdown(ms){
 //       submitted), else straight to match time
 function computeLobbyBadge(lobby,hasResult){
   if(hasResult)return{cls:'confirmed',text:'COMPLETED'};
-  const matchDt=parseLobbyDateTime(lobby.lobby_date,lobby.time_label);
+  // match_start_time (optional, host-set) overrides the lobby's default
+  // time_label as the actual match instant everything below is judged
+  // against — set it when a match genuinely starts later/earlier than its
+  // slot's usual time. Falls back to time_label when not set.
+  const effectiveTimeLabel=lobby.match_start_time||lobby.time_label;
+  const matchDt=parseLobbyDateTime(lobby.lobby_date,effectiveTimeLabel);
   if(!matchDt)return{cls:'confirmed',text:'CONFIRMED'};
   const now=new Date();
   if(matchDt.getTime()<=now.getTime()){
@@ -416,7 +421,7 @@ function computeLobbyBadge(lobby,hasResult){
   const idHasSet=!!(lobby.room_id&&lobby.room_password);
   const idpassDt=lobby.idpass_time?parseLobbyDateTime(lobby.lobby_date,lobby.idpass_time):null;
   const idpassDiffers=idpassDt&&idpassDt.getTime()!==matchDt.getTime();
-  if(idHasSet&&idpassDiffers)return{cls:'accentbadge',text:'Start: '+lobby.time_label};
+  if(idHasSet&&idpassDiffers)return{cls:'accentbadge',text:'Start: '+effectiveTimeLabel};
   const target=(idpassDt&&!idHasSet)?idpassDt:matchDt;
   const remain=target.getTime()-now.getTime();
   return{cls:'accentbadge',text:formatCountdown(remain)};

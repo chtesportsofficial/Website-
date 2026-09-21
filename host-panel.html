@@ -189,7 +189,9 @@ input{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-r
   <div class="mh"><b>Room ID / Password</b><button class="close" onclick="closeModal('roomModal')">×</button></div>
   <label>ID/Pass Release Time (optional)</label>
   <input id="idpassTime" placeholder="e.g. 8:05 PM">
-  <div style="font-size:9px;color:#7f8ba0;margin-top:6px;line-height:1.5">Room ID/Password/WhatsApp না দিয়েও এটা একাই সেভ করা যাবে — ম্যাচের অনেক আগেই সেট করে রাখতে পারো।</div>
+  <label>Match Start Time (optional)</label>
+  <input id="matchStartTime" placeholder="e.g. 8:12 PM">
+  <div style="font-size:9px;color:#7f8ba0;margin-top:6px;line-height:1.5">এই লবির default সময় থেকে ম্যাচ আসলে দেরিতে/আগে শুরু হলে এখানে আসল শুরুর সময়টা দাও — MATCH ON badge এই সময় অনুযায়ী দেখাবে, লবির নামের পাশের default সময় অনুযায়ী না। খালি রাখলে default সময়ই ব্যবহার হবে। Room ID/Password/WhatsApp না দিয়েও এই দুইটা একাই সেভ করা যাবে — ম্যাচের অনেক আগেই সেট করে রাখতে পারো।</div>
   <label>Room ID *</label><input id="roomId" placeholder="Room ID">
   <label>Password *</label><input id="roomPass" placeholder="Room Password">
   <label>Host WhatsApp Number *</label>
@@ -596,6 +598,7 @@ async function openRoom(id){
   $('hostCC').value='+'+(currentLobby.host_country_code||'880');
   $('hostWa').value=currentLobby.host_whatsapp||'';
   $('idpassTime').value=currentLobby.idpass_time||'';
+  $('matchStartTime').value=currentLobby.match_start_time||'';
   refreshRoomLinkRow();
   openModal('roomModal')
 }
@@ -621,13 +624,17 @@ async function saveRoom(){
   if(!currentLobby)return;
   const roomId=$('roomId').value.trim(),roomPassword=$('roomPass').value.trim();
   const idpassTime=$('idpassTime').value.trim();
+  const matchStartTime=$('matchStartTime').value.trim();
   const {cc,num}=cleanHostWa();
-  if(idpassTime&&!/^\d{1,2}:\d{2}\s*(AM|PM)$/i.test(idpassTime))
+  const timeFmt=/^\d{1,2}:\d{2}\s*(AM|PM)$/i;
+  if(idpassTime&&!timeFmt.test(idpassTime))
     return msg('Invalid ID/Pass Release Time format — এই ফরম্যাটে দাও: 8:05 PM (অথবা খালি রাখো)। কিছুই সেভ হয়নি।');
+  if(matchStartTime&&!timeFmt.test(matchStartTime))
+    return msg('Invalid Match Start Time format — এই ফরম্যাটে দাও: 8:12 PM (অথবা খালি রাখো)। কিছুই সেভ হয়নি।');
   // Room ID/Password/WhatsApp are only required if the host is actually
-  // trying to save one of them — idpassTime alone (all three still empty)
-  // is a valid, independent save (set the release time well before the
-  // real room credentials exist yet).
+  // trying to save one of them — idpassTime/matchStartTime alone (all
+  // three room fields still empty) is a valid, independent save (set
+  // these well before the real room credentials exist yet).
   const wantsRoomSave=!!(roomId||roomPassword||num);
   if(wantsRoomSave){
     if(!roomId||!roomPassword||!num)return msg('Room ID, Password and Host WhatsApp Number are all required.');
@@ -638,7 +645,7 @@ async function saveRoom(){
   const btn=$('roomSaveBtn');
   btn.disabled=true;btn.textContent='Saving…';
   try{
-    const patch={idpass_time:idpassTime||null};
+    const patch={idpass_time:idpassTime||null,match_start_time:matchStartTime||null};
     if(wantsRoomSave)Object.assign(patch,{room_id:roomId,room_password:roomPassword,host_country_code:cc,host_whatsapp:num});
     const r=await sb.from('tournament_lobbies').update(patch).eq('id',currentLobby.id).select();
     if(r.error){msg(r.error.message);return}
