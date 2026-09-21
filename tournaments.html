@@ -486,8 +486,8 @@ function renderSlot(slot){
     </div>
     ${cgRow(lobby.cg_link)}
     <div class="t-result-row">
-      ${(hasResult&&lobby.result_image_url)?`<button type="button" class="t-result-thumb" title="Result screenshot" onclick="event.stopPropagation();openResultImageLightbox('${esc(lobby.result_image_url).replace(/'/g,"&#39;")}')"><img src="${esc(lobby.result_image_url)}" alt="" loading="lazy"></button>`:''}
       <button type="button" class="t-result-btn" ${hasResult?`onclick="location.href='lobby-results.html?id=${encodeURIComponent(lobby.id)}'"`:'disabled'}>${hasResult?esc(t('myt.result.view')):esc(t('myt.result.notPublished'))}</button>
+      ${(hasResult&&lobby.result_image_url)?`<button type="button" class="t-result-thumb" title="Result screenshot" onclick="event.stopPropagation();openResultImageLightbox('${esc(lobby.result_image_url).replace(/'/g,"&#39;")}')"><img src="${esc(lobby.result_image_url)}" alt="" loading="lazy"></button>`:''}
     </div>
   ` : `
     <div class="t-pending-note t-pending-note-row">
