@@ -176,6 +176,13 @@
 
   .t-result-btn{display:block;width:100%;padding:11px;border:none;border-radius:11px;background:var(--accent);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;text-align:center;letter-spacing:.02em;}
   .t-result-btn:disabled{background:#232838;color:var(--text-secondary);cursor:not-allowed;}
+  .t-result-row{display:flex;gap:8px;align-items:stretch;}
+  .t-result-row .t-result-btn{flex:1;}
+  .t-result-thumb{flex:0 0 46px;width:46px;border:1px solid var(--card-border);border-radius:11px;overflow:hidden;padding:0;background:#0d1320;cursor:pointer;}
+  .t-result-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .t-lightbox{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.9);align-items:center;justify-content:center;padding:20px;}
+  .t-lightbox.open{display:flex;}
+  .t-lightbox img{max-width:100%;max-height:100%;border-radius:12px;}
 
   .t-cg-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
   .t-cg-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 12px;border-radius:11px;border:1px solid rgba(37,211,102,.35);background:rgba(37,211,102,.12);color:#25d366;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-decoration:none;min-width:0;}
@@ -240,6 +247,10 @@
 
   <div class="filter-empty" id="filterEmptyMsg" style="display:none" data-i18n="myt.filterEmpty">No tournaments match this filter.</div>
 
+</div>
+
+<div class="t-lightbox" id="resultLightbox" onclick="closeResultImageLightbox()">
+  <img id="resultLightboxImg" alt="Result screenshot">
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -313,6 +324,17 @@ function cgRow(link){
     <button type="button" class="t-copy-btn" onclick="copyCred(this,'${safe}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
   </div>`;
 }
+
+function openResultImageLightbox(url){
+  document.getElementById('resultLightboxImg').src=url;
+  document.getElementById('resultLightbox').classList.add('open');
+}
+function closeResultImageLightbox(){
+  document.getElementById('resultLightbox').classList.remove('open');
+  document.getElementById('resultLightboxImg').src='';
+}
+window.openResultImageLightbox=openResultImageLightbox;
+window.closeResultImageLightbox=closeResultImageLightbox;
 
 let allRows=[];
 let currentFilter='today';
@@ -463,7 +485,10 @@ function renderSlot(slot){
       ${(!lobby.room_id||!lobby.room_password)?refreshBtn:hostBtn(lobby)}
     </div>
     ${cgRow(lobby.cg_link)}
-    <button type="button" class="t-result-btn" ${hasResult?`onclick="location.href='lobby-results.html?id=${encodeURIComponent(lobby.id)}'"`:'disabled'}>${hasResult?esc(t('myt.result.view')):esc(t('myt.result.notPublished'))}</button>
+    <div class="t-result-row">
+      ${(hasResult&&lobby.result_image_url)?`<button type="button" class="t-result-thumb" title="Result screenshot" onclick="event.stopPropagation();openResultImageLightbox('${esc(lobby.result_image_url).replace(/'/g,"&#39;")}')"><img src="${esc(lobby.result_image_url)}" alt="" loading="lazy"></button>`:''}
+      <button type="button" class="t-result-btn" ${hasResult?`onclick="location.href='lobby-results.html?id=${encodeURIComponent(lobby.id)}'"`:'disabled'}>${hasResult?esc(t('myt.result.view')):esc(t('myt.result.notPublished'))}</button>
+    </div>
   ` : `
     <div class="t-pending-note t-pending-note-row">
       <span>${esc(t('myt.note.pending'))}</span>

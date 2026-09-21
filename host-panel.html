@@ -213,7 +213,19 @@ input{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-r
 
 <div class="modal" id="resultsModal"><div class="box">
   <div class="mh"><b id="resultsTitle">Enter Result</b><button class="close" onclick="closeModal('resultsModal')">×</button></div>
-  <div class="results-toolbar"><button type="button" onclick="sortResultsByPoints()">↕ Sort by points</button></div>
+
+  <label>Result Screenshot</label>
+  <div id="resultImgPreviewWrap" style="display:none;margin-bottom:8px">
+    <img id="resultImgPreview" alt="Result screenshot" style="width:100%;max-height:220px;object-fit:contain;border-radius:12px;border:1px solid #293650;background:#0e1420;display:block">
+  </div>
+  <input type="file" id="resultImgInput" accept="image/*" style="display:none" onchange="handleResultImageSelect(event)">
+  <div style="display:flex;gap:8px">
+    <button type="button" class="mini" id="resultImgBtn" onclick="document.getElementById('resultImgInput').click()">📷 Add Result Image</button>
+    <button type="button" class="mini red" id="resultImgRemoveBtn" style="display:none" onclick="removeResultImage()">Remove</button>
+  </div>
+  <div id="resultImgStatus" style="font-size:9px;color:#8e98ab;margin-top:6px"></div>
+
+  <div class="results-toolbar" style="margin-top:12px"><button type="button" onclick="sortResultsByPoints()">↕ Sort by points</button></div>
   <div id="resultsList"><div class="loading">Loading…</div></div>
   <div class="modal-actions" style="grid-template-columns:1fr"><button id="saveBtn" class="primary" onclick="saveResultsClick()">Save Results</button></div>
 </div></div>
@@ -908,10 +920,84 @@ async function linkTeamAccount(teamId){
   input.onkeydown=(e)=>{ if(e.key==='Enter')submit(); };
 }
 
+// ---- Result screenshot (one image per lobby, stored in Supabase Storage
+// bucket 'lobby-results', link kept in tournament_lobbies.result_image_url).
+// A raw phone screenshot can be 2-4MB — resizing+recompressing in the
+// browser before upload keeps a year of daily results from ballooning
+// Storage usage (see the earlier chat about the 3650-images/year math).
+const RESULT_IMAGE_BUCKET='lobby-results';
+function updateResultImageUI(){
+  const wrap=$('resultImgPreviewWrap'),img=$('resultImgPreview'),removeBtn=$('resultImgRemoveBtn'),btn=$('resultImgBtn');
+  if(currentLobby?.result_image_url){
+    img.src=currentLobby.result_image_url;
+    wrap.style.display='block';removeBtn.style.display='inline-block';
+    btn.textContent='📷 Change Result Image';
+  }else{
+    wrap.style.display='none';removeBtn.style.display='none';
+    btn.textContent='📷 Add Result Image';
+  }
+  $('resultImgStatus').textContent='';
+}
+function compressImageFile(file,maxDim=900,quality=0.72){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>{
+      const img=new Image();
+      img.onload=()=>{
+        let w=img.width,h=img.height;
+        if(w>h&&w>maxDim){h=Math.round(h*maxDim/w);w=maxDim;}
+        else if(h>=w&&h>maxDim){w=Math.round(w*maxDim/h);h=maxDim;}
+        const canvas=document.createElement('canvas');
+        canvas.width=w;canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Compression failed')),'image/jpeg',quality);
+      };
+      img.onerror=()=>reject(new Error('That file is not a valid image.'));
+      img.src=reader.result;
+    };
+    reader.onerror=()=>reject(new Error('Could not read the file.'));
+    reader.readAsDataURL(file);
+  });
+}
+async function handleResultImageSelect(e){
+  const file=e.target.files?.[0];e.target.value='';
+  if(!file||!currentLobby)return;
+  if(!file.type.startsWith('image/'))return msg('Please choose an image file.');
+  $('resultImgStatus').textContent='Compressing…';
+  let blob;
+  try{blob=await compressImageFile(file);}
+  catch(err){$('resultImgStatus').textContent='';return msg('Could not process that image: '+(err?.message||err));}
+  $('resultImgStatus').textContent='Uploading… ('+Math.round(blob.size/1024)+' KB)';
+  const path=currentLobby.id+'.jpg';
+  const up=await sb.storage.from(RESULT_IMAGE_BUCKET).upload(path,blob,{contentType:'image/jpeg',upsert:true});
+  if(up.error){$('resultImgStatus').textContent='';return msg('Upload failed: '+up.error.message+(/bucket/i.test(up.error.message)?'\n\nMake sure a public Storage bucket named "lobby-results" exists.':''));}
+  const {data:pub}=sb.storage.from(RESULT_IMAGE_BUCKET).getPublicUrl(path);
+  const url=pub.publicUrl+'?v='+Date.now(); // cache-bust so a re-upload shows immediately everywhere
+  const r=await sb.from('tournament_lobbies').update({result_image_url:url}).eq('id',currentLobby.id).select();
+  if(r.error){$('resultImgStatus').textContent='';return msg('Image uploaded, but saving its link failed: '+r.error.message);}
+  if(!r.data?.length){$('resultImgStatus').textContent='';return msg('Image uploaded, but the link update was blocked (0 rows) — check tournament_lobbies UPDATE RLS.');}
+  currentLobby.result_image_url=url;
+  const li=lobbies.find(x=>x.id===currentLobby.id);if(li)li.result_image_url=url;
+  updateResultImageUI();
+}
+async function removeResultImage(){
+  if(!currentLobby)return;
+  askConfirm('Remove result image?','This will delete the uploaded screenshot for this lobby.',async()=>{
+    const path=currentLobby.id+'.jpg';
+    await sb.storage.from(RESULT_IMAGE_BUCKET).remove([path]); // best-effort — ignore errors, the DB link removal below is what actually matters
+    const r=await sb.from('tournament_lobbies').update({result_image_url:null}).eq('id',currentLobby.id).select();
+    if(r.error)return msg('Could not remove: '+r.error.message);
+    currentLobby.result_image_url=null;
+    const li=lobbies.find(x=>x.id===currentLobby.id);if(li)li.result_image_url=null;
+    updateResultImageUI();
+  });
+}
+
 async function openResults(id){
   currentLobby=lobbies.find(x=>x.id===id);if(!currentLobby)return;
   currentTournament=tournaments.get(currentLobby.tournament_id);
   $('resultsTitle').textContent='Result — '+fmtShort(currentLobby.lobby_date)+' '+currentLobby.time_label;
+  updateResultImageUI();
   $('resultsList').innerHTML='<div class="loading">Loading…</div>';openModal('resultsModal');
   const [a,b]=await Promise.all([
     sb.from('lobby_teams').select('*, profiles(user_number)').eq('lobby_id',id).eq('confirmation_status','confirmed').order('team_name'),
