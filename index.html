@@ -421,6 +421,9 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
 .icon-language{background:rgba(34,224,138,.14);color:var(--green)}
 .icon-theme{background:rgba(33,230,193,.14);color:var(--cyan)}
 .icon-chat{background:rgba(33,230,193,.14);color:var(--cyan)}
+.icon-download{background:rgba(34,224,138,.14);color:var(--green)}
+/* Hide "Download App" when the site is already running inside the installed app */
+@media (display-mode: standalone){#downloadAppLink{display:none !important}}
 
 @media(min-width:480px){.drawer{width:340px}}
 
@@ -970,6 +973,12 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
       <span class="item-label" data-i18n="drawer.chatAdmin">Chat with admin</span>
       <svg class="item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
     </a>
+
+    <a class="drawer-item" id="downloadAppLink" href="CHT%20ESP%20ORG.apk" download>
+      <span class="item-icon icon-download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg></span>
+      <span class="item-label">Download App</span>
+      <svg class="item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </a>
   </nav>
 </div>
 
@@ -1211,6 +1220,20 @@ window.addEventListener('pageshow', function(event){
   </div>
 </div>
 
+<script>
+// Hide "Download App" when opened from inside the Android app
+(function () {
+  try {
+    if (document.referrer && document.referrer.indexOf('android-app://') === 0) {
+      sessionStorage.setItem('chteo_in_app', '1');
+    }
+    var inApp = sessionStorage.getItem('chteo_in_app') === '1' ||
+      (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    var el = document.getElementById('downloadAppLink');
+    if (inApp && el) el.style.display = 'none';
+  } catch (e) {}
+})();
+</script>
 <script>
 // Register service worker so the site can be installed as an app (PWA)
 if ('serviceWorker' in navigator) {
