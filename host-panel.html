@@ -188,9 +188,9 @@ input{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-r
 <div class="modal" id="roomModal"><div class="box">
   <div class="mh"><b>Room ID / Password</b><button class="close" onclick="closeModal('roomModal')">×</button></div>
   <label>ID/Pass Release Time (optional)</label>
-  <input id="idpassTime" placeholder="e.g. 8:05 PM">
+  <input type="time" id="idpassTime">
   <label>Match Start Time (optional)</label>
-  <input id="matchStartTime" placeholder="e.g. 8:12 PM">
+  <input type="time" id="matchStartTime">
   <div style="font-size:9px;color:#7f8ba0;margin-top:6px;line-height:1.5">এই লবির default সময় থেকে ম্যাচ আসলে দেরিতে/আগে শুরু হলে এখানে আসল শুরুর সময়টা দাও — MATCH ON badge এই সময় অনুযায়ী দেখাবে, লবির নামের পাশের default সময় অনুযায়ী না। খালি রাখলে default সময়ই ব্যবহার হবে। Room ID/Password/WhatsApp না দিয়েও এই দুইটা একাই সেভ করা যাবে — ম্যাচের অনেক আগেই সেট করে রাখতে পারো।</div>
   <label>Room ID *</label><input id="roomId" placeholder="Room ID">
   <label>Password *</label><input id="roomPass" placeholder="Room Password">
@@ -592,13 +592,28 @@ async function refundOffLobby(l){
     msg('Lobby set to Off, but could not reach the wallet server to refund. Set it back On and Off again to retry — anyone already refunded will not be double-refunded.');
   }
 }
+// <input type="time"> works in 24h "HH:MM"; the site stores/displays
+// times as "8:05 PM" everywhere else (matching time_label). Convert both
+// ways at the modal's edges so the rest of the code never has to care.
+function labelTo24h(label){
+  const m=/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec((label||'').trim());
+  if(!m)return '';
+  let h=(+m[1])%12;if(/pm/i.test(m[3]))h+=12;
+  return String(h).padStart(2,'0')+':'+m[2];
+}
+function timeValueTo12h(v){
+  const m=/^(\d{1,2}):(\d{2})$/.exec((v||'').trim());
+  if(!m)return '';
+  const h=+m[1],ampm=h>=12?'PM':'AM';let h12=h%12;if(h12===0)h12=12;
+  return h12+':'+m[2]+' '+ampm;
+}
 async function openRoom(id){
   currentLobby=lobbies.find(x=>x.id===id);if(!currentLobby)return;
   $('roomId').value=currentLobby.room_id||'';$('roomPass').value=currentLobby.room_password||'';
   $('hostCC').value='+'+(currentLobby.host_country_code||'880');
   $('hostWa').value=currentLobby.host_whatsapp||'';
-  $('idpassTime').value=currentLobby.idpass_time||'';
-  $('matchStartTime').value=currentLobby.match_start_time||'';
+  $('idpassTime').value=labelTo24h(currentLobby.idpass_time);
+  $('matchStartTime').value=labelTo24h(currentLobby.match_start_time);
   refreshRoomLinkRow();
   openModal('roomModal')
 }
@@ -623,14 +638,9 @@ function cleanHostWa(){
 async function saveRoom(){
   if(!currentLobby)return;
   const roomId=$('roomId').value.trim(),roomPassword=$('roomPass').value.trim();
-  const idpassTime=$('idpassTime').value.trim();
-  const matchStartTime=$('matchStartTime').value.trim();
+  const idpassTime=timeValueTo12h($('idpassTime').value);
+  const matchStartTime=timeValueTo12h($('matchStartTime').value);
   const {cc,num}=cleanHostWa();
-  const timeFmt=/^\d{1,2}:\d{2}\s*(AM|PM)$/i;
-  if(idpassTime&&!timeFmt.test(idpassTime))
-    return msg('Invalid ID/Pass Release Time format — এই ফরম্যাটে দাও: 8:05 PM (অথবা খালি রাখো)। কিছুই সেভ হয়নি।');
-  if(matchStartTime&&!timeFmt.test(matchStartTime))
-    return msg('Invalid Match Start Time format — এই ফরম্যাটে দাও: 8:12 PM (অথবা খালি রাখো)। কিছুই সেভ হয়নি।');
   // Room ID/Password/WhatsApp are only required if the host is actually
   // trying to save one of them — idpassTime/matchStartTime alone (all
   // three room fields still empty) is a valid, independent save (set
