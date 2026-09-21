@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CHT ESP ORG</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1b2140">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="CHTEO">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <link rel="stylesheet" href="theme.css">
 <script src="global.js?v=2" defer></script>
 <!-- Notice / Tournament / Ranking below all poll for window.supabase directly
@@ -1204,5 +1211,13 @@ window.addEventListener('pageshow', function(event){
   </div>
 </div>
 
+<script>
+// Register service worker so the site can be installed as an app (PWA)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('service-worker.js').catch(function () {});
+  });
+}
+</script>
 </body>
 </html>
