@@ -1,0 +1,31 @@
+{
+  "name": "CHT ESP ORG",
+  "short_name": "CHTEO",
+  "description": "CHT ESP ORG - Esports tournaments, wallet and more",
+  "start_url": "/Website-/index.html",
+  "scope": "/Website-/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1b2140",
+  "theme_color": "#1b2140",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
