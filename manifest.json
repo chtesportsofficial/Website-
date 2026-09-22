@@ -8,6 +8,10 @@
   "orientation": "portrait",
   "background_color": "#000000",
   "theme_color": "#000000",
+  "prefer_related_applications": false,
+  "related_applications": [
+    { "platform": "play", "id": "com.chteo.app" }
+  ],
   "icons": [
     {
       "src": "emblem-192.png",

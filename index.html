@@ -528,6 +528,46 @@ html.intro-lock,html.intro-lock body{overflow:hidden !important}
   #introSplash .intro-logo,#introSplash .intro-logo::after,#introSplash .intro-bar i{animation-duration:.01s;animation-delay:0s}
 }
 </style>
+<style>
+/* ============ Install App banner (browser only, not shown inside the installed app) ============ */
+#installBanner{
+  position:fixed;left:12px;right:12px;
+  bottom:calc(96px + var(--safe-bottom, 0px));
+  z-index:1400;
+  display:none;align-items:center;gap:12px;
+  background:var(--surface,#161c2e);
+  border:1px solid var(--line,rgba(255,255,255,.08));
+  border-radius:16px;padding:12px 12px;
+  box-shadow:0 10px 28px rgba(0,0,0,.4);
+  transform:translateY(16px);opacity:0;
+  transition:transform .35s ease,opacity .35s ease;
+}
+#installBanner.show{display:flex}
+#installBanner.in{transform:translateY(0);opacity:1}
+#installBanner .ib-icon{
+  flex:0 0 auto;width:44px;height:44px;border-radius:12px;overflow:hidden;
+  background:#0d1119;display:flex;align-items:center;justify-content:center;
+}
+#installBanner .ib-icon img{width:100%;height:100%;object-fit:contain;padding:4px}
+#installBanner .ib-body{flex:1 1 auto;min-width:0}
+#installBanner .ib-title{font-size:14px;font-weight:800;color:var(--text,#fff)}
+#installBanner .ib-sub{font-size:12px;color:var(--text-dim,#9aa2b8);margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#installBanner .ib-actions{flex:0 0 auto;display:flex;align-items:center;gap:8px}
+#installBanner .ib-install{
+  border:none;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:800;
+  color:#062018;background:linear-gradient(90deg,var(--green,#22e08a),var(--cyan,#21e6c1));
+  cursor:pointer;white-space:nowrap;
+}
+#installBanner .ib-close{
+  border:none;background:transparent;color:var(--text-dim,#9aa2b8);
+  width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+  border-radius:50%;cursor:pointer;flex:0 0 auto;
+}
+#installBanner .ib-close:active{background:rgba(255,255,255,.08)}
+@media (min-width:701px){#installBanner{left:50%;right:auto;transform:translate(-50%,16px);width:min(420px,100%)}
+  #installBanner.in{transform:translate(-50%,0)}}
+</style>
 </head>
 <body>
 <!-- App intro animation: only shown inside the installed app (or with ?intro=1 for testing) -->
@@ -1348,6 +1388,101 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('service-worker.js').catch(function () {});
   });
 }
+</script>
+
+<!-- Install App banner: shown only in the mobile browser, never inside the installed app -->
+<div id="installBanner" role="dialog" aria-label="Install App">
+  <div class="ib-icon"><img src="emblem-192.png" alt=""></div>
+  <div class="ib-body">
+    <div class="ib-title">CHT ESP ORG অ্যাপ ইনস্টল করুন</div>
+    <div class="ib-sub">দ্রুত লোড, ফুল স্ক্রিন অভিজ্ঞতা</div>
+  </div>
+  <div class="ib-actions">
+    <button type="button" class="ib-install" id="ibInstallBtn">Install</button>
+    <button type="button" class="ib-close" id="ibCloseBtn" aria-label="Close">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+</div>
+<script>
+(function () {
+  try {
+    var KEY_DISMISS = 'chteo_install_dismissed_at';
+    var KEY_INSTALLED = 'chteo_install_installed';
+    var KEY_SESSION = 'chteo_install_seen_session';
+    var COOLDOWN_DAYS = 3;
+    var APK_URL = 'CHT%20ESP%20ORG.apk';
+
+    var inApp = sessionStorage.getItem('chteo_in_app') === '1' ||
+      (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    if (inApp) return; // already using the app, never show
+
+    if (localStorage.getItem(KEY_INSTALLED) === '1') return; // already installed once
+    if (sessionStorage.getItem(KEY_SESSION) === '1') return; // already shown this visit
+
+    var dismissedAt = parseInt(localStorage.getItem(KEY_DISMISS) || '0', 10);
+    if (dismissedAt && (Date.now() - dismissedAt) < COOLDOWN_DAYS * 24 * 60 * 60 * 1000) return;
+
+    var banner = document.getElementById('installBanner');
+    if (!banner) return;
+
+    var deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      deferredPrompt = e;
+    });
+    window.addEventListener('appinstalled', function () {
+      try { localStorage.setItem(KEY_INSTALLED, '1'); } catch (e) {}
+      hide();
+    });
+
+    function show() {
+      sessionStorage.setItem(KEY_SESSION, '1');
+      banner.classList.add('show');
+      requestAnimationFrame(function () { banner.classList.add('in'); });
+    }
+    function hide() {
+      banner.classList.remove('in');
+      setTimeout(function () { banner.classList.remove('show'); }, 350);
+    }
+
+    document.getElementById('ibCloseBtn').addEventListener('click', function () {
+      try { localStorage.setItem(KEY_DISMISS, String(Date.now())); } catch (e) {}
+      hide();
+    });
+
+    document.getElementById('ibInstallBtn').addEventListener('click', function () {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function (choice) {
+          if (choice && choice.outcome === 'accepted') {
+            try { localStorage.setItem(KEY_INSTALLED, '1'); } catch (e) {}
+          }
+          deferredPrompt = null;
+          hide();
+        });
+      } else {
+        window.location.href = APK_URL;
+        hide();
+      }
+    });
+
+    // Chrome (Android) can tell us if the APK is already installed on this phone,
+    // using the same assetlinks.json we set up earlier for the app. Other browsers
+    // don't support this check, so they just fall through to the normal timer below.
+    if (navigator.getInstalledRelatedApps) {
+      navigator.getInstalledRelatedApps().then(function (apps) {
+        if (apps && apps.length > 0) {
+          try { localStorage.setItem(KEY_INSTALLED, '1'); } catch (e) {}
+        } else {
+          setTimeout(show, 4000);
+        }
+      }).catch(function () { setTimeout(show, 4000); });
+    } else {
+      setTimeout(show, 4000);
+    }
+  } catch (e) {}
+})();
 </script>
 </body>
 </html>
