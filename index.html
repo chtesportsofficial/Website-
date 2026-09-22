@@ -536,9 +536,9 @@ html.intro-lock,html.intro-lock body{overflow:hidden !important}
   z-index:1400;
   display:none;align-items:center;gap:12px;
   background:var(--surface,#161c2e);
-  border:1px solid var(--line,rgba(255,255,255,.08));
+  border:1px solid rgba(34,224,138,.55);
   border-radius:16px;padding:12px 12px;
-  box-shadow:0 10px 28px rgba(0,0,0,.4);
+  box-shadow:0 10px 28px rgba(0,0,0,.4),0 0 0 1px rgba(33,230,193,.12),0 0 18px rgba(34,224,138,.18);
   transform:translateY(16px);opacity:0;
   transition:transform .35s ease,opacity .35s ease;
 }
@@ -1394,7 +1394,7 @@ if ('serviceWorker' in navigator) {
 <div id="installBanner" role="dialog" aria-label="Install App">
   <div class="ib-icon"><img src="emblem-192.png" alt=""></div>
   <div class="ib-body">
-    <div class="ib-title">CHT ESP ORG অ্যাপ ডাউনলোড করুন</div>
+    <div class="ib-title">CHT ESP ORG<br>অ্যাপ ডাউনলোড করুন</div>
   </div>
   <div class="ib-actions">
     <button type="button" class="ib-install" id="ibInstallBtn">Install</button>
