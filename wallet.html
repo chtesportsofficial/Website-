@@ -382,6 +382,24 @@
     color:var(--text);
     border:1px solid var(--border);
   }
+  .refer-earn-card{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    text-decoration:none;
+    background:linear-gradient(135deg, rgba(34,197,94,0.14), var(--card-2));
+    border-color:#1f4d3a;
+  }
+  .refer-earn-icon{
+    width:44px;height:44px;border-radius:12px;flex-shrink:0;
+    background:rgba(34,197,94,0.18);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--green);
+  }
+  .refer-earn-icon svg{width:22px;height:22px;}
+  .refer-earn-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:2px;}
+  .refer-earn-sub{font-size:12px;color:var(--muted);}
+  .refer-earn-arrow{font-size:22px;color:var(--green);flex-shrink:0;}
 </style>
 <style>
 :root{
@@ -439,6 +457,17 @@
       <div class="val" id="nonWithdrawableBalance">৳0</div>
     </div>
   </div>
+
+  <a class="card refer-earn-card" href="refer-earn.html">
+    <div class="refer-earn-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="8" r="3.4"/><path d="M3 20c0-3.9 2.9-6.6 6.5-6.6S16 16.1 16 20"/><path d="M18.5 8v5M16 10.5h5"/></svg>
+    </div>
+    <div style="flex:1">
+      <div class="refer-earn-title" data-i18n="wallet.referTitle">Refer & Earn</div>
+      <div class="refer-earn-sub" data-i18n="wallet.referSub">বন্ধুদের ইনভাইট করে বোনাস নিন</div>
+    </div>
+    <div class="refer-earn-arrow">›</div>
+  </a>
 
   <div class="toggle-row">
     <button id="tabAdd" class="toggle-btn active-add" onclick="showPanel('add')">&#8600; <span data-i18n="wallet.addMoney">Add Money</span></button>
