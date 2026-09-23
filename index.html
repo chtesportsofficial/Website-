@@ -1072,44 +1072,10 @@ html.intro-lock,html.intro-lock body{overflow:hidden !important}
 <div class="bottomnav">
   <div class="navitem active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 3 10.5V21h6.2v-6.4h5.6V21H21V10.5L12 3.2Z"/></svg><div class="lbl">Home</div></div>
   <div class="navitem" onclick="window.location.href='refer-earn.html'" style="cursor:pointer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9.5" cy="8" r="3.4"/><path d="M3 20c0-3.9 2.9-6.6 6.5-6.6S16 16.1 16 20"/><path d="M18.5 8v5M16 10.5h5"/></svg><div class="lbl">Refer & Earn</div></div>
-  <div class="navitem" id="navSupportItem" onclick="window.location.href='support.html'" style="cursor:pointer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><path d="M4 15a2 2 0 0 1 2-2h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2Z"/><path d="M20 15a2 2 0 0 0-2-2h-1a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h1a2 2 0 0 0 2-2Z"/><path d="M18 18v1a2 2 0 0 1-2 2h-3"/></svg><div class="lbl">Support</div></div>
+  <div class="navitem support-item" onclick="window.location.href='support.html'" style="cursor:pointer"><div class="support-fab">🎧</div><div class="lbl">Support</div></div>
   <div class="navitem" onclick="window.location.href='wallet.html'" style="cursor:pointer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8a2 2 0 0 1 2-2h11a1 1 0 0 1 1 1v2"/><path d="M4 8v9a2 2 0 0 0 2 2h13a1 1 0 0 0 1-1v-7a2 2 0 0 0-2-2H6a2 2 0 0 1-2-2Z"/></svg><div class="lbl">Wallet</div></div>
   <div class="navitem" onclick="goToProfile()" style="cursor:pointer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9.2"/><circle cx="12" cy="9.6" r="3"/><path d="M6 18.2c1.1-2.5 3.2-3.8 6-3.8s4.9 1.3 6 3.8"/></svg><div class="lbl">Profile</div></div>
 </div>
-<style>
-/* theme.css raises/circles the 3rd bottom-nav slot (old Support FAB) by
-   position, not by class — so just swapping the inner markup wasn't enough.
-   Force this slot back to a plain nav item, matching its siblings. */
-#navSupportItem,
-.bottomnav .navitem:nth-child(3){
-  position:static !important;
-  top:auto !important;
-  bottom:auto !important;
-  transform:none !important;
-  width:auto !important;
-  height:auto !important;
-  min-width:0 !important;
-  min-height:0 !important;
-  margin:0 !important;
-  padding:inherit !important;
-  border-radius:0 !important;
-  background:none !important;
-  box-shadow:none !important;
-  z-index:auto !important;
-}
-#navSupportItem svg,
-.bottomnav .navitem:nth-child(3) svg{
-  width:24px !important;
-  height:24px !important;
-  color:var(--text-dim) !important;
-  stroke:var(--text-dim) !important;
-}
-#navSupportItem .lbl,
-.bottomnav .navitem:nth-child(3) .lbl{
-  font-size:inherit !important;
-  color:inherit !important;
-}
-</style>
 
 </div>
 

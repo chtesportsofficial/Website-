@@ -98,20 +98,29 @@ html[data-theme="light"] .bottomnav{
 .bottomnav .navitem.has-avatar.active .nav-avatar{
   border-color:var(--g-accent);
 }
-.bottomnav .support-item{margin-top:-24px;}
+/* Support used to be raised into a big floating circle with its own
+   emoji, its own border/glow — visibly different from the other four
+   nav items. Fixed here at the stylesheet level (not per-page): the
+   emoji glyph is hidden and redrawn as a plain monochrome icon, the
+   same 21px size as the other .navitem svgs, using the same muted /
+   accent color logic — so Support now looks identical to Home/Refer &
+   Earn/Wallet/Profile everywhere this stylesheet is used. */
+.bottomnav .support-item{margin-top:0;}
 .bottomnav .support-fab{
-  width:52px;height:52px;border-radius:50%;
+  width:21px;height:21px;border-radius:0;
   display:flex;align-items:center;justify-content:center;
-  background:var(--g-bg);
-  border:2px solid var(--g-border);
+  background:var(--g-muted);
+  border:none;
   box-shadow:none;
-  font-size:22px;
-  transition: border-color .2s ease, box-shadow .2s ease;
+  font-size:0;
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 15v-3a8 8 0 0 1 16 0v3'/%3E%3Cpath d='M4 15a2 2 0 0 1 2-2h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2Z'/%3E%3Cpath d='M20 15a2 2 0 0 0-2-2h-1a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h1a2 2 0 0 0 2-2Z'/%3E%3Cpath d='M18 18v1a2 2 0 0 1-2 2h-3'/%3E%3C/svg%3E");
+  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 15v-3a8 8 0 0 1 16 0v3'/%3E%3Cpath d='M4 15a2 2 0 0 1 2-2h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2Z'/%3E%3Cpath d='M20 15a2 2 0 0 0-2-2h-1a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h1a2 2 0 0 0 2-2Z'/%3E%3Cpath d='M18 18v1a2 2 0 0 1-2 2h-3'/%3E%3C/svg%3E");
+  -webkit-mask-repeat:no-repeat;-webkit-mask-position:center;-webkit-mask-size:contain;
+  mask-repeat:no-repeat;mask-position:center;mask-size:contain;
+  transition:background-color .2s ease;
 }
-/* Only glow when the Support page is the CURRENT page (nav item has .active) */
 .bottomnav .navitem.active .support-fab{
-  border-color:var(--g-accent);
-  box-shadow:0 0 16px rgba(34,224,138,.45);
+  background:var(--g-accent);
 }
 
 @media(min-width:701px){
