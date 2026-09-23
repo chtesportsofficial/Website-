@@ -916,6 +916,71 @@ html.intro-lock,html.intro-lock body{overflow:hidden !important}
 </script>
 
 <div class="section">
+  <div class="section-head"><div class="section-title"><span class="bar"></span><span data-i18n="index.otherFeatures">Other Features</span></div></div>
+  <details class="ofa" id="otherFeaturesAcc">
+    <summary class="ofa-summary">
+      <span data-i18n="index.otherFeaturesToggle">সব ফিচার দেখুন</span>
+      <svg class="ofa-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+    </summary>
+    <div class="ofa-list">
+      <a class="ofa-row ofa-row-vip" href="javascript:void(0)" onclick="openVipModal()">
+        <span class="ofa-icon ofa-icon-vip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4 3 5-6 5 6 4-3-2 11H5L3 8Z"/></svg></span>
+        <span class="ofa-label" data-i18n="index.vipButton">BE A VIP MEMBER</span>
+        <span class="ofa-arrow">›</span>
+      </a>
+      <a class="ofa-row" href="gadget-zone.html">
+        <span class="ofa-icon" style="font-size:16px">🎧</span>
+        <span class="ofa-label" data-i18n="index.gadgetZone">GADGET ZONE</span>
+        <span class="ofa-arrow">›</span>
+      </a>
+      <a class="ofa-row" href="diamond-topup.html">
+        <span class="ofa-icon" style="font-size:16px">💎</span>
+        <span class="ofa-label" data-i18n="index.diamondTopUp">DIAMOND TOP UP</span>
+        <span class="ofa-arrow">›</span>
+      </a>
+      <a class="ofa-row" href="id-buy-sell.html">
+        <span class="ofa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg></span>
+        <span class="ofa-label" data-i18n="index.idBuySell">ID Buy/Sell Zone</span>
+        <span class="ofa-arrow">›</span>
+      </a>
+      <a class="ofa-row" href="find-squad.html">
+        <span class="ofa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/></svg></span>
+        <span class="ofa-label" data-i18n="index.findSquad">Find Squad</span>
+        <span class="ofa-arrow">›</span>
+      </a>
+      <a class="ofa-row" href="find-players.html">
+        <span class="ofa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg></span>
+        <span class="ofa-label" data-i18n="index.findPlayers">Find Players</span>
+        <span class="ofa-arrow">›</span>
+      </a>
+      <a class="ofa-row" href="giveaway.html">
+        <span class="ofa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="13" rx="1"/><path d="M12 8v13M3 8h18M12 8c-1.5-3-5-4-5-1.5S9 8 12 8zm0 0c1.5-3 5-4 5-1.5S15 8 12 8z"/></svg></span>
+        <span class="ofa-label" data-i18n="index.dailyGiveaway">Daily Giveaway</span>
+        <span class="ofa-arrow">›</span>
+      </a>
+    </div>
+  </details>
+</div>
+<style>
+.ofa{border:1px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden}
+.ofa-summary{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;font-weight:700;font-size:12.5px;cursor:pointer;list-style:none;color:var(--text-dim)}
+.ofa-summary::-webkit-details-marker{display:none}
+.ofa-chevron{transition:transform .2s ease;flex-shrink:0;color:var(--text-dim)}
+.ofa[open] .ofa-chevron{transform:rotate(180deg)}
+.ofa-list{border-top:1px solid var(--line)}
+.ofa-row{display:flex;align-items:center;gap:12px;padding:12px 15px;text-decoration:none;color:var(--text);border-bottom:1px solid var(--line)}
+.ofa-row:last-child{border-bottom:none}
+.ofa-row:active{background:var(--surface-2)}
+.ofa-icon{width:34px;height:34px;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;color:var(--fire-2);flex-shrink:0}
+.ofa-icon svg{width:18px;height:18px}
+.ofa-label{flex:1;font-size:12.5px;font-weight:700}
+.ofa-arrow{color:var(--text-dim);font-size:16px;flex-shrink:0}
+.ofa-row-vip{background:linear-gradient(135deg,rgba(34,224,138,.10),transparent)}
+.ofa-row-vip .ofa-label{color:var(--green)}
+.ofa-icon-vip{background:linear-gradient(135deg,var(--green),#7dffc0);color:#052e1c}
+</style>
+
+<div class="section">
   <div class="section-head"><div class="section-title"><span class="bar"></span><span data-i18n="index.topTeams">This Month's Top Teams</span></div></div>
   <div class="lb-card">
     <div class="lb-list" id="lbTopTeams"><div class="lb-row"><div class="lb-name" style="color:var(--text-dim)">লোডিং...</div></div></div>
@@ -1002,65 +1067,12 @@ html.intro-lock,html.intro-lock body{overflow:hidden !important}
 })();
 </script>
 
-<div class="section">
-  <div class="section-head"><div class="section-title"><span class="bar"></span><span data-i18n="index.otherFeatures">Other Features</span></div></div>
-  <div class="feature-grid">
-    <a class="feature-card" href="id-buy-sell.html">
-      <div class="feature-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
-      </div>
-      <div class="feature-label" data-i18n="index.idBuySell">ID Buy/Sell Zone</div>
-    </a>
-    <a class="feature-card" href="find-squad.html">
-      <div class="feature-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/></svg>
-      </div>
-      <div class="feature-label" data-i18n="index.findSquad">Find Squad</div>
-    </a>
-    <a class="feature-card" href="find-players.html">
-      <div class="feature-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg>
-      </div>
-      <div class="feature-label" data-i18n="index.findPlayers">Find Players</div>
-    </a>
-    <a class="feature-card" href="giveaway.html">
-      <div class="feature-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="13" rx="1"/><path d="M12 8v13M3 8h18M12 8c-1.5-3-5-4-5-1.5S9 8 12 8zm0 0c1.5-3 5-4 5-1.5S15 8 12 8z"/></svg>
-      </div>
-      <div class="feature-label" data-i18n="index.dailyGiveaway">Daily Giveaway</div>
-    </a>
-  </div>
-</div>
-
-<div class="section">
-  <div class="vip-card">
-    <div class="hero-vip-header">
-      <div class="hero-vip-only" data-i18n="index.vipOnly">ONLY FOR</div>
-      <div class="hero-vip-members" data-i18n="index.vipMembers">VIP MEMBERS</div>
-    </div>
-    <div class="hero-vip-content">
-      <h2 class="hero-vip-title">CHTEO<br>CHAMPIONSHIP<br><span>SSN - 1</span></h2>
-    </div>
-    <button class="hero-vip-button" onclick="openVipModal()"><span data-i18n="index.vipButton">BE A VIP MEMBER</span><span>›</span></button>
-  </div>
-  <div class="feature-grid" style="margin-top:10px">
-    <a class="feature-card" href="gadget-zone.html">
-      <div class="feature-icon" style="font-size:20px">🎧</div>
-      <div class="feature-label" data-i18n="index.gadgetZone">GADGET ZONE</div>
-    </a>
-    <a class="feature-card" href="diamond-topup.html">
-      <div class="feature-icon" style="font-size:20px">💎</div>
-      <div class="feature-label" data-i18n="index.diamondTopUp">DIAMOND TOP UP</div>
-    </a>
-  </div>
-</div>
-
 <div class="app-footer">©CHT ESP ORG. All Rights Reserved</div>
 
 <div class="bottomnav">
   <div class="navitem active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 3 10.5V21h6.2v-6.4h5.6V21H21V10.5L12 3.2Z"/></svg><div class="lbl">Home</div></div>
   <div class="navitem" onclick="window.location.href='refer-earn.html'" style="cursor:pointer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9.5" cy="8" r="3.4"/><path d="M3 20c0-3.9 2.9-6.6 6.5-6.6S16 16.1 16 20"/><path d="M18.5 8v5M16 10.5h5"/></svg><div class="lbl">Refer & Earn</div></div>
-  <div class="navitem support-item" onclick="window.location.href='support.html'" style="cursor:pointer"><div class="support-fab">🎧</div><div class="lbl">Support</div></div>
+  <div class="navitem" onclick="window.location.href='support.html'" style="cursor:pointer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><path d="M4 15a2 2 0 0 1 2-2h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2Z"/><path d="M20 15a2 2 0 0 0-2-2h-1a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h1a2 2 0 0 0 2-2Z"/><path d="M18 18v1a2 2 0 0 1-2 2h-3"/></svg><div class="lbl">Support</div></div>
   <div class="navitem" onclick="window.location.href='wallet.html'" style="cursor:pointer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8a2 2 0 0 1 2-2h11a1 1 0 0 1 1 1v2"/><path d="M4 8v9a2 2 0 0 0 2 2h13a1 1 0 0 0 1-1v-7a2 2 0 0 0-2-2H6a2 2 0 0 1-2-2Z"/></svg><div class="lbl">Wallet</div></div>
   <div class="navitem" onclick="goToProfile()" style="cursor:pointer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9.2"/><circle cx="12" cy="9.6" r="3"/><path d="M6 18.2c1.1-2.5 3.2-3.8 6-3.8s4.9 1.3 6 3.8"/></svg><div class="lbl">Profile</div></div>
 </div>
