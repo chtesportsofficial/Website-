@@ -20,6 +20,9 @@
     --red:#ef4444;
     --red-bg:#3a1620;
     --red-border:#5c2430;
+    --r-lg:20px;
+    --r-md:14px;
+    --shadow-card:0 10px 26px -14px rgba(0,0,0,.55);
   }
   *{box-sizing:border-box;}
   body{
@@ -40,7 +43,7 @@
     display:flex;
     align-items:center;
     justify-content:space-between;
-    padding:10px 4px 20px;
+    padding:10px 4px 22px;
   }
   .header-left{
     display:flex;
@@ -70,100 +73,171 @@
     color:#22c55e;
     background:rgba(34,197,94,0.08);
     padding:6px 12px;
-    border-radius:8px;
-    font-size:13px;
-    font-weight:600;
+    border-radius:999px;
+    font-size:12.5px;
+    font-weight:700;
+    letter-spacing:.2px;
   }
   .card{
     background:var(--card);
     border:1px solid var(--border);
-    border-radius:14px;
+    border-radius:var(--r-md);
     padding:18px;
-    margin-bottom:14px;
+    margin-bottom:16px;
   }
-  .balance-card{
+
+  /* ---------- Balance hero card (balance + prize + split, merged) ---------- */
+  .wallet-hero{
+    position:relative;
+    overflow:hidden;
+    background:linear-gradient(135deg, #10281c 0%, var(--card) 62%);
+    border:1px solid rgba(34,197,94,.22);
+    border-radius:var(--r-lg);
+    padding:24px 22px 20px;
+    box-shadow:var(--shadow-card);
+  }
+  .wallet-hero::before{
+    content:'';
+    position:absolute;top:-70px;right:-50px;
+    width:220px;height:220px;border-radius:50%;
+    background:radial-gradient(circle, rgba(34,197,94,.25), transparent 70%);
+    pointer-events:none;
+  }
+  .wallet-hero::after{
+    content:'';
+    position:absolute;inset:0;
+    background-image:radial-gradient(rgba(255,255,255,.035) 1px, transparent 1px);
+    background-size:16px 16px;
+    pointer-events:none;
+  }
+  .wallet-hero-top{
     display:flex;
     justify-content:space-between;
     align-items:center;
-    background:var(--card-2);
-    border-color:var(--border);
+    position:relative;
+    z-index:1;
   }
+  .wallet-hero-icon{
+    width:44px;height:44px;border-radius:13px;flex-shrink:0;
+    background:linear-gradient(135deg,var(--green),var(--green-dark));
+    display:flex;align-items:center;justify-content:center;
+    color:#06210f;
+    box-shadow:0 6px 14px -6px rgba(34,197,94,.55);
+  }
+  .wallet-hero-icon svg{width:21px;height:21px;}
   .balance-label{
     color:var(--muted);
-    font-size:13px;
-    letter-spacing:.5px;
-    margin-bottom:8px;
+    font-size:11.5px;
+    letter-spacing:.8px;
+    font-weight:700;
+    text-transform:uppercase;
+    margin-bottom:9px;
   }
   .balance-amount{
-    font-size:30px;
+    font-size:28px;
+    font-weight:800;
+    letter-spacing:-.3px;
+    font-variant-numeric:tabular-nums;
+  }
+  .balance-amount::first-letter{
+    font-size:18px;
     font-weight:700;
+    color:var(--muted);
   }
-  .wallet-icon{
-    width:56px;height:56px;
-    opacity:.55;
+  .wallet-hero-divider{
+    height:1px;
+    background:var(--border);
+    margin:18px 0 14px;
+    position:relative;z-index:1;
   }
-  .split-card{
+  .wallet-hero-stats{
     display:flex;
+    position:relative;z-index:1;
   }
-  .split-item{
+  .whs-item{
     flex:1;
     text-align:center;
+    padding:0 4px;
   }
-  .split-item .lbl{
+  .whs-item + .whs-item{ border-left:1px solid var(--border); }
+  .whs-label{
     color:var(--muted);
-    font-size:13px;
-    margin-bottom:8px;
-  }
-  .split-item .val{
-    font-size:20px;
-    font-weight:700;
-  }
-  .split-item.withdrawable .val{color:var(--green);}
-  .split-item.non-withdrawable .val{color:var(--orange);}
-  .divider-v{
-    width:1px;
-    background:var(--border);
-    margin:2px 14px;
-  }
-  .row-card{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-  }
-  .row-card .lbl{color:var(--muted);font-size:14px;}
-  .row-card .val{font-size:16px;font-weight:600;}
-
-  .prize-card{
-    padding:14px 16px;
-  }
-  .prize-title{
-    font-size:14px;
+    font-size:10.5px;
     font-weight:600;
-    color:var(--muted);
     margin-bottom:6px;
+    letter-spacing:.2px;
   }
-  .prize-amount{
+  .whs-val{ font-size:16px; font-weight:800; }
+  #withdrawableBalance{ color:var(--green); }
+  #nonWithdrawableBalance{ color:var(--orange); }
+
+  /* ---------- Earnings summary (Total Prize + Refer Income) ---------- */
+  .earnings-card{ display:flex; padding:14px 14px; }
+  .earnings-item{
+    flex:1;
     display:flex;
     align-items:center;
-    font-size:22px;
-    font-weight:700;
-    line-height:1;
-    margin-bottom:4px;
+    gap:10px;
+    text-align:left;
+    padding:0 8px;
   }
-  .prize-amount .taka{
-    color:var(--text);
-    margin-right:2px;
+  .earnings-item + .earnings-item{ border-left:1px solid var(--border); }
+  .earnings-icon{
+    width:30px;height:30px;border-radius:9px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
   }
-  .prize-sub{
-    color:var(--muted);
-    font-size:12px;
-  }
+  .earnings-icon.prize{ background:rgba(255,122,26,.14); color:var(--orange); }
+  .earnings-icon.refer{ background:rgba(34,197,94,.14); color:var(--green); }
+  .earnings-icon svg{ width:15px;height:15px; }
+  .earnings-label{ color:var(--muted); font-size:10.5px; font-weight:600; margin-bottom:3px; }
+  .earnings-val{ font-size:14.5px; font-weight:800; }
 
+  /* ---------- Refer & Earn ---------- */
+  .refer-earn-card{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    text-decoration:none;
+    position:relative;
+    background:linear-gradient(135deg, rgba(34,197,94,0.30), rgba(34,197,94,0.06));
+    border:1.5px solid var(--green);
+    border-radius:var(--r-md);
+    animation:referPulse 2.4s ease-in-out infinite;
+  }
+  @keyframes referPulse{
+    0%{box-shadow:0 0 0 0 rgba(34,197,94,.45);}
+    70%{box-shadow:0 0 0 11px rgba(34,197,94,0);}
+    100%{box-shadow:0 0 0 0 rgba(34,197,94,0);}
+  }
+  .refer-earn-badge{
+    position:absolute;
+    top:-10px;right:16px;
+    background:linear-gradient(135deg,#ffd447,#ff9f1c);
+    color:#3a2600;
+    font-size:10.5px;font-weight:800;
+    padding:3px 10px;border-radius:20px;
+    box-shadow:0 2px 6px rgba(0,0,0,.3);
+    letter-spacing:.2px;
+  }
+  .refer-earn-icon{
+    width:46px;height:46px;border-radius:12px;flex-shrink:0;
+    background:var(--green);
+    display:flex;align-items:center;justify-content:center;
+    color:#04220f;
+    box-shadow:0 2px 10px rgba(34,197,94,.45);
+  }
+  .refer-earn-icon svg{width:23px;height:23px;}
+  .refer-earn-title{font-size:15.5px;font-weight:800;color:var(--text);margin-bottom:2px;}
+  .refer-earn-sub{font-size:12px;color:var(--muted);}
+  .refer-earn-arrow{font-size:23px;font-weight:700;color:var(--green);flex-shrink:0;}
+  .refer-earn-card.seen .refer-earn-badge{display:none;}
+
+  /* ---------- Add / Withdraw toggle ---------- */
   .toggle-row{
     display:flex;
     background:var(--card);
     border:1px solid var(--border);
-    border-radius:14px;
+    border-radius:16px;
     padding:6px;
     margin-bottom:16px;
     gap:6px;
@@ -171,26 +245,29 @@
   .toggle-btn{
     flex:1;
     border:none;
-    border-radius:10px;
+    border-radius:11px;
     padding:14px 0;
-    font-size:15px;
+    font-size:14.5px;
     font-weight:700;
     display:flex;
     align-items:center;
     justify-content:center;
-    gap:8px;
+    gap:7px;
     cursor:pointer;
     background:transparent;
-    color:var(--text);
+    color:var(--muted);
     transition:.15s ease;
   }
+  .toggle-btn svg{width:17px;height:17px;flex-shrink:0;}
   .toggle-btn.active-add{
-    background:var(--green);
+    background:linear-gradient(135deg,var(--green),var(--green-dark));
     color:#06210f;
+    box-shadow:0 6px 16px -6px rgba(34,197,94,.55);
   }
   .toggle-btn.active-withdraw{
-    background:var(--red);
+    background:linear-gradient(135deg,var(--red),#c0392b);
     color:#2c0a0a;
+    box-shadow:0 6px 16px -6px rgba(239,68,68,.5);
   }
 
   .panel{
@@ -204,25 +281,41 @@
     color:var(--red);
     font-size:13px;
     font-weight:600;
-    margin-bottom:12px;
+    margin-bottom:14px;
   }
   .field-label{
     color:var(--muted);
     font-size:13px;
     margin:2px 0 8px;
   }
+  .input-wrap{ position:relative; }
+  .input-wrap .input-prefix{
+    position:absolute;
+    left:14px;top:50%;
+    transform:translateY(-50%);
+    color:var(--muted);
+    font-weight:700;
+    font-size:15px;
+    pointer-events:none;
+  }
+  .input-wrap input{ padding-left:32px; }
   input, select{
     width:100%;
     background:var(--card-2);
     border:1px solid var(--border);
     color:var(--text);
-    padding:16px 14px;
-    border-radius:10px;
+    padding:15px 14px;
+    border-radius:12px;
     font-size:15px;
     margin-bottom:14px;
     outline:none;
     appearance:none;
     -webkit-appearance:none;
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  input:focus, select:focus{
+    border-color:var(--green);
+    box-shadow:0 0 0 3px rgba(34,197,94,.15);
   }
   input::placeholder{color:#6b7386;}
   select{
@@ -234,19 +327,23 @@
   .btn{
     width:100%;
     border:none;
-    border-radius:10px;
+    border-radius:12px;
     padding:16px 0;
-    font-size:16px;
+    font-size:15.5px;
     font-weight:700;
     cursor:pointer;
     color:#fff;
+    transition:transform .12s ease, box-shadow .12s ease;
   }
+  .btn:active{ transform:scale(.98); }
   .btn-deposit{
-    background:var(--green);
+    background:linear-gradient(135deg,var(--green),var(--green-dark));
     color:#06210f;
+    box-shadow:0 10px 22px -10px rgba(34,197,94,.6);
   }
   .btn-withdraw{
-    background:var(--red);
+    background:linear-gradient(135deg,var(--red),#c0392b);
+    box-shadow:0 10px 22px -10px rgba(239,68,68,.55);
   }
 
   .history-title{
@@ -254,15 +351,16 @@
     align-items:center;
     gap:8px;
     color:var(--muted);
-    font-size:13px;
+    font-size:12.5px;
+    font-weight:700;
     letter-spacing:.5px;
-    margin:20px 4px 10px;
+    margin:22px 4px 10px;
   }
   .history-card{
     background:var(--card);
     border:1px solid var(--border);
-    border-radius:14px;
-    padding:30px 16px;
+    border-radius:var(--r-md);
+    padding:34px 16px;
     text-align:center;
     color:var(--muted);
     font-size:14px;
@@ -270,7 +368,7 @@
   .history-entry{
     background:var(--card);
     border:1px solid var(--border);
-    border-radius:14px;
+    border-radius:var(--r-md);
     padding:14px 16px;
     margin-bottom:10px;
     display:flex;
@@ -294,8 +392,8 @@
     gap:10px;
   }
   .he-icon{
-    width:36px;height:36px;
-    border-radius:10px;
+    width:38px;height:38px;
+    border-radius:11px;
     display:flex;align-items:center;justify-content:center;
     font-size:16px;
     flex-shrink:0;
@@ -335,9 +433,10 @@
     max-width:360px;
     background:var(--card);
     border:1px solid var(--border);
-    border-radius:16px;
+    border-radius:20px;
     padding:26px 20px 20px;
     text-align:center;
+    box-shadow:var(--shadow-card);
   }
   .modal-icon{
     font-size:40px;
@@ -382,43 +481,6 @@
     color:var(--text);
     border:1px solid var(--border);
   }
-  .refer-earn-card{
-    display:flex;
-    align-items:center;
-    gap:14px;
-    text-decoration:none;
-    position:relative;
-    background:linear-gradient(135deg, rgba(34,197,94,0.30), rgba(34,197,94,0.06));
-    border:1.5px solid var(--green);
-    animation:referPulse 2.4s ease-in-out infinite;
-  }
-  @keyframes referPulse{
-    0%{box-shadow:0 0 0 0 rgba(34,197,94,.45);}
-    70%{box-shadow:0 0 0 11px rgba(34,197,94,0);}
-    100%{box-shadow:0 0 0 0 rgba(34,197,94,0);}
-  }
-  .refer-earn-badge{
-    position:absolute;
-    top:-10px;right:16px;
-    background:linear-gradient(135deg,#ffd447,#ff9f1c);
-    color:#3a2600;
-    font-size:10.5px;font-weight:800;
-    padding:3px 10px;border-radius:20px;
-    box-shadow:0 2px 6px rgba(0,0,0,.3);
-    letter-spacing:.2px;
-  }
-  .refer-earn-icon{
-    width:46px;height:46px;border-radius:12px;flex-shrink:0;
-    background:var(--green);
-    display:flex;align-items:center;justify-content:center;
-    color:#04220f;
-    box-shadow:0 2px 10px rgba(34,197,94,.45);
-  }
-  .refer-earn-icon svg{width:23px;height:23px;}
-  .refer-earn-title{font-size:15.5px;font-weight:800;color:var(--text);margin-bottom:2px;}
-  .refer-earn-sub{font-size:12px;color:var(--muted);}
-  .refer-earn-arrow{font-size:23px;font-weight:700;color:var(--green);flex-shrink:0;}
-  .refer-earn-card.seen .refer-earn-badge{display:none;}
 </style>
 <style>
 :root{
@@ -447,38 +509,56 @@
     <div class="uid-chip" id="uidChip">UID: #99</div>
   </div>
 
-  <div class="card prize-card">
-    <div class="prize-title" data-i18n="wallet.totalPrize">Total Prize Won</div>
-    <div class="prize-amount"><span class="taka">৳</span>0</div>
-    <div class="prize-sub" data-i18n="wallet.totalPrizeSub">Total amount your team earned over its lifetime</div>
+  <div class="card earnings-card">
+    <div class="earnings-item">
+      <div class="earnings-icon prize">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M7 5H4a1 1 0 0 0-1 1v1a4 4 0 0 0 4 4M17 5h3a1 1 0 0 1 1 1v1a4 4 0 0 1-4 4"/></svg>
+      </div>
+      <div>
+        <div class="earnings-label" data-i18n="wallet.totalPrize">Tournament Earnings</div>
+        <div class="earnings-val"><span class="taka">৳</span>0</div>
+      </div>
+    </div>
+    <div class="earnings-item">
+      <div class="earnings-icon refer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="8" r="3.4"/><path d="M3 20c0-3.9 2.9-6.6 6.5-6.6S16 16.1 16 20"/><path d="M18.5 8v5M16 10.5h5"/></svg>
+      </div>
+      <div>
+        <div class="earnings-label" data-i18n="wallet.referIncome">Refer Income</div>
+        <div class="earnings-val" id="referIncome">৳0</div>
+      </div>
+    </div>
   </div>
 
-  <div class="card balance-card">
-    <div>
-      <div class="balance-label" data-i18n="wallet.currentBalance">CURRENT BALANCE</div>
-      <div class="balance-amount" id="balanceAmount">৳0</div>
+  <div class="card wallet-hero">
+    <div class="wallet-hero-top">
+      <div>
+        <div class="balance-label" data-i18n="wallet.currentBalance">CURRENT BALANCE</div>
+        <div class="balance-amount" id="balanceAmount">৳0</div>
+      </div>
+      <div class="wallet-hero-icon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 7a2 2 0 0 1 2-2h13a1 1 0 0 1 1 1v2H5" stroke="currentColor" stroke-width="1.6"/>
+          <rect x="3" y="7" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.6"/>
+          <circle cx="16" cy="13" r="1.6" fill="currentColor"/>
+        </svg>
+      </div>
     </div>
-    <svg class="wallet-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M3 7a2 2 0 0 1 2-2h13a1 1 0 0 1 1 1v2H5" stroke="#8a93a6" stroke-width="1.5"/>
-      <rect x="3" y="7" width="18" height="12" rx="2" stroke="#8a93a6" stroke-width="1.5"/>
-      <circle cx="16" cy="13" r="1.6" fill="#8a93a6"/>
-    </svg>
-  </div>
-
-  <div class="card split-card">
-    <div class="split-item withdrawable">
-      <div class="lbl" data-i18n="wallet.withdrawable">Withdrawable</div>
-      <div class="val" id="withdrawableBalance">৳0</div>
-    </div>
-    <div class="divider-v"></div>
-    <div class="split-item non-withdrawable">
-      <div class="lbl" data-i18n="wallet.nonWithdrawable">Non-Withdrawable</div>
-      <div class="val" id="nonWithdrawableBalance">৳0</div>
+    <div class="wallet-hero-divider"></div>
+    <div class="wallet-hero-stats">
+      <div class="whs-item">
+        <div class="whs-label" data-i18n="wallet.withdrawable">Withdrawable</div>
+        <div class="whs-val" id="withdrawableBalance">৳0</div>
+      </div>
+      <div class="whs-item">
+        <div class="whs-label" data-i18n="wallet.nonWithdrawable">Non-Withdrawable</div>
+        <div class="whs-val" id="nonWithdrawableBalance">৳0</div>
+      </div>
     </div>
   </div>
 
   <a class="card refer-earn-card" id="referEarnCard" href="refer-earn.html">
-    <span class="refer-earn-badge" data-i18n="wallet.referBadge">🎁 বোনাস</span>
+    <span class="refer-earn-badge" data-i18n="wallet.referBadge"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>বোনাস</span>
     <div class="refer-earn-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="8" r="3.4"/><path d="M3 20c0-3.9 2.9-6.6 6.5-6.6S16 16.1 16 20"/><path d="M18.5 8v5M16 10.5h5"/></svg>
     </div>
@@ -490,15 +570,21 @@
   </a>
 
   <div class="toggle-row">
-    <button id="tabAdd" class="toggle-btn active-add" onclick="showPanel('add')">&#8600; <span data-i18n="wallet.addMoney">Add Money</span></button>
-    <button id="tabWithdraw" class="toggle-btn" onclick="showPanel('withdraw')">&#8599; <span data-i18n="wallet.withdraw">Withdraw</span></button>
+    <button id="tabAdd" class="toggle-btn active-add" onclick="showPanel('add')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M17 7 7 17"/></svg>
+      <span data-i18n="wallet.addMoney">Add Money</span>
+    </button>
+    <button id="tabWithdraw" class="toggle-btn" onclick="showPanel('withdraw')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17 17H7V7"/><path d="M7 17 17 7"/></svg>
+      <span data-i18n="wallet.withdraw">Withdraw</span>
+    </button>
   </div>
 
   <!-- ADD MONEY PANEL -->
   <div id="panelAdd" class="panel active">
     <div class="card">
       <div class="min-withdraw-note" data-i18n="wallet.minDeposit">Minimum Deposit: 35 BDT</div>
-      <input type="number" id="depositAmount" min="35" step="0.01" placeholder="Enter the Amount" data-i18n-placeholder="wallet.enterAmount">
+      <div class="input-wrap"><span class="input-prefix">৳</span><input type="number" id="depositAmount" min="35" step="0.01" placeholder="Enter the Amount" data-i18n-placeholder="wallet.enterAmount"></div>
       <div id="depositMsg" style="font-size:13px;margin-bottom:10px;"></div>
       <button class="btn btn-deposit" id="depositSubmitBtn" data-i18n="wallet.deposit">Deposit</button>
     </div>
@@ -514,7 +600,7 @@
         <option value="Nagad">Nagad</option>
       </select>
 
-      <input type="number" id="withdrawAmount" min="50" step="0.01" placeholder="Enter your Amount" data-i18n-placeholder="wallet.enterAmount">
+      <div class="input-wrap"><span class="input-prefix">৳</span><input type="number" id="withdrawAmount" min="50" step="0.01" placeholder="Enter your Amount" data-i18n-placeholder="wallet.enterAmount"></div>
 
       <input type="text" id="numberInput" placeholder="Enter your number" data-i18n-placeholder="wallet.enterNumber">
 
