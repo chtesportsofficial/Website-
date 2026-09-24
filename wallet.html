@@ -387,19 +387,38 @@
     align-items:center;
     gap:14px;
     text-decoration:none;
-    background:linear-gradient(135deg, rgba(34,197,94,0.14), var(--card-2));
-    border-color:#1f4d3a;
+    position:relative;
+    background:linear-gradient(135deg, rgba(34,197,94,0.30), rgba(34,197,94,0.06));
+    border:1.5px solid var(--green);
+    animation:referPulse 2.4s ease-in-out infinite;
+  }
+  @keyframes referPulse{
+    0%{box-shadow:0 0 0 0 rgba(34,197,94,.45);}
+    70%{box-shadow:0 0 0 11px rgba(34,197,94,0);}
+    100%{box-shadow:0 0 0 0 rgba(34,197,94,0);}
+  }
+  .refer-earn-badge{
+    position:absolute;
+    top:-10px;right:16px;
+    background:linear-gradient(135deg,#ffd447,#ff9f1c);
+    color:#3a2600;
+    font-size:10.5px;font-weight:800;
+    padding:3px 10px;border-radius:20px;
+    box-shadow:0 2px 6px rgba(0,0,0,.3);
+    letter-spacing:.2px;
   }
   .refer-earn-icon{
-    width:44px;height:44px;border-radius:12px;flex-shrink:0;
-    background:rgba(34,197,94,0.18);
+    width:46px;height:46px;border-radius:12px;flex-shrink:0;
+    background:var(--green);
     display:flex;align-items:center;justify-content:center;
-    color:var(--green);
+    color:#04220f;
+    box-shadow:0 2px 10px rgba(34,197,94,.45);
   }
-  .refer-earn-icon svg{width:22px;height:22px;}
-  .refer-earn-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:2px;}
+  .refer-earn-icon svg{width:23px;height:23px;}
+  .refer-earn-title{font-size:15.5px;font-weight:800;color:var(--text);margin-bottom:2px;}
   .refer-earn-sub{font-size:12px;color:var(--muted);}
-  .refer-earn-arrow{font-size:22px;color:var(--green);flex-shrink:0;}
+  .refer-earn-arrow{font-size:23px;font-weight:700;color:var(--green);flex-shrink:0;}
+  .refer-earn-card.seen .refer-earn-badge{display:none;}
 </style>
 <style>
 :root{
@@ -458,7 +477,8 @@
     </div>
   </div>
 
-  <a class="card refer-earn-card" href="refer-earn.html">
+  <a class="card refer-earn-card" id="referEarnCard" href="refer-earn.html">
+    <span class="refer-earn-badge" data-i18n="wallet.referBadge">🎁 বোনাস</span>
     <div class="refer-earn-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="8" r="3.4"/><path d="M3 20c0-3.9 2.9-6.6 6.5-6.6S16 16.1 16 20"/><path d="M18.5 8v5M16 10.5h5"/></svg>
     </div>
@@ -538,6 +558,19 @@ function getProfile(){
   try { return JSON.parse(localStorage.getItem('user_profile') || '{}'); }
   catch(e){ return {}; }
 }
+// Once the user has actually opened Refer & Earn from this card, the
+// "বোনাস" badge + pulse glow have done their job (getting a first click) —
+// don't keep nagging on every wallet visit after that.
+(function initReferEarnBadge(){
+  const referCard = document.getElementById('referEarnCard');
+  if(!referCard) return;
+  if(localStorage.getItem('referEarnBadgeSeen') === '1'){
+    referCard.classList.add('seen');
+  }
+  referCard.addEventListener('click', function(){
+    localStorage.setItem('referEarnBadgeSeen', '1');
+  });
+})();
 function renderUid(){
   const uidChip=document.getElementById('uidChip');
   if(!uidChip) return;
