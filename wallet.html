@@ -90,7 +90,8 @@
   .wallet-hero{
     position:relative;
     overflow:hidden;
-    background:linear-gradient(135deg, #10281c 0%, var(--card) 62%);
+    background:var(--card);
+    background:linear-gradient(135deg, color-mix(in srgb, var(--green) 14%, var(--card)) 0%, var(--card) 62%);
     border:1px solid rgba(34,197,94,.22);
     border-radius:var(--r-lg);
     padding:24px 22px 20px;
@@ -106,7 +107,7 @@
   .wallet-hero::after{
     content:'';
     position:absolute;inset:0;
-    background-image:radial-gradient(rgba(255,255,255,.035) 1px, transparent 1px);
+    background-image:radial-gradient(color-mix(in srgb, var(--text) 6%, transparent) 1px, transparent 1px);
     background-size:16px 16px;
     pointer-events:none;
   }
