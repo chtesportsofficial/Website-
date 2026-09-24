@@ -811,22 +811,6 @@ html.intro-lock,html.intro-lock body{overflow:hidden !important}
   </div>
 </a>
 
-<a class="my-tournaments-btn" href="tournaments.html">
-  <div class="my-tournaments-icon">📋</div>
-  <div class="my-tournaments-text">
-    <div class="my-tournaments-title" data-i18n="home.myTournaments">My Tournaments</div>
-    <div class="my-tournaments-sub" data-i18n="home.myTournamentsSub">Track the ones you have joined</div>
-  </div>
-  <div class="my-tournaments-arrow">›</div>
-</a>
-<style>
-.my-tournaments-btn{display:flex;align-items:center;gap:11px;margin:12px 14px 0;padding:12px 13px;border-radius:14px;background:linear-gradient(135deg,rgba(255,90,46,.16),var(--surface));border:1.5px solid rgba(255,138,61,.55);text-decoration:none;color:inherit}
-.my-tournaments-icon{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--fire),var(--fire-2));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
-.my-tournaments-text{flex:1;min-width:0}
-.my-tournaments-title{font-size:12px;font-weight:800;color:var(--text)}
-.my-tournaments-sub{font-size:9.5px;color:var(--text-dim);margin-top:1px}
-.my-tournaments-arrow{color:var(--fire-2);font-size:16px;flex-shrink:0}
-</style>
 
 <div class="section" id="dynamicTournamentArea">
   <div id="dynamicTournamentSections"></div>
@@ -1071,7 +1055,7 @@ html.intro-lock,html.intro-lock body{overflow:hidden !important}
 
 <div class="bottomnav">
   <div class="navitem active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 3 10.5V21h6.2v-6.4h5.6V21H21V10.5L12 3.2Z"/></svg><div class="lbl">Home</div></div>
-  <div class="navitem" onclick="window.location.href='refer-earn.html'" style="cursor:pointer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9.5" cy="8" r="3.4"/><path d="M3 20c0-3.9 2.9-6.6 6.5-6.6S16 16.1 16 20"/><path d="M18.5 8v5M16 10.5h5"/></svg><div class="lbl">Refer & Earn</div></div>
+  <div class="navitem" onclick="window.location.href='tournaments.html'" style="cursor:pointer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M9 11h6M9 15h6"/></svg><div class="lbl" data-i18n="home.myTournaments">My Tournaments</div></div>
   <div class="navitem support-item" onclick="window.location.href='support.html'" style="cursor:pointer"><div class="support-fab">🎧</div><div class="lbl">Support</div></div>
   <div class="navitem" onclick="window.location.href='wallet.html'" style="cursor:pointer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8a2 2 0 0 1 2-2h11a1 1 0 0 1 1 1v2"/><path d="M4 8v9a2 2 0 0 0 2 2h13a1 1 0 0 0 1-1v-7a2 2 0 0 0-2-2H6a2 2 0 0 1-2-2Z"/></svg><div class="lbl">Wallet</div></div>
   <div class="navitem" onclick="goToProfile()" style="cursor:pointer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9.2"/><circle cx="12" cy="9.6" r="3"/><path d="M6 18.2c1.1-2.5 3.2-3.8 6-3.8s4.9 1.3 6 3.8"/></svg><div class="lbl">Profile</div></div>

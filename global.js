@@ -807,7 +807,7 @@
   var NAV_MAP = {
     "index.html": "home",
     "": "home",
-    "refer-earn.html": "refer",
+    "tournaments.html": "mytournaments",
     "support.html": "support",
     "wallet.html": "wallet",
     "profile.html": "profile"
@@ -846,9 +846,9 @@
       '<a class="' + cls("home") + '" href="index.html">' +
         '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 3 10.5V21h6.2v-6.4h5.6V21H21V10.5L12 3.2Z"/></svg>' +
         '<div class="lbl" data-i18n="nav.home">Home</div></a>' +
-      '<a class="' + cls("refer") + '" href="refer-earn.html">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9.5" cy="8" r="3.4"/><path d="M3 20c0-3.9 2.9-6.6 6.5-6.6S16 16.1 16 20"/><path d="M18.5 8v5M16 10.5h5"/></svg>' +
-        '<div class="lbl" data-i18n="nav.refer">Refer &amp; Earn</div></a>' +
+      '<a class="' + cls("mytournaments") + '" href="tournaments.html">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M9 11h6M9 15h6"/></svg>' +
+        '<div class="lbl" data-i18n="home.myTournaments">My Tournaments</div></a>' +
       '<a class="' + cls("support") + ' support-item" href="support.html">' +
         '<div class="support-fab">\uD83C\uDFA7</div><div class="lbl" data-i18n="nav.support">Support</div></a>' +
       '<a class="' + cls("wallet") + '" href="wallet.html">' +
