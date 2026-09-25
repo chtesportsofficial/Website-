@@ -1,200 +1,38 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="bn">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Terms & Conditions - CHT ESP ORG</title>
 <link rel="stylesheet" href="theme.css">
 <script src="global.js" defer></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-  :root{
-    --bg: #06070c;
-    --card: #12131c;
-    --card-border: #232635;
-    --text-primary: #f5f6fa;
-    --text-secondary: #8b8fa3;
-    --fire: #ff5a2e;
-    --fire-2: #ff8a3d;
-  }
-
-  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
-
-  body{
-    background: var(--bg);
-    min-height:100vh;
-    display:flex;
-    align-items:flex-start;
-    justify-content:center;
-    font-family:'Inter',sans-serif;
-    color:var(--text-primary);
-  }
-
-  .screen{
-    width:100%;
-    max-width:460px;
-    min-height:100vh;
-    padding:22px 20px 40px;
-  }
-
-  .topbar{
-    display:flex;
-    align-items:center;
-    gap:14px;
-    margin-bottom:20px;
-  }
-
-  .back-btn{
-    width:44px; height:44px;
-    border-radius:12px;
-    background:var(--card);
-    border:1px solid var(--card-border);
-    display:flex; align-items:center; justify-content:center;
-    color:var(--text-primary);
-    cursor:pointer;
-    transition: background .2s ease, transform .15s ease;
-    flex-shrink:0;
-  }
-  @media (hover:hover) and (pointer:fine){
-    .back-btn:hover{ background:#1a1c28; }
-  }
-  .back-btn:active{ transform:scale(0.94); }
-  .back-btn svg{ width:20px; height:20px; }
-
-  .topbar h1{
-    font-size:19px;
-    font-weight:750;
-    letter-spacing:0.4px;
-  }
-
-  .updated{
-    font-size:11.5px;
-    color:var(--text-secondary);
-    margin-bottom:18px;
-  }
-
-  .policy-card{
-    background:var(--card);
-    border:1px solid var(--card-border);
-    border-radius:16px;
-    padding:20px 18px;
-    margin-bottom:14px;
-    box-shadow:0 6px 18px rgba(20,20,35,0.08);
-  }
-
-  .policy-card h2{
-    font-size:14.5px;
-    font-weight:700;
-    margin-bottom:9px;
-    display:flex;
-    align-items:center;
-    gap:9px;
-  }
-  .policy-card h2 .num{
-    width:22px;height:22px;border-radius:7px;
-    background:rgba(255,138,61,.14);color:var(--fire-2);
-    font-size:11px;font-weight:800;
-    display:flex;align-items:center;justify-content:center;flex-shrink:0;
-  }
-
-  .policy-card p{
-    font-size:13px;
-    line-height:1.75;
-    color:var(--text-secondary);
-  }
-  .policy-card p + p{ margin-top:8px; }
-
-  .policy-card ul{
-    margin:8px 0 0 18px;
-    font-size:13px;
-    line-height:1.75;
-    color:var(--text-secondary);
-  }
-
-  .contact-note{
-    text-align:center;
-    font-size:12px;
-    color:var(--text-secondary);
-    margin-top:10px;
-    padding:14px;
-  }
-  .contact-note a{ color:var(--fire-2); text-decoration:none; font-weight:700; }
-</style>
-<style>
-:root{
-  --bg: var(--g-bg);
-  --card: var(--g-surface);
-  --card-border: var(--g-border);
-  --text-primary: var(--g-text);
-  --text-secondary: var(--g-muted);
-}
+:root{--bg:var(--g-bg);--card:var(--g-surface);--border:var(--g-border);--text:var(--g-text);--muted:var(--g-muted);--accent:#ff8a3d;}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,'Hind Siliguri',sans-serif;display:flex;justify-content:center}
+.screen{width:100%;max-width:460px;min-height:100vh;padding:22px 20px 70px}
+.topbar{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.back-btn{width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.back-btn:active{transform:scale(.95)}
+.back-btn svg{width:20px;height:20px}
+.topbar h1{font-size:19px;font-weight:750;letter-spacing:.2px;margin:0}
+.updated{font-size:11.5px;color:var(--muted);margin-bottom:18px}
+.policy-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:19px 18px;margin-bottom:13px}
+.policy-card h2{font-size:14.5px;font-weight:700;margin:0 0 9px;display:flex;align-items:center;gap:9px}
+.num{width:22px;height:22px;border-radius:7px;background:rgba(255,138,61,.14);color:var(--accent);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.policy-card p,.policy-card li{font-size:13px;line-height:1.78;color:var(--muted)}
+.policy-card p{margin:0}
+.policy-card p+p{margin-top:8px}
+.policy-card ul{margin:7px 0 0 18px;padding:0}
+.note{text-align:center;color:var(--muted);font-size:11.5px;line-height:1.65;margin-top:16px}
+.note a{color:var(--accent);text-decoration:none;font-weight:700}
 </style>
 </head>
-<body>
-
-<div class="screen">
-  <div class="topbar">
-    <button class="back-btn" type="button" onclick="history.back()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M19 12H5M12 19l-7-7 7-7"/>
-      </svg>
-    </button>
-    <h1>Terms &amp; Conditions</h1>
-  </div>
-
-  <div class="updated">সর্বশেষ আপডেট: সেপ্টেম্বর ২৪, ২০২৬</div>
-
-  <div class="policy-card">
-    <h2><span class="num">1</span>শর্তাবলী গ্রহণ</h2>
-    <p>CHT ESP ORG (CHTEO)-তে অ্যাকাউন্ট তৈরি করে বা প্ল্যাটফর্ম ব্যবহার করে আপনি এই শর্তাবলীতে সম্মত হচ্ছেন। সম্মত না হলে অনুগ্রহ করে প্ল্যাটফর্ম ব্যবহার করবেন না।</p>
-  </div>
-
-  <div class="policy-card">
-    <h2><span class="num">2</span>অ্যাকাউন্ট ও যোগ্যতা</h2>
-    <ul>
-      <li>একটি সঠিক ও সক্রিয় তথ্য দিয়ে অ্যাকাউন্ট খুলতে হবে</li>
-      <li>একজন ব্যবহারকারী চাইলে একাধিক অ্যাকাউন্ট খুলতে পারবেন — এতে কোনো বাধা নেই</li>
-      <li>অ্যাকাউন্টের নিরাপত্তা (পাসওয়ার্ড) রক্ষার দায়িত্ব ব্যবহারকারীর নিজের</li>
-    </ul>
-  </div>
-
-  <div class="policy-card">
-    <h2><span class="num">3</span>টুর্নামেন্ট নিয়মাবলী</h2>
-    <ul>
-      <li>এন্ট্রি ফি প্রদানের পরই টুর্নামেন্টে অংশগ্রহণ নিশ্চিত হয়</li>
-      <li>নির্ধারিত সময়ে রিপোর্ট না করলে বা ম্যাচে অনুপস্থিত থাকলে ডিসকোয়ালিফাই করা হতে পারে</li>
-      <li>যেকোনো প্রকার চিটিং, হ্যাকিং বা Fair Play নীতি লঙ্ঘন করলে সাথে সাথে ব্যান করা হবে এবং এন্ট্রি ফি ফেরতযোগ্য নয়</li>
-      <li>প্রাইজ পুল ও হোস্ট ফি সংক্রান্ত বিস্তারিত প্রতিটি টুর্নামেন্ট পেজে উল্লেখ থাকবে</li>
-    </ul>
-  </div>
-
-  <div class="policy-card">
-    <h2><span class="num">4</span>ডিপোজিট ও উইথড্র</h2>
-    <p>ওয়ালেটে ডিপোজিট bKash ও Nagad-এর মাধ্যমে করা যাবে।</p>
-    <p><b style="color:var(--text-primary)">ডিপোজিট করা টাকা non-withdrawable</b> — অর্থাৎ ওয়ালেটে জমা করা টাকা সরাসরি উইথড্র করা যাবে না। এই ব্যালেন্স দিয়ে শুধুমাত্র টুর্নামেন্ট এন্ট্রি ফি প্রদান, ডায়মন্ড টপ-আপ বা সাইটের গ্যাজেট/পণ্য কেনার কাজে ব্যবহার করা যাবে। যেহেতু ডিপোজিটের উপর কমিশন প্রদান করা হয়, তাই ডিপোজিট করা অর্থ উইথড্রযোগ্য নয়।</p>
-    <p>উইথড্র রিকোয়েস্ট (যেমন টুর্নামেন্ট জেতা প্রাইজমানি) যাচাই-বাছাই সাপেক্ষে নির্দিষ্ট সময়ের মধ্যে প্রসেস করা হয়। ভুল তথ্য দিয়ে করা লেনদেনের দায়ভার CHTEO বহন করবে না।</p>
-  </div>
-
-  <div class="policy-card">
-    <h2><span class="num">5</span>রেফার‍্যাল ও কমিশন</h2>
-    <p>রেফারেল সিস্টেমের মাধ্যমে অর্জিত কমিশন শুধুমাত্র বৈধ, প্রকৃত ব্যবহারকারীদের রেফারের ক্ষেত্রেই প্রযোজ্য। ভুয়া অ্যাকাউন্ট বা self-refer শনাক্ত হলে কমিশন বাতিল ও অ্যাকাউন্ট সাসপেন্ড করা হতে পারে।</p>
-  </div>
-
-  <div class="policy-card">
-    <h2><span class="num">6</span>দায়বদ্ধতার সীমাবদ্ধতা</h2>
-    <p>প্ল্যাটফর্মের কারিগরি সমস্যা, সার্ভার ডাউনটাইম বা তৃতীয় পক্ষের (পেমেন্ট গেটওয়ে) সমস্যার কারণে সৃষ্ট ক্ষতির জন্য CHTEO দায়ী থাকবে না। আমরা সর্বোচ্চ সেবা নিশ্চিতে কাজ করি।</p>
-  </div>
-
-  <div class="policy-card">
-    <h2><span class="num">7</span>শর্তাবলীর পরিবর্তন</h2>
-    <p>CHTEO যেকোনো সময় এই শর্তাবলী আপডেট করার অধিকার রাখে। গুরুত্বপূর্ণ পরিবর্তন হলে Notice-এর মাধ্যমে জানানো হবে। আপডেটের পরও প্ল্যাটফর্ম ব্যবহার চালিয়ে গেলে তা নতুন শর্তাবলীতে সম্মতি হিসেবে গণ্য হবে।</p>
-  </div>
-
-  <div class="contact-note">
-    কোনো প্রশ্ন থাকলে যোগাযোগ করুন — <a href="support.html">Help &amp; Support</a>
-  </div>
-</div>
-
-</body>
-</html>
+<body><div class="screen">
+<div class="topbar"><button class="back-btn" type="button" onclick="history.back()" aria-label="Back">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+</button><h1>Terms & Conditions</h1></div>
+<div class="updated">সর্বশেষ আপডেট: সেপ্টেম্বর ২৪, ২০২৬</div>
+<div class="policy-card"><h2><span class="num">1</span>পরিষেবার ব্যবহার</h2>CHT ESP ORG (CHTEO) একটি gaming/esports platform। Website বা app ব্যবহার করে account, tournament, wallet, referral এবং অন্যান্য available service ব্যবহার করার সময় এই Terms &amp; Conditions প্রযোজ্য। Website ব্যবহার চালিয়ে গেলে আপনি এই নিয়মগুলো মেনে চলতে সম্মত হচ্ছেন।</div><div class="policy-card"><h2><span class="num">2</span>অ্যাকাউন্ট</h2><ul><li>Account তৈরি করার সময় সঠিক ও প্রয়োজনীয় তথ্য দিতে হবে।</li><li>নিজের account-এর login information নিরাপদ রাখা ব্যবহারকারীর দায়িত্ব।</li><li>অন্যের account ব্যবহার, impersonation বা প্রতারণামূলক পরিচয় ব্যবহার করা নিষিদ্ধ।</li><li>অস্বাভাবিক, প্রতারণামূলক বা নিয়মভঙ্গের কার্যকলাপ দেখা গেলে account/service সাময়িকভাবে সীমিত বা বন্ধ করা হতে পারে।</li></ul></div><div class="policy-card"><h2><span class="num">3</span>Tournament</h2><ul><li>প্রতিটি tournament-এর entry fee, format, slot, rules ও prize details সংশ্লিষ্ট tournament page-এ দেওয়া থাকবে।</li><li>Registration সম্পন্ন হওয়ার আগে team/player information সঠিকভাবে দেওয়া ব্যবহারকারীর দায়িত্ব।</li><li>ভুল UID, নাম, contact information বা duplicate/invalid registration-এর কারণে অংশগ্রহণে সমস্যা হলে CHTEO প্রয়োজনীয় ব্যবস্থা নিতে পারে।</li><li>Match/lobby সংক্রান্ত নির্দেশনা, room information ও সময় পরিবর্তিত হলে official notice বা tournament page অনুসরণ করতে হবে।</li></ul></div><div class="policy-card"><h2><span class="num">4</span>Entry Fee & Payment</h2><ul><li>Tournament entry fee wallet balance অথবা available payment checkout-এর মাধ্যমে নেওয়া হতে পারে।</li><li>Wallet থেকে entry fee সফলভাবে কাটা হলে registration confirmation system অনুযায়ী সংরক্ষিত হবে।</li><li>External payment provider-এর payment page ব্যবহার করলে payment processing provider-এর নিজস্ব terms-ও প্রযোজ্য হতে পারে।</li><li>Payment status নিশ্চিত না হওয়া পর্যন্ত registration সম্পন্ন হয়েছে বলে ধরে নেওয়া উচিত নয়।</li></ul></div><div class="policy-card"><h2><span class="num">5</span>Wallet, Deposit & Withdraw</h2><ul><li>Wallet-এ balance দুই category-তে ভাগ করা থাকে — <b style="color:var(--text)">Non-withdrawable balance</b> এবং <b style="color:var(--text)">Withdrawable balance</b>।</li><li>bKash/Nagad দিয়ে করা deposit non-withdrawable balance-এ জমা হয়। এই balance দিয়ে শুধুমাত্র tournament entry fee, diamond top-up বা gadget/product কেনা যায় — সরাসরি উইথড্র করা যায় না, কারণ deposit-এর উপর referral commission প্রদান করা হয়।</li><li>Tournament prize money এবং referral commission withdrawable balance-এ জমা হয় এবং এই balance withdraw করা যায়।</li><li>বর্তমান wallet interface অনুযায়ী minimum deposit 35 BDT এবং minimum withdraw 50 BDT; CHTEO ভবিষ্যতে এগুলো পরিবর্তন করতে পারে এবং পরিবর্তিত limit website-এ দেখানো হবে।</li><li>Withdraw request শুধুমাত্র withdrawable balance থেকে করা যায় এবং request review/processing-এর জন্য pending থাকতে পারে।</li><li>Withdraw-এর জন্য দেওয়া bKash/Nagad account number সঠিক দেওয়া ব্যবহারকারীর দায়িত্ব। ভুল account information-এর কারণে payment সমস্যা হলে অতিরিক্ত verification প্রয়োজন হতে পারে।</li></ul></div><div class="policy-card"><h2><span class="num">6</span>Referral / Refer & Earn</h2><ul><li>Referral commission পাওয়ার জন্য referred user-কে আপনার referral link/code দিয়ে register করতে এবং প্রযোজ্য deposit condition পূরণ করতে হবে।</li><li>বর্তমান referral rules অনুযায়ী বন্ধুর প্রথম deposit-এ আপনি 10% commission পাবেন, এবং আপনার বন্ধুও তার প্রথম deposit-এ +10% extra bonus পাবে। এরপর referral করার দিন থেকে 6 মাস পর্যন্ত বন্ধুর প্রতিটি deposit-এ আপনি 5% commission পাবেন; এর পরে আর commission প্রযোজ্য হবে না।</li><li>সব commission withdrawable balance-এ সাথে সাথে যোগ হয় — কোনো hold বা waiting period নেই।</li><li>নিজের জন্য multiple/fake account তৈরি, referral manipulation বা fraudulent activity নিষিদ্ধ।</li></ul></div><div class="policy-card"><h2><span class="num">7</span>Refund & Cancellation</h2>Tournament/lobby CHTEO-এর পক্ষ থেকে cancel/off করা হলে, system-এ wallet balance দিয়ে পরিশোধ করা eligible entry fee-এর refund প্রযোজ্য হতে পারে। Refund সাধারণত যে balance source থেকে fee নেওয়া হয়েছিল সেই অনুযায়ী credit করা হয়। External payment provider-এর transaction refund হলে provider processing ও verification-এর প্রয়োজন হতে পারে। বিস্তারিত <a href="refund-policy.html" style="color:var(--accent);font-weight:700;text-decoration:none">Refund Policy</a>-তে দেওয়া আছে।</div><div class="policy-card"><h2><span class="num">8</span>Prohibited Activities</h2><ul><li>Cheating, hacking, exploit abuse, match fixing বা অন্যায্য advantage নেওয়া নিষিদ্ধ।</li><li>অন্য ব্যবহারকারীর account/data অনুমতি ছাড়া ব্যবহার বা সংগ্রহ করা নিষিদ্ধ।</li><li>Payment/referral/wallet system exploit, chargeback abuse বা false claim করা নিষিদ্ধ।</li><li>Website-এর security বা normal operation ইচ্ছাকৃতভাবে ব্যাহত করার চেষ্টা করা নিষিদ্ধ।</li></ul></div><div class="policy-card"><h2><span class="num">9</span>Content & Intellectual Property</h2>CHTEO-এর logo, branding, website design, original text, graphics এবং অন্যান্য protected content অনুমতি ছাড়া commercialভাবে copy, modify বা redistribute করা যাবে না। ব্যবহারকারীর submitted content-এর ক্ষেত্রে প্রয়োজনীয় service পরিচালনার জন্য CHTEO প্রদত্ত content ব্যবহার/সংরক্ষণ করতে পারে, subject to the Privacy Policy.</div><div class="policy-card"><h2><span class="num">10</span>Service Changes & Availability</h2>Tournament, wallet, referral, shop/gadget, ID marketplace বা অন্য কোনো feature সময়ের সাথে যোগ, পরিবর্তন, সাময়িক বন্ধ বা সরানো হতে পারে। Maintenance, technical issue, third-party service outage বা অন্য operational কারণে service unavailable হলে সব ক্ষেত্রে তা CHTEO-এর সরাসরি নিয়ন্ত্রণে নাও থাকতে পারে।</div><div class="policy-card"><h2><span class="num">11</span>Policy Updates</h2>এই Terms সময়ের সাথে পরিবর্তিত হতে পারে। গুরুত্বপূর্ণ পরিবর্তন হলে website/app notice বা অন্য reasonable means-এ জানানো হতে পারে। পরিবর্তনের পর service ব্যবহার করলে updated Terms প্রযোজ্য হবে।</div>
+<div class="note">কোনো প্রশ্ন থাকলে <a href="support.html">Help &amp; Support</a>-এ যোগাযোগ করুন।</div>
+</div></body></html>

@@ -1,194 +1,38 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="bn">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Privacy Policy - CHT ESP ORG</title>
 <link rel="stylesheet" href="theme.css">
 <script src="global.js" defer></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-  :root{
-    --bg: #06070c;
-    --card: #12131c;
-    --card-border: #232635;
-    --text-primary: #f5f6fa;
-    --text-secondary: #8b8fa3;
-    --fire: #ff5a2e;
-    --fire-2: #ff8a3d;
-  }
-
-  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
-
-  body{
-    background: var(--bg);
-    min-height:100vh;
-    display:flex;
-    align-items:flex-start;
-    justify-content:center;
-    font-family:'Inter',sans-serif;
-    color:var(--text-primary);
-  }
-
-  .screen{
-    width:100%;
-    max-width:460px;
-    min-height:100vh;
-    padding:22px 20px 40px;
-  }
-
-  .topbar{
-    display:flex;
-    align-items:center;
-    gap:14px;
-    margin-bottom:20px;
-  }
-
-  .back-btn{
-    width:44px; height:44px;
-    border-radius:12px;
-    background:var(--card);
-    border:1px solid var(--card-border);
-    display:flex; align-items:center; justify-content:center;
-    color:var(--text-primary);
-    cursor:pointer;
-    transition: background .2s ease, transform .15s ease;
-    flex-shrink:0;
-  }
-  @media (hover:hover) and (pointer:fine){
-    .back-btn:hover{ background:#1a1c28; }
-  }
-  .back-btn:active{ transform:scale(0.94); }
-  .back-btn svg{ width:20px; height:20px; }
-
-  .topbar h1{
-    font-size:19px;
-    font-weight:750;
-    letter-spacing:0.4px;
-  }
-
-  .updated{
-    font-size:11.5px;
-    color:var(--text-secondary);
-    margin-bottom:18px;
-  }
-
-  .policy-card{
-    background:var(--card);
-    border:1px solid var(--card-border);
-    border-radius:16px;
-    padding:20px 18px;
-    margin-bottom:14px;
-    box-shadow:0 6px 18px rgba(20,20,35,0.08);
-  }
-
-  .policy-card h2{
-    font-size:14.5px;
-    font-weight:700;
-    margin-bottom:9px;
-    display:flex;
-    align-items:center;
-    gap:9px;
-  }
-  .policy-card h2 .num{
-    width:22px;height:22px;border-radius:7px;
-    background:rgba(255,138,61,.14);color:var(--fire-2);
-    font-size:11px;font-weight:800;
-    display:flex;align-items:center;justify-content:center;flex-shrink:0;
-  }
-
-  .policy-card p{
-    font-size:13px;
-    line-height:1.75;
-    color:var(--text-secondary);
-  }
-  .policy-card p + p{ margin-top:8px; }
-
-  .policy-card ul{
-    margin:8px 0 0 18px;
-    font-size:13px;
-    line-height:1.75;
-    color:var(--text-secondary);
-  }
-
-  .contact-note{
-    text-align:center;
-    font-size:12px;
-    color:var(--text-secondary);
-    margin-top:10px;
-    padding:14px;
-  }
-  .contact-note a{ color:var(--fire-2); text-decoration:none; font-weight:700; }
-</style>
-<style>
-:root{
-  --bg: var(--g-bg);
-  --card: var(--g-surface);
-  --card-border: var(--g-border);
-  --text-primary: var(--g-text);
-  --text-secondary: var(--g-muted);
-}
+:root{--bg:var(--g-bg);--card:var(--g-surface);--border:var(--g-border);--text:var(--g-text);--muted:var(--g-muted);--accent:#ff8a3d;}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,'Hind Siliguri',sans-serif;display:flex;justify-content:center}
+.screen{width:100%;max-width:460px;min-height:100vh;padding:22px 20px 70px}
+.topbar{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.back-btn{width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.back-btn:active{transform:scale(.95)}
+.back-btn svg{width:20px;height:20px}
+.topbar h1{font-size:19px;font-weight:750;letter-spacing:.2px;margin:0}
+.updated{font-size:11.5px;color:var(--muted);margin-bottom:18px}
+.policy-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:19px 18px;margin-bottom:13px}
+.policy-card h2{font-size:14.5px;font-weight:700;margin:0 0 9px;display:flex;align-items:center;gap:9px}
+.num{width:22px;height:22px;border-radius:7px;background:rgba(255,138,61,.14);color:var(--accent);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.policy-card p,.policy-card li{font-size:13px;line-height:1.78;color:var(--muted)}
+.policy-card p{margin:0}
+.policy-card p+p{margin-top:8px}
+.policy-card ul{margin:7px 0 0 18px;padding:0}
+.note{text-align:center;color:var(--muted);font-size:11.5px;line-height:1.65;margin-top:16px}
+.note a{color:var(--accent);text-decoration:none;font-weight:700}
 </style>
 </head>
-<body>
-
-<div class="screen">
-  <div class="topbar">
-    <button class="back-btn" type="button" onclick="history.back()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M19 12H5M12 19l-7-7 7-7"/>
-      </svg>
-    </button>
-    <h1>Privacy Policy</h1>
-  </div>
-
-  <div class="updated">সর্বশেষ আপডেট: সেপ্টেম্বর ২৪, ২০২৬</div>
-
-  <div class="policy-card">
-    <h2><span class="num">1</span>ভূমিকা</h2>
-    <p>CHT ESP ORG (CHTEO) আপনার ব্যক্তিগত তথ্যের গোপনীয়তা রক্ষা করতে প্রতিশ্রুতিবদ্ধ। এই Privacy Policy ব্যাখ্যা করে আমরা কী তথ্য সংগ্রহ করি, কীভাবে ব্যবহার করি এবং কীভাবে সুরক্ষিত রাখি।</p>
-  </div>
-
-  <div class="policy-card">
-    <h2><span class="num">2</span>আমরা যা সংগ্রহ করি</h2>
-    <ul>
-      <li>নাম, ইমেইল/ফোন নম্বর</li>
-      <li>টিম নেম এবং গেম UID/গেম নেম — শুধুমাত্র রুম এন্ট্রির সময় যাচাই করতে যে এন্ট্রিকারী সঠিক টিমেরই সদস্য</li>
-      <li>ওয়ালেট লেনদেন ও ডিপোজিট/উইথড্র রেকর্ড (bKash, Nagad-এর মাধ্যমে)</li>
-      <li>ডিভাইস ও ব্যবহার সংক্রান্ত সাধারণ তথ্য (অ্যানালিটিক্সের জন্য)</li>
-    </ul>
-  </div>
-
-  <div class="policy-card">
-    <h2><span class="num">3</span>তথ্যের ব্যবহার</h2>
-    <p>সংগৃহীত তথ্য শুধুমাত্র অ্যাকাউন্ট পরিচালনা, টুর্নামেন্ট আয়োজন, পুরস্কার বিতরণ, পেমেন্ট প্রসেসিং এবং সাপোর্ট প্রদানের জন্য ব্যবহার করা হয়। আমরা কখনো তৃতীয় পক্ষের কাছে আপনার ব্যক্তিগত তথ্য বিক্রি করি না।</p>
-  </div>
-
-  <div class="policy-card">
-    <h2><span class="num">4</span>পেমেন্ট তথ্যের নিরাপত্তা</h2>
-    <p>সব ডিপোজিট ও উইথড্র লেনদেন নিরাপদ পেমেন্ট গেটওয়ের মাধ্যমে প্রসেস হয়। আমরা আপনার bKash/Nagad পিন বা পাসওয়ার্ড কখনো সংরক্ষণ করি না — এই তথ্য শুধুমাত্র সংশ্লিষ্ট পেমেন্ট প্রোভাইডারের কাছেই থাকে।</p>
-  </div>
-
-  <div class="policy-card">
-    <h2><span class="num">5</span>ডেটা সুরক্ষা</h2>
-    <p>আপনার তথ্য এনক্রিপ্টেড সার্ভারে সংরক্ষণ করা হয় এবং অননুমোদিত প্রবেশ ঠেকাতে যুক্তিসঙ্গত নিরাপত্তা ব্যবস্থা নেওয়া হয়। তবে ইন্টারনেটে কোনো ডেটা ট্রান্সমিশন ১০০% নিরাপদ নয় — এই ঝুঁকি সম্পর্কে ব্যবহারকারীর অবগত থাকা উচিত।</p>
-  </div>
-
-  <div class="policy-card">
-    <h2><span class="num">6</span>আপনার অধিকার</h2>
-    <p>আপনি যেকোনো সময় আপনার অ্যাকাউন্ট তথ্য দেখতে, সংশোধন করতে বা মুছে ফেলার অনুরোধ করতে পারেন। এজন্য আমাদের Support-এ যোগাযোগ করুন।</p>
-  </div>
-
-  <div class="policy-card">
-    <h2><span class="num">7</span>নীতি পরিবর্তন</h2>
-    <p>এই Privacy Policy সময়ে সময়ে আপডেট হতে পারে। কোনো গুরুত্বপূর্ণ পরিবর্তন হলে Notice-এর মাধ্যমে জানিয়ে দেওয়া হবে।</p>
-  </div>
-
-  <div class="contact-note">
-    কোনো প্রশ্ন থাকলে যোগাযোগ করুন — <a href="support.html">Help &amp; Support</a>
-  </div>
-</div>
-
-</body>
-</html>
+<body><div class="screen">
+<div class="topbar"><button class="back-btn" type="button" onclick="history.back()" aria-label="Back">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+</button><h1>Privacy Policy</h1></div>
+<div class="updated">সর্বশেষ আপডেট: সেপ্টেম্বর ২৪, ২০২৬</div>
+<div class="policy-card"><h2><span class="num">1</span>কী তথ্য সংগ্রহ করা হয়</h2><ul><li>Account/profile information যেমন নাম, email, phone/WhatsApp number, team name ও profile-related information।</li><li>Tournament-এর জন্য game UID, game name, player/team information ও contact information।</li><li>Wallet transaction, deposit, withdraw এবং payment/reference information।</li><li>Referral activity, feedback/support request এবং service ব্যবহারের প্রয়োজনীয় technical information।</li></ul></div><div class="policy-card"><h2><span class="num">2</span>তথ্য কেন ব্যবহার করা হয়</h2><ul><li>Account তৈরি ও পরিচালনা করতে।</li><li>Tournament registration, lobby management ও prize/earnings processing করতে।</li><li>Deposit, wallet, withdraw ও payment verification পরিচালনা করতে।</li><li>Referral commission, support, feedback এবং fraud/abuse prevention-এর জন্য।</li></ul></div><div class="policy-card"><h2><span class="num">3</span>Payment Information</h2>Payment checkout-এর সময় payment provider-এর hosted page ব্যবহার হতে পারে। CHTEO-এর system-এ payment provider-এর নিজস্ব authentication credentials যেমন bKash/Nagad PIN বা password প্রয়োজন হলে সেগুলো দেওয়া উচিত নয়; payment provider-এর official page ছাড়া কোথাও এসব তথ্য শেয়ার করবেন না।</div><div class="policy-card"><h2><span class="num">4</span>তথ্য কার সাথে শেয়ার হতে পারে</h2>Service চালাতে প্রয়োজন হলে payment provider, hosting/database provider, analytics/technical service বা authorised service personnel-এর সাথে প্রয়োজনীয় তথ্য process/share হতে পারে। আমরা আপনার ব্যক্তিগত তথ্য বিক্রি করার উদ্দেশ্যে সংগ্রহ করি না। আইনগত বাধ্যবাধকতা, fraud prevention বা security প্রয়োজন হলে তথ্য disclosure হতে পারে।</div><div class="policy-card"><h2><span class="num">5</span>Data Security</h2>আমরা account, wallet ও service data সুরক্ষিত রাখতে reasonable technical এবং organisational measures ব্যবহার করার চেষ্টা করি। তবে কোনো internet service-ই সম্পূর্ণ ঝুঁকিমুক্ত নয়। আপনার password/OTP/PIN অন্য কারও সাথে শেয়ার করবেন না।</div><div class="policy-card"><h2><span class="num">6</span>Data Retention</h2>কোন তথ্য কতদিন রাখা হবে তা তার উদ্দেশ্য, account status, transaction history, security প্রয়োজন এবং প্রযোজ্য আইন/record-keeping requirements-এর ওপর নির্ভর করতে পারে। প্রয়োজন শেষ হলে বা বৈধ অনুরোধ এলে applicable process অনুযায়ী data deletion/anonymisation বিবেচনা করা হতে পারে।</div><div class="policy-card"><h2><span class="num">7</span>আপনার অধিকার</h2>আপনার account/profile information সম্পর্কে access, correction বা deletion request করতে Support-এর মাধ্যমে যোগাযোগ করতে পারেন। কিছু transaction/security record আইনগত বা operational কারণে সঙ্গে সঙ্গে মুছে ফেলা সম্ভব নাও হতে পারে।</div><div class="policy-card"><h2><span class="num">8</span>Cookies & Local Storage</h2>Website functionality, language/theme preference, login/session-related state এবং কিছু interface feature-এর জন্য cookies বা browser local storage ব্যবহার হতে পারে। এগুলো বন্ধ করলে কিছু feature সঠিকভাবে কাজ নাও করতে পারে।</div><div class="policy-card"><h2><span class="num">9</span>Policy Changes</h2>Privacy Policy সময়ের সাথে আপডেট হতে পারে। নতুন version প্রকাশের তারিখ এই page-এ দেখানো হবে। গুরুত্বপূর্ণ পরিবর্তনের ক্ষেত্রে reasonable notice দেওয়ার চেষ্টা করা হবে।</div>
+<div class="note">কোনো প্রশ্ন থাকলে <a href="support.html">Help &amp; Support</a>-এ যোগাযোগ করুন।</div>
+</div></body></html>
