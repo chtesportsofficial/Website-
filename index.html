@@ -142,6 +142,12 @@ html[data-theme="light"] .lb-card{background:linear-gradient(135deg,rgba(33,230,
 .lb-amt{font-weight:800;font-size:11px;color:var(--green);white-space:nowrap}
 .lb-see{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;padding:9px 0;border-radius:10px;background:var(--surface-2);border:1px solid var(--line);font-size:11px;font-weight:700;color:var(--text-dim)}
 .app-footer{text-align:left;font-size:10.5px;color:var(--text-dimmer);padding:14px 16px 4px}
+/* global.js tags every page's .app-footer with "global-footer" and theme.css
+   reserves ~130px bottom padding on that class for pages with no footer of
+   their own. index.html already has its own full footer above the fixed
+   bottomnav (body already reserves 96px for the nav), so that extra 130px
+   just becomes empty space here — cancel it back down. */
+.app-footer.global-footer{padding:14px 16px 4px !important;margin-top:0 !important}
 .site-footer{margin:26px 16px 0;padding-top:24px;border-top:1px solid var(--line);text-align:left}
 .footer-brand{display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:11px;margin-bottom:20px}
 .footer-brand-logo{width:46px;height:46px;object-fit:contain;flex-shrink:0}
