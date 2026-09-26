@@ -145,7 +145,7 @@ html[data-theme="light"] .lb-card{background:linear-gradient(135deg,rgba(33,230,
 .site-footer{margin:26px 16px 0;padding-top:24px;border-top:1px solid var(--line);text-align:left}
 .footer-brand{display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:11px;margin-bottom:20px}
 .footer-brand-logo{width:46px;height:46px;object-fit:contain;flex-shrink:0}
-.footer-brand-name{font-size:15px;font-weight:800;letter-spacing:.04em;background:linear-gradient(90deg,var(--fire),var(--fire-2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.footer-brand-name{font-size:15px;font-weight:800;letter-spacing:.04em;color:var(--text)}
 .footer-social{display:flex;justify-content:flex-start;gap:12px;margin-bottom:22px}
 .footer-social-icon{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .footer-social-icon svg{width:18px;height:18px}
@@ -155,11 +155,8 @@ html[data-theme="light"] .lb-card{background:linear-gradient(135deg,rgba(33,230,
 .footer-social-icon.insta{background:radial-gradient(circle at 30% 110%,#fdf497 0%,#fdf497 5%,#fd5949 45%,#d6249f 60%,#285AEB 90%)}
 .footer-pay-label{text-align:left;font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dimmer);margin-bottom:10px}
 .footer-pay-row{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:9px;margin-bottom:22px}
-.pay-logo{display:flex;align-items:center;gap:7px;background:#fff;border-radius:9px;padding:8px 14px;box-shadow:0 3px 10px rgba(0,0,0,.2)}
-.pay-logo svg{width:22px;height:22px;flex-shrink:0}
-.pay-logo b{font-size:13.5px;font-weight:700;letter-spacing:.01em;font-family:Arial,sans-serif}
-.pay-logo.bkash b{color:#1a1a1a}
-.pay-logo.nagad b{color:#e4292c}
+.pay-logo{display:flex;align-items:center;background:#fff;border-radius:9px;padding:8px 14px;box-shadow:0 3px 10px rgba(0,0,0,.2)}
+.pay-logo img{height:20px;width:auto;display:block}
 .footer-download-btn{display:flex;align-items:center;justify-content:center;gap:9px;width:fit-content;margin:0 0 22px;padding:13px 28px;border-radius:13px;background:linear-gradient(135deg,var(--fire),var(--fire-2));color:#fff;font-weight:800;font-size:13.5px;text-decoration:none;box-shadow:0 8px 20px rgba(255,90,46,.35)}
 .footer-download-btn svg{width:17px;height:17px}
 .footer-links{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:8px 18px}
@@ -1117,13 +1114,11 @@ html.intro-lock,html.intro-lock body{overflow:hidden !important}
 
   <div class="footer-pay-label">Supported Payments</div>
   <div class="footer-pay-row">
-    <span class="pay-logo bkash">
-      <svg viewBox="0 0 32 32"><polygon points="16,3 27,16 16,16" fill="#e2136e"/><polygon points="16,3 5,16 16,16" fill="#ff6fae"/><polygon points="5,16 16,16 16,29 10,24" fill="#c4006b"/><polygon points="27,16 16,16 16,29 22,24" fill="#e2136e"/></svg>
-      <b>bKash</b>
+    <span class="pay-logo">
+      <img src="bkash-logo.png" alt="bKash">
     </span>
-    <span class="pay-logo nagad">
-      <svg viewBox="0 0 32 32"><path d="M16 3c7 5 9 12 5 19-2 3.5-6 5.5-9 5.5s-4-2-2-5c3-5 1.5-11-3-14.5C10 5 13 3 16 3Z" fill="#f6821f"/><path d="M16 3c7 5 9 12 5 19-2 3.5-6 5.5-9 5.5" fill="none" stroke="#e4292c" stroke-width="1.2" opacity=".5"/></svg>
-      <b style="font-family:'Hind Siliguri','Noto Sans Bengali',sans-serif">নগদ</b>
+    <span class="pay-logo">
+      <img src="nagad-logo.png" alt="Nagad">
     </span>
   </div>
 
