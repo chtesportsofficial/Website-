@@ -449,8 +449,10 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
 .icon-theme{background:rgba(33,230,193,.14);color:var(--cyan)}
 .icon-chat{background:rgba(33,230,193,.14);color:var(--cyan)}
 .icon-download{background:rgba(34,224,138,.14);color:var(--green)}
-/* Hide "Download App" when the site is already running inside the installed app */
-@media (display-mode: standalone){#downloadAppWrap{display:none !important}}
+/* Hide "Download App" when the site is already running inside the installed app.
+   Targets the link itself (not the wrap div) so Leaderboard, which sits in
+   the same wrap, stays visible in standalone mode. */
+@media (display-mode: standalone){#downloadAppLink{display:none !important}}
 /* Download App sits below the main menu, not inside its gap-10 list —
    the extra margin-top keeps it visually separated at the bottom. */
 .drawer-download-wrap{padding:0 14px 24px;margin-top:18px}
