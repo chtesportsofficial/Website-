@@ -64,6 +64,12 @@ input,select{width:100%;border:0;outline:0;background:transparent;color:var(--te
 .sheet-option .opt-icon svg{width:21px;height:21px}
 .sheet-option span{font-size:14.5px;font-weight:600}
 .sheet-note{font-size:12.5px;color:var(--muted);padding:0 4px 4px;line-height:1.5}
+.location-list{max-height:52vh;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.location-item{all:unset;box-sizing:border-box;width:100%;padding:12px 10px;border-radius:10px;font-size:14.5px;color:var(--text);cursor:pointer}
+.location-item:active{background:var(--field)}
+.location-item.selected{background:rgba(34,197,94,.12);color:var(--green);font-weight:700}
+.location-empty{padding:18px 10px;text-align:center;color:var(--muted);font-size:13px}
+#location-wrap[data-picker="1"] input{caret-color:transparent}
 
 /* Full-screen rectangular crop tool (native-style: drag any corner to
    resize from that side, drag inside to reposition; image itself stays
@@ -159,7 +165,9 @@ input,select{width:100%;border:0;outline:0;background:transparent;color:var(--te
 
 <div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label" data-i18n="editprofile.country">COUNTRY :</span></div><div class="input-wrap readonly" id="country-wrap"><span class="input-icon">◎</span><input id="country" type="text" value="Bangladesh" readonly></div><div class="field-note" data-i18n="editprofile.countryNote">Country is currently fixed to Bangladesh. Contact support if you need this changed.</div></div>
 
-<div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label" data-i18n="editprofile.location">LOCATION :</span></div><div class="input-wrap"><span class="input-icon">⌖</span><input id="location" type="text" placeholder="Enter your location" data-i18n-placeholder="editprofile.locationPh"></div></div>
+<div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label" data-i18n="editprofile.location">LOCATION :</span></div>
+<div class="input-wrap" id="location-wrap"><span class="input-icon">⌖</span><input id="location" type="text" placeholder="Enter your location" data-i18n-placeholder="editprofile.locationPh" autocomplete="off"><span class="chevron" id="locationChevron" style="display:none"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></div>
+</div>
 
 <button class="save-btn" id="saveBtn" type="submit" data-i18n="editprofile.save">SAVE CHANGES</button>
 </form>
@@ -185,6 +193,22 @@ input,select{width:100%;border:0;outline:0;background:transparent;color:var(--te
       <span class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></span>
       <span data-i18n="editprofile.countryLockEmail">Contact via Email</span>
     </a>
+  </div>
+</div>
+
+<div class="sheet-overlay" id="locationOverlay">
+  <div class="sheet" style="padding-bottom:calc(16px + env(safe-area-inset-bottom, 0px))">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <button class="sheet-icon-btn" type="button" id="locationSheetClose" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      <h2 data-i18n="editprofile.locationPickerTitle">Select your district</h2>
+      <span style="width:40px"></span>
+    </div>
+    <div class="input-wrap" style="margin-bottom:10px">
+      <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
+      <input id="locationSearch" type="text" placeholder="Search district" data-i18n-placeholder="editprofile.locationSearchPh" autocomplete="off">
+    </div>
+    <div id="locationList" class="location-list"></div>
   </div>
 </div>
 
@@ -291,6 +315,79 @@ Object.keys(fields).forEach(key=>{
 // force it back to that regardless of whatever a previous save may have
 // stored, so an old value never overrides the fixed default.
 fields.country.value='Bangladesh';
+
+// LOCATION: Bangladesh gets a searchable picker over the 64 Zilla
+// (districts) since those are a fixed, known set. Any other country (once
+// selectable) has no such fixed list, so the same #location input just
+// stays free-text and editable as before — only the Bangladesh case adds
+// the read-only + tap-to-search behaviour on top of it.
+const BD_DISTRICTS=['Bagerhat','Bandarban','Barguna','Barisal','Bhola','Bogura','Brahmanbaria','Chandpur','Chapainawabganj','Chittagong','Chuadanga','Comilla',"Cox's Bazar",'Dhaka','Dinajpur','Faridpur','Feni','Gaibandha','Gazipur','Gopalganj','Habiganj','Jamalpur','Jashore','Jhalokati','Jhenaidah','Joypurhat','Khagrachhari','Khulna','Kishoreganj','Kurigram','Kushtia','Lakshmipur','Lalmonirhat','Madaripur','Magura','Manikganj','Meherpur','Moulvibazar','Munshiganj','Mymensingh','Naogaon','Narail','Narayanganj','Narsingdi','Natore','Netrokona','Nilphamari','Noakhali','Pabna','Panchagarh','Patuakhali','Pirojpur','Rajbari','Rajshahi','Rangamati','Rangpur','Satkhira','Shariatpur','Sherpur','Sirajganj','Sunamganj','Sylhet','Tangail','Thakurgaon'];
+
+const locationWrap=document.getElementById('location-wrap');
+const locationChevron=document.getElementById('locationChevron');
+const locationOverlay=document.getElementById('locationOverlay');
+const locationSheetClose=document.getElementById('locationSheetClose');
+const locationSearch=document.getElementById('locationSearch');
+const locationList=document.getElementById('locationList');
+
+function isBangladesh(){ return fields.country.value === 'Bangladesh'; }
+
+function setupLocationMode(){
+  const bd=isBangladesh();
+  fields.location.readOnly=bd;
+  locationWrap.setAttribute('data-picker', bd ? '1' : '0');
+  locationChevron.style.display=bd ? 'flex' : 'none';
+  if(bd){
+    fields.location.placeholder='Select your district';
+    // Legacy free-text values that don't match a real district are kept as
+    // the saved value but not treated as a valid selection to filter/highlight by.
+  } else {
+    fields.location.placeholder='Enter your location';
+  }
+}
+setupLocationMode();
+
+function renderLocationList(filter){
+  const q=(filter||'').trim().toLowerCase();
+  const matches=BD_DISTRICTS.filter(d=>d.toLowerCase().includes(q));
+  locationList.innerHTML='';
+  if(matches.length===0){
+    const empty=document.createElement('div');
+    empty.className='location-empty';
+    empty.textContent='No matching district';
+    locationList.appendChild(empty);
+    return;
+  }
+  matches.forEach(d=>{
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='location-item'+(d===fields.location.value ? ' selected' : '');
+    btn.textContent=d;
+    btn.addEventListener('click', function(){
+      fields.location.value=d;
+      closeLocationOverlay();
+    });
+    locationList.appendChild(btn);
+  });
+}
+
+function closeLocationOverlayUI(){ locationOverlay.classList.remove('open'); }
+function openLocationOverlay(){
+  if(!isBangladesh()) return;
+  locationSearch.value='';
+  renderLocationList('');
+  locationOverlay.classList.add('open');
+  if(window.CHTEO && CHTEO.openModal) CHTEO.openModal(closeLocationOverlayUI);
+  setTimeout(()=>locationSearch.focus(), 50);
+}
+function closeLocationOverlay(){
+  if(!locationOverlay.classList.contains('open')) return;
+  closeLocationOverlayUI();
+}
+locationWrap.addEventListener('click', openLocationOverlay);
+locationSheetClose.addEventListener('click', closeLocationOverlay);
+locationOverlay.addEventListener('click', e=>{ if(e.target===locationOverlay) closeLocationOverlay(); });
+locationSearch.addEventListener('input', function(){ renderLocationList(this.value); });
 
 function updateSloganStatus(){
   const n=fields.slogan.value.length;
