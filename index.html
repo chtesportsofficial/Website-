@@ -455,7 +455,12 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
 @media (display-mode: standalone){#downloadAppLink{display:none !important}}
 /* Download App sits below the main menu, not inside its gap-10 list —
    the extra margin-top keeps it visually separated at the bottom. */
-.drawer-download-wrap{padding:0 14px 24px;margin-top:18px}
+/* Download App + Leaderboard: pushed away from the main menu list and
+   anchored to the true bottom of the drawer (drawer is a flex column,
+   so margin-top:auto fills the remaining space instead of just sitting
+   right after the nav with a small gap). display:flex+gap here matches
+   .drawer-menu's spacing so the two items don't touch each other. */
+.drawer-download-wrap{padding:0 14px 24px;margin-top:auto;display:flex;flex-direction:column;gap:8px}
 
 @media(min-width:480px){.drawer{width:340px}}
 
