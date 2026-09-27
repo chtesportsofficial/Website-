@@ -635,9 +635,9 @@ function renderReferral(hasSession){
     linkInput.value = buildAuthUrl() + '?ref=' + encodeURIComponent(uid);
   } else {
     // Not signed in / UID not synced yet — show something honest
-    // instead of a placeholder that looks like a real code.
+    // instead of a placeholder that looks like a real code or link.
     codeInput.value = 'Sign in to get your code';
-    linkInput.value = buildAuthUrl();
+    linkInput.value = 'Sign in to get your code';
   }
 }
 // getAccessToken() is defined further down, but function declarations are
