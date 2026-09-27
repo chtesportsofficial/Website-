@@ -464,7 +464,10 @@ function renderUsers(){
       String(u.full_name ?? '').toLowerCase().includes(search) ||
       String(u.email ?? '').toLowerCase().includes(search) ||
       String(u.whatsapp ?? '').toLowerCase().includes(search) ||
-      String(u.user_number ?? '').toLowerCase().includes(searchUid)
+      // UID must match exactly (not "includes") — otherwise searching
+      // "2" would also match #12, #82, #102, #112... which only gets
+      // worse as the user count grows into the thousands.
+      String(u.user_number ?? '').toLowerCase() === searchUid
     );
   }
 
