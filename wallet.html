@@ -140,7 +140,12 @@
     letter-spacing:-.3px;
     font-variant-numeric:tabular-nums;
   }
-  .balance-amount::first-letter{
+  /* Styles the ৳ currency symbol smaller/muted next to the bigger amount.
+     Scoped to an explicit .cur-sym span (set via JS) rather than
+     ::first-letter — ::first-letter styled whatever character happened to
+     come first, so non-amount messages like "Please sign in first." got
+     their leading "P" shrunk and greyed out by mistake. */
+  .balance-amount .cur-sym{
     font-size:18px;
     font-weight:700;
     color:var(--muted);
@@ -838,9 +843,9 @@ async function loadWalletBalance(attempt){
   const cached = localStorage.getItem(WALLET_CACHE_KEY);
 
   if(attempt === 1){
-    balanceEl.textContent =
+    balanceEl.innerHTML =
       (cached !== null && cachedUid === uid)
-        ? '৳' + formatBDT(cached)
+        ? '<span class="cur-sym">৳</span>' + formatBDT(cached)
         : '...';
   }
 
@@ -902,7 +907,7 @@ async function loadWalletBalance(attempt){
     const withdrawable = Number(data.withdrawable_balance || 0);
     const nonWithdrawable = Number(data.non_withdrawable_balance || 0);
 
-    balanceEl.textContent = '৳' + formatBDT(total);
+    balanceEl.innerHTML = '<span class="cur-sym">৳</span>' + formatBDT(total);
 
     if(withdrawableEl){
       withdrawableEl.textContent = '৳' + formatBDT(withdrawable);
@@ -926,7 +931,7 @@ async function loadWalletBalance(attempt){
         loadWalletBalance(attempt + 1);
       }, 3000);
     } else if(cached !== null && cachedUid === uid){
-      balanceEl.textContent = '৳' + formatBDT(cached);
+      balanceEl.innerHTML = '<span class="cur-sym">৳</span>' + formatBDT(cached);
     } else {
       balanceEl.innerHTML =
         '<span style="cursor:pointer;text-decoration:underline;" ' +
