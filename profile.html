@@ -785,11 +785,33 @@ if(logoutModal){
 }
 if(logoutConfirmBtn){
   logoutConfirmBtn.addEventListener('click', function(){
-    // Only clear the logged-in/session flag. Keep the user's saved profile
-    // data (team name, slogan, email, whatsapp, picture) so it's still
-    // there the next time they sign back in.
+    logoutConfirmBtn.disabled = true;
+    // Keep the user's saved profile data (team name, slogan, email,
+    // whatsapp, picture) so it's still there next time they sign back in —
+    // only clear the logged-in flag and end the actual Supabase session.
+    //
+    // BUG FIX: this used to only remove 'chteo_logged_in' and never called
+    // client.auth.signOut(). That flag is just this page's own UI state —
+    // the real access_token stayed valid in localStorage (Supabase's own
+    // "sb-<project>-auth-token" key), so other pages like wallet.html kept
+    // finding a valid session after "logout" and would still show the
+    // balance and even accept withdraw requests. Ending the Supabase
+    // session itself is what actually invalidates that token everywhere.
     localStorage.removeItem('chteo_logged_in');
-    window.location.href='chteo_auth.html';
+    function finishLogout(){
+      window.location.href='chteo_auth.html';
+    }
+    if(window.CHTEO && typeof window.CHTEO.getSupabaseClient === 'function'){
+      window.CHTEO.getSupabaseClient(function(client){
+        if(client && client.auth && typeof client.auth.signOut === 'function'){
+          client.auth.signOut().finally(finishLogout);
+        } else {
+          finishLogout();
+        }
+      });
+    } else {
+      finishLogout();
+    }
   });
 }
 </script>
