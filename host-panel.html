@@ -213,7 +213,7 @@ input{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-r
   <div class="mh"><b>CG — Confirmation Group</b><button class="close" onclick="closeModal('cgModal')">×</button></div>
   <label>WhatsApp Group Link</label>
   <input id="cgLink" placeholder="https://chat.whatsapp.com/...">
-  <div class="modal-actions"><button onclick="closeModal('cgModal')">Cancel</button><button class="primary" onclick="saveCG()">Save</button></div>
+  <div class="modal-actions"><button onclick="closeModal('cgModal')">Cancel</button><button class="primary" id="cgSaveBtn" onclick="saveCG()">Save</button></div>
 </div></div>
 
 <div class="modal" id="resultsModal"><div class="box">
@@ -309,6 +309,26 @@ function openModal(id){
   _modalOpenCount++;
   $(id).classList.add('open');
 }
+// Self-heal for a stuck scroll-lock: askConfirm()/closeConfirm() and the
+// Link Account modal open/close their own overlay directly (classList
+// add/remove) instead of going through openModal()/closeModal(), so they
+// never touch _modalOpenCount or the body lock styles. That's normally
+// fine since they always sit on top of a real modal that IS tracked — but
+// if the tab gets backgrounded (e.g. switching to WhatsApp to reply to a
+// message) mid-flow and resumed later, the lock can end up stuck on with
+// nothing actually visible. When the tab becomes visible again, if the
+// body is still locked but no modal is actually showing, reset it.
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState!=='visible')return;
+  const anyModalOpen=document.querySelector('.modal.open')
+    ||$('confirm')?.classList.contains('open')
+    ||$('linkAccountModal')?.classList.contains('open');
+  if(document.body.style.position==='fixed'&&!anyModalOpen){
+    _modalOpenCount=0;
+    document.body.style.position='';document.body.style.top='';document.body.style.width='';document.body.style.overflow='';
+    window.scrollTo(0,_scrollY);
+  }
+});
 function msg(text){
   const t=String(text||'');
   const isBad=/failed|error|could not|required|invalid|blocked|not submitted/i.test(t) && !/\d+\s*(new|pending).*submitted|credited/i.test(t);
@@ -457,7 +477,7 @@ function renderLobby(l){
 
     <div class="lobby-actions">
       <button class="mini green" onclick="openTeams('${l.id}')">Teams</button>
-      <button class="mini" onclick="openRoom('${l.id}')">Room ID/Pass</button>
+      <button class="mini ${(l.room_id&&l.room_password)?'gold':''}" onclick="openRoom('${l.id}')">Room ID/Pass</button>
       <button class="mini ${resultsLobbyIds.has(l.id)?'gold':''}" onclick="openResults('${l.id}')">Enter Result</button>
       ${l.status==='cancelled'
         ? (timeOver
@@ -696,11 +716,17 @@ async function openCG(id){
 async function saveCG(){
   if(!currentLobby)return;
   const cgLink=$('cgLink').value.trim();
-  const r=await sb.from('tournament_lobbies').update({cg_link:cgLink}).eq('id',currentLobby.id).select();
-  if(r.error)return msg(r.error.message);if(!r.data?.length)return msg('Update blocked (0 rows) — check tournament_lobbies UPDATE RLS.');
-  currentLobby.cg_link=cgLink;
-  await logActivity('cg_link_updated',currentLobby.id,fmtShort(currentLobby.lobby_date)+' '+currentLobby.time_label,{narration:'updated the CG (confirmation group) link.'});
-  closeModal('cgModal');render();
+  const btn=$('cgSaveBtn');
+  btn.disabled=true;btn.textContent='Saving…';
+  try{
+    const r=await sb.from('tournament_lobbies').update({cg_link:cgLink}).eq('id',currentLobby.id).select();
+    if(r.error)return msg(r.error.message);if(!r.data?.length)return msg('Update blocked (0 rows) — check tournament_lobbies UPDATE RLS.');
+    currentLobby.cg_link=cgLink;
+    await logActivity('cg_link_updated',currentLobby.id,fmtShort(currentLobby.lobby_date)+' '+currentLobby.time_label,{narration:'updated the CG (confirmation group) link.'});
+    closeModal('cgModal');render();
+  }finally{
+    btn.disabled=false;btn.textContent='Save';
+  }
 }
 async function openTeams(id){
   currentLobby=lobbies.find(x=>x.id===id);if(!currentLobby)return;
@@ -769,8 +795,9 @@ async function submitManualTeam(){
       joined_at:new Date(earliest-1000).toISOString()
     };
 
-    const r=await sb.from('lobby_teams').insert(payload);
+    const r=await sb.from('lobby_teams').insert(payload).select();
     if(r.error)return msg(r.error.message);
+    if(!r.data?.length)return msg('Add blocked (0 rows) — check the lobby_teams INSERT RLS policy.');
 
     await logActivity('team_added_manually',currentLobby.id,teamName,{
       narration:`manually added team "${teamName}" to the lobby (WhatsApp booking).`,
