@@ -146,10 +146,12 @@ html[data-theme="light"] .bottomnav{
   margin-top:8px;
 }
 /* When a page already renders its own .app-footer above the nav (e.g. index.html),
-   don't add the huge bottom gap twice. */
+   don't add the huge bottom gap twice — body already reserves 96px of bottom
+   padding for the fixed bottomnav (see the body rule above), so the footer
+   itself only needs a small closing gap, not another full nav-height reserve. */
 .phone .app-footer.global-footer,
 .screen .app-footer.global-footer{
-  padding-bottom:calc(130px + var(--safe-bottom));
+  padding-bottom:calc(14px + var(--safe-bottom));
 }
 
 /* ---------- 5. Generic responsive shell ---------- */
