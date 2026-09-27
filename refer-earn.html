@@ -620,12 +620,17 @@ function buildAuthUrl(){
   return window.location.origin + path;
 }
 
-function renderReferral(){
+function renderReferral(hasSession){
   const profile = getProfile();
   const uid = profile.uid || localStorage.getItem('user_uid');
   const linkInput = document.getElementById('inviteLink');
   const codeInput = document.getElementById('inviteCode');
-  if(uid){
+  // BUG FIX: this used to show the code/link off leftover localStorage
+  // (user_profile/user_uid) with no session check at all — those keys are
+  // deliberately kept after logout (to prefill the next sign-in), so this
+  // page kept displaying the previous account's referral code/link even
+  // after logging out. Now it only shows them when hasSession is true.
+  if(hasSession && uid){
     codeInput.value = '#' + uid;
     linkInput.value = buildAuthUrl() + '?ref=' + encodeURIComponent(uid);
   } else {
@@ -635,10 +640,15 @@ function renderReferral(){
     linkInput.value = buildAuthUrl();
   }
 }
-renderReferral();
-// global.js's Supabase sync can resolve the real UID after this page has
-// already rendered from cached/placeholder data — refresh once it lands.
-document.addEventListener('chteo:profile-synced', renderReferral);
+// getAccessToken() is defined further down, but function declarations are
+// hoisted within this script, so calling it here is safe.
+function refreshReferral(){
+  getAccessToken().then((token) => renderReferral(!!token));
+}
+refreshReferral();
+// global.js's Supabase sync can resolve/invalidate the session after this
+// page has already rendered — refresh once it lands.
+document.addEventListener('chteo:profile-synced', refreshReferral);
 
 /* ---------------- Share buttons ---------------- */
 function showToast(msg, success){
