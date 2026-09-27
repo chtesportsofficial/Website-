@@ -47,9 +47,9 @@ input,select{width:100%;border:0;outline:0;background:transparent;color:var(--te
 @media(max-width:380px){.back-btn{width:40px;height:40px}.topbar h1{font-size:18px}.photo-card{height:112px}.avatar,.avatar-wrap{width:68px;height:68px}}
 
 /* Photo picker bottom sheet */
-.sheet-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;align-items:flex-end;justify-content:center;pointer-events:none}
+.sheet-overlay{display:none;position:fixed;left:0;top:0;width:100%;height:calc(var(--vvh, 100vh));background:rgba(0,0,0,.55);z-index:99999;align-items:flex-end;justify-content:center;pointer-events:none}
 .sheet-overlay.open{display:flex;pointer-events:auto}
-.sheet{width:100%;max-width:420px;background:var(--card);border:1px solid var(--border);border-bottom:none;border-radius:22px 22px 0 0;padding:10px 20px calc(26px + env(safe-area-inset-bottom, 0px) + 90px);animation:sheetUp .18s ease-out;max-height:82vh;overflow-y:auto}
+.sheet{width:100%;max-width:420px;background:var(--card);border:1px solid var(--border);border-bottom:none;border-radius:22px 22px 0 0;padding:10px 20px calc(26px + env(safe-area-inset-bottom, 0px) + 90px);animation:sheetUp .18s ease-out;max-height:calc(var(--vvh, 100vh) * 0.82);overflow-y:auto}
 @keyframes sheetUp{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}
 .sheet-handle{width:44px;height:4px;border-radius:3px;background:var(--border);margin:6px auto 16px}
 .sheet-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
@@ -64,11 +64,22 @@ input,select{width:100%;border:0;outline:0;background:transparent;color:var(--te
 .sheet-option .opt-icon svg{width:21px;height:21px}
 .sheet-option span{font-size:14.5px;font-weight:600}
 .sheet-note{font-size:12.5px;color:var(--muted);padding:0 4px 4px;line-height:1.5}
-.location-list{max-height:52vh;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
-.location-item{all:unset;box-sizing:border-box;width:100%;padding:12px 10px;border-radius:10px;font-size:14.5px;color:var(--text);cursor:pointer}
+.location-search-sticky{position:sticky;top:0;z-index:2;background:var(--card);padding-bottom:10px;margin-bottom:2px}
+.location-list{max-height:calc(var(--vvh, 100vh) * 0.52);overflow-y:auto;display:flex;flex-direction:column}
+.location-item{all:unset;box-sizing:border-box;width:100%;padding:12px 10px;border-radius:10px;font-size:14.5px;color:var(--text);cursor:pointer;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.05)}
+.location-item:last-child{border-bottom:none}
 .location-item:active{background:var(--field)}
-.location-item.selected{background:rgba(34,197,94,.12);color:var(--green);font-weight:700}
-.location-empty{padding:18px 10px;text-align:center;color:var(--muted);font-size:13px}
+.location-item .loc-pin{width:18px;height:18px;color:var(--muted);flex-shrink:0;display:flex}
+.location-item .loc-pin svg{width:18px;height:18px}
+.location-item .loc-name{flex:1;line-height:1.3}
+.location-item .loc-check{width:18px;height:18px;color:var(--green);flex-shrink:0;display:none}
+.location-item .loc-check svg{width:18px;height:18px}
+.location-item.selected{background:rgba(34,197,94,.1)}
+.location-item.selected .loc-name{color:var(--green);font-weight:700}
+.location-item.selected .loc-pin{color:var(--green)}
+.location-item.selected .loc-check{display:flex}
+.location-empty{padding:28px 10px;text-align:center;color:var(--muted);font-size:13px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.location-empty svg{width:26px;height:26px;opacity:.5}
 #location-wrap[data-picker="1"] input{caret-color:transparent}
 
 /* Full-screen rectangular crop tool (native-style: drag any corner to
@@ -204,9 +215,11 @@ input,select{width:100%;border:0;outline:0;background:transparent;color:var(--te
       <h2 data-i18n="editprofile.locationPickerTitle">Select your district</h2>
       <span style="width:40px"></span>
     </div>
-    <div class="input-wrap" style="margin-bottom:10px">
-      <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
-      <input id="locationSearch" type="text" placeholder="Search district" data-i18n-placeholder="editprofile.locationSearchPh" autocomplete="off">
+    <div class="location-search-sticky">
+      <div class="input-wrap" style="margin-bottom:0">
+        <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
+        <input id="locationSearch" type="text" placeholder="Search district" data-i18n-placeholder="editprofile.locationSearchPh" autocomplete="off">
+      </div>
     </div>
     <div id="locationList" class="location-list"></div>
   </div>
@@ -323,6 +336,24 @@ fields.country.value='Bangladesh';
 // the read-only + tap-to-search behaviour on top of it.
 const BD_DISTRICTS=['Bagerhat','Bandarban','Barguna','Barisal','Bhola','Bogura','Brahmanbaria','Chandpur','Chapainawabganj','Chittagong','Chuadanga','Comilla',"Cox's Bazar",'Dhaka','Dinajpur','Faridpur','Feni','Gaibandha','Gazipur','Gopalganj','Habiganj','Jamalpur','Jashore','Jhalokati','Jhenaidah','Joypurhat','Khagrachari','Khulna','Kishoreganj','Kurigram','Kushtia','Lakshmipur','Lalmonirhat','Madaripur','Magura','Manikganj','Meherpur','Moulvibazar','Munshiganj','Mymensingh','Naogaon','Narail','Narayanganj','Narsingdi','Natore','Netrokona','Nilphamari','Noakhali','Pabna','Panchagarh','Patuakhali','Pirojpur','Rajbari','Rajshahi','Rangamati','Rangpur','Satkhira','Shariatpur','Sherpur','Sirajganj','Sunamganj','Sylhet','Tangail','Thakurgaon'];
 
+// Keep --vvh in sync with the actually-visible viewport (the part not
+// covered by the on-screen keyboard). Without this, the bottom sheets
+// below use plain vh, which is measured against the full screen even
+// after the keyboard opens — so a sheet anchored to the bottom (like
+// the district picker) ends up positioned partly/fully behind the
+// keyboard instead of shrinking to sit above it.
+function syncVisibleViewportHeight(){
+  const h=(window.visualViewport ? window.visualViewport.height : window.innerHeight);
+  document.documentElement.style.setProperty('--vvh', h+'px');
+}
+syncVisibleViewportHeight();
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize', syncVisibleViewportHeight);
+  window.visualViewport.addEventListener('scroll', syncVisibleViewportHeight);
+} else {
+  window.addEventListener('resize', syncVisibleViewportHeight);
+}
+
 const locationWrap=document.getElementById('location-wrap');
 const locationChevron=document.getElementById('locationChevron');
 const locationOverlay=document.getElementById('locationOverlay');
@@ -354,7 +385,7 @@ function renderLocationList(filter){
   if(matches.length===0){
     const empty=document.createElement('div');
     empty.className='location-empty';
-    empty.textContent='No matching district';
+    empty.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><span>No matching district</span>';
     locationList.appendChild(empty);
     return;
   }
@@ -362,7 +393,10 @@ function renderLocationList(filter){
     const btn=document.createElement('button');
     btn.type='button';
     btn.className='location-item'+(d===fields.location.value ? ' selected' : '');
-    btn.textContent=d;
+    btn.innerHTML='<span class="loc-pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></span>'
+      +'<span class="loc-name"></span>'
+      +'<span class="loc-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>';
+    btn.querySelector('.loc-name').textContent=d;
     btn.addEventListener('click', function(){
       fields.location.value=d;
       closeLocationOverlay();
@@ -378,7 +412,10 @@ function openLocationOverlay(){
   renderLocationList('');
   locationOverlay.classList.add('open');
   if(window.CHTEO && CHTEO.openModal) CHTEO.openModal(closeLocationOverlayUI);
-  setTimeout(()=>locationSearch.focus(), 50);
+  setTimeout(()=>{
+    locationSearch.focus();
+    locationSearch.scrollIntoView({block:'center'});
+  }, 50);
 }
 function closeLocationOverlay(){
   if(!locationOverlay.classList.contains('open')) return;
