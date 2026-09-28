@@ -293,45 +293,55 @@ function liveBadge(l){
   return ((Date.now()-dt.getTime())/60000)<60?{cls:'',text:'MATCH ON'}:{cls:'pending',text:'PENDING'};
 }
 let _scrollY=0,_modalOpenCount=0;
+function _unlockScroll(){
+  _modalOpenCount=0;
+  document.body.style.position='';document.body.style.top='';document.body.style.width='';document.body.style.overflow='';
+  document.documentElement.style.overflow='';
+}
 function closeModal(id){
-  $(id).classList.remove('open');
+  const el=$(id);
+  // Only count a close if it was actually open, otherwise the counter drifts.
+  if(!el.classList.contains('open'))return;
+  el.classList.remove('open');
   _modalOpenCount=Math.max(0,_modalOpenCount-1);
   if(_modalOpenCount===0){
-    document.body.style.position='';document.body.style.top='';document.body.style.width='';document.body.style.overflow='';
+    _unlockScroll();
     window.scrollTo(0,_scrollY);
   }
 }
 function openModal(id){
+  const el=$(id);
+  // Opening an already-open modal (e.g. msg() fired twice) used to bump the
+  // counter again; one close then left the counter at 1 and the page stayed
+  // scroll-locked with nothing visible. Make it idempotent.
+  if(el.classList.contains('open'))return;
   if(_modalOpenCount===0){
     _scrollY=window.scrollY||window.pageYOffset||0;
     document.body.style.position='fixed';document.body.style.top=(-_scrollY)+'px';document.body.style.width='100%';document.body.style.overflow='hidden';
   }
   _modalOpenCount++;
-  $(id).classList.add('open');
+  el.classList.add('open');
 }
-// Self-heal for a stuck scroll-lock: askConfirm()/closeConfirm() and the
-// Link Account modal open/close their own overlay directly (classList
-// add/remove) instead of going through openModal()/closeModal(), so they
-// never touch _modalOpenCount or the body lock styles. That's normally
-// fine since they always sit on top of a real modal that IS tracked — but
-// if the tab gets backgrounded (e.g. switching to WhatsApp to reply to a
-// message) mid-flow and resumed later, the lock can end up stuck on with
-// nothing actually visible. When the tab becomes visible again, if the
-// body is still locked but no modal is actually showing, reset it.
-document.addEventListener('visibilitychange',function(){
-  if(document.visibilityState!=='visible')return;
-  const anyModalOpen=document.querySelector('.modal.open')
-    ||$('confirm')?.classList.contains('open')
-    ||$('linkAccountModal')?.classList.contains('open');
-  if(document.body.style.position==='fixed'&&!anyModalOpen){
-    _modalOpenCount=0;
-    document.body.style.position='';document.body.style.top='';document.body.style.width='';document.body.style.overflow='';
+// Self-heal: trust what is actually visible, not the counter. If the page is
+// scroll-locked but no modal/confirm/link overlay is open, unlock it.
+// Runs when the app/tab comes back (visibilitychange, pageshow, focus) and, as
+// a last resort, on the first touch/wheel — WebViews don't always fire the
+// resume events, and that touch is exactly when the user notices the lock.
+function healScrollLock(){
+  const anyOpen=document.querySelector('.modal.open, .confirm.open');
+  if(!anyOpen&&(document.body.style.position==='fixed'||document.body.style.overflow==='hidden'||_modalOpenCount>0)){
+    _unlockScroll();
     window.scrollTo(0,_scrollY);
   }
-});
+}
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')healScrollLock()});
+window.addEventListener('pageshow',healScrollLock);
+window.addEventListener('focus',healScrollLock);
+document.addEventListener('touchstart',healScrollLock,{passive:true,capture:true});
+document.addEventListener('wheel',healScrollLock,{passive:true,capture:true});
 function msg(text){
   const t=String(text||'');
-  const isBad=/failed|error|could not|required|invalid|blocked|not submitted/i.test(t) && !/\d+\s*(new|pending).*submitted|credited/i.test(t);
+  const isBad=/failed|error|could not|required|invalid|blocked|not submitted|violates|row-level security|permission denied/i.test(t) && !/\d+\s*(new|pending).*submitted|credited/i.test(t);
   $('msgIcon').textContent=isBad?'⚠️':'✅';
   $('msgText').textContent=t;
   openModal('msgModal');
