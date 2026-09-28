@@ -155,7 +155,8 @@ html{background:#1b2140}
 /* Date fields show as d/m/yy (e.g. 29/9/26). Native picker still opens on tap. */
 .dfmt-wrap{position:relative;min-width:0}
 .dfmt-wrap>input[type=date]::-webkit-datetime-edit{opacity:0}
-.dfmt-txt{position:absolute;top:50%;transform:translateY(-50%);pointer-events:none;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 44px)}
+.dfmt-wrap>input[type=date]{color:transparent!important;-webkit-text-fill-color:transparent!important}
+.dfmt-txt{position:absolute;top:1px;bottom:1px;left:1px;right:46px;display:flex;align-items:center;pointer-events:none;color:#fff;white-space:nowrap;overflow:hidden;border-radius:10px 0 0 10px;z-index:2}
 .dfmt-txt.ph{color:#6b768a}
 </style>
 </head>
@@ -1501,7 +1502,7 @@ document.addEventListener('DOMContentLoaded', function(){
     const span=document.createElement('span'); span.className='dfmt-txt'; wrap.appendChild(span);
     function refresh(){
       const cs=getComputedStyle(inp);
-      span.style.left=(parseFloat(cs.paddingLeft)+parseFloat(cs.borderLeftWidth))+'px';
+      span.style.paddingLeft=cs.paddingLeft; span.style.background=cs.backgroundColor;
       span.style.font=cs.font;
       const t=fmt(desc.get.call(inp));
       span.textContent=t||'d/m/yy';
