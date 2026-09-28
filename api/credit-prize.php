@@ -64,7 +64,7 @@ $requesterId = $requester['id'];
 $ch = curl_init(
     rtrim($supabaseUrl, '/') .
     '/rest/v1/profiles?id=eq.' . urlencode($requesterId) .
-    '&select=is_admin,is_owner'
+    '&select=is_admin,is_owner,is_host'
 );
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
@@ -81,11 +81,11 @@ curl_close($ch);
 
 $rows = json_decode($profileResponse, true);
 $profile = (is_array($rows) && count($rows) > 0) ? $rows[0] : null;
-$isAdmin = $profile && (!empty($profile['is_admin']) || !empty($profile['is_owner']));
+$isAdmin = $profile && (!empty($profile['is_admin']) || !empty($profile['is_owner']) || !empty($profile['is_host']));
 
 if ($profileResponse === false || $profileCode < 200 || $profileCode >= 300 || !$isAdmin) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'message' => 'Admin access required']);
+    echo json_encode(['success' => false, 'message' => 'Host or admin access required']);
     exit;
 }
 

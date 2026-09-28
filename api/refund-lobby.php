@@ -37,6 +37,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once __DIR__ . '/../db.php';          // exposes $conn (PDO, Postgres)
 require_once __DIR__ . '/../admin-auth.php';  // exposes verify_admin_token()
 
+/* Host/admin/owner check. Deliberately local to this file: verify_admin_token()
+   in admin-auth.php is shared with admin-only endpoints (withdraw approvals
+   etc.), so it must NOT be loosened to accept hosts. */
+function verify_staff_token($accessToken) {
+    $supabaseUrl = 'https://myfficbwcbgbxbdqjexv.supabase.co';
+    $supabaseAnonKey = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+    if (!$accessToken) return null;
+
+    $ch = curl_init(rtrim($supabaseUrl, '/') . '/auth/v1/user');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 20,
+        CURLOPT_HTTPHEADER => [
+            'apikey: ' . $supabaseAnonKey,
+            'Authorization: Bearer ' . $accessToken,
+            'Accept: application/json'
+        ]
+    ]);
+    $resp = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    $user = json_decode($resp, true);
+    if ($resp === false || $code !== 200 || empty($user['id'])) return null;
+
+    $ch = curl_init(rtrim($supabaseUrl, '/') . '/rest/v1/profiles?id=eq.' . urlencode($user['id']) . '&select=is_admin,is_owner,is_host');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 20,
+        CURLOPT_HTTPHEADER => [
+            'apikey: ' . $supabaseAnonKey,
+            'Authorization: Bearer ' . $accessToken,
+            'Accept: application/json'
+        ]
+    ]);
+    $presp = curl_exec($ch);
+    $pcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    $rows = json_decode($presp, true);
+    $profile = (is_array($rows) && count($rows) > 0) ? $rows[0] : null;
+    if ($presp === false || $pcode < 200 || $pcode >= 300 || !$profile) return null;
+    if (!empty($profile['is_admin']) || !empty($profile['is_owner']) || !empty($profile['is_host'])) return $user['id'];
+    return null;
+}
+
 $input        = json_decode(file_get_contents('php://input'), true) ?: [];
 $access_token = $input['access_token'] ?? '';
 $lobby_id     = trim((string)($input['lobby_id'] ?? ''));
@@ -47,10 +91,10 @@ if ($lobby_id === '') {
     exit();
 }
 
-$admin_uid = verify_admin_token($access_token);
+$admin_uid = verify_staff_token($access_token);
 if (!$admin_uid) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'message' => 'Access denied — admin only.']);
+    echo json_encode(['success' => false, 'message' => 'Access denied — host or admin only.']);
     exit();
 }
 
