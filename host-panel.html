@@ -860,10 +860,8 @@ async function searchByEmail(){
   const email=($('emailSearchInput').value||'').trim();
   if(!email)return msg('Enter an email to search.');
   $('emailTeamsList').innerHTML='<div class="loading">Searching…</div>';
-  const prRes=await sb.rpc('staff_find_profile_by_email',{p_email:email});
-  if(prRes.error){$('emailTeamsList').innerHTML='<div class="empty">Could not search: '+esc(prRes.error.message)+'</div>';return}
-  const prRow=Array.isArray(prRes.data)?prRes.data[0]:prRes.data;
-  const pr={data:prRow||null};
+  const pr=await sb.from('profiles').select('id,email,full_name,user_number').ilike('email',email).maybeSingle();
+  if(pr.error){$('emailTeamsList').innerHTML='<div class="empty">Could not search: '+esc(pr.error.message)+'</div>';return}
   if(!pr.data){$('emailTeamsList').innerHTML='<div class="empty">No account found with that email.</div>';return}
   const r=await sb.from('lobby_teams').select('*, tournament_lobbies(id,lobby_date,time_label,status,joined_count,tournaments(title,entry_fee))').eq('submitted_by',pr.data.id).order('joined_at',{ascending:false});
   if(r.error){$('emailTeamsList').innerHTML='<div class="empty">Could not load: '+esc(r.error.message)+'</div>';return}
@@ -947,13 +945,14 @@ async function linkTeamAccount(teamId){
     okBtn.disabled=true;okBtn.textContent='Checking…';
     let prof;
     try{
-      // Hosts can't read other users' profiles directly (RLS), so this goes
-      // through a staff-only function that returns just id/UID/name.
-      const {data,error:pErr}=await sb.rpc('staff_find_profile',{p_uid:uid});
+      const {data,error:pErr}=await sb
+        .from('profiles')
+        .select('id,user_number,full_name')
+        .eq('user_number',uid)
+        .maybeSingle();
       if(pErr)return msg(pErr.message);
-      const row=Array.isArray(data)?data[0]:data;
-      if(!row)return msg('No account found with that UID.');
-      prof=row;
+      if(!data)return msg('No account found with that UID.');
+      prof=data;
     }finally{
       okBtn.disabled=false;okBtn.textContent=originalLabel;
     }
