@@ -341,7 +341,7 @@ document.addEventListener('touchstart',healScrollLock,{passive:true,capture:true
 document.addEventListener('wheel',healScrollLock,{passive:true,capture:true});
 function msg(text){
   const t=String(text||'');
-  const isBad=/failed|error|could not|required|invalid|blocked|not submitted|violates|row-level security|permission denied|no account|not found|enter a valid/i.test(t) && !/\d+\s*(new|pending).*submitted|credited/i.test(t);
+  const isBad=/failed|error|could not|required|invalid|blocked|not submitted|violates|row-level security|permission denied|no account|not found|enter a valid|forbidden|unauthori[sz]ed|not authori[sz]ed|admin only|denied|not allowed/i.test(t) && !/\d+\s*(new|pending).*submitted|credited/i.test(t);
   $('msgIcon').textContent=isBad?'⚠️':'✅';
   $('msgText').textContent=t;
   openModal('msgModal');
