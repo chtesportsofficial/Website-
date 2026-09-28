@@ -151,6 +151,13 @@ html{background:#1b2140}
 .results-toolbar{display:flex;justify-content:flex-end;margin-bottom:2px}
 .results-toolbar button{border:1px solid #293650;background:#141b2b;color:#e9edf5;border-radius:9px;padding:7px 11px;font-size:9px;font-weight:900}
 </style>
+<style>
+/* Date fields show as d/m/yy (e.g. 29/9/26). Native picker still opens on tap. */
+.dfmt-wrap{position:relative;min-width:0}
+.dfmt-wrap>input[type=date]::-webkit-datetime-edit{opacity:0}
+.dfmt-txt{position:absolute;top:50%;transform:translateY(-50%);pointer-events:none;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 44px)}
+.dfmt-txt.ph{color:#6b768a}
+</style>
 </head>
 <body>
 <main class="wrap">
@@ -1476,6 +1483,35 @@ document.addEventListener('DOMContentLoaded', function(){
 (async()=>{
   if(!await admin())return;
   await load();
+})();
+
+// ---- Date inputs: display as d/m/yy (29/9/26) ----
+(function(){
+  const desc=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value');
+  function fmt(v){
+    const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(v||'');
+    if(!m)return '';
+    return (+m[3])+'/'+(+m[2])+'/'+m[1].slice(2);
+  }
+  function enhance(inp){
+    if(inp.dataset.dfmt)return; inp.dataset.dfmt='1';
+    const wrap=document.createElement('div'); wrap.className='dfmt-wrap';
+    if(inp.style.flex){wrap.style.flex=inp.style.flex;}
+    inp.parentNode.insertBefore(wrap,inp); wrap.appendChild(inp);
+    const span=document.createElement('span'); span.className='dfmt-txt'; wrap.appendChild(span);
+    function refresh(){
+      const cs=getComputedStyle(inp);
+      span.style.left=(parseFloat(cs.paddingLeft)+parseFloat(cs.borderLeftWidth))+'px';
+      span.style.font=cs.font;
+      const t=fmt(desc.get.call(inp));
+      span.textContent=t||'d/m/yy';
+      span.classList.toggle('ph',!t);
+    }
+    Object.defineProperty(inp,'value',{get(){return desc.get.call(this);},set(v){desc.set.call(this,v);refresh();},configurable:true});
+    inp.addEventListener('input',refresh); inp.addEventListener('change',refresh);
+    refresh();
+  }
+  document.querySelectorAll('input[type=date]').forEach(enhance);
 })();
 </script>
 
