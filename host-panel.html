@@ -432,7 +432,8 @@ function render(){
   });
 
   if(!groups.size){
-    $('content').innerHTML='<div class="empty">No active lobbies for today.</div>';
+    const rt=ymd(new Date());
+    $('content').innerHTML='<div class="empty">'+(viewDate===rt?'No active lobbies for today.':(viewDate<rt?'No lobbies were found on ':'No lobbies scheduled on ')+esc(fmtDate(viewDate))+'.')+'</div>';
     return;
   }
 
@@ -831,18 +832,30 @@ async function setTeamStatus(teamId,status){
 async function deleteTeam(teamId){
   const tm=lobbyTeamsCache.find(t=>t.id===teamId);
   askConfirm('Delete team?','This will permanently remove the team (and any saved result for it) from the lobby.',async()=>{
-    await sb.from('lobby_results').delete().eq('team_id',teamId);
-    const r=await sb.from('lobby_teams').delete().eq('id',teamId);
-    if(r.error)return msg(r.error.message);
-    const newCount=Math.max(0,(Number(currentLobby.joined_count)||0)-1);
-    await sb.from('tournament_lobbies').update({joined_count:newCount}).eq('id',currentLobby.id);
-    currentLobby.joined_count=newCount;
-    await logActivity('team_deleted',currentLobby.id,tm?.team_name||null,{
-      narration:`deleted team "${tm?.team_name||''}" from the lobby.`,
-      highlight_targets:[tm?.team_name||null]
-    });
-    await openTeams(currentLobby.id);
-    await load();
+    // Visible feedback: dim the card, disable its buttons, show "Deleting…"
+    const delBtn=document.querySelector(`button[onclick="deleteTeam('${teamId}')"]`);
+    const actions=delBtn?delBtn.closest('.team-actions'):null;
+    const card=actions?actions.parentElement:null;
+    const btns=actions?[...actions.querySelectorAll('button')]:[];
+    const oldLabel=delBtn?delBtn.textContent:'';
+    btns.forEach(b=>b.disabled=true);
+    if(delBtn)delBtn.textContent='Deleting…';
+    if(card){card.style.opacity='.5';card.style.pointerEvents='none';card.style.transition='opacity .2s'}
+    const restore=()=>{btns.forEach(b=>b.disabled=false);if(delBtn)delBtn.textContent=oldLabel;if(card){card.style.opacity='';card.style.pointerEvents=''}};
+    try{
+      await sb.from('lobby_results').delete().eq('team_id',teamId);
+      const r=await sb.from('lobby_teams').delete().eq('id',teamId);
+      if(r.error){restore();return msg(r.error.message)}
+      const newCount=Math.max(0,(Number(currentLobby.joined_count)||0)-1);
+      await sb.from('tournament_lobbies').update({joined_count:newCount}).eq('id',currentLobby.id);
+      currentLobby.joined_count=newCount;
+      await logActivity('team_deleted',currentLobby.id,tm?.team_name||null,{
+        narration:`deleted team "${tm?.team_name||''}" from the lobby.`,
+        highlight_targets:[tm?.team_name||null]
+      });
+      await openTeams(currentLobby.id);
+      await load();
+    }catch(e){restore();msg(e.message||'Delete failed')}
   });
 }
 // Find-by-email tool: for cleaning up the host's own test/self-testing
@@ -1369,6 +1382,30 @@ async function saveResultsClick(){
   );
 }
 document.addEventListener('DOMContentLoaded',async()=>{if(await auth())await load()});
+
+// Result modal: Enter jumps to the same column (points→points, prize→prize) in the next row.
+(function(){
+  const list=document.getElementById('resultsList');
+  if(!list)return;
+  list.addEventListener('keydown',e=>{
+    if(e.key!=='Enter')return;
+    const inp=e.target;
+    if(!inp||!inp.matches||!inp.matches('input.prize,input.points'))return;
+    e.preventDefault();
+    const cls=inp.classList.contains('prize')?'.prize':'.points';
+    let row=inp.closest('.result-row');
+    let next=null;
+    while(row&&(row=row.nextElementSibling)){
+      const c=row.querySelector(cls);
+      if(c&&!c.disabled&&!c.readOnly){next=c;break}
+    }
+    if(next){next.focus();try{next.select()}catch(_){}next.scrollIntoView({block:'center',behavior:'smooth'})}
+    else inp.blur();
+  });
+  new MutationObserver(()=>{
+    list.querySelectorAll('input.prize,input.points').forEach(i=>i.setAttribute('enterkeyhint','next'));
+  }).observe(list,{childList:true,subtree:true});
+})();
 </script>
 </body>
 </html>
