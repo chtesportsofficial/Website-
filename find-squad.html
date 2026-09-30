@@ -170,7 +170,18 @@ document.addEventListener('error',e=>{const i=e.target;if(i&&i.classList&&i.clas
 function expLabel(m){if(m===0)return 'অভিজ্ঞতা নেই';const y=Math.floor(m/12),r=m%12;return (y?y+' বছর'+(r?' '+r+' মাস':''):r+' মাস')+' অভিজ্ঞতা'}
 const SOC={facebook:{n:'Facebook',h:['facebook.com','fb.com','fb.me','fb.watch','m.me']},tiktok:{n:'TikTok',h:['tiktok.com']},instagram:{n:'Instagram',h:['instagram.com','instagr.am']},youtube:{n:'YouTube',h:['youtube.com','youtu.be']},discord:{n:'Discord',h:['discord.gg','discord.com']},whatsapp:{n:'WhatsApp',h:['whatsapp.com','wa.me']},telegram:{n:'Telegram',h:['t.me','telegram.me']}};
 function socOf(u){try{const h=new URL(u).hostname.replace(/^www\./,'').toLowerCase();for(const k in SOC)if(SOC[k].h.some(d=>h===d||h.endsWith('.'+d)))return k}catch(e){}return null}
-const LOCS=['ঢাকা','গাজীপুর','নারায়ণগঞ্জ','নরসিংদী','মানিকগঞ্জ','মুন্সীগঞ্জ','কিশোরগঞ্জ','টাঙ্গাইল','ফরিদপুর','গোপালগঞ্জ','মাদারীপুর','রাজবাড়ী','শরীয়তপুর','চট্টগ্রাম','কক্সবাজার','কুমিল্লা','ফেনী','ব্রাহ্মণবাড়িয়া','চাঁদপুর','লক্ষ্মীপুর','নোয়াখালী','খাগড়াছড়ি','রাঙ্গামাটি','বান্দরবান','রাজশাহী','নাটোর','নওগাঁ','চাঁপাইনবাবগঞ্জ','পাবনা','সিরাজগঞ্জ','বগুড়া','জয়পুরহাট','খুলনা','বাগেরহাট','সাতক্ষীরা','যশোর','ঝিনাইদহ','মাগুরা','নড়াইল','কুষ্টিয়া','চুয়াডাঙ্গা','মেহেরপুর','বরিশাল','ভোলা','ঝালকাঠি','পটুয়াখালী','পিরোজপুর','বরগুনা','সিলেট','মৌলভীবাজার','হবিগঞ্জ','সুনামগঞ্জ','রংপুর','দিনাজপুর','কুড়িগ্রাম','গাইবান্ধা','লালমনিরহাট','নীলফামারী','পঞ্চগড়','ঠাকুরগাঁও','ময়মনসিংহ','জামালপুর','নেত্রকোণা','শেরপুর','বাংলাদেশের বাইরে'];
+const OUT='বাংলাদেশের বাইরে';
+const DIVS={
+'ঢাকা':['ঢাকা','গাজীপুর','নারায়ণগঞ্জ','নরসিংদী','মানিকগঞ্জ','মুন্সীগঞ্জ','কিশোরগঞ্জ','টাঙ্গাইল','ফরিদপুর','গোপালগঞ্জ','মাদারীপুর','রাজবাড়ী','শরীয়তপুর'],
+'চট্টগ্রাম':['চট্টগ্রাম','কক্সবাজার','কুমিল্লা','ফেনী','ব্রাহ্মণবাড়িয়া','চাঁদপুর','লক্ষ্মীপুর','নোয়াখালী','খাগড়াছড়ি','রাঙ্গামাটি','বান্দরবান'],
+'রাজশাহী':['রাজশাহী','নাটোর','নওগাঁ','চাঁপাইনবাবগঞ্জ','পাবনা','সিরাজগঞ্জ','বগুড়া','জয়পুরহাট'],
+'খুলনা':['খুলনা','বাগেরহাট','সাতক্ষীরা','যশোর','ঝিনাইদহ','মাগুরা','নড়াইল','কুষ্টিয়া','চুয়াডাঙ্গা','মেহেরপুর'],
+'বরিশাল':['বরিশাল','ভোলা','ঝালকাঠি','পটুয়াখালী','পিরোজপুর','বরগুনা'],
+'সিলেট':['সিলেট','মৌলভীবাজার','হবিগঞ্জ','সুনামগঞ্জ'],
+'রংপুর':['রংপুর','দিনাজপুর','কুড়িগ্রাম','গাইবান্ধা','লালমনিরহাট','নীলফামারী','পঞ্চগড়','ঠাকুরগাঁও'],
+'ময়মনসিংহ':['ময়মনসিংহ','জামালপুর','নেত্রকোণা','শেরপুর']
+};
+function divOf(d){for(const k in DIVS)if(DIVS[k].includes(d))return k;return null}
 function rtagHtml(r){const R=ROLES[r];return R?`<span class="rtag" style="--c:${R.c}"><img src="${ICON[r]}" alt="">${R.n}</span>`:''}
 function tag(r){const R=ROLES[r];return R?`<span class="tag" style="--c:${R.c}">${R.n}</span>`:''}
 
@@ -180,8 +191,8 @@ function cardHtml(p,isMine){
   const R0=ROLES[roles[0]];
   const av=safeUrl(p.live_avatar)||DEF;
   const uid=isPlayer&&p.ff_uid?`<button class="uid" type="button" data-copy="${esc(p.ff_uid)}">UID ${esc(p.ff_uid)}${CP}</button>`:'';
-  const rts=isPlayer?rtagHtml(roles[0]):roles.map(rtagHtml).join('');
-  const head=`<img class="c-av" src="${esc(av)}" alt="" loading="lazy" referrerpolicy="no-referrer"><div class="c-main"><div class="c-nm"><div class="c-name">${esc(p.name)}</div><div class="c-time">${ago(p.created_at)}</div></div><div class="rrow">${rts}${uid}</div></div>`;
+  const rts=roles.map(rtagHtml).join('');
+  const head=`<img class="c-av" src="${esc(av)}" alt="" loading="lazy" referrerpolicy="no-referrer"><div class="c-main"><div class="c-nm"><div class="c-name">${esc(p.name)}</div><div class="c-time">${ago(p.created_at)}</div></div>${uid?`<div class="rrow">${uid}</div>`:''}<div class="rrow">${rts}</div></div>`;
   let meta='';
   if(isPlayer){
     const M=t=>`<span class="m">${esc(t)}</span>`;
@@ -268,6 +279,7 @@ function ddClose(except){document.querySelectorAll('.dd-l').forEach(l=>{if(l.par
 function ddAfter(id,val){
   if(id==='role')sel=[val];
   if(id==='fClip')$('clipRow').style.display=val==='yes'?'':'none';
+  if(id==='fDiv'){const r=$('distRow'),ds=DIVS[val];r.innerHTML=ds?'<label>জেলা *</label>'+ddHtml('fLoc',ds.map(x=>({v:x,l:x})),'জেলা বাছাই করো',''):''}
   if(id==='fSoc'){const r=$('socRow');if(r){r.style.display=val==='none'?'none':'';const i=$('fLink');if(i&&SOC[val])i.placeholder=SOC[val].n+' লিংক পেস্ট করো'}}
   if(id==='fAct')$('actRow').style.display=val==='slots'?'':'none';
 }
@@ -276,13 +288,12 @@ function openForm(edit){
   sel=[];slotSel=new Set();
   const player=POST_TYPE==='player';
   const roleOpts=RK.map(r=>({v:r,l:ROLES[r].n,icon:ICON[r]}));
-  const roleField=player
-    ?ddHtml('role',roleOpts,'Role বাছাই করো','')
-    :`<div class="rps">${RK.map(r=>`<button type="button" class="rp" style="--c:${ROLES[r].c}" data-r="${r}"><img src="${ICON[r]}" alt="">${ROLES[r].n}</button>`).join('')}</div>`;
+  const roleField=`<div class="rps">${RK.map(r=>`<button type="button" class="rp" style="--c:${ROLES[r].c}" data-r="${r}"><img src="${ICON[r]}" alt="">${ROLES[r].n}</button>`).join('')}</div>`;
   const playerFields=`<label>Free Fire UID</label><input id="fUid" inputmode="numeric" maxlength="20" autocomplete="off">
   <div class="sec">গেমিং তথ্য</div>
   <div class="row2"><div><label>বয়স *</label>${ddHtml('fAge',AGE_OPTS,'বাছাই করো','')}</div><div><label>অভিজ্ঞতা *</label>${ddHtml('fExp',EXP_OPTS,'বাছাই করো','')}</div></div>
-  <label>লোকেশন (জেলা) *</label>${ddHtml('fLoc',LOCS.map(x=>({v:x,l:x})),'জেলা বাছাই করো','')}
+  <label>বিভাগ *</label>${ddHtml('fDiv',[...Object.keys(DIVS),OUT].map(x=>({v:x,l:x==='ঢাকা'||OUT===x?x:x})),'বিভাগ বাছাই করো','')}
+  <div id="distRow"></div>
   <label>ডিভাইস *</label><input id="fDev" maxlength="40" placeholder="যেমন Realme C55" autocomplete="off">
   <label>নেটওয়ার্ক *</label>${ddHtml('fNet',[{v:'wifi',l:'শুধু WiFi'},{v:'data',l:'শুধু Mobile Data'},{v:'both',l:'WiFi + Data'}],'বাছাই করো','')}
   <div class="sec">Tournament প্রস্তুতি</div>
@@ -292,7 +303,7 @@ function openForm(edit){
   <div id="clipRow" style="display:none"><label>Clips লিংক *</label><input id="fLink" inputmode="url" placeholder="Drive / Facebook / YouTube লিংক" autocomplete="off"></div>`;
   $('sheet').innerHTML=`<div class="grip"></div><div class="sh-h"><h2>${editing?'পোস্ট Edit করো':(player?'প্লেয়ার হিসেবে পোস্ট দাও':'স্কোয়াডের জন্য পোস্ট দাও')}</h2><button class="back-btn x" id="xBtn" type="button">✕</button></div>
   <div class="sh-b"><div class="sec">${player?'পরিচয়':'টিমের তথ্য'}</div><label style="margin-top:6px">${player?'তোমার In-game নাম *':'টিমের নাম *'}</label><input id="fName" maxlength="40" autocomplete="off">
-  <label>${player?'Role *':'কোন role লাগবে * (একাধিক হতে পারে)'}</label>${roleField}
+  <label>${player?'Role * (একাধিক বাছাই করা যায়)':'কোন role লাগবে * (একাধিক হতে পারে)'}</label>${roleField}
   ${player?playerFields:`<label>Social media</label>${ddHtml('fSoc',[{v:'none',l:'নেই'},...Object.keys(SOC).map(k=>({v:k,l:SOC[k].n}))],'বাছাই করো','none')}
   <div id="socRow" style="display:none"><label>লিংক *</label><input id="fLink" inputmode="url" placeholder="লিংক পেস্ট করো" autocomplete="off"></div>`}
   <div class="sec">অন্যান্য</div>
@@ -317,8 +328,12 @@ function prefill(){
   set('fName',m.name);set('fCon',m.contact);set('fDet',m.details);
   if(player){
     set('fUid',m.ff_uid);set('fDev',m.device);
-    if(m.location)setDd('fLoc',m.location);
-    if(m.roles&&m.roles[0])setDd('role',m.roles[0]);
+    if(m.location){
+      if(m.location===OUT)setDd('fDiv',OUT);
+      else{const dv0=divOf(m.location);if(dv0){setDd('fDiv',dv0);setDd('fLoc',m.location)}}
+    }
+    sel=(m.roles||[]).filter(r=>ROLES[r]);
+    document.querySelectorAll('.rp').forEach(b=>b.classList.toggle('on',sel.includes(b.dataset.r)));
     if(m.age!=null)setDd('fAge',m.age);
     const em=m.experience_months!=null?m.experience_months:(m.experience_years!=null?m.experience_years*12:null);
     if(em!=null)setDd('fExp',em);
@@ -366,14 +381,16 @@ async function save(){
   clearBad();
   const name=v('fName'), contact=v('fCon'), details=v('fDet');
   if(name.length<2)return fail($('fName'),'নাম দিতে হবে (কমপক্ষে ২ অক্ষর)।');
-  if(!sel.length)return fail(player?dd('role'):document.querySelector('.rps'),player?'একটা role বাছাই করো।':'অন্তত একটা role বাছাই করো।');
+  if(!sel.length)return fail(document.querySelector('.rps'),'অন্তত একটা role বাছাই করো।');
   const row={type:POST_TYPE,name,roles:sel,contact,details:details||null};
   if(player){
     const age=dv('fAge'),exp=dv('fExp'),dev=v('fDev'),net=dv('fNet'),act=dv('fAct'),clip=dv('fClip');
     if(age==='')return fail(dd('fAge'),'বয়স বাছাই করো।');
     if(exp==='')return fail(dd('fExp'),'অভিজ্ঞতা বাছাই করো।');
-    const loc=dv('fLoc');
-    if(!loc)return fail(dd('fLoc'),'লোকেশন বাছাই করো।');
+    const dvn=dv('fDiv');
+    if(!dvn)return fail(dd('fDiv'),'বিভাগ বাছাই করো।');
+    const loc=dvn===OUT?OUT:dv('fLoc');
+    if(!loc)return fail(dd('fLoc'),'জেলা বাছাই করো।');
     if(!dev)return fail($('fDev'),'ডিভাইসের নাম দাও।');
     if(!net)return fail(dd('fNet'),'নেটওয়ার্ক বাছাই করো।');
     let slots=null;
@@ -424,7 +441,7 @@ document.addEventListener('click',async e=>{
   if(t.id==='saveBtn'){save();return}
   if(t.classList.contains('rp')){
     clearBad();const r=t.dataset.r;
-    if(POST_TYPE==='player')sel=[r]; else sel=sel.includes(r)?sel.filter(x=>x!==r):[...sel,r];
+    sel=sel.includes(r)?sel.filter(x=>x!==r):[...sel,r];
     document.querySelectorAll('.rp').forEach(b=>b.classList.toggle('on',sel.includes(b.dataset.r)));return
   }
   if(t.dataset.act==='edit'&&mine){openForm(true);return}
