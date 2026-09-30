@@ -155,6 +155,8 @@ const RK=Object.keys(ROLES);
 const db=window.supabase.createClient('https://myfficbwcbgbxbdqjexv.supabase.co','sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5');
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const BASE='id,name,roles,live_avatar,ff_uid,experience_years,experience_months,age,network,active_mode,active_from,active_to,active_slots,device,clip_url,social_url,details,contact,created_at';let COLS=BASE+',location';
+async function fq(build){let r=await build(COLS);if(r.error&&/location/i.test(r.error.message||'')&&COLS!==BASE){COLS=BASE;r=await build(COLS)}return r}
 let session=null, filter='', posts=[], done=false, busy=false, mine=null;
 
 function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2600)}
@@ -166,27 +168,27 @@ const CP="<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-widt
 async function copyText(t){try{await navigator.clipboard.writeText(t);return true}catch(e){const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand('copy')}catch(_){}a.remove();return ok}}
 document.addEventListener('error',e=>{const i=e.target;if(i&&i.classList&&i.classList.contains('c-av')&&!i.dataset.f){i.dataset.f=1;i.src=DEF}},true);
 function expLabel(m){if(m===0)return 'অভিজ্ঞতা নেই';const y=Math.floor(m/12),r=m%12;return (y?y+' বছর'+(r?' '+r+' মাস':''):r+' মাস')+' অভিজ্ঞতা'}
+const SOC={facebook:{n:'Facebook',h:['facebook.com','fb.com','fb.me','fb.watch','m.me']},tiktok:{n:'TikTok',h:['tiktok.com']},instagram:{n:'Instagram',h:['instagram.com','instagr.am']},youtube:{n:'YouTube',h:['youtube.com','youtu.be']},discord:{n:'Discord',h:['discord.gg','discord.com']},whatsapp:{n:'WhatsApp',h:['whatsapp.com','wa.me']},telegram:{n:'Telegram',h:['t.me','telegram.me']}};
+function socOf(u){try{const h=new URL(u).hostname.replace(/^www\./,'').toLowerCase();for(const k in SOC)if(SOC[k].h.some(d=>h===d||h.endsWith('.'+d)))return k}catch(e){}return null}
+const LOCS=['ঢাকা','গাজীপুর','নারায়ণগঞ্জ','নরসিংদী','মানিকগঞ্জ','মুন্সীগঞ্জ','কিশোরগঞ্জ','টাঙ্গাইল','ফরিদপুর','গোপালগঞ্জ','মাদারীপুর','রাজবাড়ী','শরীয়তপুর','চট্টগ্রাম','কক্সবাজার','কুমিল্লা','ফেনী','ব্রাহ্মণবাড়িয়া','চাঁদপুর','লক্ষ্মীপুর','নোয়াখালী','খাগড়াছড়ি','রাঙ্গামাটি','বান্দরবান','রাজশাহী','নাটোর','নওগাঁ','চাঁপাইনবাবগঞ্জ','পাবনা','সিরাজগঞ্জ','বগুড়া','জয়পুরহাট','খুলনা','বাগেরহাট','সাতক্ষীরা','যশোর','ঝিনাইদহ','মাগুরা','নড়াইল','কুষ্টিয়া','চুয়াডাঙ্গা','মেহেরপুর','বরিশাল','ভোলা','ঝালকাঠি','পটুয়াখালী','পিরোজপুর','বরগুনা','সিলেট','মৌলভীবাজার','হবিগঞ্জ','সুনামগঞ্জ','রংপুর','দিনাজপুর','কুড়িগ্রাম','গাইবান্ধা','লালমনিরহাট','নীলফামারী','পঞ্চগড়','ঠাকুরগাঁও','ময়মনসিংহ','জামালপুর','নেত্রকোণা','শেরপুর','বাংলাদেশের বাইরে'];
+function rtagHtml(r){const R=ROLES[r];return R?`<span class="rtag" style="--c:${R.c}"><img src="${ICON[r]}" alt="">${R.n}</span>`:''}
 function tag(r){const R=ROLES[r];return R?`<span class="tag" style="--c:${R.c}">${R.n}</span>`:''}
 
 function cardHtml(p,isMine){
   const isPlayer=p.type==='player';
   const roles=(p.roles||[]).filter(r=>ROLES[r]);
   const R0=ROLES[roles[0]];
-  let head;
-  if(isPlayer){
-    const av=safeUrl(p.live_avatar)||DEF;
-    const rt=R0?`<span class="rtag" style="--c:${R0.c}"><img src="${ICON[roles[0]]}" alt="">${R0.n}</span>`:'';
-    const uid=p.ff_uid?`<button class="uid" type="button" data-copy="${esc(p.ff_uid)}">UID ${esc(p.ff_uid)}${CP}</button>`:'';
-    head=`<img class="c-av" src="${esc(av)}" alt="" loading="lazy" referrerpolicy="no-referrer"><div class="c-main"><div class="c-nm"><div class="c-name">${esc(p.name)}</div><div class="c-time">${ago(p.created_at)}</div></div><div class="rrow">${rt}${uid}</div></div>`;
-  }else{
-    head=`<div class="c-ics">${roles.map(r=>`<img src="${ICON[r]}" alt="">`).join('')}</div><div class="c-main"><div class="c-name">${esc(p.name)}</div><div class="tags">${roles.map(tag).join('')}</div></div>`;
-  }
+  const av=safeUrl(p.live_avatar)||DEF;
+  const uid=isPlayer&&p.ff_uid?`<button class="uid" type="button" data-copy="${esc(p.ff_uid)}">UID ${esc(p.ff_uid)}${CP}</button>`:'';
+  const rts=isPlayer?rtagHtml(roles[0]):roles.map(rtagHtml).join('');
+  const head=`<img class="c-av" src="${esc(av)}" alt="" loading="lazy" referrerpolicy="no-referrer"><div class="c-main"><div class="c-nm"><div class="c-name">${esc(p.name)}</div><div class="c-time">${ago(p.created_at)}</div></div><div class="rrow">${rts}${uid}</div></div>`;
   let meta='';
   if(isPlayer){
     const M=t=>`<span class="m">${esc(t)}</span>`;
     if(p.age!=null)meta+=M('বয়স '+p.age);
     if(p.experience_months!=null)meta+=M(expLabel(p.experience_months));
     else if(p.experience_years!=null)meta+=M(p.experience_years+' বছরের অভিজ্ঞতা');
+    if(p.location)meta+=M('📍 '+p.location);
     if(p.device)meta+=M(p.device);
     if(p.network)meta+=M({wifi:'শুধু WiFi',data:'শুধু Data',both:'WiFi + Data'}[p.network]||'');
     if(p.active_mode==='anytime')meta+=M('যেকোনো সময় Active');
@@ -196,11 +198,11 @@ function cardHtml(p,isMine){
   const clip=isPlayer?safeUrl(p.clip_url):null, soc=!isPlayer?safeUrl(p.social_url):null, ch=contactHref(p.contact);
   let acts='';
   if(clip)acts+=`<a class="btn ghost" href="${esc(clip)}" target="_blank" rel="noopener noreferrer nofollow">Clips দেখো</a>`;
-  if(soc)acts+=`<a class="btn ghost" href="${esc(soc)}" target="_blank" rel="noopener noreferrer nofollow">Social Page</a>`;
+  if(soc){const k=socOf(soc);acts+=`<a class="btn ghost" href="${esc(soc)}" target="_blank" rel="noopener noreferrer nofollow">${k?SOC[k].n:'Social Page'}</a>`}
   if(!isMine)acts+=ch?`<a class="btn green" href="${esc(ch)}" target="_blank" rel="noopener noreferrer nofollow">যোগাযোগ করো</a>`
     :`<span class="m" style="flex:1">যোগাযোগ: ${esc(p.contact)}</span>`;
   else acts+=`<button class="btn ghost" data-act="edit">Edit</button><button class="btn red" data-act="del">ডিলিট</button>`;
-  return `<div class="card${isMine?' mine':''}"><div class="c-top">${head}${isPlayer?'':`<div class="c-time">${ago(p.created_at)}</div>`}</div>`
+  return `<div class="card${isMine?' mine':''}"><div class="c-top">${head}</div>`
    +(meta?`<div class="meta">${meta}</div>`:'')+(p.details?`<div class="det">${esc(p.details)}</div>`:'')+`<div class="acts">${acts}</div></div>`;
 }
 
@@ -224,10 +226,10 @@ async function load(reset){
   if(reset){posts=[];done=false}
   render();
   const from=posts.length;
-  let q=db.from('recruit_feed').select('id,name,roles,live_avatar,ff_uid,experience_years,experience_months,age,network,active_mode,active_from,active_to,active_slots,device,clip_url,social_url,details,contact,created_at')
+  const r=await fq(c=>{let q=db.from('recruit_feed').select(c)
     .eq('type',VIEW_TYPE).eq('status','active').order('created_at',{ascending:false}).range(from,from+PAGE-1);
   if(filter)q=q.contains('roles',[filter]);
-  const r=await q;
+  return q});
   busy=false;
   if(r.error){toast(r.error.message);render();return}
   posts=posts.concat(r.data||[]);
@@ -235,8 +237,8 @@ async function load(reset){
   render();
 }
 async function loadMine(){
-  const r=await db.from('recruit_feed').select('id,name,roles,live_avatar,ff_uid,experience_years,experience_months,age,network,active_mode,active_from,active_to,active_slots,device,clip_url,social_url,details,contact,created_at')
-    .eq('user_id',session.user.id).eq('type',POST_TYPE).eq('status','active').maybeSingle();
+  const r=await fq(c=>db.from('recruit_feed').select(c)
+    .eq('user_id',session.user.id).eq('type',POST_TYPE).eq('status','active').maybeSingle());
   mine=r.data||null;
 }
 
@@ -266,6 +268,7 @@ function ddClose(except){document.querySelectorAll('.dd-l').forEach(l=>{if(l.par
 function ddAfter(id,val){
   if(id==='role')sel=[val];
   if(id==='fClip')$('clipRow').style.display=val==='yes'?'':'none';
+  if(id==='fSoc'){const r=$('socRow');if(r){r.style.display=val==='none'?'none':'';const i=$('fLink');if(i&&SOC[val])i.placeholder=SOC[val].n+' লিংক পেস্ট করো'}}
   if(id==='fAct')$('actRow').style.display=val==='slots'?'':'none';
 }
 function openForm(edit){
@@ -279,6 +282,7 @@ function openForm(edit){
   const playerFields=`<label>Free Fire UID</label><input id="fUid" inputmode="numeric" maxlength="20" autocomplete="off">
   <div class="sec">গেমিং তথ্য</div>
   <div class="row2"><div><label>বয়স *</label>${ddHtml('fAge',AGE_OPTS,'বাছাই করো','')}</div><div><label>অভিজ্ঞতা *</label>${ddHtml('fExp',EXP_OPTS,'বাছাই করো','')}</div></div>
+  <label>লোকেশন (জেলা) *</label>${ddHtml('fLoc',LOCS.map(x=>({v:x,l:x})),'জেলা বাছাই করো','')}
   <label>ডিভাইস *</label><input id="fDev" maxlength="40" placeholder="যেমন Realme C55" autocomplete="off">
   <label>নেটওয়ার্ক *</label>${ddHtml('fNet',[{v:'wifi',l:'শুধু WiFi'},{v:'data',l:'শুধু Mobile Data'},{v:'both',l:'WiFi + Data'}],'বাছাই করো','')}
   <div class="sec">Tournament প্রস্তুতি</div>
@@ -289,7 +293,8 @@ function openForm(edit){
   $('sheet').innerHTML=`<div class="grip"></div><div class="sh-h"><h2>${editing?'পোস্ট Edit করো':(player?'প্লেয়ার হিসেবে পোস্ট দাও':'স্কোয়াডের জন্য পোস্ট দাও')}</h2><button class="back-btn x" id="xBtn" type="button">✕</button></div>
   <div class="sh-b"><div class="sec">${player?'পরিচয়':'টিমের তথ্য'}</div><label style="margin-top:6px">${player?'তোমার In-game নাম *':'টিমের নাম *'}</label><input id="fName" maxlength="40" autocomplete="off">
   <label>${player?'Role *':'কোন role লাগবে * (একাধিক হতে পারে)'}</label>${roleField}
-  ${player?playerFields:`<label>Social Page লিংক</label><input id="fLink" inputmode="url" placeholder="Facebook পেজ / গ্রুপের লিংক" autocomplete="off">`}
+  ${player?playerFields:`<label>Social media</label>${ddHtml('fSoc',[{v:'none',l:'নেই'},...Object.keys(SOC).map(k=>({v:k,l:SOC[k].n}))],'বাছাই করো','none')}
+  <div id="socRow" style="display:none"><label>লিংক *</label><input id="fLink" inputmode="url" placeholder="লিংক পেস্ট করো" autocomplete="off"></div>`}
   <div class="sec">অন্যান্য</div>
   <label style="margin-top:6px">${player?'নিজের সম্পর্কে (ঐচ্ছিক)':'শর্ত / Requirements (ঐচ্ছিক)'}</label><textarea id="fDet" maxlength="500"></textarea>
   <label>যোগাযোগ * (WhatsApp নম্বর বা Facebook/Messenger লিংক)</label><input id="fCon" maxlength="200" autocomplete="off">
@@ -312,6 +317,7 @@ function prefill(){
   set('fName',m.name);set('fCon',m.contact);set('fDet',m.details);
   if(player){
     set('fUid',m.ff_uid);set('fDev',m.device);
+    if(m.location)setDd('fLoc',m.location);
     if(m.roles&&m.roles[0])setDd('role',m.roles[0]);
     if(m.age!=null)setDd('fAge',m.age);
     const em=m.experience_months!=null?m.experience_months:(m.experience_years!=null?m.experience_years*12:null);
@@ -329,7 +335,11 @@ function prefill(){
   }else{
     sel=(m.roles||[]).filter(r=>ROLES[r]);
     document.querySelectorAll('.rp').forEach(b=>b.classList.toggle('on',sel.includes(b.dataset.r)));
-    set('fLink',m.social_url);
+    if(m.social_url){
+      const k=socOf(m.social_url);set('fLink',m.social_url);
+      if(k)setDd('fSoc',k);
+      else{const d=document.querySelector('.dd[data-id="fSoc"]');d.dataset.val='';const lb=d.querySelector('.lbl');lb.classList.add('ph');lb.textContent='প্ল্যাটফর্ম বাছাই করো';$('socRow').style.display=''}
+    }
   }
 }
 function lock(on){document.documentElement.style.overflow=on?'hidden':'';document.body.style.overflow=on?'hidden':''}
@@ -362,16 +372,23 @@ async function save(){
     const age=dv('fAge'),exp=dv('fExp'),dev=v('fDev'),net=dv('fNet'),act=dv('fAct'),clip=dv('fClip');
     if(age==='')return fail(dd('fAge'),'বয়স বাছাই করো।');
     if(exp==='')return fail(dd('fExp'),'অভিজ্ঞতা বাছাই করো।');
+    const loc=dv('fLoc');
+    if(!loc)return fail(dd('fLoc'),'লোকেশন বাছাই করো।');
     if(!dev)return fail($('fDev'),'ডিভাইসের নাম দাও।');
     if(!net)return fail(dd('fNet'),'নেটওয়ার্ক বাছাই করো।');
     let slots=null;
     if(act==='slots'){slots=TIMES.filter(t=>slotSel.has(t));if(!slots.length)return fail(dd('fSlots'),'অন্তত একটা সময় বাছাই করো।')}
     let link=null;
     if(clip==='yes'){link=safeUrl(v('fLink'));if(!link)return fail($('fLink'),'Clips-এর লিংক দাও (ঠিক ফরম্যাটে)।')}
-    Object.assign(row,{age:+age,experience_months:+exp,device:dev,network:net,active_mode:act,active_slots:slots,active_from:null,active_to:null,ff_uid:v('fUid')||null,clip_url:link});
+    Object.assign(row,{age:+age,experience_months:+exp,device:dev,network:net,active_mode:act,active_slots:slots,active_from:null,active_to:null,ff_uid:v('fUid')||null,clip_url:link,location:loc});
   }else{
-    const raw=v('fLink');let link=null;
-    if(raw){link=safeUrl(raw);if(!link)return fail($('fLink'),'লিংকটা ঠিক মনে হচ্ছে না।')}
+    const soc=dv('fSoc');let link=null;
+    if(soc===''||(soc!=='none'&&!SOC[soc]))return fail(dd('fSoc'),'Social media বাছাই করো।');
+    if(soc!=='none'){
+      link=safeUrl(v('fLink'));
+      if(!link)return fail($('fLink'),'লিংক দাও (ঠিক ফরম্যাটে)।');
+      if(socOf(link)!==soc)return fail($('fLink'),'লিংকটা '+SOC[soc].n+'-এর মনে হচ্ছে না।');
+    }
     row.social_url=link;
   }
   if(contact.length<5)return fail($('fCon'),'যোগাযোগের তথ্য দাও।');
