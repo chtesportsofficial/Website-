@@ -199,7 +199,7 @@ function cardHtml(p,isMine){
   if(soc)acts+=`<a class="btn ghost" href="${esc(soc)}" target="_blank" rel="noopener noreferrer nofollow">Social Page</a>`;
   if(!isMine)acts+=ch?`<a class="btn green" href="${esc(ch)}" target="_blank" rel="noopener noreferrer nofollow">যোগাযোগ করো</a>`
     :`<span class="m" style="flex:1">যোগাযোগ: ${esc(p.contact)}</span>`;
-  else acts+=`<button class="btn ghost" data-act="close">বন্ধ করো</button><button class="btn red" data-act="del">ডিলিট</button>`;
+  else acts+=`<button class="btn ghost" data-act="edit">Edit</button><button class="btn red" data-act="del">ডিলিট</button>`;
   return `<div class="card${isMine?' mine':''}"><div class="c-top">${head}${isPlayer?'':`<div class="c-time">${ago(p.created_at)}</div>`}</div>`
    +(meta?`<div class="meta">${meta}</div>`:'')+(p.details?`<div class="det">${esc(p.details)}</div>`:'')+`<div class="acts">${acts}</div></div>`;
 }
@@ -241,7 +241,7 @@ async function loadMine(){
 }
 
 /* ---------- form ---------- */
-let sel=[];
+let sel=[], editing=false;
 const CHEV="<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>";
 const TIMES=['3 PM','4 PM','5 PM','7 PM','8 PM','9 PM','10 PM','11 PM','12 AM','1 AM'];
 let slotSel=new Set();
@@ -268,7 +268,8 @@ function ddAfter(id,val){
   if(id==='fClip')$('clipRow').style.display=val==='yes'?'':'none';
   if(id==='fAct')$('actRow').style.display=val==='slots'?'':'none';
 }
-function openForm(){
+function openForm(edit){
+  editing=!!(edit&&mine);
   sel=[];slotSel=new Set();
   const player=POST_TYPE==='player';
   const roleOpts=RK.map(r=>({v:r,l:ROLES[r].n,icon:ICON[r]}));
@@ -285,7 +286,7 @@ function openForm(){
   <div id="actRow" style="display:none"><label>কোন কোন সময় পারবে? * (একাধিক বাছাই করা যায়)</label>${ddMultiHtml('fSlots',TIME_OPTS,'সময় বাছাই করো')}</div>
   <label>Clips / highlights আছে? *</label>${ddHtml('fClip',[{v:'no',l:'না'},{v:'yes',l:'হ্যাঁ, আছে'}],'বাছাই করো','no')}
   <div id="clipRow" style="display:none"><label>Clips লিংক *</label><input id="fLink" inputmode="url" placeholder="Drive / Facebook / YouTube লিংক" autocomplete="off"></div>`;
-  $('sheet').innerHTML=`<div class="grip"></div><div class="sh-h"><h2>${player?'প্লেয়ার হিসেবে পোস্ট দাও':'স্কোয়াডের জন্য পোস্ট দাও'}</h2><button class="back-btn x" id="xBtn" type="button">✕</button></div>
+  $('sheet').innerHTML=`<div class="grip"></div><div class="sh-h"><h2>${editing?'পোস্ট Edit করো':(player?'প্লেয়ার হিসেবে পোস্ট দাও':'স্কোয়াডের জন্য পোস্ট দাও')}</h2><button class="back-btn x" id="xBtn" type="button">✕</button></div>
   <div class="sh-b"><div class="sec">${player?'পরিচয়':'টিমের তথ্য'}</div><label style="margin-top:6px">${player?'তোমার In-game নাম *':'টিমের নাম *'}</label><input id="fName" maxlength="40" autocomplete="off">
   <label>${player?'Role *':'কোন role লাগবে * (একাধিক হতে পারে)'}</label>${roleField}
   ${player?playerFields:`<label>Social Page লিংক</label><input id="fLink" inputmode="url" placeholder="Facebook পেজ / গ্রুপের লিংক" autocomplete="off">`}
@@ -293,8 +294,43 @@ function openForm(){
   <label style="margin-top:6px">${player?'নিজের সম্পর্কে (ঐচ্ছিক)':'শর্ত / Requirements (ঐচ্ছিক)'}</label><textarea id="fDet" maxlength="500"></textarea>
   <label>যোগাযোগ * (WhatsApp নম্বর বা Facebook/Messenger লিংক)</label><input id="fCon" maxlength="200" autocomplete="off">
   <div class="hint">শুধু লগইন করা ইউজাররা এটা দেখতে পাবে।</div></div>
-  <div class="sh-f"><div class="err" id="fErr"></div><button class="btn green" id="saveBtn">পোস্ট করো</button></div>`;
+  <div class="sh-f"><div class="err" id="fErr"></div><button class="btn green" id="saveBtn">${editing?'সেভ করো':'পোস্ট করো'}</button></div>`;
   $('ov').classList.add('show');lock(true);
+  if(editing)prefill();
+}
+function setDd(id,val){
+  const d=document.querySelector('.dd[data-id="'+id+'"]');if(!d)return;
+  const o=Array.from(d.querySelectorAll('.dd-o')).find(x=>x.dataset.v===String(val));if(!o)return;
+  d.dataset.val=String(val);
+  d.querySelectorAll('.dd-o').forEach(x=>x.classList.toggle('on',x===o));
+  const lb=d.querySelector('.lbl');lb.classList.remove('ph');lb.innerHTML=o.innerHTML;
+  ddAfter(id,String(val));
+}
+function prefill(){
+  const m=mine,player=POST_TYPE==='player';
+  const set=(id,v)=>{if($(id))$(id).value=v==null?'':v};
+  set('fName',m.name);set('fCon',m.contact);set('fDet',m.details);
+  if(player){
+    set('fUid',m.ff_uid);set('fDev',m.device);
+    if(m.roles&&m.roles[0])setDd('role',m.roles[0]);
+    if(m.age!=null)setDd('fAge',m.age);
+    const em=m.experience_months!=null?m.experience_months:(m.experience_years!=null?m.experience_years*12:null);
+    if(em!=null)setDd('fExp',em);
+    if(m.network)setDd('fNet',m.network);
+    if(m.active_mode==='anytime')setDd('fAct','anytime');
+    else if(m.active_mode==='slots'){
+      setDd('fAct','slots');slotSel=new Set(m.active_slots||[]);
+      const d=document.querySelector('.dd[data-id="fSlots"]');
+      d.querySelectorAll('.dd-o').forEach(x=>x.classList.toggle('on',slotSel.has(x.dataset.v)));
+      d.dataset.val=TIMES.filter(x=>slotSel.has(x)).join(',');
+      const lb=d.querySelector('.lbl'),txt=slotLabel();lb.textContent=txt||'সময় বাছাই করো';lb.classList.toggle('ph',!txt);
+    }
+    if(m.clip_url){setDd('fClip','yes');set('fLink',m.clip_url)}
+  }else{
+    sel=(m.roles||[]).filter(r=>ROLES[r]);
+    document.querySelectorAll('.rp').forEach(b=>b.classList.toggle('on',sel.includes(b.dataset.r)));
+    set('fLink',m.social_url);
+  }
 }
 function lock(on){document.documentElement.style.overflow=on?'hidden':'';document.body.style.overflow=on?'hidden':''}
 function closeForm(){$('ov').classList.remove('show');lock(false)}
@@ -339,11 +375,11 @@ async function save(){
     row.social_url=link;
   }
   if(contact.length<5)return fail($('fCon'),'যোগাযোগের তথ্য দাও।');
-  const b=$('saveBtn');b.disabled=true;b.textContent='পোস্ট হচ্ছে...';
-  const r=await db.from('recruit_posts').insert(row);
-  if(r.error){b.disabled=false;b.textContent='পোস্ট করো';
-    return $('fErr').textContent=(r.error.code==='23505'?'তোমার একটা active পোস্ট আগে থেকেই আছে। আগে সেটা বন্ধ বা ডিলিট করো।':r.error.message)}
-  closeForm();toast('পোস্ট হয়েছে ✓');await loadMine();render();
+  const b=$('saveBtn');b.disabled=true;b.textContent=editing?'সেভ হচ্ছে...':'পোস্ট হচ্ছে...';
+  const r=editing?await db.from('recruit_posts').update(row).eq('id',mine.id):await db.from('recruit_posts').insert(row);
+  if(r.error){b.disabled=false;b.textContent=editing?'সেভ করো':'পোস্ট করো';
+    return $('fErr').textContent=(r.error.code==='23505'?'তোমার একটা active পোস্ট আগে থেকেই আছে। আগে সেটা ডিলিট করো।':r.error.message)}
+  closeForm();toast(editing?'পোস্ট আপডেট হয়েছে ✓':'পোস্ট হয়েছে ✓');await loadMine();render();
 }
 
 /* ---------- events ---------- */
@@ -374,15 +410,14 @@ document.addEventListener('click',async e=>{
     if(POST_TYPE==='player')sel=[r]; else sel=sel.includes(r)?sel.filter(x=>x!==r):[...sel,r];
     document.querySelectorAll('.rp').forEach(b=>b.classList.toggle('on',sel.includes(b.dataset.r)));return
   }
-  if(t.dataset.act&&mine){
-    const del=t.dataset.act==='del';
-    if(del&&!confirm('পোস্টটা ডিলিট করবে?'))return;
+  if(t.dataset.act==='edit'&&mine){openForm(true);return}
+  if(t.dataset.act==='del'&&mine){
+    if(!confirm('পোস্টটা ডিলিট করবে?'))return;
     const card=t.closest('.card');card.style.opacity='.5';card.querySelectorAll('button').forEach(b=>b.disabled=true);
-    t.textContent=del?'ডিলিট হচ্ছে...':'বন্ধ হচ্ছে...';
-    const q=del?db.from('recruit_posts').delete().eq('id',mine.id):db.from('recruit_posts').update({status:'closed'}).eq('id',mine.id);
-    const r=await q;
+    t.textContent='ডিলিট হচ্ছে...';
+    const r=await db.from('recruit_posts').delete().eq('id',mine.id);
     if(r.error){toast(r.error.message);render();return}
-    mine=null;toast(del?'ডিলিট হয়েছে':'পোস্ট বন্ধ হয়েছে');render();
+    mine=null;toast('ডিলিট হয়েছে');render();
   }
 });
 document.addEventListener('input',e=>{if(e.target.classList&&e.target.classList.contains('bad'))clearBad()});
