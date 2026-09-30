@@ -80,6 +80,12 @@
   --text-secondary: var(--g-muted);
 }
 </style>
+
+<style>
+.uid-search-card{background:var(--card);border:1px solid var(--card-border);border-radius:18px;padding:18px;margin-top:2px;box-shadow:0 10px 28px rgba(0,0,0,.16)}
+.search-head{display:flex;align-items:center;gap:12px;margin-bottom:20px}.search-icon{width:44px;height:44px;border-radius:13px;background:rgba(33,230,193,.10);border:1px solid rgba(33,230,193,.20);display:flex;align-items:center;justify-content:center;color:#21e6c1}.search-icon svg{width:21px;height:21px}.search-title{font-size:17px;font-weight:750}.search-sub{font-size:12px;color:var(--text-secondary);margin-top:3px}.field-label{display:block;font-size:12px;font-weight:650;color:var(--text-secondary);margin-bottom:7px}.uid-row{display:flex;gap:9px}.uid-row input{flex:1;min-width:0;height:48px;background:#0e111a;color:var(--text-primary);border:1px solid var(--card-border);border-radius:12px;padding:0 13px;font-size:14px;outline:none}.uid-row input:focus{border-color:#21e6c1;box-shadow:0 0 0 3px rgba(33,230,193,.08)}.uid-row button{height:48px;border:0;border-radius:12px;padding:0 16px;background:#21e6c1;color:#06110f;font-weight:750;font-size:13px}.uid-row button:disabled{opacity:.6}.region-note{font-size:11px;color:var(--text-secondary);margin-top:9px}.search-status{margin-top:14px;padding:11px 12px;border-radius:11px;font-size:12px;line-height:1.5;background:#101521;color:var(--text-secondary)}.search-status.ok{border:1px solid rgba(33,230,193,.22);color:#9df5df}.search-status.error{border:1px solid rgba(255,90,46,.25);color:#ffad91}.profile-card{margin-top:16px;border-top:1px solid var(--card-border);padding-top:16px}.verified{display:flex;align-items:center;gap:7px;color:#21e6c1;font-size:12px;font-weight:750;margin-bottom:12px}.profile-name{font-size:19px;font-weight:800;word-break:break-word}.profile-uid{font-size:11px;color:var(--text-secondary);margin-top:3px}.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}.stat{background:#0f131d;border:1px solid var(--card-border);border-radius:12px;padding:11px}.stat-label{font-size:10px;color:var(--text-secondary);margin-bottom:5px}.stat-value{font-size:13px;font-weight:700;word-break:break-word}.rank-box{margin-top:9px;padding:12px;border-radius:12px;background:#10151f;border:1px solid var(--card-border)}.rank-title{font-size:11px;color:var(--text-secondary);margin-bottom:7px}.rank-line{display:flex;justify-content:space-between;gap:8px;font-size:13px}.rank-line+ .rank-line{margin-top:7px}.rank-line b{font-weight:750}.search-foot{font-size:10px;color:var(--text-secondary);margin-top:13px;line-height:1.5}
+</style>
+
 </head>
 <body>
 
@@ -93,16 +99,91 @@
     <h1>ID Buy/Sell Zone</h1>
   </div>
 
-  <div class="empty-wrap">
-    <div class="empty-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+  <section class="uid-search-card">
+    <div class="search-head">
+      <div class="search-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+      </div>
+      <div>
+        <div class="search-title">Search Free Fire ID</div>
+        <div class="search-sub">UID দিয়ে account information verify করুন</div>
+      </div>
     </div>
-    <div class="empty-title">শীঘ্রই আসছে</div>
-    <div class="empty-sub">এখানে গেম আইডি নিরাপদে কেনাবেচা করার ফিচারটি শীঘ্রই চালু হবে। কাজ চলছে, একটু ধৈর্য ধরুন 🙏</div>
-  </div>
+
+    <label class="field-label" for="ffUid">Free Fire UID</label>
+    <div class="uid-row">
+      <input id="ffUid" inputmode="numeric" autocomplete="off" maxlength="15" placeholder="যেমন: 890698630" />
+      <button id="verifyBtn" type="button" onclick="searchFF()">Verify</button>
+    </div>
+    <div class="region-note">🌐 Region automatically detected • BD supported</div>
+
+    <div id="searchStatus" class="search-status" hidden></div>
+    <div id="ffResult" hidden></div>
+  </section>
 
 </div>
 
+<script>
+const FF_API='https://api2.nftoken.info/player-info?uid=';
+function escFF(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
+function val(obj,...keys){for(const k of keys){if(obj && obj[k]!==undefined && obj[k]!==null && obj[k]!=='') return obj[k];}return '—';}
+function fmtDate(v){if(v==='—')return v; const n=Number(v); if(!Number.isFinite(n))return String(v); const d=new Date(n*1000); if(Number.isNaN(d.getTime()))return '—'; return d.toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}
+function rankName(v){const map={220:'Heroic',221:'Elite Heroic',222:'Master',223:'Grandmaster'}; return map[String(v)]||String(v??'—');}
+async function searchFF(){
+  const input=document.getElementById('ffUid'), btn=document.getElementById('verifyBtn'), status=document.getElementById('searchStatus'), result=document.getElementById('ffResult');
+  const uid=input.value.trim(); result.hidden=true; result.innerHTML=''; status.hidden=false; status.className='search-status';
+  if(!/^\d{5,15}$/.test(uid)){status.textContent='Enter a valid Free Fire UID (5–15 digits).';status.classList.add('error');return;}
+  btn.disabled=true; btn.textContent='Checking…'; status.textContent='Checking Free Fire account…';
+  try{
+    const r=await fetch(FF_API+encodeURIComponent(uid),{headers:{'Accept':'application/json'}});
+    const data=await r.json().catch(()=>({}));
+    if(!r.ok || data.error){throw new Error(data.error||'Account could not be verified.');}
+    const a=data.AccountInfo||data.basicInfo||data.BasicInfo||{};
+    const g=data.GuildInfo||data.guildInfo||{};
+    const c=data.creditScoreInfo||data.CreditScoreInfo||{};
+    const p=data.petInfo||data.PetInfo||{};
+    const name=val(a,'AccountName','nickname','Nickname');
+    const region=val(a,'AccountRegion','region','Region');
+    const level=val(a,'AccountLevel','level','Level');
+    const likes=val(a,'AccountLikes','liked','likes');
+    const exp=val(a,'AccountEXP','exp','Exp');
+    const cr=val(c,'creditScore','CreditScore','score');
+    const br=val(a,'BrRankPoint','rankingPoints','rankPoints');
+    const cs=val(a,'CsRankPoint','csRankingPoints','csRankPoints');
+    const created=fmtDate(val(a,'AccountCreateTime','createAt','createat'));
+    const last=fmtDate(val(a,'AccountLastLogin','lastLoginAt','lastloginat'));
+    const guild=val(g,'GuildName','guildName','clanName');
+    const guildLevel=val(g,'GuildLevel','guildLevel','clanLevel');
+    const petLevel=val(p,'PetLevel','petLevel');
+    status.textContent='✓ Account information received.'; status.classList.add('ok');
+    result.innerHTML=`<div class="profile-card">
+      <div class="verified">✓ VERIFIED ACCOUNT</div>
+      <div class="profile-name">${escFF(name)}</div>
+      <div class="profile-uid">UID: ${escFF(uid)} • Server: ${escFF(region)}</div>
+      <div class="stats-grid">
+        <div class="stat"><div class="stat-label">LEVEL</div><div class="stat-value">${escFF(level)}</div></div>
+        <div class="stat"><div class="stat-label">LIKES</div><div class="stat-value">${escFF(likes)}</div></div>
+        <div class="stat"><div class="stat-label">EXP</div><div class="stat-value">${escFF(exp)}</div></div>
+        <div class="stat"><div class="stat-label">CREDIT SCORE</div><div class="stat-value">${escFF(cr)}</div></div>
+        <div class="stat"><div class="stat-label">ACCOUNT AGE / CREATED</div><div class="stat-value">${escFF(created)}</div></div>
+        <div class="stat"><div class="stat-label">LAST LOGIN</div><div class="stat-value">${escFF(last)}</div></div>
+      </div>
+      <div class="rank-box"><div class="rank-title">COMPETITIVE RANKS</div>
+        <div class="rank-line"><span>BR</span><b>${escFF(rankName(val(a,'BrMaxRank','maxRank','rank')))} · ${escFF(br)} RP</b></div>
+        <div class="rank-line"><span>CS</span><b>${escFF(rankName(val(a,'CsMaxRank','csMaxRank','csRank')))} · ${escFF(cs)} RP</b></div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat"><div class="stat-label">CLAN / GUILD</div><div class="stat-value">${escFF(guild)} · Lv.${escFF(guildLevel)}</div></div>
+        <div class="stat"><div class="stat-label">PET LEVEL</div><div class="stat-value">${escFF(petLevel)}</div></div>
+      </div>
+      <div class="search-foot">Live lookup via a third-party Free Fire API. Data availability can vary by API/server.</div>
+    </div>`;
+    result.hidden=false;
+  }catch(e){status.textContent='Could not verify this UID right now. '+(e.message||'Please try again.');status.classList.add('error');}
+  finally{btn.disabled=false;btn.textContent='Verify';}
+}
+document.getElementById('ffUid').addEventListener('keydown',e=>{if(e.key==='Enter')searchFF();});
+</script>
 <script>
   window.addEventListener('pageshow', function(event){
     if (event.persisted) { location.reload(); }
