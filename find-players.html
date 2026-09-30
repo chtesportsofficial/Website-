@@ -34,12 +34,29 @@
   .card.mine{ border-color:#39e77b66; }
   .c-top{ display:flex; gap:12px; align-items:center; }
   .c-ic{ width:48px; height:48px; object-fit:contain; flex-shrink:0; }
+  .c-nm{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+  .c-nm .c-name{ flex:1; min-width:0; }
+  .c-nm .c-time{ align-self:auto; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  select{ width:100%; appearance:none; -webkit-appearance:none; background:#0b0f1c url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b8fa3' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 11px center/16px; border:1px solid #2a3350; border-radius:13px; padding:13px 34px 13px 13px; color:var(--text-primary); font:14px 'Inter','Hind Siliguri',sans-serif; outline:none; text-overflow:ellipsis; }
+  select:focus{ border-color:#39e77b88; }
+  select option{ background:#0f1424; color:#f2f3f7; }
+  .dd-b{ width:100%; display:flex; align-items:center; gap:8px; background:#0b0f1c; border:1px solid #2a3350; border-radius:13px; padding:9px 12px; color:var(--text-secondary); font:14px 'Inter','Hind Siliguri',sans-serif; cursor:pointer; text-align:left; }
+  .dd-b .lbl{ flex:1; display:flex; align-items:center; gap:7px; }
+  .dd-b.has{ color:var(--text-primary); }
+  .dd-b img,.dd-o img{ width:20px; height:20px; object-fit:contain; }
+  .dd-b svg{ width:16px; height:16px; color:#8b8fa3; transition:transform .15s; }
+  .dd-b.open svg{ transform:rotate(180deg); }
+  .dd-l{ margin-top:6px; background:#0b0f1c; border:1px solid #2a3350; border-radius:13px; overflow:hidden; }
+  .dd-o{ width:100%; display:flex; align-items:center; gap:9px; background:transparent; border:0; border-bottom:1px solid #1c2338; padding:9px 12px; color:var(--text-primary); font:600 13px 'Inter',sans-serif; cursor:pointer; text-align:left; }
+  .dd-o:last-child{ border-bottom:0; }
+  .dd-o:active,.dd-o.on{ background:color-mix(in srgb,var(--c) 14%,transparent); }
   .c-av{ width:54px; height:54px; border-radius:50%; object-fit:cover; flex-shrink:0; border:2px solid #2a3350; background:#232b45; }
-  .rrow{ display:flex; align-items:center; gap:8px; margin-top:7px; flex-wrap:wrap; }
-  .rtag{ display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:700; padding:3px 10px 3px 5px; border-radius:999px; color:#eceef6; background:color-mix(in srgb,var(--c) 14%,#0b0f1c); border:1px solid color-mix(in srgb,var(--c) 45%,transparent); }
-  .rtag img{ width:20px; height:20px; object-fit:contain; }
-  .uid{ display:inline-flex; align-items:center; gap:5px; font:600 11.5px 'Inter',sans-serif; color:var(--text-secondary); background:#ffffff0d; border:1px dashed #3a4463; border-radius:999px; padding:4px 9px; cursor:pointer; }
-  .uid svg{ width:12px; height:12px; }
+  .rrow{ display:flex; align-items:center; gap:6px; margin-top:6px; flex-wrap:wrap; }
+  .rtag{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600; padding:2px 9px 2px 5px; border-radius:999px; color:#c5cadb; background:#0d1220; border:1px solid color-mix(in srgb,var(--c) 32%,#2a3350); }
+  .rtag img{ width:16px; height:16px; object-fit:contain; }
+  .uid{ display:inline-flex; align-items:center; gap:4px; font:600 11px 'Inter',sans-serif; color:var(--text-secondary); background:#ffffff0d; border:1px dashed #3a4463; border-radius:999px; padding:3px 8px; cursor:pointer; }
+  .uid svg{ width:11px; height:11px; }
   .uid:active{ transform:scale(.96); }
   .uid.ok{ color:#39e77b; border-color:#39e77b; }
   .c-ics{ display:flex; flex-wrap:wrap; width:52px; gap:2px; flex-shrink:0; }
@@ -77,8 +94,9 @@
   input:focus,textarea:focus{ border-color:#39e77b88; }
   textarea{ resize:vertical; min-height:70px; }
   .roles{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
-  .rp{ display:flex; flex-direction:column; align-items:center; gap:4px; padding:9px 2px; border-radius:13px; background:#0b0f1c; border:1px solid #2a3350; color:var(--text-secondary); font:600 10.5px 'Inter',sans-serif; cursor:pointer; }
-  .rp img{ width:34px; height:34px; object-fit:contain; }
+  .rps{ display:flex; flex-wrap:wrap; gap:8px; }
+  .rp{ display:inline-flex; align-items:center; gap:6px; padding:5px 12px 5px 7px; border-radius:999px; background:#0b0f1c; border:1px solid #2a3350; color:var(--text-secondary); font:600 12px 'Inter',sans-serif; cursor:pointer; }
+  .rp img{ width:18px; height:18px; object-fit:contain; }
   .rp.on{ color:var(--text-primary); border-color:var(--c); background:color-mix(in srgb,var(--c) 16%,var(--card)); }
   .hint{ font-size:11px; color:var(--text-secondary); margin-top:5px; }
   .err{ color:var(--red); font-size:12.5px; margin-top:10px; min-height:16px; }
@@ -131,6 +149,7 @@ const DEF='data:image/svg+xml,'+encodeURIComponent("<svg xmlns='http://www.w3.or
 const CP="<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><rect x='9' y='9' width='11' height='11' rx='2'/><path d='M5 15V6a2 2 0 0 1 2-2h9'/></svg>";
 async function copyText(t){try{await navigator.clipboard.writeText(t);return true}catch(e){const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand('copy')}catch(_){}a.remove();return ok}}
 document.addEventListener('error',e=>{const i=e.target;if(i&&i.classList&&i.classList.contains('c-av')&&!i.dataset.f){i.dataset.f=1;i.src=DEF}},true);
+function expLabel(m){if(m===0)return 'অভিজ্ঞতা নেই';const y=Math.floor(m/12),r=m%12;return (y?y+' বছর'+(r?' '+r+' মাস':''):r+' মাস')+' অভিজ্ঞতা'}
 function tag(r){const R=ROLES[r];return R?`<span class="tag" style="--c:${R.c}">${R.n}</span>`:''}
 
 function cardHtml(p,isMine){
@@ -142,14 +161,20 @@ function cardHtml(p,isMine){
     const av=safeUrl(p.live_avatar)||DEF;
     const rt=R0?`<span class="rtag" style="--c:${R0.c}"><img src="${ICON[roles[0]]}" alt="">${R0.n}</span>`:'';
     const uid=p.ff_uid?`<button class="uid" type="button" data-copy="${esc(p.ff_uid)}">UID ${esc(p.ff_uid)}${CP}</button>`:'';
-    head=`<img class="c-av" src="${esc(av)}" alt="" loading="lazy" referrerpolicy="no-referrer"><div class="c-main"><div class="c-name">${esc(p.name)}</div><div class="rrow">${rt}${uid}</div></div>`;
+    head=`<img class="c-av" src="${esc(av)}" alt="" loading="lazy" referrerpolicy="no-referrer"><div class="c-main"><div class="c-nm"><div class="c-name">${esc(p.name)}</div><div class="c-time">${ago(p.created_at)}</div></div><div class="rrow">${rt}${uid}</div></div>`;
   }else{
     head=`<div class="c-ics">${roles.map(r=>`<img src="${ICON[r]}" alt="">`).join('')}</div><div class="c-main"><div class="c-name">${esc(p.name)}</div><div class="tags">${roles.map(tag).join('')}</div></div>`;
   }
   let meta='';
   if(isPlayer){
-    if(p.experience_years!=null)meta+=`<span class="m">${esc(p.experience_years)} বছরের অভিজ্ঞতা</span>`;
-    if(p.device)meta+=`<span class="m">${esc(p.device)}</span>`;
+    const M=t=>`<span class="m">${esc(t)}</span>`;
+    if(p.age!=null)meta+=M('বয়স '+p.age);
+    if(p.experience_months!=null)meta+=M(expLabel(p.experience_months));
+    else if(p.experience_years!=null)meta+=M(p.experience_years+' বছরের অভিজ্ঞতা');
+    if(p.device)meta+=M(p.device);
+    if(p.network)meta+=M({wifi:'শুধু WiFi',data:'শুধু Data',both:'WiFi + Data'}[p.network]||'');
+    if(p.active_mode==='anytime')meta+=M('যেকোনো সময় Active');
+    else if(p.active_mode==='range'&&p.active_from&&p.active_to)meta+=M(p.active_from+' – '+p.active_to);
   }
   const clip=isPlayer?safeUrl(p.clip_url):null, soc=!isPlayer?safeUrl(p.social_url):null, ch=contactHref(p.contact);
   let acts='';
@@ -158,7 +183,7 @@ function cardHtml(p,isMine){
   if(!isMine)acts+=ch?`<a class="btn green" href="${esc(ch)}" target="_blank" rel="noopener noreferrer nofollow">যোগাযোগ করো</a>`
     :`<span class="m" style="flex:1">যোগাযোগ: ${esc(p.contact)}</span>`;
   else acts+=`<button class="btn ghost" data-act="close">বন্ধ করো</button><button class="btn red" data-act="del">ডিলিট</button>`;
-  return `<div class="card${isMine?' mine':''}"><div class="c-top">${head}<div class="c-time">${ago(p.created_at)}</div></div>`
+  return `<div class="card${isMine?' mine':''}"><div class="c-top">${head}${isPlayer?'':`<div class="c-time">${ago(p.created_at)}</div>`}</div>`
    +(meta?`<div class="meta">${meta}</div>`:'')+(p.details?`<div class="det">${esc(p.details)}</div>`:'')+`<div class="acts">${acts}</div></div>`;
 }
 
@@ -182,7 +207,7 @@ async function load(reset){
   if(reset){posts=[];done=false}
   render();
   const from=posts.length;
-  let q=db.from('recruit_feed').select('id,name,roles,live_avatar,ff_uid,experience_years,device,clip_url,social_url,details,contact,created_at')
+  let q=db.from('recruit_feed').select('id,name,roles,live_avatar,ff_uid,experience_years,experience_months,age,network,active_mode,active_from,active_to,device,clip_url,social_url,details,contact,created_at')
     .eq('type',VIEW_TYPE).eq('status','active').order('created_at',{ascending:false}).range(from,from+PAGE-1);
   if(filter)q=q.contains('roles',[filter]);
   const r=await q;
@@ -193,25 +218,34 @@ async function load(reset){
   render();
 }
 async function loadMine(){
-  const r=await db.from('recruit_feed').select('id,name,roles,live_avatar,ff_uid,experience_years,device,clip_url,social_url,details,contact,created_at')
+  const r=await db.from('recruit_feed').select('id,name,roles,live_avatar,ff_uid,experience_years,experience_months,age,network,active_mode,active_from,active_to,device,clip_url,social_url,details,contact,created_at')
     .eq('user_id',session.user.id).eq('type',POST_TYPE).eq('status','active').maybeSingle();
   mine=r.data||null;
 }
 
 /* ---------- form ---------- */
 let sel=[];
+const CHEV="<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>";
+function expOpts(){let o='<option value="">বাছাই করো</option><option value="0">অভিজ্ঞতা নেই</option>';for(let m=1;m<=72;m++){const y=Math.floor(m/12),r=m%12;o+=`<option value="${m}">${y?y+' বছর'+(r?' '+r+' মাস':''):r+' মাস'}</option>`}return o}
+function ageOpts(){let o='<option value="">বাছাই করো</option>';for(let a=10;a<=40;a++)o+=`<option value="${a}">${a} বছর</option>`;return o}
+function timeOpts(){let o='<option value="">বাছাই করো</option>';for(let i=0;i<48;i++){const h=Math.floor(i/2),m=i%2?'30':'00',l=`${h%12||12}:${m} ${h<12?'AM':'PM'}`;o+=`<option value="${l}">${l}</option>`}return o}
 function openForm(){
   sel=[];
   const player=POST_TYPE==='player';
+  const roleField=player
+    ?`<div class="dd"><button type="button" class="dd-b" id="roleBtn"><span class="lbl" id="roleLbl">Role বাছাই করো</span>${CHEV}</button><div class="dd-l" id="roleList" hidden>${RK.map(r=>`<button type="button" class="dd-o" style="--c:${ROLES[r].c}" data-dd="${r}"><img src="${ICON[r]}" alt="">${ROLES[r].n}</button>`).join('')}</div></div>`
+    :`<div class="rps">${RK.map(r=>`<button type="button" class="rp" style="--c:${ROLES[r].c}" data-r="${r}"><img src="${ICON[r]}" alt="">${ROLES[r].n}</button>`).join('')}</div>`;
+  const playerFields=`<label>Free Fire UID</label><input id="fUid" inputmode="numeric" maxlength="20">
+  <div class="row2"><div><label>বয়স *</label><select id="fAge">${ageOpts()}</select></div><div><label>অভিজ্ঞতা *</label><select id="fExp">${expOpts()}</select></div></div>
+  <label>ডিভাইস *</label><input id="fDev" maxlength="40" placeholder="যেমন Realme C55">
+  <div class="row2"><div><label>নেটওয়ার্ক *</label><select id="fNet"><option value="">বাছাই করো</option><option value="wifi">শুধু WiFi</option><option value="data">শুধু Data</option><option value="both">WiFi + Data</option></select></div><div><label>Clips আছে? *</label><select id="fClip"><option value="no">না</option><option value="yes">হ্যাঁ</option></select></div></div>
+  <div id="clipRow" style="display:none"><label>Clips / highlights লিংক *</label><input id="fLink" inputmode="url" placeholder="Drive / Facebook / YouTube লিংক"></div>
+  <label>Active সময় *</label><select id="fAct"><option value="anytime">যেকোনো সময় (Anytime)</option><option value="range">নির্দিষ্ট সময় (Time range)</option></select>
+  <div id="actRow" style="display:none"><div class="row2"><div><label>থেকে</label><select id="fFrom">${timeOpts()}</select></div><div><label>পর্যন্ত</label><select id="fTo">${timeOpts()}</select></div></div></div>`;
   $('sheet').innerHTML=`<div class="grip"></div><div class="sh-h"><h2>${player?'প্লেয়ার হিসেবে পোস্ট দাও':'স্কোয়াডের জন্য পোস্ট দাও'}</h2><button class="back-btn x" id="xBtn" type="button">✕</button></div>
   <div class="sh-b"><label style="margin-top:4px">${player?'তোমার In-game নাম *':'টিমের নাম *'}</label><input id="fName" maxlength="40">
-  <label>${player?'তোমার role * (একটা)':'কোন role লাগবে * (একাধিক হতে পারে)'}</label>
-  <div class="roles">${RK.map(r=>`<button type="button" class="rp" style="--c:${ROLES[r].c}" data-r="${r}"><img src="${ICON[r]}" alt="">${ROLES[r].n}</button>`).join('')}</div>
-  ${player?`<label>Free Fire UID</label><input id="fUid" inputmode="numeric" maxlength="20">
-  <label>কত বছরের অভিজ্ঞতা *</label><input id="fExp" type="number" inputmode="decimal" min="0" max="20" step="0.5" placeholder="যেমন 2 বা 1.5">
-  <label>ডিভাইস *</label><input id="fDev" maxlength="40" placeholder="যেমন Realme C55">
-  <label>Tournament clips / highlights লিংক</label><input id="fLink" inputmode="url" placeholder="Drive / Facebook / YouTube লিংক">`
-  :`<label>Social Page লিংক</label><input id="fLink" inputmode="url" placeholder="Facebook পেজ / গ্রুপের লিংক">`}
+  <label>${player?'Role *':'কোন role লাগবে * (একাধিক হতে পারে)'}</label>${roleField}
+  ${player?playerFields:`<label>Social Page লিংক</label><input id="fLink" inputmode="url" placeholder="Facebook পেজ / গ্রুপের লিংক">`}
   <label>${player?'নিজের সম্পর্কে (ঐচ্ছিক)':'শর্ত / Requirements (ঐচ্ছিক)'}</label><textarea id="fDet" maxlength="500"></textarea>
   <label>যোগাযোগ * (WhatsApp নম্বর বা Facebook/Messenger লিংক)</label><input id="fCon" maxlength="200">
   <div class="hint">শুধু লগইন করা ইউজাররা এটা দেখতে পাবে।</div></div>
@@ -227,14 +261,22 @@ async function save(){
   if(!sel.length)return er(player?'একটা role বাছাই করো।':'অন্তত একটা role বাছাই করো।');
   if(contact.length<5)return er('যোগাযোগের তথ্য দাও।');
   const row={type:POST_TYPE,name,roles:sel,contact,details:details||null};
-  const rawLink=v('fLink'); let link=null;
-  if(rawLink){link=safeUrl(rawLink);if(!link)return er('লিংকটা ঠিক মনে হচ্ছে না।')}
   if(player){
-    const exp=v('fExp'),dev=v('fDev');
-    if(exp===''||isNaN(+exp)||+exp<0||+exp>20)return er('অভিজ্ঞতা ০ থেকে ২০ বছরের মধ্যে দাও।');
+    const age=v('fAge'),exp=v('fExp'),dev=v('fDev'),net=v('fNet'),act=v('fAct'),clip=v('fClip');
+    if(age==='')return er('বয়স বাছাই করো।');
+    if(exp==='')return er('অভিজ্ঞতা বাছাই করো।');
     if(!dev)return er('ডিভাইসের নাম দাও।');
-    Object.assign(row,{experience_years:+exp,device:dev,ff_uid:v('fUid')||null,clip_url:link});
-  }else row.social_url=link;
+    if(!net)return er('নেটওয়ার্ক বাছাই করো।');
+    let from=null,to=null;
+    if(act==='range'){from=v('fFrom');to=v('fTo');if(!from||!to)return er('Active সময়ের শুরু আর শেষ বাছাই করো।');if(from===to)return er('শুরু আর শেষের সময় আলাদা হতে হবে।')}
+    let link=null;
+    if(clip==='yes'){link=safeUrl(v('fLink'));if(!link)return er('Clips-এর লিংক দাও (ঠিক ফরম্যাটে)।')}
+    Object.assign(row,{age:+age,experience_months:+exp,device:dev,network:net,active_mode:act,active_from:from,active_to:to,ff_uid:v('fUid')||null,clip_url:link});
+  }else{
+    const raw=v('fLink');let link=null;
+    if(raw){link=safeUrl(raw);if(!link)return er('লিংকটা ঠিক মনে হচ্ছে না।')}
+    row.social_url=link;
+  }
   const b=$('saveBtn');b.disabled=true;b.textContent='পোস্ট হচ্ছে...';er('');
   const r=await db.from('recruit_posts').insert(row);
   if(r.error){b.disabled=false;b.textContent='পোস্ট করো';
@@ -247,6 +289,9 @@ document.addEventListener('click',async e=>{
   const t=e.target.closest('button');if(!t)return;
   if(t.dataset.f!==undefined&&t.classList.contains('chip')){filter=t.dataset.f;load(true);return}
   if(t.dataset.copy){const ok=await copyText(t.dataset.copy);toast(ok?'UID কপি হয়েছে ✓':'কপি করা যায়নি');if(ok){t.classList.add('ok');setTimeout(()=>t.classList.remove('ok'),1200)}return}
+  if(t.id==='roleBtn'){const l=$('roleList');l.hidden=!l.hidden;t.classList.toggle('open',!l.hidden);return}
+  if(t.dataset.dd){sel=[t.dataset.dd];const R=ROLES[sel[0]];const b=$('roleBtn');b.classList.add('has');b.classList.remove('open');
+    $('roleLbl').innerHTML=`<img src="${ICON[sel[0]]}" alt="">${R.n}`;$('roleList').hidden=true;return}
   if(t.id==='newBtn'){openForm();return}
   if(t.id==='moreBtn'){load(false);return}
   if(t.id==='xBtn'){closeForm();return}
@@ -266,6 +311,10 @@ document.addEventListener('click',async e=>{
     if(r.error){toast(r.error.message);render();return}
     mine=null;toast(del?'ডিলিট হয়েছে':'পোস্ট বন্ধ হয়েছে');render();
   }
+});
+document.addEventListener('change',e=>{
+  if(e.target.id==='fClip')$('clipRow').style.display=e.target.value==='yes'?'':'none';
+  if(e.target.id==='fAct')$('actRow').style.display=e.target.value==='range'?'':'none';
 });
 $('ov').addEventListener('touchmove',e=>{if(!e.target.closest('.sh-b'))e.preventDefault()},{passive:false});
 $('ov').addEventListener('click',e=>{if(e.target.id==='ov')closeForm()});
