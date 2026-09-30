@@ -192,7 +192,7 @@ function cardHtml(p,isMine){
   const av=safeUrl(p.live_avatar)||DEF;
   const uid=isPlayer&&p.ff_uid?`<button class="uid" type="button" data-copy="${esc(p.ff_uid)}">UID ${esc(p.ff_uid)}${CP}</button>`:'';
   const rts=roles.map(rtagHtml).join('');
-  const head=`<img class="c-av" src="${esc(av)}" alt="" loading="lazy" referrerpolicy="no-referrer"><div class="c-main"><div class="c-nm"><div class="c-name">${esc(p.name)}</div><div class="c-time">${ago(p.created_at)}</div></div>${uid?`<div class="rrow">${uid}</div>`:''}<div class="rrow">${rts}</div></div>`;
+  const head=`<img class="c-av" src="${esc(av)}" alt="" loading="lazy" referrerpolicy="no-referrer"><div class="c-main"><div class="c-nm"><div class="c-name">${esc(p.name)}</div><div class="c-time">${ago(p.created_at)}</div></div>${uid?`<div class="rrow">${uid}</div>`:''}</div>`;
   let meta='';
   if(isPlayer){
     const M=t=>`<span class="m">${esc(t)}</span>`;
@@ -213,7 +213,7 @@ function cardHtml(p,isMine){
   if(!isMine)acts+=ch?`<a class="btn green" href="${esc(ch)}" target="_blank" rel="noopener noreferrer nofollow">যোগাযোগ করো</a>`
     :`<span class="m" style="flex:1">যোগাযোগ: ${esc(p.contact)}</span>`;
   else acts+=`<button class="btn ghost" data-act="edit">Edit</button><button class="btn red" data-act="del">ডিলিট</button>`;
-  return `<div class="card${isMine?' mine':''}"><div class="c-top">${head}</div>`
+  return `<div class="card${isMine?' mine':''}"><div class="c-top">${head}</div>${rts?`<div class="rrow" style="margin-top:12px">${rts}</div>`:''}`
    +(meta?`<div class="meta">${meta}</div>`:'')+(p.details?`<div class="det">${esc(p.details)}</div>`:'')+`<div class="acts">${acts}</div></div>`;
 }
 
