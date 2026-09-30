@@ -41,16 +41,32 @@
   select{ width:100%; appearance:none; -webkit-appearance:none; background:#0b0f1c url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b8fa3' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 11px center/16px; border:1px solid #2a3350; border-radius:13px; padding:13px 34px 13px 13px; color:var(--text-primary); font:14px 'Inter','Hind Siliguri',sans-serif; outline:none; text-overflow:ellipsis; }
   select:focus{ border-color:#39e77b88; }
   select option{ background:#0f1424; color:#f2f3f7; }
-  .dd-b{ width:100%; display:flex; align-items:center; gap:8px; background:#0b0f1c; border:1px solid #2a3350; border-radius:13px; padding:9px 12px; color:var(--text-secondary); font:14px 'Inter','Hind Siliguri',sans-serif; cursor:pointer; text-align:left; }
-  .dd-b .lbl{ flex:1; display:flex; align-items:center; gap:7px; }
-  .dd-b.has{ color:var(--text-primary); }
-  .dd-b img,.dd-o img{ width:20px; height:20px; object-fit:contain; }
-  .dd-b svg{ width:16px; height:16px; color:#8b8fa3; transition:transform .15s; }
-  .dd-b.open svg{ transform:rotate(180deg); }
-  .dd-l{ margin-top:6px; background:#0b0f1c; border:1px solid #2a3350; border-radius:13px; overflow:hidden; }
-  .dd-o{ width:100%; display:flex; align-items:center; gap:9px; background:transparent; border:0; border-bottom:1px solid #1c2338; padding:9px 12px; color:var(--text-primary); font:600 13px 'Inter',sans-serif; cursor:pointer; text-align:left; }
+  .dd{ position:relative; }
+  .dd-b{ width:100%; height:46px; display:flex; align-items:center; gap:8px; background:#0b0f1c; border:1px solid #2a3350; border-radius:13px; padding:0 12px; color:var(--text-primary); font:14px 'Inter','Hind Siliguri',sans-serif; cursor:pointer; text-align:left; transition:border-color .15s; }
+  .dd-b .lbl{ flex:1; display:flex; align-items:center; gap:8px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  .dd-b .lbl.ph{ color:#6f7896; }
+  .dd-b.open{ border-color:#39e77b99; }
+  .dd-b img,.dd-o img{ width:20px; height:20px; object-fit:contain; flex-shrink:0; }
+  .dd-b svg{ width:16px; height:16px; color:#8b8fa3; transition:transform .15s; flex-shrink:0; }
+  .dd-b.open svg{ transform:rotate(180deg); color:#39e77b; }
+  .dd-l{ margin-top:6px; background:#0b0f1c; border:1px solid #2f3a5c; border-radius:13px; max-height:216px; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; box-shadow:0 10px 26px rgba(0,0,0,.45); }
+  .dd-l[hidden]{ display:none; }
+  .dd-o{ width:100%; display:flex; align-items:center; gap:9px; background:transparent; border:0; border-bottom:1px solid #182036; padding:0 13px; min-height:42px; color:#dfe3f0; font:500 13.5px 'Inter','Hind Siliguri',sans-serif; cursor:pointer; text-align:left; }
   .dd-o:last-child{ border-bottom:0; }
-  .dd-o:active,.dd-o.on{ background:color-mix(in srgb,var(--c) 14%,transparent); }
+  .dd-o:active{ background:#ffffff0d; }
+  .dd-o.on{ color:#39e77b; background:rgba(57,231,123,.08); font-weight:700; }
+  .dd-o.on::after{ content:'✓'; margin-left:auto; font-size:13px; }
+  .dd[data-multi] .dd-o::before{ content:''; width:18px; height:18px; border-radius:5px; border:1.5px solid #3a4463; flex-shrink:0; box-sizing:border-box; }
+  .dd[data-multi] .dd-o.on::before{ background:#39e77b; border-color:#39e77b; content:'✓'; color:#04210f; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+  .dd[data-multi] .dd-o.on::after{ content:none; }
+  .bad{ border-color:#ff5d6c !important; box-shadow:0 0 0 3px rgba(255,93,108,.16); animation:shake .32s; }
+  .rps.bad{ outline:1.5px solid #ff5d6c; outline-offset:5px; border-radius:14px; box-shadow:none; }
+  .ferr{ color:#ff7b88; font-size:12px; margin-top:6px; font-weight:600; }
+  @keyframes shake{ 0%,100%{transform:none} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+  .sec{ display:flex; align-items:center; gap:10px; margin:22px 0 2px; font-size:11px; font-weight:700; letter-spacing:.7px; color:#6f7896; }
+  .sec::after{ content:''; flex:1; height:1px; background:#232b45; }
+  .sec:first-child{ margin-top:2px; }
+  input:-webkit-autofill,input:-webkit-autofill:focus,textarea:-webkit-autofill{ -webkit-box-shadow:0 0 0 1000px #0b0f1c inset !important; -webkit-text-fill-color:#f2f3f7 !important; caret-color:#fff; transition:background-color 9999s ease-in-out 0s; }
   .c-av{ width:54px; height:54px; border-radius:50%; object-fit:cover; flex-shrink:0; border:2px solid #2a3350; background:#232b45; }
   .rrow{ display:flex; align-items:center; gap:6px; margin-top:6px; flex-wrap:wrap; }
   .rtag{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600; padding:2px 9px 2px 5px; border-radius:999px; color:#c5cadb; background:#0d1220; border:1px solid color-mix(in srgb,var(--c) 32%,#2a3350); }
@@ -89,10 +105,10 @@
   .sh-f{ flex-shrink:0; padding:12px 18px calc(14px + env(safe-area-inset-bottom,0px)); border-top:1px solid #232b45; background:#0f1424; }
   .sh-f .err{ margin:0 0 8px; min-height:0; }
   .sh-f .err:empty{ display:none; }
-  label{ display:block; font-size:12.5px; font-weight:600; color:#aab1c7; margin:16px 0 7px; }
-  input,textarea{ width:100%; background:#0b0f1c; border:1px solid #2a3350; border-radius:13px; padding:13px; color:var(--text-primary); font:14px 'Inter','Hind Siliguri',sans-serif; outline:none; }
+  label{ display:block; font-size:12.5px; font-weight:600; color:#aab1c7; margin:13px 0 6px; }
+  input,textarea{ width:100%; background:#0b0f1c; border:1px solid #2a3350; border-radius:13px; padding:0 13px; height:46px; color:var(--text-primary); font:14px 'Inter','Hind Siliguri',sans-serif; outline:none; }
   input:focus,textarea:focus{ border-color:#39e77b88; }
-  textarea{ resize:vertical; min-height:70px; }
+  textarea{ resize:vertical; min-height:76px; height:auto; padding:12px 13px; }
   .roles{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
   .rps{ display:flex; flex-wrap:wrap; gap:8px; }
   .rp{ display:inline-flex; align-items:center; gap:6px; padding:5px 12px 5px 7px; border-radius:999px; background:#0b0f1c; border:1px solid #2a3350; color:var(--text-secondary); font:600 12px 'Inter',sans-serif; cursor:pointer; }
@@ -174,6 +190,7 @@ function cardHtml(p,isMine){
     if(p.device)meta+=M(p.device);
     if(p.network)meta+=M({wifi:'শুধু WiFi',data:'শুধু Data',both:'WiFi + Data'}[p.network]||'');
     if(p.active_mode==='anytime')meta+=M('যেকোনো সময় Active');
+    else if(p.active_mode==='slots'&&p.active_slots&&p.active_slots.length)meta+=M('Active: '+p.active_slots.join(' · '));
     else if(p.active_mode==='range'&&p.active_from&&p.active_to)meta+=M(p.active_from+' – '+p.active_to);
   }
   const clip=isPlayer?safeUrl(p.clip_url):null, soc=!isPlayer?safeUrl(p.social_url):null, ch=contactHref(p.contact);
@@ -207,7 +224,7 @@ async function load(reset){
   if(reset){posts=[];done=false}
   render();
   const from=posts.length;
-  let q=db.from('recruit_feed').select('id,name,roles,live_avatar,ff_uid,experience_years,experience_months,age,network,active_mode,active_from,active_to,device,clip_url,social_url,details,contact,created_at')
+  let q=db.from('recruit_feed').select('id,name,roles,live_avatar,ff_uid,experience_years,experience_months,age,network,active_mode,active_from,active_to,active_slots,device,clip_url,social_url,details,contact,created_at')
     .eq('type',VIEW_TYPE).eq('status','active').order('created_at',{ascending:false}).range(from,from+PAGE-1);
   if(filter)q=q.contains('roles',[filter]);
   const r=await q;
@@ -218,7 +235,7 @@ async function load(reset){
   render();
 }
 async function loadMine(){
-  const r=await db.from('recruit_feed').select('id,name,roles,live_avatar,ff_uid,experience_years,experience_months,age,network,active_mode,active_from,active_to,device,clip_url,social_url,details,contact,created_at')
+  const r=await db.from('recruit_feed').select('id,name,roles,live_avatar,ff_uid,experience_years,experience_months,age,network,active_mode,active_from,active_to,active_slots,device,clip_url,social_url,details,contact,created_at')
     .eq('user_id',session.user.id).eq('type',POST_TYPE).eq('status','active').maybeSingle();
   mine=r.data||null;
 }
@@ -226,78 +243,134 @@ async function loadMine(){
 /* ---------- form ---------- */
 let sel=[];
 const CHEV="<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>";
-function expOpts(){let o='<option value="">বাছাই করো</option><option value="0">অভিজ্ঞতা নেই</option>';for(let m=1;m<=72;m++){const y=Math.floor(m/12),r=m%12;o+=`<option value="${m}">${y?y+' বছর'+(r?' '+r+' মাস':''):r+' মাস'}</option>`}return o}
-function ageOpts(){let o='<option value="">বাছাই করো</option>';for(let a=10;a<=40;a++)o+=`<option value="${a}">${a} বছর</option>`;return o}
-function timeOpts(){let o='<option value="">বাছাই করো</option>';for(let i=0;i<48;i++){const h=Math.floor(i/2),m=i%2?'30':'00',l=`${h%12||12}:${m} ${h<12?'AM':'PM'}`;o+=`<option value="${l}">${l}</option>`}return o}
+const TIMES=['3 PM','4 PM','5 PM','7 PM','8 PM','9 PM','10 PM','11 PM','12 AM','1 AM'];
+let slotSel=new Set();
+const EXP_OPTS=(()=>{const o=[{v:'0',l:'অভিজ্ঞতা নেই'}];for(let m=1;m<=72;m++){const y=Math.floor(m/12),r=m%12;o.push({v:String(m),l:y?y+' বছর'+(r?' '+r+' মাস':''):r+' মাস'})}return o})();
+const AGE_OPTS=(()=>{const o=[];for(let a=10;a<=40;a++)o.push({v:String(a),l:a+' বছর'});return o})();
+const TIME_OPTS=TIMES.map(t=>({v:t,l:t}));
+/* custom dropdown: opts=[{v,l,icon}], def=value pre-selected ('' = placeholder) */
+function ddHtml(id,opts,ph,def){
+  const cur=opts.find(o=>o.v===def);
+  return `<div class="dd" data-id="${id}" data-val="${cur?esc(cur.v):''}"><button type="button" class="dd-b"><span class="lbl${cur?'':' ph'}">${cur?ddLbl(cur):ph}</span>${CHEV}</button><div class="dd-l" hidden>${opts.map(o=>`<button type="button" class="dd-o${cur&&cur.v===o.v?' on':''}" data-v="${esc(o.v)}">${o.icon?`<img src="${o.icon}" alt="">`:''}${esc(o.l)}</button>`).join('')}</div></div>`;
+}
+function ddMultiHtml(id,opts,ph){
+  return `<div class="dd" data-id="${id}" data-multi="1" data-val=""><button type="button" class="dd-b"><span class="lbl ph">${ph}</span>${CHEV}</button><div class="dd-l" hidden>${opts.map(o=>`<button type="button" class="dd-o" data-v="${esc(o.v)}">${esc(o.l)}</button>`).join('')}</div></div>`;
+}
+function slotLabel(){
+  const a=TIMES.filter(t=>slotSel.has(t));
+  return a.length?(a.length<=4?a.join(', '):a.length+'টি সময় বাছাই করা')+'':'';
+}
+function ddLbl(o){return (o.icon?`<img src="${o.icon}" alt="">`:'')+esc(o.l)}
+function dv(id){const d=document.querySelector('.dd[data-id="'+id+'"]');return d?d.dataset.val:''}
+function ddClose(except){document.querySelectorAll('.dd-l').forEach(l=>{if(l.parentNode!==except){l.hidden=true;l.previousElementSibling.classList.remove('open')}})}
+function ddAfter(id,val){
+  if(id==='role')sel=[val];
+  if(id==='fClip')$('clipRow').style.display=val==='yes'?'':'none';
+  if(id==='fAct')$('actRow').style.display=val==='slots'?'':'none';
+}
 function openForm(){
-  sel=[];
+  sel=[];slotSel=new Set();
   const player=POST_TYPE==='player';
+  const roleOpts=RK.map(r=>({v:r,l:ROLES[r].n,icon:ICON[r]}));
   const roleField=player
-    ?`<div class="dd"><button type="button" class="dd-b" id="roleBtn"><span class="lbl" id="roleLbl">Role বাছাই করো</span>${CHEV}</button><div class="dd-l" id="roleList" hidden>${RK.map(r=>`<button type="button" class="dd-o" style="--c:${ROLES[r].c}" data-dd="${r}"><img src="${ICON[r]}" alt="">${ROLES[r].n}</button>`).join('')}</div></div>`
+    ?ddHtml('role',roleOpts,'Role বাছাই করো','')
     :`<div class="rps">${RK.map(r=>`<button type="button" class="rp" style="--c:${ROLES[r].c}" data-r="${r}"><img src="${ICON[r]}" alt="">${ROLES[r].n}</button>`).join('')}</div>`;
-  const playerFields=`<label>Free Fire UID</label><input id="fUid" inputmode="numeric" maxlength="20">
-  <div class="row2"><div><label>বয়স *</label><select id="fAge">${ageOpts()}</select></div><div><label>অভিজ্ঞতা *</label><select id="fExp">${expOpts()}</select></div></div>
-  <label>ডিভাইস *</label><input id="fDev" maxlength="40" placeholder="যেমন Realme C55">
-  <div class="row2"><div><label>নেটওয়ার্ক *</label><select id="fNet"><option value="">বাছাই করো</option><option value="wifi">শুধু WiFi</option><option value="data">শুধু Data</option><option value="both">WiFi + Data</option></select></div><div><label>Clips আছে? *</label><select id="fClip"><option value="no">না</option><option value="yes">হ্যাঁ</option></select></div></div>
-  <div id="clipRow" style="display:none"><label>Clips / highlights লিংক *</label><input id="fLink" inputmode="url" placeholder="Drive / Facebook / YouTube লিংক"></div>
-  <label>Active সময় *</label><select id="fAct"><option value="anytime">যেকোনো সময় (Anytime)</option><option value="range">নির্দিষ্ট সময় (Time range)</option></select>
-  <div id="actRow" style="display:none"><div class="row2"><div><label>থেকে</label><select id="fFrom">${timeOpts()}</select></div><div><label>পর্যন্ত</label><select id="fTo">${timeOpts()}</select></div></div></div>`;
+  const playerFields=`<label>Free Fire UID</label><input id="fUid" inputmode="numeric" maxlength="20" autocomplete="off">
+  <div class="sec">গেমিং তথ্য</div>
+  <div class="row2"><div><label>বয়স *</label>${ddHtml('fAge',AGE_OPTS,'বাছাই করো','')}</div><div><label>অভিজ্ঞতা *</label>${ddHtml('fExp',EXP_OPTS,'বাছাই করো','')}</div></div>
+  <label>ডিভাইস *</label><input id="fDev" maxlength="40" placeholder="যেমন Realme C55" autocomplete="off">
+  <label>নেটওয়ার্ক *</label>${ddHtml('fNet',[{v:'wifi',l:'শুধু WiFi'},{v:'data',l:'শুধু Mobile Data'},{v:'both',l:'WiFi + Data'}],'বাছাই করো','')}
+  <div class="sec">Tournament প্রস্তুতি</div>
+  <label>Active সময় *</label>${ddHtml('fAct',[{v:'anytime',l:'যেকোনো সময় (Anytime)'},{v:'slots',l:'নির্দিষ্ট সময়গুলো (নিজে বাছাই)'}],'বাছাই করো','anytime')}
+  <div id="actRow" style="display:none"><label>কোন কোন সময় পারবে? * (একাধিক বাছাই করা যায়)</label>${ddMultiHtml('fSlots',TIME_OPTS,'সময় বাছাই করো')}</div>
+  <label>Clips / highlights আছে? *</label>${ddHtml('fClip',[{v:'no',l:'না'},{v:'yes',l:'হ্যাঁ, আছে'}],'বাছাই করো','no')}
+  <div id="clipRow" style="display:none"><label>Clips লিংক *</label><input id="fLink" inputmode="url" placeholder="Drive / Facebook / YouTube লিংক" autocomplete="off"></div>`;
   $('sheet').innerHTML=`<div class="grip"></div><div class="sh-h"><h2>${player?'প্লেয়ার হিসেবে পোস্ট দাও':'স্কোয়াডের জন্য পোস্ট দাও'}</h2><button class="back-btn x" id="xBtn" type="button">✕</button></div>
-  <div class="sh-b"><label style="margin-top:4px">${player?'তোমার In-game নাম *':'টিমের নাম *'}</label><input id="fName" maxlength="40">
+  <div class="sh-b"><div class="sec">${player?'পরিচয়':'টিমের তথ্য'}</div><label style="margin-top:6px">${player?'তোমার In-game নাম *':'টিমের নাম *'}</label><input id="fName" maxlength="40" autocomplete="off">
   <label>${player?'Role *':'কোন role লাগবে * (একাধিক হতে পারে)'}</label>${roleField}
-  ${player?playerFields:`<label>Social Page লিংক</label><input id="fLink" inputmode="url" placeholder="Facebook পেজ / গ্রুপের লিংক">`}
-  <label>${player?'নিজের সম্পর্কে (ঐচ্ছিক)':'শর্ত / Requirements (ঐচ্ছিক)'}</label><textarea id="fDet" maxlength="500"></textarea>
-  <label>যোগাযোগ * (WhatsApp নম্বর বা Facebook/Messenger লিংক)</label><input id="fCon" maxlength="200">
+  ${player?playerFields:`<label>Social Page লিংক</label><input id="fLink" inputmode="url" placeholder="Facebook পেজ / গ্রুপের লিংক" autocomplete="off">`}
+  <div class="sec">অন্যান্য</div>
+  <label style="margin-top:6px">${player?'নিজের সম্পর্কে (ঐচ্ছিক)':'শর্ত / Requirements (ঐচ্ছিক)'}</label><textarea id="fDet" maxlength="500"></textarea>
+  <label>যোগাযোগ * (WhatsApp নম্বর বা Facebook/Messenger লিংক)</label><input id="fCon" maxlength="200" autocomplete="off">
   <div class="hint">শুধু লগইন করা ইউজাররা এটা দেখতে পাবে।</div></div>
   <div class="sh-f"><div class="err" id="fErr"></div><button class="btn green" id="saveBtn">পোস্ট করো</button></div>`;
   $('ov').classList.add('show');lock(true);
 }
 function lock(on){document.documentElement.style.overflow=on?'hidden':'';document.body.style.overflow=on?'hidden':''}
 function closeForm(){$('ov').classList.remove('show');lock(false)}
+function clearBad(){
+  document.querySelectorAll('.bad').forEach(e=>e.classList.remove('bad'));
+  document.querySelectorAll('.ferr').forEach(e=>e.remove());
+  const f=$('fErr');if(f)f.textContent='';
+}
+function fail(t,msg){
+  clearBad();
+  if(!t)return;
+  const isDd=t.classList.contains('dd'),box=isDd?t.querySelector('.dd-b'):t;
+  box.classList.add('bad');
+  const m=document.createElement('div');m.className='ferr';m.textContent=msg;
+  t.insertAdjacentElement('afterend',m);
+  $('fErr').textContent=msg;
+  t.scrollIntoView({block:'center',behavior:'smooth'});
+  if(!isDd&&t.focus)setTimeout(()=>t.focus({preventScroll:true}),350);
+}
 async function save(){
-  const player=POST_TYPE==='player', v=id=>($(id)?$(id).value.trim():''), er=m=>{$('fErr').textContent=m};
+  const player=POST_TYPE==='player', v=id=>($(id)?$(id).value.trim():'');
+  const dd=id=>document.querySelector('.dd[data-id="'+id+'"]');
+  clearBad();
   const name=v('fName'), contact=v('fCon'), details=v('fDet');
-  if(name.length<2)return er('নাম দিতে হবে (কমপক্ষে ২ অক্ষর)।');
-  if(!sel.length)return er(player?'একটা role বাছাই করো।':'অন্তত একটা role বাছাই করো।');
-  if(contact.length<5)return er('যোগাযোগের তথ্য দাও।');
+  if(name.length<2)return fail($('fName'),'নাম দিতে হবে (কমপক্ষে ২ অক্ষর)।');
+  if(!sel.length)return fail(player?dd('role'):document.querySelector('.rps'),player?'একটা role বাছাই করো।':'অন্তত একটা role বাছাই করো।');
   const row={type:POST_TYPE,name,roles:sel,contact,details:details||null};
   if(player){
-    const age=v('fAge'),exp=v('fExp'),dev=v('fDev'),net=v('fNet'),act=v('fAct'),clip=v('fClip');
-    if(age==='')return er('বয়স বাছাই করো।');
-    if(exp==='')return er('অভিজ্ঞতা বাছাই করো।');
-    if(!dev)return er('ডিভাইসের নাম দাও।');
-    if(!net)return er('নেটওয়ার্ক বাছাই করো।');
-    let from=null,to=null;
-    if(act==='range'){from=v('fFrom');to=v('fTo');if(!from||!to)return er('Active সময়ের শুরু আর শেষ বাছাই করো।');if(from===to)return er('শুরু আর শেষের সময় আলাদা হতে হবে।')}
+    const age=dv('fAge'),exp=dv('fExp'),dev=v('fDev'),net=dv('fNet'),act=dv('fAct'),clip=dv('fClip');
+    if(age==='')return fail(dd('fAge'),'বয়স বাছাই করো।');
+    if(exp==='')return fail(dd('fExp'),'অভিজ্ঞতা বাছাই করো।');
+    if(!dev)return fail($('fDev'),'ডিভাইসের নাম দাও।');
+    if(!net)return fail(dd('fNet'),'নেটওয়ার্ক বাছাই করো।');
+    let slots=null;
+    if(act==='slots'){slots=TIMES.filter(t=>slotSel.has(t));if(!slots.length)return fail(dd('fSlots'),'অন্তত একটা সময় বাছাই করো।')}
     let link=null;
-    if(clip==='yes'){link=safeUrl(v('fLink'));if(!link)return er('Clips-এর লিংক দাও (ঠিক ফরম্যাটে)।')}
-    Object.assign(row,{age:+age,experience_months:+exp,device:dev,network:net,active_mode:act,active_from:from,active_to:to,ff_uid:v('fUid')||null,clip_url:link});
+    if(clip==='yes'){link=safeUrl(v('fLink'));if(!link)return fail($('fLink'),'Clips-এর লিংক দাও (ঠিক ফরম্যাটে)।')}
+    Object.assign(row,{age:+age,experience_months:+exp,device:dev,network:net,active_mode:act,active_slots:slots,active_from:null,active_to:null,ff_uid:v('fUid')||null,clip_url:link});
   }else{
     const raw=v('fLink');let link=null;
-    if(raw){link=safeUrl(raw);if(!link)return er('লিংকটা ঠিক মনে হচ্ছে না।')}
+    if(raw){link=safeUrl(raw);if(!link)return fail($('fLink'),'লিংকটা ঠিক মনে হচ্ছে না।')}
     row.social_url=link;
   }
-  const b=$('saveBtn');b.disabled=true;b.textContent='পোস্ট হচ্ছে...';er('');
+  if(contact.length<5)return fail($('fCon'),'যোগাযোগের তথ্য দাও।');
+  const b=$('saveBtn');b.disabled=true;b.textContent='পোস্ট হচ্ছে...';
   const r=await db.from('recruit_posts').insert(row);
   if(r.error){b.disabled=false;b.textContent='পোস্ট করো';
-    return er(r.error.code==='23505'?'তোমার একটা active পোস্ট আগে থেকেই আছে। আগে সেটা বন্ধ বা ডিলিট করো।':r.error.message)}
+    return $('fErr').textContent=(r.error.code==='23505'?'তোমার একটা active পোস্ট আগে থেকেই আছে। আগে সেটা বন্ধ বা ডিলিট করো।':r.error.message)}
   closeForm();toast('পোস্ট হয়েছে ✓');await loadMine();render();
 }
 
 /* ---------- events ---------- */
 document.addEventListener('click',async e=>{
+  if(!e.target.closest('.dd'))ddClose(null);
   const t=e.target.closest('button');if(!t)return;
   if(t.dataset.f!==undefined&&t.classList.contains('chip')){filter=t.dataset.f;load(true);return}
   if(t.dataset.copy){const ok=await copyText(t.dataset.copy);toast(ok?'UID কপি হয়েছে ✓':'কপি করা যায়নি');if(ok){t.classList.add('ok');setTimeout(()=>t.classList.remove('ok'),1200)}return}
-  if(t.id==='roleBtn'){const l=$('roleList');l.hidden=!l.hidden;t.classList.toggle('open',!l.hidden);return}
-  if(t.dataset.dd){sel=[t.dataset.dd];const R=ROLES[sel[0]];const b=$('roleBtn');b.classList.add('has');b.classList.remove('open');
-    $('roleLbl').innerHTML=`<img src="${ICON[sel[0]]}" alt="">${R.n}`;$('roleList').hidden=true;return}
+  if(t.classList.contains('dd-b')){const l=t.nextElementSibling,open=l.hidden;ddClose(t.parentNode);l.hidden=!open;t.classList.toggle('open',open);
+    if(open)setTimeout(()=>{const on=l.querySelector('.on');if(on)l.scrollTop=on.offsetTop-60;l.scrollIntoView({block:'nearest',behavior:'smooth'})},30);return}
+  if(t.classList.contains('dd-o')&&t.closest('.dd').dataset.multi){
+    const d=t.closest('.dd'),o=t.dataset.v;
+    if(slotSel.has(o))slotSel.delete(o);else slotSel.add(o);
+    t.classList.toggle('on',slotSel.has(o));
+    d.dataset.val=TIMES.filter(x=>slotSel.has(x)).join(',');
+    const lb=d.querySelector('.lbl'),txt=slotLabel();lb.textContent=txt||'সময় বাছাই করো';lb.classList.toggle('ph',!txt);
+    clearBad();return}
+  if(t.classList.contains('dd-o')){const d=t.closest('.dd'),o=t.dataset.v;d.dataset.val=o;clearBad();
+    d.querySelectorAll('.dd-o').forEach(x=>x.classList.toggle('on',x===t));
+    const lb=d.querySelector('.lbl');lb.classList.remove('ph');lb.innerHTML=t.innerHTML;
+    d.querySelector('.dd-l').hidden=true;d.querySelector('.dd-b').classList.remove('open');ddAfter(d.dataset.id,o);return}
   if(t.id==='newBtn'){openForm();return}
   if(t.id==='moreBtn'){load(false);return}
   if(t.id==='xBtn'){closeForm();return}
   if(t.id==='saveBtn'){save();return}
   if(t.classList.contains('rp')){
-    const r=t.dataset.r;
+    clearBad();const r=t.dataset.r;
     if(POST_TYPE==='player')sel=[r]; else sel=sel.includes(r)?sel.filter(x=>x!==r):[...sel,r];
     document.querySelectorAll('.rp').forEach(b=>b.classList.toggle('on',sel.includes(b.dataset.r)));return
   }
@@ -312,10 +385,7 @@ document.addEventListener('click',async e=>{
     mine=null;toast(del?'ডিলিট হয়েছে':'পোস্ট বন্ধ হয়েছে');render();
   }
 });
-document.addEventListener('change',e=>{
-  if(e.target.id==='fClip')$('clipRow').style.display=e.target.value==='yes'?'':'none';
-  if(e.target.id==='fAct')$('actRow').style.display=e.target.value==='range'?'':'none';
-});
+document.addEventListener('input',e=>{if(e.target.classList&&e.target.classList.contains('bad'))clearBad()});
 $('ov').addEventListener('touchmove',e=>{if(!e.target.closest('.sh-b'))e.preventDefault()},{passive:false});
 $('ov').addEventListener('click',e=>{if(e.target.id==='ov')closeForm()});
 window.addEventListener('pageshow',e=>{if(e.persisted)location.reload()});
