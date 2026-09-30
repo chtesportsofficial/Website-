@@ -34,6 +34,14 @@
   .card.mine{ border-color:#39e77b66; }
   .c-top{ display:flex; gap:12px; align-items:center; }
   .c-ic{ width:48px; height:48px; object-fit:contain; flex-shrink:0; }
+  .c-av{ width:54px; height:54px; border-radius:50%; object-fit:cover; flex-shrink:0; border:2px solid #2a3350; background:#232b45; }
+  .rrow{ display:flex; align-items:center; gap:8px; margin-top:7px; flex-wrap:wrap; }
+  .rtag{ display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:700; padding:3px 10px 3px 5px; border-radius:999px; color:#eceef6; background:color-mix(in srgb,var(--c) 14%,#0b0f1c); border:1px solid color-mix(in srgb,var(--c) 45%,transparent); }
+  .rtag img{ width:20px; height:20px; object-fit:contain; }
+  .uid{ display:inline-flex; align-items:center; gap:5px; font:600 11.5px 'Inter',sans-serif; color:var(--text-secondary); background:#ffffff0d; border:1px dashed #3a4463; border-radius:999px; padding:4px 9px; cursor:pointer; }
+  .uid svg{ width:12px; height:12px; }
+  .uid:active{ transform:scale(.96); }
+  .uid.ok{ color:#39e77b; border-color:#39e77b; }
   .c-ics{ display:flex; flex-wrap:wrap; width:52px; gap:2px; flex-shrink:0; }
   .c-ics img{ width:24px; height:24px; object-fit:contain; }
   .c-main{ flex:1; min-width:0; }
@@ -119,18 +127,29 @@ function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';cle
 function safeUrl(u){u=(u||'').trim();if(!u)return null;if(!/^[a-z][a-z0-9+.-]*:/i.test(u))u='https://'+u;try{const x=new URL(u);return(x.protocol==='https:'||x.protocol==='http:')?x.href:null}catch(e){return null}}
 function contactHref(c){c=(c||'').trim();if(/^\+?[\d\s-]{8,}$/.test(c)){let d=c.replace(/\D/g,'');if(d.startsWith('01'))d='88'+d;return'https://wa.me/'+d}return safeUrl(c)}
 function ago(t){const s=(Date.now()-new Date(t))/1000;if(s<60)return'এইমাত্র';if(s<3600)return Math.floor(s/60)+' মিনিট আগে';if(s<86400)return Math.floor(s/3600)+' ঘণ্টা আগে';return Math.floor(s/86400)+' দিন আগে'}
+const DEF='data:image/svg+xml,'+encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' fill='#232b45'/><circle cx='32' cy='24' r='11' fill='#6b7595'/><path d='M10 60c2-14 12-21 22-21s20 7 22 21z' fill='#6b7595'/></svg>");
+const CP="<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><rect x='9' y='9' width='11' height='11' rx='2'/><path d='M5 15V6a2 2 0 0 1 2-2h9'/></svg>";
+async function copyText(t){try{await navigator.clipboard.writeText(t);return true}catch(e){const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand('copy')}catch(_){}a.remove();return ok}}
+document.addEventListener('error',e=>{const i=e.target;if(i&&i.classList&&i.classList.contains('c-av')&&!i.dataset.f){i.dataset.f=1;i.src=DEF}},true);
 function tag(r){const R=ROLES[r];return R?`<span class="tag" style="--c:${R.c}">${R.n}</span>`:''}
 
 function cardHtml(p,isMine){
   const isPlayer=p.type==='player';
   const roles=(p.roles||[]).filter(r=>ROLES[r]);
-  const ic=isPlayer&&roles[0]?`<img class="c-ic" src="${ICON[roles[0]]}" alt="">`
-    :`<div class="c-ics">${roles.map(r=>`<img src="${ICON[r]}" alt="">`).join('')}</div>`;
+  const R0=ROLES[roles[0]];
+  let head;
+  if(isPlayer){
+    const av=safeUrl(p.live_avatar)||DEF;
+    const rt=R0?`<span class="rtag" style="--c:${R0.c}"><img src="${ICON[roles[0]]}" alt="">${R0.n}</span>`:'';
+    const uid=p.ff_uid?`<button class="uid" type="button" data-copy="${esc(p.ff_uid)}">UID ${esc(p.ff_uid)}${CP}</button>`:'';
+    head=`<img class="c-av" src="${esc(av)}" alt="" loading="lazy" referrerpolicy="no-referrer"><div class="c-main"><div class="c-name">${esc(p.name)}</div><div class="rrow">${rt}${uid}</div></div>`;
+  }else{
+    head=`<div class="c-ics">${roles.map(r=>`<img src="${ICON[r]}" alt="">`).join('')}</div><div class="c-main"><div class="c-name">${esc(p.name)}</div><div class="tags">${roles.map(tag).join('')}</div></div>`;
+  }
   let meta='';
   if(isPlayer){
     if(p.experience_years!=null)meta+=`<span class="m">${esc(p.experience_years)} বছরের অভিজ্ঞতা</span>`;
     if(p.device)meta+=`<span class="m">${esc(p.device)}</span>`;
-    if(p.ff_uid)meta+=`<span class="m">UID ${esc(p.ff_uid)}</span>`;
   }
   const clip=isPlayer?safeUrl(p.clip_url):null, soc=!isPlayer?safeUrl(p.social_url):null, ch=contactHref(p.contact);
   let acts='';
@@ -139,7 +158,7 @@ function cardHtml(p,isMine){
   if(!isMine)acts+=ch?`<a class="btn green" href="${esc(ch)}" target="_blank" rel="noopener noreferrer nofollow">যোগাযোগ করো</a>`
     :`<span class="m" style="flex:1">যোগাযোগ: ${esc(p.contact)}</span>`;
   else acts+=`<button class="btn ghost" data-act="close">বন্ধ করো</button><button class="btn red" data-act="del">ডিলিট</button>`;
-  return `<div class="card${isMine?' mine':''}"><div class="c-top">${ic}<div class="c-main"><div class="c-name">${esc(p.name)}</div><div class="tags">${roles.map(tag).join('')}</div></div><div class="c-time">${ago(p.created_at)}</div></div>`
+  return `<div class="card${isMine?' mine':''}"><div class="c-top">${head}<div class="c-time">${ago(p.created_at)}</div></div>`
    +(meta?`<div class="meta">${meta}</div>`:'')+(p.details?`<div class="det">${esc(p.details)}</div>`:'')+`<div class="acts">${acts}</div></div>`;
 }
 
@@ -163,7 +182,7 @@ async function load(reset){
   if(reset){posts=[];done=false}
   render();
   const from=posts.length;
-  let q=db.from('recruit_posts').select('id,name,roles,ff_uid,experience_years,device,clip_url,social_url,details,contact,created_at')
+  let q=db.from('recruit_feed').select('id,name,roles,live_avatar,ff_uid,experience_years,device,clip_url,social_url,details,contact,created_at')
     .eq('type',VIEW_TYPE).eq('status','active').order('created_at',{ascending:false}).range(from,from+PAGE-1);
   if(filter)q=q.contains('roles',[filter]);
   const r=await q;
@@ -174,7 +193,7 @@ async function load(reset){
   render();
 }
 async function loadMine(){
-  const r=await db.from('recruit_posts').select('id,name,roles,ff_uid,experience_years,device,clip_url,social_url,details,contact,created_at')
+  const r=await db.from('recruit_feed').select('id,name,roles,live_avatar,ff_uid,experience_years,device,clip_url,social_url,details,contact,created_at')
     .eq('user_id',session.user.id).eq('type',POST_TYPE).eq('status','active').maybeSingle();
   mine=r.data||null;
 }
@@ -227,6 +246,7 @@ async function save(){
 document.addEventListener('click',async e=>{
   const t=e.target.closest('button');if(!t)return;
   if(t.dataset.f!==undefined&&t.classList.contains('chip')){filter=t.dataset.f;load(true);return}
+  if(t.dataset.copy){const ok=await copyText(t.dataset.copy);toast(ok?'UID কপি হয়েছে ✓':'কপি করা যায়নি');if(ok){t.classList.add('ok');setTimeout(()=>t.classList.remove('ok'),1200)}return}
   if(t.id==='newBtn'){openForm();return}
   if(t.id==='moreBtn'){load(false);return}
   if(t.id==='xBtn'){closeForm();return}
