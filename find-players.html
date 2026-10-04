@@ -71,9 +71,6 @@
   .rrow{ display:flex; align-items:center; gap:4px; margin-top:6px; flex-wrap:wrap; }
   .rtag{ display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; padding:2px 7px 2px 4px; white-space:nowrap; border-radius:999px; color:var(--text-primary); background:var(--soft); border:1px solid color-mix(in srgb,var(--c) 40%,var(--card-border)); }
   .rrow.fill .rtag{ flex:1 1 auto; justify-content:center; }
-  .rrow.big{ gap:6px; }
-  .rrow.big .rtag{ font-size:13px; gap:6px; padding:4px 12px 4px 7px; }
-  .rrow.big .rtag img{ width:18px; height:18px; }
   .rtag img{ width:15px; height:15px; object-fit:contain; }
   .uid{ display:inline-flex; align-items:center; gap:4px; font:600 11px 'Inter',sans-serif; color:var(--text-secondary); background:var(--soft); border:1px dashed color-mix(in srgb,var(--text-secondary) 55%,transparent); border-radius:999px; padding:3px 8px; cursor:pointer; }
   .uid svg{ width:11px; height:11px; }
@@ -217,7 +214,7 @@ function cardHtml(p,isMine){
   if(!isMine)acts+=ch?`<a class="btn green" href="${esc(ch)}" target="_blank" rel="noopener noreferrer nofollow">যোগাযোগ করো</a>`
     :`<span class="m" style="flex:1">যোগাযোগ: ${esc(p.contact)}</span>`;
   else acts+=`<button class="btn ghost" data-act="edit">Edit</button><button class="btn red" data-act="del">ডিলিট</button>`;
-  return `<div class="card${isMine?' mine':''}"><div class="c-top">${head}</div>${rts?`<div class="rrow${roles.length>3?' fill':' big'}" style="margin-top:12px">${rts}</div>`:''}`
+  return `<div class="card${isMine?' mine':''}"><div class="c-top">${head}</div>${rts?`<div class="rrow${roles.length>3?' fill':''}" style="margin-top:12px">${rts}</div>`:''}`
    +(meta?`<div class="meta">${meta}</div>`:'')+(p.details?`<div class="det">${esc(p.details)}</div>`:'')+`<div class="acts">${acts}</div></div>`;
 }
 
