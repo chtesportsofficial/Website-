@@ -124,7 +124,7 @@
 </div>
 
 <script>
-const FF_API='https://api2.nftoken.info/player-info?uid=';
+const FF_API='https://myfficbwcbgbxbdqjexv.supabase.co/functions/v1/freefire-player?uid=';
 function escFF(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
 function val(obj,...keys){for(const k of keys){if(obj && obj[k]!==undefined && obj[k]!==null && obj[k]!=='') return obj[k];}return '—';}
 function fmtDate(v){if(v==='—')return v; const n=Number(v); if(!Number.isFinite(n))return String(v); const d=new Date(n*1000); if(Number.isNaN(d.getTime()))return '—'; return d.toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}
