@@ -214,7 +214,7 @@ function cardHtml(p,isMine){
   if(!isMine)acts+=ch?`<a class="btn green" href="${esc(ch)}" target="_blank" rel="noopener noreferrer nofollow">যোগাযোগ করো</a>`
     :`<span class="m" style="flex:1">যোগাযোগ: ${esc(p.contact)}</span>`;
   else acts+=`<button class="btn ghost" data-act="edit">Edit</button><button class="btn red" data-act="del">ডিলিট</button>`;
-  return `<div class="card${isMine?' mine':''}"><div class="c-top">${head}</div>${rts?`<div class="rrow${roles.length>2?' fill':''}" style="margin-top:12px">${rts}</div>`:''}`
+  return `<div class="card${isMine?' mine':''}"><div class="c-top">${head}</div>${rts?`<div class="rrow${roles.length>3?' fill':''}" style="margin-top:12px">${rts}</div>`:''}`
    +(meta?`<div class="meta">${meta}</div>`:'')+(p.details?`<div class="det">${esc(p.details)}</div>`:'')+`<div class="acts">${acts}</div></div>`;
 }
 
