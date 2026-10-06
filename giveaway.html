@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Daily Giveaway</title>
+<title>Giveaway Registration</title>
 <link rel="stylesheet" href="theme.css">
 <script src="global.js" defer></script>
 <style>
@@ -70,6 +70,30 @@
   .empty-icon svg{ width:34px; height:34px; }
   .empty-title{ font-size:16.5px; font-weight:700; margin-bottom:8px; }
   .empty-sub{ font-size:13px; color:var(--text-secondary); line-height:1.6; max-width:260px; }
+
+  .g-note{font-size:12px;color:var(--text-secondary);line-height:1.55;margin:-10px 0 18px}
+  .g-section{margin-bottom:22px}
+  .g-title{display:flex;align-items:center;gap:9px;font-weight:800;font-size:14px;margin-bottom:12px}
+  .g-title .bar{width:4px;height:16px;border-radius:2px;background:linear-gradient(#ff8a3d,#22e08a)}
+  .g-card{border-radius:16px;overflow:hidden;border:1px solid var(--card-border);background:var(--card);margin-bottom:14px}
+  .g-banner{display:block;width:100%;aspect-ratio:1/1;object-fit:contain;background:#0d1320}
+  .g-body{padding:12px}
+  .g-name{font-weight:800;font-size:14px;margin-bottom:9px;line-height:1.35}
+  .g-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+  .g-chip{font-size:11px;font-weight:700;padding:5px 9px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--card-border);color:var(--text-primary)}
+  .g-chip.prize{color:#ffb36b;border-color:rgba(255,138,61,.4)}
+  .g-chip.free{color:#22e08a;border-color:rgba(34,224,138,.4)}
+  .g-cta{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:12px 0;border-radius:12px;font-weight:800;font-size:13px;text-decoration:none;background:linear-gradient(135deg,#22e08a,#7dffc0);color:#04141f}
+  .g-cta:active{transform:scale(.98)}
+  .fs-card{position:relative;overflow:hidden;border-radius:18px;margin-bottom:22px;padding:16px;border:1px solid rgba(34,224,138,.45);background:linear-gradient(135deg,rgba(34,224,138,.18),var(--card) 70%)}
+  .fs-card::after{content:"";position:absolute;right:-40px;top:-40px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(34,224,138,.28),transparent 70%);pointer-events:none}
+  .fs-tag{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.04em;padding:4px 10px;border-radius:999px;background:#22e08a;color:#04141f;margin-bottom:10px}
+  .fs-title{font-weight:900;font-size:19px;line-height:1.25;margin-bottom:4px}
+  .fs-sub{font-size:12px;color:var(--text-secondary);line-height:1.5;margin-bottom:14px}
+  .fs-card .g-banner{border-radius:12px;margin-bottom:12px}
+  .fs-soon{display:flex;align-items:center;justify-content:center;width:100%;padding:12px 0;border-radius:12px;font-weight:800;font-size:13px;background:rgba(255,255,255,.06);border:1px dashed var(--card-border);color:var(--text-secondary)}
+  .g-skel{height:300px;border-radius:16px;background:linear-gradient(90deg,var(--card),#1b2133,var(--card));background-size:200% 100%;animation:gsk 1.2s infinite linear;margin-bottom:14px}
+  @keyframes gsk{to{background-position:-200% 0}}
 </style>
 <style>
 :root{
@@ -80,34 +104,82 @@
   --text-secondary: var(--g-muted);
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
 <div class="screen">
   <div class="topbar">
-    <button class="back-btn" type="button" onclick="history.back()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M19 12H5M12 19l-7-7 7-7"/>
-      </svg>
+    <button class="back-btn" type="button" onclick="history.back()" aria-label="ফিরে যান">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </button>
-    <h1>Daily Giveaway</h1>
+    <h1>গিভঅ্যাওয়ে রেজিস্ট্রেশন</h1>
   </div>
 
-  <div class="empty-wrap">
-    <div class="empty-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="13" rx="1"/><path d="M12 8v13M3 8h18M12 8c-1.5-3-5-4-5-1.5S9 8 12 8zm0 0c1.5-3 5-4 5-1.5S15 8 12 8z"/></svg>
-    </div>
-    <div class="empty-title">শীঘ্রই আসছে</div>
-    <div class="empty-sub">প্রতিদিনের গিভঅ্যাওয়ে ফিচারটি শীঘ্রই চালু হবে। কাজ চলছে, একটু ধৈর্য ধরুন 🙏</div>
-  </div>
-
+  <div id="giveawayList"><div class="g-skel"></div></div>
 </div>
 
 <script>
-  window.addEventListener('pageshow', function(event){
-    if (event.persisted) { location.reload(); }
-  });
+(function(){
+  var SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
+  var SUPABASE_KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+  var list=document.getElementById('giveawayList');
+  var bn='০১২৩৪৫৬৭৮৯';
+  function toBn(n){return String(n).replace(/\d/g,function(d){return bn[d];});}
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c];});}
+  // Sections are set from Tournament Management:
+  //  - name contains "Free Slot"  -> shown in the Daily Free Slot card
+  //  - name contains "Giveaway"   -> shown as giveaway tournament cards
+  function isFree(s){return /free\s*slot|ফ্রি\s*স্লট/i.test((s.name||'')+' '+(s.name_bn||''));}
+  function isGiveaway(s){return !isFree(s)&&/giveaway|গিভঅ্যাওয়ে/i.test((s.name||'')+' '+(s.name_bn||''));}
+  function money(v){var n=Number(v||0);return '৳'+toBn(Number.isInteger(n)?n:n.toFixed(2));}
+  function pub(s){
+    return (s.tournaments||[]).filter(function(t){return t.status==='published';})
+      .sort(function(a,b){return new Date(a.created_at||0)-new Date(b.created_at||0);});
+  }
+  function freeSlotCard(t){
+    if(!t){
+      return '<div class="fs-card"><span class="fs-tag">প্রতিদিন ফ্রি</span><div class="fs-title">ডেইলি ফ্রি স্লট</div><div class="fs-sub">প্রতিদিন ফ্রিতে টুর্নামেন্ট খেলার সুযোগ। আজকের স্লট শীঘ্রই আসছে।</div><div class="fs-soon">শীঘ্রই চালু হবে</div></div>';
+    }
+    return '<div class="fs-card"><span class="fs-tag">প্রতিদিন ফ্রি</span><div class="fs-title">ডেইলি ফ্রি স্লট</div>'+
+      '<div class="fs-sub">'+esc(t.title)+(Number(t.total_slots||0)>0?' · স্লট '+toBn(t.total_slots):'')+'</div>'+
+      (t.banner_url?'<img class="g-banner" loading="eager" decoding="async" src="'+esc(t.banner_url)+'" alt="">':'')+
+      '<a class="g-cta" href="tournament-details.html?id='+encodeURIComponent(t.id)+'"><span>ফ্রি স্লট নিন</span><span>›</span></a></div>';
+  }
+  function giveawayCard(t){
+    var free=Number(t.entry_fee||0)===0;
+    return '<article class="g-card">'+
+      (t.banner_url?'<img class="g-banner" loading="lazy" decoding="async" src="'+esc(t.banner_url)+'" alt="">':'')+
+      '<div class="g-body"><div class="g-name">'+esc(t.title)+'</div><div class="g-meta">'+
+        (free?'<span class="g-chip free">ফ্রি এন্ট্রি</span>':'<span class="g-chip">এন্ট্রি '+money(t.entry_fee)+'</span>')+
+        (Number(t.prize_pool||0)>0?'<span class="g-chip prize">প্রাইজ '+money(t.prize_pool)+'</span>':'')+
+        (Number(t.total_slots||0)>0?'<span class="g-chip">স্লট '+toBn(t.total_slots)+'</span>':'')+
+      '</div><a class="g-cta" href="tournament-details.html?id='+encodeURIComponent(t.id)+'"><span>রেজিস্ট্রেশন করুন</span><span>›</span></a></div></article>';
+  }
+  async function load(){
+    if(!window.supabase||!window.supabase.createClient){setTimeout(load,250);return;}
+    var sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+    var res=await sb.from('tournament_sections')
+      .select('id,name,name_bn,display_order,is_active,tournaments(id,title,banner_url,entry_fee,prize_pool,total_slots,status,created_at)')
+      .eq('is_active',true).order('display_order',{ascending:true});
+    var sections=res.error?[]:(res.data||[]);
+    if(res.error) console.warn(res.error);
+    var freeT=null;
+    sections.filter(isFree).forEach(function(s){ if(!freeT) freeT=pub(s).slice(-1)[0]||null; }); // latest published = today's
+    var groups=sections.filter(isGiveaway).map(function(s){return {s:s,ts:pub(s)};}).filter(function(g){return g.ts.length;});
+    var html=freeSlotCard(freeT);
+    if(groups.length){
+      html+=groups.map(function(g){
+        return '<section class="g-section"><div class="g-title"><span class="bar"></span>'+esc(g.s.name_bn||g.s.name)+'</div>'+g.ts.map(giveawayCard).join('')+'</section>';
+      }).join('');
+    }else{
+      html+='<div class="g-title"><span class="bar"></span>গিভঅ্যাওয়ে টুর্নামেন্ট</div><div class="fs-soon">নতুন গিভঅ্যাওয়ে শীঘ্রই আসছে</div>';
+    }
+    list.innerHTML=html;
+  }
+  load();
+  window.addEventListener('pageshow',function(e){if(e.persisted)location.reload();});
+})();
 </script>
-
 </body>
 </html>
