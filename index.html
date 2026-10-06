@@ -956,44 +956,49 @@ html.intro-lock,html.intro-lock body{overflow:hidden !important}
 
 <div class="home-view" id="homeView">
 <div class="section">
-  <button type="button" class="play-hero" id="playHeroBtn" aria-label="টুর্নামেন্ট খেলুন">
+  <div class="play-hero" id="playHero">
     <span class="play-hero-glow"></span>
-    <span class="play-hero-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4z"/><path d="M17 5h3v2a3 3 0 01-3 3M7 5H4v2a3 3 0 003 3"/></svg></span>
-    <span class="play-hero-text">
-      <span class="play-hero-title">টুর্নামেন্ট খেলুন</span>
-      <span class="play-hero-sub" id="playHeroSub">দৈনিক স্ক্রিম ও আসন্ন সব টুর্নামেন্ট এক জায়গায়</span>
-    </span>
-    <span class="play-hero-go">›</span>
-  </button>
+    <div class="play-hero-top">
+      <span class="play-hero-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4z"/><path d="M17 5h3v2a3 3 0 01-3 3M7 5H4v2a3 3 0 003 3"/></svg></span>
+      <span class="play-hero-text">
+        <span class="play-hero-title">টুর্নামেন্ট খেলুন</span>
+        <span class="play-hero-sub" id="playHeroSub">ব্যানারে ট্যাপ করে স্লট নিন</span>
+      </span>
+      <button type="button" class="play-hero-all" id="playHeroBtn">সব দেখুন <span>›</span></button>
+    </div>
+    <div class="play-strip" id="playStrip" aria-label="টুর্নামেন্ট প্রিভিউ">
+      <div class="play-strip-empty">টুর্নামেন্ট লোড হচ্ছে...</div>
+    </div>
+  </div>
 
   <div class="feature-grid fg-home">
-    <a class="fg-card fg-vip" href="javascript:void(0)" onclick="openVipModal()">
-      <span class="fg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4 3 5-6 5 6 4-3-2 11H5L3 8Z"/></svg></span>
-      <span class="fg-label" data-i18n="index.vipButton">BE A VIP MEMBER</span>
-    </a>
-    <a class="fg-card fg-giveaway" href="giveaway.html">
-      <span class="fg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="13" rx="1"/><path d="M12 8v13M3 8h18M12 8c-1.5-3-5-4-5-1.5S9 8 12 8zm0 0c1.5-3 5-4 5-1.5S15 8 12 8z"/></svg></span>
-      <span class="fg-label" data-i18n="index.dailyGiveaway">Daily Giveaway</span>
-    </a>
-    <a class="fg-card" href="gadget-zone.html">
-      <span class="fg-icon fg-emoji">🎧</span>
-      <span class="fg-label" data-i18n="index.gadgetZone">GADGET ZONE</span>
-    </a>
-    <a class="fg-card" href="diamond-topup.html">
-      <span class="fg-icon fg-emoji">💎</span>
-      <span class="fg-label" data-i18n="index.diamondTopUp">DIAMOND TOP UP</span>
-    </a>
-    <a class="fg-card" href="id-buy-sell.html">
-      <span class="fg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg></span>
-      <span class="fg-label" data-i18n="index.idBuySell">ID Buy/Sell Zone</span>
+    <a class="fg-card" href="find-players.html">
+      <span class="fg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg></span>
+      <span class="fg-label" data-i18n="index.findPlayers">Find Players</span>
     </a>
     <a class="fg-card" href="find-squad.html">
       <span class="fg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/></svg></span>
       <span class="fg-label" data-i18n="index.findSquad">Find Squad</span>
     </a>
-    <a class="fg-card fg-wide" href="find-players.html">
-      <span class="fg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg></span>
-      <span class="fg-label" data-i18n="index.findPlayers">Find Players</span>
+    <a class="fg-card fg-giveaway" href="giveaway.html">
+      <span class="fg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="13" rx="1"/><path d="M12 8v13M3 8h18M12 8c-1.5-3-5-4-5-1.5S9 8 12 8zm0 0c1.5-3 5-4 5-1.5S15 8 12 8z"/></svg></span>
+      <span class="fg-label">গিভঅ্যাওয়ে রেজিস্ট্রেশন</span>
+    </a>
+    <a class="fg-card fg-vip" href="javascript:void(0)" onclick="openVipModal()">
+      <span class="fg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4 3 5-6 5 6 4-3-2 11H5L3 8Z"/></svg></span>
+      <span class="fg-label" data-i18n="index.vipButton">BE A VIP MEMBER</span>
+    </a>
+    <a class="fg-card" href="id-buy-sell.html">
+      <span class="fg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg></span>
+      <span class="fg-label" data-i18n="index.idBuySell">ID Buy/Sell Zone</span>
+    </a>
+    <a class="fg-card" href="gadget-zone.html">
+      <span class="fg-icon fg-emoji">🎧</span>
+      <span class="fg-label" data-i18n="index.gadgetZone">GADGET ZONE</span>
+    </a>
+    <a class="fg-card fg-wide" href="diamond-topup.html">
+      <span class="fg-icon fg-emoji">💎</span>
+      <span class="fg-label" data-i18n="index.diamondTopUp">DIAMOND TOP UP</span>
     </a>
   </div>
 </div>
@@ -1002,16 +1007,21 @@ html.intro-lock,html.intro-lock body{overflow:hidden !important}
 .play-back{display:inline-flex;align-items:center;gap:4px;margin:0 0 14px;padding:8px 14px 8px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--text);font-weight:700;font-size:12px;font-family:inherit;cursor:pointer}
 .play-back:active{background:var(--surface-2)}
 
-.play-hero{position:relative;overflow:hidden;width:100%;display:flex;align-items:center;gap:14px;padding:18px 16px;margin:0 0 14px;border:0;border-radius:18px;text-align:left;font-family:inherit;cursor:pointer;color:#04141f;background:linear-gradient(120deg,#22e08a 0%,#7dffc0 100%);box-shadow:0 10px 26px rgba(34,224,138,.28)}
-.play-hero:active{transform:scale(.985)}
+.play-hero{position:relative;overflow:hidden;margin:0 0 14px;padding:14px 0 14px 14px;border-radius:18px;color:#04141f;background:linear-gradient(120deg,#22e08a 0%,#7dffc0 100%);box-shadow:0 10px 26px rgba(34,224,138,.28)}
 .play-hero-glow{position:absolute;right:-30px;top:-40px;width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.55),transparent 70%);pointer-events:none}
-.play-hero-icon{position:relative;flex:0 0 auto;width:52px;height:52px;border-radius:16px;background:#04141f;color:var(--green);display:flex;align-items:center;justify-content:center}
-.play-hero-icon svg{width:28px;height:28px}
-.play-hero-text{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
-.play-hero-title{font-weight:900;font-size:19px;line-height:1.2}
-.play-hero-sub{font-weight:600;font-size:11.5px;line-height:1.35;color:rgba(4,20,31,.72)}
-.play-hero-go{position:relative;flex:0 0 auto;width:34px;height:34px;border-radius:50%;background:rgba(4,20,31,.12);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;line-height:1}
-
+.play-hero-top{position:relative;display:flex;align-items:center;gap:11px;padding-right:14px;margin-bottom:12px}
+.play-hero-icon{flex:0 0 auto;width:42px;height:42px;border-radius:13px;background:#04141f;color:var(--green);display:flex;align-items:center;justify-content:center}
+.play-hero-icon svg{width:23px;height:23px}
+.play-hero-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.play-hero-title{font-weight:900;font-size:17px;line-height:1.2}
+.play-hero-sub{font-weight:600;font-size:11px;line-height:1.3;color:rgba(4,20,31,.72)}
+.play-hero-all{flex:0 0 auto;border:0;border-radius:999px;padding:8px 12px;background:#04141f;color:var(--green);font-family:inherit;font-weight:800;font-size:11.5px;cursor:pointer}
+.play-strip{position:relative;display:flex;gap:9px;overflow-x:auto;padding:0 14px 2px 0;scrollbar-width:none;scroll-snap-type:x proximity}
+.play-strip::-webkit-scrollbar{display:none}
+.play-thumb{flex:0 0 auto;width:92px;display:block;border-radius:12px;overflow:hidden;background:#0d1320;border:2px solid rgba(4,20,31,.85);scroll-snap-align:start}
+.play-thumb img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover}
+.play-thumb:active{transform:scale(.96)}
+.play-strip-empty{font-size:11.5px;font-weight:700;color:rgba(4,20,31,.7);padding:22px 0}
 .fg-home{gap:10px}
 .fg-card{display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:14px;min-height:92px;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:16px;text-decoration:none;color:var(--text)}
 .fg-card:active{background:var(--surface-2)}
@@ -1032,6 +1042,7 @@ html.intro-lock,html.intro-lock body{overflow:hidden !important}
   var home=document.getElementById('homeView');
   var play=document.getElementById('dynamicTournamentArea');
   var heroBtn=document.getElementById('playHeroBtn');
+  var strip=document.getElementById('playStrip');
   var backBtn=document.getElementById('playBackBtn');
   var sub=document.getElementById('playHeroSub');
   if(!home||!play||!heroBtn) return;
@@ -1057,11 +1068,27 @@ html.intro-lock,html.intro-lock body{overflow:hidden !important}
   var bn='০১২৩৪৫৬৭৮৯';
   function toBn(n){return String(n).replace(/\d/g,function(d){return bn[d];});}
   var root=document.getElementById('dynamicTournamentSections');
-  if(root&&sub&&window.MutationObserver){
-    new MutationObserver(function(){
-      var n=root.querySelectorAll('.dyn-card').length;
-      if(n>0) sub.textContent=toBn(n)+'টি টুর্নামেন্টে জয়েন করুন';
-    }).observe(root,{childList:true,subtree:true});
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c];});}
+  // Build the preview strip from what the tournament list already rendered
+  // (same order as Tournament Management, no extra request).
+  function buildStrip(){
+    if(!root||!strip) return;
+    var cards=root.querySelectorAll('.dyn-card');
+    if(!cards.length){return;}
+    var html='';
+    cards.forEach(function(card){
+      var img=card.querySelector('.dyn-banner');
+      var link=card.querySelector('.dyn-cta');
+      if(!link) return;
+      var src=img?img.getAttribute('src'):'';
+      html+='<a class="play-thumb" href="'+esc(link.getAttribute('href'))+'" aria-label="টুর্নামেন্ট দেখুন">'+(src?'<img loading="lazy" decoding="async" src="'+esc(src)+'" alt="">':'')+'</a>';
+    });
+    strip.innerHTML=html||'<div class="play-strip-empty">এখন কোনো টুর্নামেন্ট নেই</div>';
+    if(sub&&cards.length) sub.textContent=toBn(cards.length)+'টি টুর্নামেন্ট · ব্যানারে ট্যাপ করে স্লট নিন';
+  }
+  if(root&&window.MutationObserver){
+    new MutationObserver(buildStrip).observe(root,{childList:true});
+    buildStrip();
   }
 })();
 </script>
