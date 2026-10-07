@@ -140,6 +140,11 @@ input,select{width:100%;border:0;outline:0;background:transparent;color:var(--te
   padding:14px 20px calc(18px + env(safe-area-inset-bottom,0px));
   line-height:1.5;
 }
+.crop-topbar{justify-content:center !important}
+.crop-note{padding-bottom:10px !important}
+.crop-bottombar{display:flex;gap:12px;padding:6px 16px calc(18px + env(safe-area-inset-bottom,0px));flex-shrink:0}
+.crop-btn{flex:1;padding:14px;border-radius:14px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer}
+.crop-btn.done{background:var(--green);border-color:var(--green);color:#04141f;font-weight:800}
 </style>
 <style>
 :root{
@@ -248,9 +253,7 @@ input,select{width:100%;border:0;outline:0;background:transparent;color:var(--te
 
 <div class="crop-overlay" id="cropOverlay">
   <div class="crop-topbar">
-    <button class="crop-toolbtn" type="button" id="cropCancel" data-i18n="editprofile.cancel">Cancel</button>
     <div class="crop-title" data-i18n="editprofile.cropTitle">Crop Photo</div>
-    <button class="crop-toolbtn accent" type="button" id="cropDone" data-i18n="editprofile.done">Done</button>
   </div>
   <div class="crop-canvas-wrap" id="cropCanvasWrap">
     <div class="crop-img-box" id="cropImgBox">
@@ -276,6 +279,10 @@ input,select{width:100%;border:0;outline:0;background:transparent;color:var(--te
     </div>
   </div>
   <div class="crop-note" data-i18n="editprofile.cropNote">Drag any corner to resize, drag inside the box to reposition it.</div>
+  <div class="crop-bottombar">
+    <button class="crop-btn" type="button" id="cropCancel" data-i18n="editprofile.cancel">Cancel</button>
+    <button class="crop-btn done" type="button" id="cropDone" data-i18n="editprofile.done">Done</button>
+  </div>
 </div>
 
 <script>
