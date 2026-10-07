@@ -166,8 +166,8 @@
   .rg-uid{display:inline-block;padding:8px 18px;border-radius:999px;border:1px solid rgba(34,224,138,.5);background:rgba(34,224,138,.1);color:#22e08a;font-weight:900;font-size:15px;letter-spacing:.02em}
   .rg-chg{font-size:12px;font-weight:700;color:var(--text-secondary);text-decoration:underline;cursor:pointer;padding:2px 0}
 
-  .rg-top{justify-content:space-between !important;gap:14px}
-  .rg-topr{align-items:flex-end !important;margin-left:auto}
+  .rg-top{justify-content:space-between !important;align-items:flex-start !important;gap:14px}
+  .rg-left{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
   .rg-top .pv{visibility:visible !important}
   .crop-overlay{
     display:none;position:fixed;inset:0;z-index:100001;
@@ -225,6 +225,11 @@
     line-height:1.5;
   }
   
+  .crop-topbar{justify-content:center !important}
+  .crop-note{padding-bottom:10px !important}
+  .crop-bottombar{display:flex;gap:12px;padding:6px 16px calc(18px + env(safe-area-inset-bottom,0px));flex-shrink:0}
+  .crop-btn{flex:1;padding:14px;border-radius:14px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer}
+  .crop-btn.done{background:#22e08a;border-color:#22e08a;color:#04141f;font-weight:800}
   .rg-note{font-size:11px;color:var(--text-secondary);line-height:1.5;margin-top:6px}
   .rg-err{margin-top:12px;font-size:12.5px;font-weight:700;color:#ff8a8a}
   .rg-go{margin-top:16px}
@@ -509,7 +514,7 @@
 
   /* ===== Logo crop (same tool as edit_profile.html) ===== */
   var cropWrapHolder=document.createElement('div');
-  cropWrapHolder.innerHTML='<div class="crop-overlay" id="cropOverlay">\n  <div class="crop-topbar">\n    <button class="crop-toolbtn" type="button" id="cropCancel">বাতিল</button>\n    <div class="crop-title">লোগো ক্রপ করুন</div>\n    <button class="crop-toolbtn accent" type="button" id="cropDone">সম্পন্ন</button>\n  </div>\n  <div class="crop-canvas-wrap" id="cropCanvasWrap">\n    <div class="crop-img-box" id="cropImgBox">\n      <img id="cropImg" alt="" draggable="false">\n      <div class="crop-mask" id="maskTop"></div>\n      <div class="crop-mask" id="maskBottom"></div>\n      <div class="crop-mask" id="maskLeft"></div>\n      <div class="crop-mask" id="maskRight"></div>\n      <div class="crop-rect" id="cropRect">\n        <div class="crop-rect-inner">\n          <div class="crop-grid-line v1"></div>\n          <div class="crop-grid-line v2"></div>\n          <div class="crop-grid-line h1"></div>\n          <div class="crop-grid-line h2"></div>\n          <div class="crop-circle-mask"></div>\n          <div class="crop-circle-outline"></div>\n        </div>\n        <div class="crop-handle tl" data-handle="tl"></div>\n        <div class="crop-handle tr" data-handle="tr"></div>\n        <div class="crop-handle bl" data-handle="bl"></div>\n        <div class="crop-handle br" data-handle="br"></div>\n      </div>\n    </div>\n  </div>\n  <div class="crop-note">কোণা টেনে সাইজ বদলান, বক্সের ভেতরে টেনে সরান।</div>\n</div>\n\n';
+  cropWrapHolder.innerHTML='<div class="crop-overlay" id="cropOverlay">\n  <div class="crop-topbar">\n    <div class="crop-title">লোগো ক্রপ করুন</div>\n  </div>\n  <div class="crop-canvas-wrap" id="cropCanvasWrap">\n    <div class="crop-img-box" id="cropImgBox">\n      <img id="cropImg" alt="" draggable="false">\n      <div class="crop-mask" id="maskTop"></div>\n      <div class="crop-mask" id="maskBottom"></div>\n      <div class="crop-mask" id="maskLeft"></div>\n      <div class="crop-mask" id="maskRight"></div>\n      <div class="crop-rect" id="cropRect">\n        <div class="crop-rect-inner">\n          <div class="crop-grid-line v1"></div>\n          <div class="crop-grid-line v2"></div>\n          <div class="crop-grid-line h1"></div>\n          <div class="crop-grid-line h2"></div>\n          <div class="crop-circle-mask"></div>\n          <div class="crop-circle-outline"></div>\n        </div>\n        <div class="crop-handle tl" data-handle="tl"></div>\n        <div class="crop-handle tr" data-handle="tr"></div>\n        <div class="crop-handle bl" data-handle="bl"></div>\n        <div class="crop-handle br" data-handle="br"></div>\n      </div>\n    </div>\n  </div>\n  <div class="crop-note">কোণা টেনে সাইজ বদলান, বক্সের ভেতরে টেনে সরান।</div>\n  <div class="crop-bottombar">\n    <button class="crop-btn" type="button" id="cropCancel">বাতিল</button>\n    <button class="crop-btn done" type="button" id="cropDone">সম্পন্ন</button>\n  </div>\n</div>\n\n';
   document.body.appendChild(cropWrapHolder.firstElementChild);
   function readDownscaled(file,maxDim){
     return new Promise(function(res,rej){
@@ -717,8 +722,9 @@
     var ov=document.createElement('div'); ov.className='rg-ov'; ov.id='rgOv';
     ov.innerHTML='<div class="rg-sheet"><div class="rg-h"><b>গিভঅ্যাওয়ে রেজিস্ট্রেশন</b><button type="button" class="rg-x" id="rgX">×</button></div>'+
       '<div class="rg-sub">'+esc(t.title)+'</div>'+
-      '<div class="rg-top"><img class="pv" id="rgPv" alt="" '+(st.logo?'src="'+esc(st.logo)+'"':'src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="')+'>'+
-        '<div class="rg-topr"><span class="rg-uid">UID: '+esc(uidNum?('#'+uidNum):'—')+'</span><label class="rg-chg" for="rgFile">'+(st.logo?'লোগো বদলান':'লোগো দিন')+'</label><input type="file" id="rgFile" accept="image/*" hidden></div></div>'+
+      '<div class="rg-top"><div class="rg-left"><img class="pv" id="rgPv" alt="" '+(st.logo?'src="'+esc(st.logo)+'"':'src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="')+'>'+
+        '<label class="rg-chg" for="rgFile">'+(st.logo?'লোগো বদলান':'লোগো দিন')+'</label><input type="file" id="rgFile" accept="image/*" hidden></div>'+
+        '<span class="rg-uid">UID: '+esc(uidNum?('#'+uidNum):'—')+'</span></div>'+
       '<label class="rg-l">টিমের নাম</label><input class="rg-i" id="rgTeam" maxlength="40" value="'+esc(st.team)+'" placeholder="আপনার টিমের নাম">'+
       '<label class="rg-l">ইমেইল'+(st.emailLocked?' (লগইন ইমেইল)':'')+'</label><input class="rg-i" id="rgEmail" type="email" inputmode="email" value="'+esc(st.email)+'" placeholder="you@example.com"'+(st.emailLocked?' readonly':'')+'>'+
       '<label class="rg-l">মোবাইল নম্বর (WhatsApp)</label><input class="rg-i" id="rgWa" type="tel" inputmode="tel" value="'+esc(st.wa)+'" placeholder="01XXXXXXXXX">'+
