@@ -135,6 +135,35 @@
   .ad-scroll{max-height:230px;overflow-y:auto;overscroll-behavior:contain;padding-right:2px}
   .ad-scroll.sm{max-height:170px}
   .ad-scroll .ad-item{margin-bottom:6px;padding:8px 12px}
+  .g-desc{font-size:12.5px;line-height:1.65;color:var(--text-secondary);white-space:pre-wrap;margin:0 0 12px;word-break:break-word}
+  .g-links{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .g-link{flex:1;min-width:120px;text-align:center;padding:9px 10px;border-radius:10px;border:1px solid var(--card-border);background:rgba(255,255,255,.05);color:var(--text-primary);font-weight:700;font-size:12px;text-decoration:none}
+  button.g-cta{border:0;font-family:inherit;cursor:pointer}
+  button.g-cta.done{background:rgba(34,224,138,.14);color:#7dffc0;border:1px solid rgba(34,224,138,.45)}
+  button.g-cta[disabled]{opacity:.7;cursor:default}
+  .g-adm{display:block;width:100%;margin-top:10px;padding:9px 10px;border-radius:10px;border:1px dashed rgba(255,138,61,.55);background:transparent;color:#ffb36b;font-family:inherit;font-weight:800;font-size:12px;cursor:pointer}
+  .g-admbox{margin-top:8px;max-height:220px;overflow-y:auto;overscroll-behavior:contain}
+  .g-admrow{display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid var(--card-border);background:rgba(255,255,255,.04);border-radius:10px;margin-bottom:6px;font-size:12px}
+  .g-admrow img,.g-admrow .ph{width:30px;height:30px;border-radius:50%;object-fit:cover;background:#1b2133;flex-shrink:0}
+  .g-admrow .u{font-weight:900;color:#7cc2ff;min-width:44px}
+  .g-admrow .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+  .g-admrow .w{font-size:11px;color:var(--text-secondary)}
+  .rg-ov{position:fixed;inset:0;background:rgba(0,0,0,.66);z-index:9999;display:flex;align-items:flex-end;justify-content:center}
+  .rg-sheet{width:100%;max-width:520px;max-height:92vh;overflow-y:auto;background:#12162a;border:1px solid var(--card-border);border-radius:22px 22px 0 0;padding:18px 16px calc(22px + env(safe-area-inset-bottom,0px))}
+  .rg-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+  .rg-h b{font-size:16px;font-weight:900}
+  .rg-x{width:34px;height:34px;border-radius:10px;border:1px solid var(--card-border);background:transparent;color:var(--text-primary);font-size:20px;cursor:pointer}
+  .rg-sub{font-size:12px;color:var(--text-secondary);margin-bottom:14px}
+  .rg-l{display:block;font-size:11.5px;font-weight:700;color:var(--text-secondary);margin:12px 0 6px}
+  .rg-i{width:100%;padding:12px;border-radius:12px;border:1px solid var(--card-border);background:var(--card);color:var(--text-primary);font-family:inherit;font-size:14px}
+  .rg-i[readonly]{opacity:.65}
+  .rg-logo{display:flex;align-items:center;gap:12px}
+  .rg-logo .pv{width:62px;height:62px;border-radius:50%;object-fit:cover;background:#1b2133;border:1px solid var(--card-border);flex-shrink:0}
+  .rg-logo label{padding:10px 14px;border-radius:10px;border:1px solid var(--card-border);background:rgba(255,255,255,.06);font-weight:700;font-size:12.5px;cursor:pointer}
+  .rg-note{font-size:11px;color:var(--text-secondary);line-height:1.5;margin-top:6px}
+  .rg-err{margin-top:12px;font-size:12.5px;font-weight:700;color:#ff8a8a}
+  .rg-go{margin-top:16px}
+  .g-toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#22e08a;color:#04141f;font-weight:800;font-size:13px;padding:11px 18px;border-radius:999px;z-index:10000}
   .g-skel{height:300px;border-radius:16px;background:linear-gradient(90deg,var(--card),#1b2133,var(--card));background-size:200% 100%;animation:gsk 1.2s infinite linear;margin-bottom:14px}
   @keyframes gsk{to{background-position:-200% 0}}
 </style>
@@ -224,7 +253,7 @@
     renderFs();
   }
   // ---------- Admin only: random winner draw (hidden for normal users) ----------
-  var adRows=[], adBusy=false;
+  var adRows=[], adBusy=false, isAdminUser=false;
   function $(id){return document.getElementById(id);}
   function dhakaToday(){
     var d=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Dhaka'}));
@@ -240,6 +269,7 @@
       if(!sess.data||!sess.data.session) return;
       var pr=await sb.from('profiles').select('is_admin').eq('id',sess.data.session.user.id).single();
       if(pr.error||!pr.data||!pr.data.is_admin) return;
+      isAdminUser=true;
     }catch(e){ return; }
     var slot=$('adminSlot'); if(!slot) return;
     slot.innerHTML='<div class="ad-panel"><div class="ad-ptitle">🔒 অ্যাডমিন · ফ্রি স্লট ড্র</div>'+
@@ -333,37 +363,200 @@
     fsState=Object.assign({},r.data,{logged_in:true});
     renderFs();
   }
+  var gaState={counts:{},mine:[]}, gaLogged=false, gaGroups=[], gaSections=[], gaErr=null, regT=null;
+  function ctaHTML(t){
+    var id=String(t.id), n=Number((gaState.counts||{})[id]||0), cap=Number(t.total_slots||0);
+    var mine=(gaState.mine||[]).indexOf(id)!==-1;
+    if(mine) return '<button type="button" class="g-cta done" disabled>✓ রেজিস্ট্রেশন সম্পন্ন</button>';
+    if(cap>0&&n>=cap) return '<button type="button" class="g-cta done" disabled style="color:#ff9a9a;border-color:rgba(255,120,120,.4);background:rgba(255,120,120,.1)">স্লট পূর্ণ</button>';
+    return '<button type="button" class="g-cta" data-reg="'+esc(id)+'"><span>রেজিস্ট্রেশন করুন</span><span>›</span></button>';
+  }
   function giveawayCard(t){
-    var free=Number(t.entry_fee||0)===0;
-    return '<article class="g-card">'+
+    var id=String(t.id), free=Number(t.entry_fee||0)===0, cap=Number(t.total_slots||0), n=Number((gaState.counts||{})[id]||0);
+    var slotChip=cap>0?'<span class="g-chip">স্লট '+toBn(n)+'/'+toBn(cap)+'</span>':'<span class="g-chip">আনলিমিটেড স্লট'+(n?' · '+toBn(n)+' টিম':'')+'</span>';
+    var links='';
+    if(t.fb_link) links+='<a class="g-link" href="'+esc(t.fb_link)+'" target="_blank" rel="noopener">Facebook পোস্ট</a>';
+    if(t.form_link) links+='<a class="g-link" href="'+esc(t.form_link)+'" target="_blank" rel="noopener">Google Form</a>';
+    return '<article class="g-card" data-tid="'+esc(id)+'">'+
       (t.banner_url?'<img class="g-banner" loading="lazy" decoding="async" src="'+esc(t.banner_url)+'" alt="">':'')+
       '<div class="g-body"><div class="g-name">'+esc(t.title)+'</div><div class="g-meta">'+
         (free?'<span class="g-chip free">ফ্রি এন্ট্রি</span>':'<span class="g-chip">এন্ট্রি '+money(t.entry_fee)+'</span>')+
-        (Number(t.prize_pool||0)>0?'<span class="g-chip prize">প্রাইজ '+money(t.prize_pool)+'</span>':'')+
-        (Number(t.total_slots||0)>0?'<span class="g-chip">স্লট '+toBn(t.total_slots)+'</span>':'')+
-      '</div><a class="g-cta" href="tournament-details.html?id='+encodeURIComponent(t.id)+'"><span>রেজিস্ট্রেশন করুন</span><span>›</span></a></div></article>';
+        (Number(t.prize_pool||0)>0?'<span class="g-chip prize">প্রাইজ '+money(t.prize_pool)+'</span>':'')+slotChip+
+      '</div>'+
+      (t.description?'<div class="g-desc">'+esc(t.description)+'</div>':'')+
+      (links?'<div class="g-links">'+links+'</div>':'')+
+      ctaHTML(t)+
+      (isAdminUser?'<button type="button" class="g-adm" data-adm="'+esc(id)+'">🔒 রেজিস্ট্রেশন তালিকা ('+toBn(n)+')</button><div class="g-admbox" id="admbox-'+esc(id)+'" hidden></div>':'')+
+      '</div></article>';
   }
-  async function load(){
-    if(!window.supabase||!window.supabase.createClient){setTimeout(load,250);return;}
-    sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-    // draw the Daily Free Slot card right away, fill its state in parallel
-    list.innerHTML=freeSlotHTML()+'<div id="adminSlot"></div><div id="gaWrap"><div class="g-skel"></div></div>';
-    loadFs().then(initAdmin);
-    var res=await sb.from('tournament_sections')
-      .select('id,name,name_bn,display_order,is_active,tournaments(id,title,banner_url,entry_fee,prize_pool,total_slots,status,created_at)')
-      .eq('is_active',true).order('display_order',{ascending:true});
-    if(res.error) console.warn(res.error);
-    var sections=res.error?[]:(res.data||[]);
-    var groups=sections.filter(isGiveaway).map(function(s){return {s:s,ts:pub(s)};}).filter(function(g){return g.ts.length;});
+  function renderGa(){
+    var w=document.getElementById('gaWrap'); if(!w) return;
     var html;
-    if(groups.length){
-      html=groups.map(function(g){
+    if(gaGroups.length){
+      html=gaGroups.map(function(g){
         return '<section class="g-section"><div class="g-title"><span class="bar"></span>'+esc(g.s.name_bn||g.s.name)+'</div>'+g.ts.map(giveawayCard).join('')+'</section>';
       }).join('');
     }else{
       html='<div class="g-title"><span class="bar"></span>গিভঅ্যাওয়ে টুর্নামেন্ট</div><div class="fs-soon">নতুন গিভঅ্যাওয়ে শীঘ্রই আসছে</div>';
+      if(isAdminUser) html+=diagHTML(gaSections,gaErr);
     }
-    var w=document.getElementById('gaWrap'); if(w) w.innerHTML=html;
+    w.innerHTML=html;
+  }
+  function findT(id){var r=null;gaGroups.forEach(function(g){g.ts.forEach(function(t){if(String(t.id)===String(id)) r=t;});});return r;}
+  function toast(m){var e=document.createElement('div');e.className='g-toast';e.textContent=m;document.body.appendChild(e);setTimeout(function(){e.remove();},2400);}
+
+  // ---------- admin: registrants of one giveaway ----------
+  async function showRegs(id){
+    var box=document.getElementById('admbox-'+id); if(!box) return;
+    if(!box.hidden){box.hidden=true;return;}
+    box.hidden=false; box.innerHTML='<div class="ad-empty">লোড হচ্ছে...</div>';
+    var r=await sb.rpc('giveaway_admin_list',{p_tournament:String(id)});
+    if(r.error){box.innerHTML='<div class="ad-empty">লোড হয়নি: '+esc(r.error.message)+'<br>giveaway-setup.sql চালিয়েছেন তো?</div>';return;}
+    var rows=r.data||[];
+    box.innerHTML=rows.length?rows.map(function(x){
+      return '<div class="g-admrow">'+(x.team_logo?'<img src="'+esc(x.team_logo)+'" alt="">':'<span class="ph"></span>')+
+        '<span class="u">#'+esc(x.user_number||'-')+'</span><span class="n">'+esc(x.team_name||'')+'</span><span class="w">'+esc(x.whatsapp||'')+'</span></div>';
+    }).join(''):'<div class="ad-empty">এখনো কেউ রেজিস্ট্রেশন করেনি</div>';
+  }
+
+  // ---------- registration form ----------
+  function localProfile(){try{return JSON.parse(localStorage.getItem('user_profile')||'{}')||{};}catch(e){return {};}}
+  function compressImg(file,maxDim){
+    return new Promise(function(res,rej){
+      var rd=new FileReader();
+      rd.onerror=function(){rej(new Error('read'));};
+      rd.onload=function(e){
+        var im=new Image();
+        im.onerror=function(){rej(new Error('img'));};
+        im.onload=function(){
+          var w=im.width,h=im.height;
+          if(w>maxDim||h>maxDim){if(w>h){h=Math.round(h*maxDim/w);w=maxDim;}else{w=Math.round(w*maxDim/h);h=maxDim;}}
+          var c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(im,0,0,w,h);
+          c.toBlob(function(b){b?res(b):rej(new Error('blob'));},'image/jpeg',0.85);
+        };
+        im.src=e.target.result;
+      };
+      rd.readAsDataURL(file);
+    });
+  }
+  async function openReg(id){
+    var t=findT(id); if(!t) return;
+    var sess=await sb.auth.getSession();
+    if(!sess.data||!sess.data.session){location.href='chteo_auth.html';return;}
+    var uid=sess.data.session.user.id;
+    regT=t;
+    var lp=localProfile();
+    var prof={}; try{var pr=await sb.from('profiles').select('user_number,whatsapp,email,full_name,avatar_url').eq('id',uid).single(); if(!pr.error&&pr.data) prof=pr.data;}catch(e){}
+    var uidNum=prof.user_number!=null?String(prof.user_number):(localStorage.getItem('user_uid')||lp.uid||'');
+    var emailVal=String(prof.email||sess.data.session.user.email||lp.email||'');
+    var logoVal=String(prof.avatar_url||localStorage.getItem('profile_picture')||'');
+    var st={
+      team:String(prof.full_name||lp.teamName||''),
+      email:emailVal, emailLocked:!!emailVal,
+      wa:String(prof.whatsapp||lp.whatsapp||''),
+      logo:logoVal, file:null, uid:uid
+    };
+    var ov=document.createElement('div'); ov.className='rg-ov'; ov.id='rgOv';
+    ov.innerHTML='<div class="rg-sheet"><div class="rg-h"><b>গিভঅ্যাওয়ে রেজিস্ট্রেশন</b><button type="button" class="rg-x" id="rgX">×</button></div>'+
+      '<div class="rg-sub">'+esc(t.title)+'</div>'+
+      '<label class="rg-l">UID (বদলানো যায় না)</label><input class="rg-i" id="rgUid" readonly value="'+esc(uidNum?('#'+uidNum):'—')+'">'+
+      '<label class="rg-l">টিমের নাম</label><input class="rg-i" id="rgTeam" maxlength="40" value="'+esc(st.team)+'" placeholder="আপনার টিমের নাম">'+
+      '<label class="rg-l">টিম লোগো</label><div class="rg-logo"><img class="pv" id="rgPv" alt="" '+(st.logo?'src="'+esc(st.logo)+'"':'style="visibility:hidden"')+'><label for="rgFile">'+(st.logo?'লোগো বদলান':'লোগো দিন')+'</label><input type="file" id="rgFile" accept="image/*" hidden></div>'+
+      '<label class="rg-l">ইমেইল'+(st.emailLocked?' (লগইন ইমেইল)':'')+'</label><input class="rg-i" id="rgEmail" type="email" inputmode="email" value="'+esc(st.email)+'" placeholder="you@example.com"'+(st.emailLocked?' readonly':'')+'>'+
+      '<label class="rg-l">WhatsApp নম্বর</label><input class="rg-i" id="rgWa" type="tel" inputmode="tel" value="'+esc(st.wa)+'" placeholder="01XXXXXXXXX">'+
+      '<div class="rg-note">প্রোফাইলের তথ্য আগে থেকেই বসানো আছে। টিমের নাম, লোগো বা WhatsApp বদলালে প্রোফাইলেও আপডেট হবে।</div>'+
+      '<div class="rg-err" id="rgErr" hidden></div>'+
+      '<button type="button" class="g-cta rg-go" id="rgGo"><span>রেজিস্ট্রেশন করুন</span></button></div>';
+    document.body.appendChild(ov);
+    document.body.style.overflow='hidden';
+    function close(){ov.remove();document.body.style.overflow='';regT=null;}
+    ov.addEventListener('click',function(e){if(e.target===ov) close();});
+    document.getElementById('rgX').onclick=close;
+    document.getElementById('rgFile').onchange=function(){
+      var f=this.files&&this.files[0]; if(!f) return;
+      st.file=f; var pv=document.getElementById('rgPv'); pv.src=URL.createObjectURL(f); pv.style.visibility='visible';
+    };
+    document.getElementById('rgGo').onclick=function(){submitReg(st,close);};
+  }
+  async function submitReg(st,close){
+    var err=document.getElementById('rgErr'), go=document.getElementById('rgGo');
+    function fail(m){err.textContent=m;err.hidden=false;go.disabled=false;go.firstChild.textContent='রেজিস্ট্রেশন করুন';}
+    err.hidden=true;
+    var team=document.getElementById('rgTeam').value.trim(), email=document.getElementById('rgEmail').value.trim(), wa=document.getElementById('rgWa').value.trim();
+    if(!team) return fail('টিমের নাম লিখুন।');
+    if(!st.file&&!st.logo) return fail('টিমের লোগো দিন।');
+    if(!/^\S+@\S+\.\S+$/.test(email)) return fail('সঠিক ইমেইল দিন।');
+    if(wa.replace(/\D/g,'').length<10) return fail('সঠিক WhatsApp নম্বর দিন।');
+    go.disabled=true; go.firstChild.textContent='রেজিস্ট্রেশন হচ্ছে...';
+    try{
+      var logoUrl=st.logo, uploaded=false;
+      if(st.file||(st.logo&&st.logo.indexOf('data:')===0)){
+        var blob=st.file?await compressImg(st.file,512):await (await fetch(st.logo)).blob();
+        var path=st.uid+'/avatar.jpg';   // same place edit_profile.html keeps the team logo
+        var up=await sb.storage.from('avatars').upload(path,blob,{upsert:true,contentType:'image/jpeg'});
+        if(up.error) throw new Error('logo');
+        logoUrl=sb.storage.from('avatars').getPublicUrl(path).data.publicUrl+'?t='+Date.now(); uploaded=true;
+      }
+      var r=await sb.rpc('giveaway_register',{p_tournament:String(regT.id),p_team_name:team,p_team_logo:logoUrl,p_email:email,p_whatsapp:wa});
+      if(r.error){
+        var m=String(r.error.message||'');
+        if(m.indexOf('already_registered')>-1) throw new Error('আপনি আগেই এই গিভঅ্যাওয়েতে রেজিস্ট্রেশন করেছেন।');
+        if(m.indexOf('full')>-1) throw new Error('দুঃখিত, স্লট পূর্ণ হয়ে গেছে।');
+        if(m.indexOf('not_open')>-1) throw new Error('এই গিভঅ্যাওয়ে এখন বন্ধ।');
+        if(m.indexOf('not_logged_in')>-1){location.href='chteo_auth.html';return;}
+        console.warn(r.error); throw new Error('রেজিস্ট্রেশন করা যায়নি, আবার চেষ্টা করুন।');
+      }
+      // keep this device's profile cache in step with what the user just typed
+      try{
+        var lp=localProfile(); lp.teamName=team; lp.whatsapp=wa;
+        localStorage.setItem('user_profile',JSON.stringify(lp));
+        localStorage.setItem('profile_picture',logoUrl);
+      }catch(e){}
+      gaState=Object.assign({counts:{},mine:[]},r.data||{});
+      close(); renderGa(); toast('রেজিস্ট্রেশন সম্পন্ন ✓');
+    }catch(e){
+      fail(e.message==='logo'?'লোগো আপলোড হয়নি, আবার চেষ্টা করুন।':(e.message||'রেজিস্ট্রেশন করা যায়নি।'));
+    }
+  }
+  document.addEventListener('click',function(e){
+    var b=e.target.closest&&e.target.closest('[data-reg],[data-adm]'); if(!b) return;
+    if(b.hasAttribute('data-reg')){ if(!gaLogged){location.href='chteo_auth.html';return;} openReg(b.getAttribute('data-reg')); }
+    else showRegs(b.getAttribute('data-adm'));
+  });
+  // Only shown to admins when the page has no giveaway tournaments: says why.
+  function diagHTML(sections,err){
+    var lines=[];
+    if(err){ lines.push('সেকশন লোড হয়নি: '+esc(err.message||err)); }
+    else{
+      var gs=sections.filter(isGiveaway);
+      if(!gs.length){
+        lines.push('"Giveaway" নামে কোনো <b>চালু</b> সেকশন পাওয়া যায়নি। চালু সেকশন: '+(sections.map(function(x){return esc(x.name);}).join(', ')||'নেই'));
+      }else{
+        gs.forEach(function(g){
+          var all=g.tournaments||[], on=all.filter(function(t){return t.status==='published';});
+          if(!all.length) lines.push('"'+esc(g.name)+'" সেকশনে কোনো টুর্নামেন্ট দেখা যাচ্ছে না। টুর্নামেন্ট না থাকলে বানাও; থাকলে Supabase-এর RLS পলিসি আটকাচ্ছে।');
+          else if(!on.length) lines.push('"'+esc(g.name)+'" সেকশনে '+toBn(all.length)+'টি টুর্নামেন্ট আছে, কিন্তু একটাও <b>ON</b> নেই। Tournament Management-এ ON সুইচ চালু করো।');
+        });
+      }
+    }
+    return '<div class="ad-empty" style="margin-top:12px;text-align:left;line-height:1.7;border-color:rgba(255,138,61,.5)"><b style="color:#ffb36b">🔒 অ্যাডমিন নোট (ইউজার দেখবে না)</b><br>'+lines.join('<br>')+'</div>';
+  }
+  async function load(){
+    if(!window.supabase||!window.supabase.createClient){setTimeout(load,250);return;}
+    sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+    list.innerHTML=freeSlotHTML()+'<div id="adminSlot"></div><div id="gaWrap"><div class="g-skel"></div></div>';
+    var adReady=loadFs().then(initAdmin);
+    var res=await sb.from('tournament_sections')
+      .select('id,name,name_bn,display_order,is_active,tournaments(*)')
+      .eq('is_active',true).order('display_order',{ascending:true});
+    if(res.error) console.warn(res.error);
+    gaErr=res.error||null;
+    gaSections=res.error?[]:(res.data||[]);
+    gaGroups=gaSections.filter(isGiveaway).map(function(s){return {s:s,ts:pub(s)};}).filter(function(g){return g.ts.length;});
+    try{ var ss=await sb.auth.getSession(); gaLogged=!!(ss.data&&ss.data.session); }catch(e){}
+    try{ var st=await sb.rpc('giveaway_status'); if(!st.error&&st.data) gaState=Object.assign({counts:{},mine:[]},st.data); else if(st.error) console.warn(st.error); }catch(e){}
+    try{ await adReady; }catch(e){}
+    renderGa();
   }
   load();
   window.addEventListener('pageshow',function(e){if(e.persisted)location.reload();});

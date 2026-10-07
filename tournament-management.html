@@ -225,6 +225,26 @@ html{min-height:100%;background-color:#1b2140;background-image:radial-gradient(c
   <div class="modal-actions"><button type="button" id="cancelTmBtn">Cancel</button><button type="button" class="primary" id="saveTournamentBtn">Save Tournament</button></div>
 </div></div>
 
+<div class="modal" id="gm"><div class="box">
+ <div class="mh"><b id="gmTitle">Create Giveaway Tournament</b><button type="button" id="closeGmBtn">×</button></div>
+ <input type="hidden" id="gid"><input type="hidden" id="gsec">
+ <label>Giveaway Name *</label><input id="gtitle" placeholder="BIG GIVEAWAY #01">
+ <label>Banner</label><input id="gbanner" type="file" accept="image/png,image/jpeg,image/webp">
+ <div class="grid">
+  <div><label>Entry Fee</label><input id="gentry" type="number" min="0" value="0"></div>
+  <div><label>Total Prize Pool</label><input id="gprize" type="number" min="0" value="0"></div>
+ </div>
+ <label>Slots</label>
+ <div class="grid">
+  <div><select id="gslotMode"><option value="unlimited">Unlimited</option><option value="custom">Custom number</option></select></div>
+  <div><input id="gslots" type="number" min="1" placeholder="How many slots?" style="display:none"></div>
+ </div>
+ <label>Description</label><textarea id="gdesc" placeholder="Giveaway details, rules, how to win..."></textarea>
+ <label>Facebook Post Link (optional)</label><input id="gfb" type="url" inputmode="url" placeholder="https://facebook.com/...">
+ <label>Google Form Link (optional)</label><input id="gform" type="url" inputmode="url" placeholder="https://forms.gle/...">
+ <div class="modal-actions"><button type="button" id="cancelGmBtn">Cancel</button><button type="button" class="primary" id="saveGiveawayBtn">Save Giveaway</button></div>
+</div></div>
+
 <div class="modal" id="sm"><div class="box">
   <div class="mh"><b id="smTitle">Add New Section</b><button type="button" id="closeSmBtn">×</button></div>
   <input type="hidden" id="sid">
@@ -682,8 +702,46 @@ async function newGiveaway(){
     if(r.error)return msg(r.error.message);
     await load();
   }
-  newTournament(); fillSections(g.id);
-  $('tmTitle').textContent='Create Giveaway Tournament';
+  $('gid').value='';$('gsec').value=g.id;$('gmTitle').textContent='Create Giveaway Tournament';
+  $('gtitle').value='';$('gbanner').value='';$('gentry').value=0;$('gprize').value=0;
+  $('gslotMode').value='unlimited';$('gslots').value='';$('gslots').style.display='none';
+  $('gdesc').value='';$('gfb').value='';$('gform').value='';
+  openM('gm');
+}
+function editGiveaway(id){
+  const t=tournaments.find(x=>x.id===id); if(!t)return;
+  $('gid').value=t.id;$('gsec').value=t.section_id;$('gmTitle').textContent='Edit Giveaway Tournament';
+  $('gtitle').value=t.title||'';$('gbanner').value='';$('gentry').value=t.entry_fee||0;$('gprize').value=t.prize_pool||0;
+  const sl=+t.total_slots||0;
+  $('gslotMode').value=sl>0?'custom':'unlimited';$('gslots').value=sl>0?sl:'';$('gslots').style.display=sl>0?'':'none';
+  $('gdesc').value=t.description||'';$('gfb').value=t.fb_link||'';$('gform').value=t.form_link||'';
+  openM('gm');
+}
+async function saveGiveaway(){
+  const id=$('gid').value,old=id?tournaments.find(x=>x.id===id):null,file=$('gbanner').files[0];
+  const title=$('gtitle').value.trim();
+  if(!title)return msg('Giveaway name required.');
+  const custom=$('gslotMode').value==='custom',slots=custom?(+$('gslots').value||0):0;
+  if(custom&&slots<1)return msg('Enter how many slots, or choose Unlimited.');
+  const fb=$('gfb').value.trim(),form=$('gform').value.trim();
+  if((fb&&!/^https?:\/\//i.test(fb))||(form&&!/^https?:\/\//i.test(form)))return msg('Links must start with http:// or https://');
+  const btn=$('saveGiveawayBtn'),orig=btn.textContent;btn.disabled=true;btn.textContent='Saving...';
+  try{
+    let banner=old?.banner_url||null;
+    if(file){const path=crypto.randomUUID()+'.jpg';const compressed=await compressImageFile(file,1280,0.8);const u=await sb.storage.from('tournament-banners').upload(path,compressed,{upsert:false,contentType:'image/jpeg'});if(u.error)throw u.error;banner=sb.storage.from('tournament-banners').getPublicUrl(path).data.publicUrl}
+    const p={section_id:$('gsec').value,title,banner_url:banner,entry_fee:+$('gentry').value||0,default_slots:slots,total_slots:slots,prize_pool:+$('gprize').value||0,description:$('gdesc').value.trim()||null,fb_link:fb||null,form_link:form||null};
+    if(!id){
+      Object.assign(p,{prize_distribution:[],format:'squad',match_type:'full_map',game_mode:'esports',vehicle_allowed:true,gun_skin_allowed:false,emote_allowed:false,rules_text:null,rules_images:[],point_system_text:null,point_system_images:[],maps:[],status:'unpublished',show_on_homepage:false});
+    }
+    const r=id?await sb.from('tournaments').update(p).eq('id',id).select():await sb.from('tournaments').insert(p).select();
+    if(r.error)throw r.error;
+    if(id&&(!r.data||!r.data.length))throw new Error('Update blocked (0 rows affected) — check the UPDATE RLS policy on the tournaments table.');
+    const newId=id||(r.data&&r.data[0]?.id)||null;
+    await logActivity(id?'tournament_updated':'tournament_created','tournament','tournament',newId,title,{narration:id?`updated the giveaway ${title}.`:`created the giveaway ${title}.`,highlight_targets:[title]});
+    closeM('gm');await load();
+    if(!id)msg('Giveaway created (OFF). Turn the ON switch to show it on the Giveaway page.','success');
+  }catch(e){console.error(e);msg((e.message||'Save failed')+(/description|fb_link|form_link/i.test(e.message||'')?' — run giveaway-setup.sql in Supabase first.':''))}
+  finally{btn.disabled=false;btn.textContent=orig}
 }
 function newTournament(){
  $('tid').value='';$('tmTitle').textContent='Create Tournament';$('title').value='';$('entry').value=0;$('slots').value=0;
@@ -696,7 +754,7 @@ function newTournament(){
  fillSections();openM('tm');
 }
 function editTournament(id){
- let t=tournaments.find(x=>x.id===id);if(!t)return;
+ let t=tournaments.find(x=>x.id===id);if(!t)return; if(isGiveawaySection(sections.find(x=>x.id===t.section_id)))return editGiveaway(id);
  $('tid').value=t.id;$('tmTitle').textContent='Edit Tournament';fillSections(t.section_id);
  $('title').value=t.title||'';$('entry').value=t.entry_fee||0;$('slots').value=t.default_slots||t.total_slots||0;
  $('format').value=t.format||'squad';$('matchType').value=t.match_type||'full_map';$('gameMode').value=t.game_mode||'esports';
@@ -1474,6 +1532,10 @@ document.addEventListener('DOMContentLoaded', function(){
   hc.addEventListener('click',()=>{const panel=$('homepagePanel');panel.classList.toggle('collapsed');hc.classList.toggle('on',!panel.classList.contains('collapsed'));});
   document.getElementById('createTournamentBtn').addEventListener('click', newTournament);
 document.getElementById('createGiveawayBtn').addEventListener('click', newGiveaway);
+document.getElementById('closeGmBtn').addEventListener('click', function(){closeM('gm')});
+document.getElementById('cancelGmBtn').addEventListener('click', function(){closeM('gm')});
+document.getElementById('saveGiveawayBtn').addEventListener('click', saveGiveaway);
+document.getElementById('gslotMode').addEventListener('change', function(){ const c=this.value==='custom'; const el=document.getElementById('gslots'); el.style.display=c?'':'none'; if(c)el.focus(); });
   document.getElementById('addSectionBtn').addEventListener('click', newSection);
   document.getElementById('closeTmBtn').addEventListener('click', function(){closeM('tm')});
   document.getElementById('cancelTmBtn').addEventListener('click', function(){closeM('tm')});
