@@ -12,7 +12,7 @@ html{min-height:100%;background-color:#1b2140;background-image:radial-gradient(c
 .topbar{display:flex;justify-content:flex-end;margin:-2px 0 12px}.archive-link{display:inline-flex;align-items:center;gap:7px;padding:10px 13px;border:1px solid #293650;background:#141b2b;color:#e9edf5;border-radius:12px;text-decoration:none;font-size:10px;font-weight:900;box-shadow:0 6px 20px #0003}
 .panel{background:linear-gradient(180deg,#141b2b,#111827);border:1px solid #27334c;border-radius:19px;padding:12px;margin-bottom:12px;box-shadow:0 12px 30px #0003}.ph{display:flex;justify-content:space-between;align-items:center;padding:2px 4px 9px}.ph b{font-size:14px}.count{color:#7e899d;font-size:10px;font-weight:800}
 .section-item{position:relative;background:#171f31;border:1px solid #293650;border-radius:16px;padding:12px 12px 11px;margin-top:8px}.section-top{display:flex;align-items:center;justify-content:space-between;gap:10px}.section-name{font-size:12px;font-weight:900;min-width:0}.status{font-size:8px;font-weight:900;padding:4px 7px;border-radius:999px;background:#203329;color:#5ee98b;margin-left:5px}.status.off{background:#282c36;color:#9299a6}.section-tools{display:flex;align-items:center;gap:7px}.drag{font-size:17px;line-height:1;color:#8994a8;letter-spacing:-3px;cursor:grab;padding:5px}.drag:active{cursor:grabbing}.mini{border:1px solid #293650;background:#111827;color:#e8ebf2;border-radius:999px;padding:7px 11px;font-size:9px;font-weight:900}.mini.green{color:#62eb91}.mini.red{color:#ff6f7c}.section-bottom{display:flex;align-items:center;justify-content:flex-end;margin-top:10px}.switch{width:60px;height:30px;border:0;border-radius:999px;background:#343a45;position:relative;padding:0;box-shadow:inset 0 0 0 1px #4a5260}.switch .knob{position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:50%;background:#e9edf2;box-shadow:0 2px 5px #0006;transition:.18s}.switch.on{background:#18c866;box-shadow:none}.switch.on .knob{left:34px}.switch-label{position:absolute;left:9px;top:8px;font-size:8px;font-weight:900;color:#fff}.switch:not(.on) .switch-label{left:auto;right:9px;color:#aeb5c0}
-.add-section{width:100%;margin:0 0 12px}.add-section button,.create-bottom{width:100%;border:1px solid #293650;background:#141b2b;color:#fff;border-radius:13px;padding:12px;font-size:10px;font-weight:900}.create-bottom{background:linear-gradient(135deg,#20ca5f,#25d56b);color:#06120a;border-color:#20ca5f;margin-top:9px}
+.add-section{width:100%;margin:0 0 12px}.add-section button,.create-bottom{width:100%;border:1px solid #293650;background:#141b2b;color:#fff;border-radius:13px;padding:12px;font-size:10px;font-weight:900}.create-bottom{background:linear-gradient(135deg,#20ca5f,#25d56b);color:#06120a;border-color:#20ca5f;margin-top:9px}.create-bottom.create-giveaway{background:linear-gradient(135deg,#ff8a3d,#ffb36b);border-color:#ff8a3d;color:#2a1100}
 .tournament-item{display:grid;grid-template-columns:70px 1fr;gap:11px;position:relative;background:#171f31;border:1px solid #293650;border-radius:16px;padding:10px;margin-top:8px}.thumb{width:70px;height:52px;border-radius:9px;overflow:hidden;background:#0d1320;border:1px solid #293650;align-self:start}.thumb img{width:100%;height:100%;object-fit:cover;display:block}.t-main{min-width:0;padding-right:54px}.t-title{font-size:11px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.t-meta{font-size:8px;color:#8e98ab;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.t-actions{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}.t-edit{position:absolute;right:10px;top:10px}.t-edit .mini{padding:7px 10px}.archive-btn{color:#e9c96a}.t-delete{color:#ff6977}.t-toggle{margin-left:0}.empty,.loading{text-align:center;color:var(--muted);font-size:11px;padding:22px}
 .modal{display:none;position:fixed;inset:0;background:#000b;z-index:9999;align-items:flex-end;backdrop-filter:blur(4px)}.modal.open{display:flex}.box{width:100%;max-height:92vh;max-height:92dvh;overflow:auto;background:#0c111b;border:1px solid #293650;border-radius:22px 22px 0 0;padding:0 17px 17px}.mh{display:flex;justify-content:space-between;align-items:center;padding:17px 0 13px;position:sticky;top:0;z-index:20;background:#0c111b}.mh b{font-size:14px}.mh button{width:34px;height:34px;border-radius:10px;border:1px solid #293650;background:#151d2c;color:#fff;font-size:20px}label{display:block;color:#8d98ab;font-size:9px;font-weight:900;margin:9px 0 5px}input,select,textarea{width:100%;background:#141b2b;border:1px solid #293650;color:#fff;border-radius:11px;padding:10px;font-size:11px}textarea{min-height:80px;resize:vertical}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}.modal-actions button{border:1px solid #293650;background:#151d2c;color:#fff;border-radius:11px;padding:11px;font-weight:900}.modal-actions .primary{background:#22c55e;color:#06120a;border-color:#22c55e}
 #ltm{align-items:flex-start}#ltm .box{border-radius:0 0 22px 22px}
@@ -177,6 +177,7 @@ html{min-height:100%;background-color:#1b2140;background-image:radial-gradient(c
     <div class="ph"><b>Tournaments</b><span class="count" id="tcount">0</span></div>
     <div id="tournaments"><div class="loading">Loading...</div></div>
     <button type="button" class="create-bottom" id="createTournamentBtn">＋ Create Tournament</button>
+ <button type="button" class="create-bottom create-giveaway" id="createGiveawayBtn">🎁 Create Giveaway Tournament</button>
   </section>
 </main>
 
@@ -664,6 +665,26 @@ async function uploadMany(files){
  }
  return urls;
 }
+const GIVEAWAY_RE=/giveaway|গিভঅ্যাওয়ে/i;
+const isGiveawaySection=sec=>!!sec&&GIVEAWAY_RE.test((sec.name||'')+' '+(sec.name_bn||''));
+// Opens the normal tournament form, but locked onto the "Giveaway" section
+// (created automatically the first time). Giveaway tournaments show on the
+// Giveaway Registration page, not on the home Play Tournament card.
+async function newGiveaway(){
+  let g=sections.find(isGiveawaySection);
+  if(!g){
+    const mx=sections.reduce((m,x)=>Math.max(m,+x.display_order||0),0);
+    const r=await sb.from('tournament_sections').insert({name:'Giveaway',name_bn:'গিভঅ্যাওয়ে',description:null,display_order:mx+1,is_active:true}).select().single();
+    if(r.error)return msg(r.error.message);
+    g=r.data; await load();
+  }else if(!g.is_active){
+    const r=await sb.from('tournament_sections').update({is_active:true}).eq('id',g.id);
+    if(r.error)return msg(r.error.message);
+    await load();
+  }
+  newTournament(); fillSections(g.id);
+  $('tmTitle').textContent='Create Giveaway Tournament';
+}
 function newTournament(){
  $('tid').value='';$('tmTitle').textContent='Create Tournament';$('title').value='';$('entry').value=0;$('slots').value=0;
  $('format').value='squad';$('matchType').value='full_map';$('gameMode').value='esports';$('vehicle').value='true';$('gunskin').value='false';$('emote').value='false';
@@ -766,7 +787,7 @@ async function saveTournament(){
 }
 async function toggleTournament(id,on){
   const t=tournaments.find(x=>x.id===id);
-  let {error}=await sb.from('tournaments').update({status:on?'published':'unpublished',show_on_homepage:on}).eq('id',id);
+  const isG=isGiveawaySection(sections.find(x=>x.id===t?.section_id)); let {error}=await sb.from('tournaments').update({status:on?'published':'unpublished',show_on_homepage:on&&!isG}).eq('id',id);
   if(error)return msg(error.message);
   await logActivity(on?'tournament_enabled':'tournament_disabled','tournament','tournament',id,t?.title||null,{narration:`turned ${on?'ON':'OFF'} the tournament ${t?.title||'Tournament'}.`,highlight_targets:[t?.title||'Tournament']});
   load();
@@ -1452,6 +1473,7 @@ document.addEventListener('DOMContentLoaded', function(){
   const hc=$('homepageCollapse');
   hc.addEventListener('click',()=>{const panel=$('homepagePanel');panel.classList.toggle('collapsed');hc.classList.toggle('on',!panel.classList.contains('collapsed'));});
   document.getElementById('createTournamentBtn').addEventListener('click', newTournament);
+document.getElementById('createGiveawayBtn').addEventListener('click', newGiveaway);
   document.getElementById('addSectionBtn').addEventListener('click', newSection);
   document.getElementById('closeTmBtn').addEventListener('click', function(){closeM('tm')});
   document.getElementById('cancelTmBtn').addEventListener('click', function(){closeM('tm')});
