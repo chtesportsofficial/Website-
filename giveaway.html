@@ -99,7 +99,8 @@
   .fs-btn:active{transform:scale(.98)}
   .fs-btn[disabled]{opacity:.55;cursor:default;transform:none}
   .fs-btn.done{background:rgba(34,224,138,.14);color:#7dffc0;border:1px solid rgba(34,224,138,.45)}
-  .fs-wa{display:inline-block;margin-top:9px;padding:9px 14px;border-radius:10px;background:#2a1100;color:#ffb36b;text-decoration:none;font-weight:800;font-size:12.5px}
+  .fs-winrow{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;margin-top:10px;font-weight:700}
+  .fs-wa{display:inline-block;padding:9px 14px;border-radius:10px;background:#2a1100;color:#ffb36b;text-decoration:none;font-weight:800;font-size:12.5px}
   .fs-win{margin-bottom:12px;padding:12px;border-radius:12px;background:linear-gradient(135deg,#ffb36b,#ff8a3d);color:#2a1100;font-weight:800;font-size:13px;line-height:1.5;text-align:center}
   .ad-panel{margin-bottom:22px;padding:14px;border-radius:18px;border:1px dashed rgba(255,138,61,.55);background:rgba(255,138,61,.06)}
   .ad-ptitle{display:flex;align-items:center;gap:8px;font-weight:900;font-size:14px;margin-bottom:12px;color:#ffb36b}
@@ -183,7 +184,7 @@
   function freeSlotHTML(){
     return '<div class="fs-card" id="fsCard">'+
       '<div class="fs-title">ডেইলি ফ্রি স্লট</div>'+
-      '<div class="fs-sub">প্রতিদিন ফ্রিতে ৩৫ টাকা এন্ট্রি ফি টুর্নামেন্ট খেলার সুযোগ। এখনই অংশ নিন।</div>'+
+      '<div class="fs-sub">প্রতিদিন ফ্রিতে ৩৫ টাকা এন্ট্রি ফি টুর্নামেন্ট খেলার সুযোগ।</div>'+
       '<div id="fsBody"><button class="fs-btn" disabled>লোড হচ্ছে...</button></div></div>';
   }
   function renderFs(){
@@ -196,7 +197,7 @@
       var dayTxt=(isToday?'আজকের':'কালকের')+(st.won_slot?' ('+fmtDay(st.won_slot)+')':'');
       var wl=waLink(st.contact_whatsapp?String(st.contact_whatsapp):'');
       h+='<div class="fs-win">🎉 অভিনন্দন! '+dayTxt+' ৩৫ টাকা স্ক্রিমের ফ্রি স্লট আপনি পেয়েছেন।'+
-        (wl?'<div style="margin-top:6px;font-weight:700">স্লট নিতে WhatsApp-এ মেসেজ দিন।</div><a class="fs-wa" href="'+esc(wl)+'" target="_blank" rel="noopener">WhatsApp-এ মেসেজ দিন</a>':
+        (wl?'<div class="fs-winrow"><span>স্লট নিতে</span><a class="fs-wa" href="'+esc(wl)+'" target="_blank" rel="noopener">WhatsApp-এ মেসেজ দিন</a></div>':
           '<div style="margin-top:6px;font-weight:700">আমরা শীঘ্রই আপনার সাথে যোগাযোগ করব।</div>')+'</div>';
     }
     h+='<div class="fs-count"><i></i><span>আজ '+toBn(st.total_today||0)+' জন চেক-ইন করেছেন</span></div>';
@@ -207,7 +208,7 @@
     }else{
       h+='<button class="fs-btn" id="fsCheckin">চেক-ইন করুন</button>';
     }
-    h+='<div class="fs-note">প্রতিদিন চেক-ইন করুন। আজ যারা চেক-ইন করবে, তাদের মধ্য থেকে ১ জন র‍্যান্ডমলি কালকের ফ্রি স্লট পাবে।</div>';
+    h+='<div class="fs-note">প্রতিদিন চেক-ইন করুন। আজ যারা চেক-ইন করেছে, তাদের মধ্য থেকে ১ জন র‍্যান্ডমলি কালকের ৩৫ টাকা স্ক্রিমের ফ্রি স্লট পাবে।</div>';
     box.innerHTML=h;
     var b=document.getElementById('fsCheckin');
     if(b) b.addEventListener('click',doCheckin);
