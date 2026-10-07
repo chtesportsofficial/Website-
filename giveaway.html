@@ -78,7 +78,7 @@
   .g-card{border-radius:16px;overflow:hidden;border:1px solid var(--card-border);background:var(--card);margin-bottom:14px}
   .g-banner{display:block;width:100%;aspect-ratio:1/1;object-fit:contain;background:#0d1320}
   .g-body{padding:12px}
-  .g-name{font-weight:800;font-size:14px;margin-bottom:9px;line-height:1.35}
+  .g-name{font-weight:800;font-size:14px;margin-bottom:12px;line-height:1.35}
   .g-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
   .g-chip{font-size:11px;font-weight:700;padding:5px 9px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--card-border);color:var(--text-primary)}
   .g-chip.prize{color:#ffb36b;border-color:rgba(255,138,61,.4)}
@@ -160,6 +160,11 @@
   .rg-logo{display:flex;align-items:center;gap:12px}
   .rg-logo .pv{width:62px;height:62px;border-radius:50%;object-fit:cover;background:#1b2133;border:1px solid var(--card-border);flex-shrink:0}
   .rg-logo label{padding:10px 14px;border-radius:10px;border:1px solid var(--card-border);background:rgba(255,255,255,.06);font-weight:700;font-size:12.5px;cursor:pointer}
+  .rg-top{display:flex;align-items:center;gap:14px;margin:6px 0 4px}
+  .rg-top .pv{width:68px;height:68px;border-radius:50%;object-fit:cover;background:#1b2133;border:1px solid var(--card-border);flex-shrink:0}
+  .rg-topr{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+  .rg-uid{display:inline-block;padding:8px 18px;border-radius:999px;border:1px solid rgba(34,224,138,.5);background:rgba(34,224,138,.1);color:#22e08a;font-weight:900;font-size:15px;letter-spacing:.02em}
+  .rg-chg{font-size:12px;font-weight:700;color:var(--text-secondary);text-decoration:underline;cursor:pointer;padding:2px 0}
   .rg-note{font-size:11px;color:var(--text-secondary);line-height:1.5;margin-top:6px}
   .rg-err{margin-top:12px;font-size:12.5px;font-weight:700;color:#ff8a8a}
   .rg-go{margin-top:16px}
@@ -372,20 +377,22 @@
     return '<button type="button" class="g-cta" data-reg="'+esc(id)+'"><span>রেজিস্ট্রেশন করুন</span><span>›</span></button>';
   }
   function giveawayCard(t){
-    var id=String(t.id), free=Number(t.entry_fee||0)===0, cap=Number(t.total_slots||0), n=Number((gaState.counts||{})[id]||0);
-    var slotChip=cap>0?'<span class="g-chip">স্লট '+toBn(n)+'/'+toBn(cap)+'</span>':'<span class="g-chip">আনলিমিটেড স্লট'+(n?' · '+toBn(n)+' টিম':'')+'</span>';
+    var id=String(t.id), cap=Number(t.total_slots||0), n=Number((gaState.counts||{})[id]||0);
+    // the banner already says "free entry / unlimited", so only show chips that add something
+    var chips='';
+    if(Number(t.entry_fee||0)>0) chips+='<span class="g-chip">এন্ট্রি '+money(t.entry_fee)+'</span>';
+    if(Number(t.prize_pool||0)>0) chips+='<span class="g-chip prize">প্রাইজ '+money(t.prize_pool)+'</span>';
+    if(cap>0) chips+='<span class="g-chip">স্লট '+toBn(n)+'/'+toBn(cap)+'</span>';
     var links='';
-    if(t.fb_link) links+='<a class="g-link" href="'+esc(t.fb_link)+'" target="_blank" rel="noopener">Facebook পোস্ট</a>';
     if(t.form_link) links+='<a class="g-link" href="'+esc(t.form_link)+'" target="_blank" rel="noopener">Google Form</a>';
+    if(t.fb_link) links+='<a class="g-link" href="'+esc(t.fb_link)+'" target="_blank" rel="noopener">Facebook পোস্ট</a>';
     return '<article class="g-card" data-tid="'+esc(id)+'">'+
       (t.banner_url?'<img class="g-banner" loading="lazy" decoding="async" src="'+esc(t.banner_url)+'" alt="">':'')+
-      '<div class="g-body"><div class="g-name">'+esc(t.title)+'</div><div class="g-meta">'+
-        (free?'<span class="g-chip free">ফ্রি এন্ট্রি</span>':'<span class="g-chip">এন্ট্রি '+money(t.entry_fee)+'</span>')+
-        (Number(t.prize_pool||0)>0?'<span class="g-chip prize">প্রাইজ '+money(t.prize_pool)+'</span>':'')+slotChip+
-      '</div>'+
+      '<div class="g-body"><div class="g-name">'+esc(t.title)+'</div>'+
+      (chips?'<div class="g-meta">'+chips+'</div>':'')+
       (t.description?'<div class="g-desc">'+esc(t.description)+'</div>':'')+
-      (links?'<div class="g-links">'+links+'</div>':'')+
       ctaHTML(t)+
+      (links?'<div class="g-links" style="margin:10px 0 0">'+links+'</div>':'')+
       (isAdminUser?'<button type="button" class="g-adm" data-adm="'+esc(id)+'">🔒 রেজিস্ট্রেশন তালিকা ('+toBn(n)+')</button><div class="g-admbox" id="admbox-'+esc(id)+'" hidden></div>':'')+
       '</div></article>';
   }
@@ -459,11 +466,11 @@
     var ov=document.createElement('div'); ov.className='rg-ov'; ov.id='rgOv';
     ov.innerHTML='<div class="rg-sheet"><div class="rg-h"><b>গিভঅ্যাওয়ে রেজিস্ট্রেশন</b><button type="button" class="rg-x" id="rgX">×</button></div>'+
       '<div class="rg-sub">'+esc(t.title)+'</div>'+
-      '<label class="rg-l">UID (বদলানো যায় না)</label><input class="rg-i" id="rgUid" readonly value="'+esc(uidNum?('#'+uidNum):'—')+'">'+
+      '<div class="rg-top"><img class="pv" id="rgPv" alt="" '+(st.logo?'src="'+esc(st.logo)+'"':'style="visibility:hidden"')+'>'+
+        '<div class="rg-topr"><span class="rg-uid">UID: '+esc(uidNum?('#'+uidNum):'—')+'</span><label class="rg-chg" for="rgFile">'+(st.logo?'লোগো বদলান':'লোগো দিন')+'</label><input type="file" id="rgFile" accept="image/*" hidden></div></div>'+
       '<label class="rg-l">টিমের নাম</label><input class="rg-i" id="rgTeam" maxlength="40" value="'+esc(st.team)+'" placeholder="আপনার টিমের নাম">'+
-      '<label class="rg-l">টিম লোগো</label><div class="rg-logo"><img class="pv" id="rgPv" alt="" '+(st.logo?'src="'+esc(st.logo)+'"':'style="visibility:hidden"')+'><label for="rgFile">'+(st.logo?'লোগো বদলান':'লোগো দিন')+'</label><input type="file" id="rgFile" accept="image/*" hidden></div>'+
       '<label class="rg-l">ইমেইল'+(st.emailLocked?' (লগইন ইমেইল)':'')+'</label><input class="rg-i" id="rgEmail" type="email" inputmode="email" value="'+esc(st.email)+'" placeholder="you@example.com"'+(st.emailLocked?' readonly':'')+'>'+
-      '<label class="rg-l">WhatsApp নম্বর</label><input class="rg-i" id="rgWa" type="tel" inputmode="tel" value="'+esc(st.wa)+'" placeholder="01XXXXXXXXX">'+
+      '<label class="rg-l">মোবাইল নম্বর (WhatsApp)</label><input class="rg-i" id="rgWa" type="tel" inputmode="tel" value="'+esc(st.wa)+'" placeholder="01XXXXXXXXX">'+
       '<div class="rg-note">প্রোফাইলের তথ্য আগে থেকেই বসানো আছে। টিমের নাম, লোগো বা WhatsApp বদলালে প্রোফাইলেও আপডেট হবে।</div>'+
       '<div class="rg-err" id="rgErr" hidden></div>'+
       '<button type="button" class="g-cta rg-go" id="rgGo"><span>রেজিস্ট্রেশন করুন</span></button></div>';
