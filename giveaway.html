@@ -88,7 +88,7 @@
   .fs-card{position:relative;overflow:hidden;border-radius:18px;margin-bottom:22px;padding:16px;border:1px solid rgba(34,224,138,.45);background:linear-gradient(135deg,rgba(34,224,138,.18),var(--card) 70%)}
   .fs-card::after{content:"";position:absolute;right:-40px;top:-40px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(34,224,138,.28),transparent 70%);pointer-events:none}
   .fs-tag{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.04em;padding:4px 10px;border-radius:999px;background:#22e08a;color:#04141f;margin-bottom:10px}
-  .fs-title{font-weight:900;font-size:19px;line-height:1.25;margin-bottom:4px}
+  .fs-title{font-weight:900;font-size:19px;line-height:1.25;margin-bottom:6px}
   .fs-sub{font-size:12px;color:var(--text-secondary);line-height:1.5;margin-bottom:14px}
   .fs-card .g-banner{border-radius:12px;margin-bottom:12px}
   .fs-soon{display:flex;align-items:center;justify-content:center;width:100%;padding:12px 0;border-radius:12px;font-weight:800;font-size:13px;background:rgba(255,255,255,.06);border:1px dashed var(--card-border);color:var(--text-secondary)}
@@ -99,6 +99,7 @@
   .fs-btn:active{transform:scale(.98)}
   .fs-btn[disabled]{opacity:.55;cursor:default;transform:none}
   .fs-btn.done{background:rgba(34,224,138,.14);color:#7dffc0;border:1px solid rgba(34,224,138,.45)}
+  .fs-wa{display:inline-block;margin-top:9px;padding:9px 14px;border-radius:10px;background:#2a1100;color:#ffb36b;text-decoration:none;font-weight:800;font-size:12.5px}
   .fs-win{margin-bottom:12px;padding:12px;border-radius:12px;background:linear-gradient(135deg,#ffb36b,#ff8a3d);color:#2a1100;font-weight:800;font-size:13px;line-height:1.5;text-align:center}
   .ad-panel{margin-bottom:22px;padding:14px;border-radius:18px;border:1px dashed rgba(255,138,61,.55);background:rgba(255,138,61,.06)}
   .ad-ptitle{display:flex;align-items:center;gap:8px;font-weight:900;font-size:14px;margin-bottom:12px;color:#ffb36b}
@@ -123,6 +124,16 @@
   .ad-item .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .ad-item .t{font-size:11px;color:var(--text-secondary)}
   .ad-empty{padding:18px;text-align:center;font-size:12.5px;color:var(--text-secondary);border:1px dashed var(--card-border);border-radius:12px}
+  .ad-line{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--text-secondary);margin:0 0 12px;padding:0 2px}
+  .ad-line b{color:#7dffc0;font-weight:900;font-size:14px}
+  .ad-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--card-border);background:var(--card);color:var(--text-primary);font-family:inherit;font-weight:800;font-size:13px;cursor:pointer;margin-top:14px}
+  .ad-toggle b{color:#7dffc0}
+  .ad-toggle .arr{transition:transform .2s;display:inline-block}
+  .ad-toggle.open .arr{transform:rotate(180deg)}
+  .ad-search{margin:10px 0 8px}
+  .ad-scroll{max-height:230px;overflow-y:auto;overscroll-behavior:contain;padding-right:2px}
+  .ad-scroll.sm{max-height:170px}
+  .ad-scroll .ad-item{margin-bottom:6px;padding:8px 12px}
   .g-skel{height:300px;border-radius:16px;background:linear-gradient(90deg,var(--card),#1b2133,var(--card));background-size:200% 100%;animation:gsk 1.2s infinite linear;margin-bottom:14px}
   @keyframes gsk{to{background-position:-200% 0}}
 </style>
@@ -170,7 +181,7 @@
   }
   var sb=null, fsState=null;
   function freeSlotHTML(){
-    return '<div class="fs-card" id="fsCard"><span class="fs-tag">প্রতিদিন ফ্রি</span>'+
+    return '<div class="fs-card" id="fsCard">'+
       '<div class="fs-title">ডেইলি ফ্রি স্লট</div>'+
       '<div class="fs-sub">প্রতিদিন ফ্রিতে ৩৫ টাকা এন্ট্রি ফি টুর্নামেন্ট খেলার সুযোগ। এখনই অংশ নিন।</div>'+
       '<div id="fsBody"><button class="fs-btn" disabled>লোড হচ্ছে...</button></div></div>';
@@ -180,7 +191,15 @@
     var st=fsState;
     if(!st){ box.innerHTML='<div class="fs-soon">শীঘ্রই চালু হবে</div>'; return; }
     var h='';
-    if(st.won_today) h+='<div class="fs-win">🎉 অভিনন্দন! আজকের ফ্রি স্লট আপনি পেয়েছেন। আমরা আপনার হোয়াটসঅ্যাপে যোগাযোগ করব।</div>';
+    if(st.won_today){
+      var dayTxt=(st.won_slot&&st.today&&String(st.won_slot)===String(st.today))?'আজকের':'কালকের';
+      var num=st.contact_whatsapp?String(st.contact_whatsapp):'';
+      var wl=waLink(num);
+      h+='<div class="fs-win">🎉 অভিনন্দন! '+dayTxt+' ফ্রি স্লট আপনি পেয়েছেন।'+
+        (num?'<div style="margin-top:6px;font-weight:700">যোগাযোগ করুন (WhatsApp): <b>'+esc(num)+'</b></div>'+
+          (wl?'<a class="fs-wa" href="'+esc(wl)+'" target="_blank" rel="noopener">WhatsApp-এ মেসেজ করুন</a>':''):
+          '<div style="margin-top:6px;font-weight:700">আমরা শীঘ্রই আপনার সাথে যোগাযোগ করব।</div>')+'</div>';
+    }
     h+='<div class="fs-count"><i></i><span>আজ '+toBn(st.total_today||0)+' জন চেক-ইন করেছেন</span></div>';
     if(!st.logged_in){
       h+='<a class="fs-btn" href="chteo_auth.html">লগইন করে চেক-ইন করুন</a>';
@@ -224,14 +243,30 @@
     }catch(e){ return; }
     var slot=$('adminSlot'); if(!slot) return;
     slot.innerHTML='<div class="ad-panel"><div class="ad-ptitle">🔒 অ্যাডমিন · ফ্রি স্লট ড্র</div>'+
+      '<label style="font-size:11.5px;color:var(--text-secondary);display:block;margin-bottom:6px">বিজয়ী যে WhatsApp নম্বরে যোগাযোগ করবে</label>'+
+      '<div style="display:flex;gap:8px;margin-bottom:14px"><input class="ad-date" style="margin:0;flex:1" type="tel" inputmode="tel" id="adContact" placeholder="01XXXXXXXXX">'+
+      '<button class="ad-draw" style="margin:0;width:auto;padding:0 18px;font-size:13px" id="adContactSave" type="button">সেভ</button></div>'+
       '<label style="font-size:11.5px;color:var(--text-secondary);display:block;margin-bottom:6px">কোন দিনের চেক-ইন থেকে বাছবেন?</label>'+
       '<input class="ad-date" type="date" id="adDate">'+
-      '<div class="ad-stat"><div class="ad-box"><b id="adTotal">0</b><span>চেক-ইন করেছেন</span></div>'+
-      '<div class="ad-box"><b id="adSlotDay">-</b><span>ফ্রি স্লটের দিন</span></div></div>'+
+      '<div class="ad-line"><span>চেক-ইন করেছেন: <b id="adTotal">0</b> জন</span><span>ফ্রি স্লটের দিন: <b id="adSlotDay">-</b></span></div>'+
       '<button class="ad-draw" id="adDraw" disabled>🎲 র‍্যান্ডম বিজয়ী বাছুন</button>'+
       '<div id="adWinner"></div>'+
-      '<div class="ad-h"><span class="bar"></span>যারা চেক-ইন করেছে</div><div id="adList"></div>'+
-      '<div class="ad-h"><span class="bar"></span>আগের বিজয়ীরা</div><div id="adPast"></div></div>';
+      '<button class="ad-toggle" id="adToggle" type="button"><span>যারা চেক-ইন করেছে (<b id="adCnt">0</b>)</span><span class="arr">⌄</span></button>'+
+      '<div id="adListBox" hidden><input class="ad-date ad-search" id="adSearch" type="text" inputmode="numeric" placeholder="UID দিয়ে খুঁজুন"><div id="adList" class="ad-scroll"></div></div>'+
+      '<div class="ad-h"><span class="bar"></span>আগের বিজয়ী</div><div id="adPast" class="ad-scroll sm"></div></div>';
+    $('adToggle').addEventListener('click',function(){
+      var box=$('adListBox'); box.hidden=!box.hidden; this.classList.toggle('open',!box.hidden);
+    });
+    $('adSearch').addEventListener('input',adRenderList);
+    $('adContact').value=(fsState&&fsState.contact_whatsapp)||'';
+    $('adContactSave').addEventListener('click',async function(){
+      var b=this; b.disabled=true;
+      var r=await sb.rpc('free_slot_set_contact',{p_number:$('adContact').value});
+      b.disabled=false;
+      b.textContent=r.error?'হয়নি':'সেভ হয়েছে ✓';
+      if(fsState) fsState.contact_whatsapp=$('adContact').value.trim();
+      setTimeout(function(){b.textContent='সেভ';},1500);
+    });
     $('adDate').value=dhakaToday();
     $('adDate').addEventListener('change',adLoadDay);
     $('adDraw').addEventListener('click',adDrawWinner);
@@ -245,9 +280,8 @@
     if(r.error){ $('adList').innerHTML='<div class="ad-empty">লোড হয়নি: '+esc(r.error.message)+'<br>free-slot.sql চালিয়েছেন তো?</div>'; return; }
     adRows=r.data||[];
     $('adTotal').textContent=toBn(adRows.length);
-    $('adList').innerHTML=adRows.length?adRows.map(function(x){
-      return '<div class="ad-item"><span class="u">#'+esc(x.user_number||'-')+'</span><span class="n">'+esc(x.full_name||'নাম নেই')+'</span><span class="t">'+esc(fmtTime(x.checked_at))+'</span></div>';
-    }).join(''):'<div class="ad-empty">এই দিনে কেউ চেক-ইন করেনি</div>';
+    $('adCnt').textContent=toBn(adRows.length);
+    adRenderList();
     $('adDraw').disabled=!adRows.length;
     var w=await sb.rpc('free_slot_admin_winners',{p_limit:30});
     if(!w.error){
@@ -256,18 +290,21 @@
       adRenderPast(w.data||[]);
     }
   }
+  function adRenderList(){
+    var q=(($('adSearch')||{}).value||'').trim().replace(/^#/,'');
+    var list=q?adRows.filter(function(x){return String(x.user_number||'').indexOf(q)!==-1;}):adRows;
+    $('adList').innerHTML=list.length?list.map(function(x){
+      return '<div class="ad-item"><span class="u">#'+esc(x.user_number||'-')+'</span><span class="n">'+esc(x.full_name||'নাম নেই')+'</span><span class="t">'+esc(fmtTime(x.checked_at))+'</span></div>';
+    }).join(''):'<div class="ad-empty">'+(adRows.length?'কিছু পাওয়া যায়নি':'এই দিনে কেউ চেক-ইন করেনি')+'</div>';
+  }
   function adRenderPast(list){
     $('adPast').innerHTML=list.length?list.map(function(x){
       return '<div class="ad-item"><span class="u">#'+esc(x.user_number||'-')+'</span><span class="n">'+esc(x.full_name||'')+'</span><span class="t">'+esc(fmtDay(x.checkin_date))+' → '+esc(fmtDay(x.slot_date))+'</span></div>';
     }).join(''):'<div class="ad-empty">এখনো কাউকে বাছা হয়নি</div>';
   }
   function adShowWinner(w,saved){
-    var wa=waLink(w.whatsapp);
     $('adWinner').innerHTML='<div class="ad-winner"><div class="lbl">'+(saved?'এই দিনের বিজয়ী':'🎉 বিজয়ী')+' · ফ্রি স্লট '+esc(fmtDay(w.slot_date||nextDay($('adDate').value)))+'</div>'+
-      '<div class="uid">UID #'+esc(w.user_number||'-')+'</div><div class="nm">'+esc(w.full_name||'নাম নেই')+(w.whatsapp?' · '+esc(w.whatsapp):'')+'</div>'+
-      '<div class="row">'+(wa?'<a href="'+esc(wa)+'" target="_blank" rel="noopener">WhatsApp করুন</a>':'')+
-      '<button type="button" id="adCopy">UID কপি</button></div></div>';
-    var c=$('adCopy'); if(c) c.onclick=function(){try{navigator.clipboard.writeText(String(w.user_number||''));c.textContent='কপি হয়েছে ✓';}catch(e){}};
+      '<div class="uid" style="margin:0">UID #'+esc(w.user_number||'-')+'</div></div>';
   }
   async function adDrawWinner(){
     if(adBusy||!adRows.length) return;
@@ -311,8 +348,7 @@
     sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
     // draw the Daily Free Slot card right away, fill its state in parallel
     list.innerHTML=freeSlotHTML()+'<div id="adminSlot"></div><div id="gaWrap"><div class="g-skel"></div></div>';
-    loadFs();
-    initAdmin();
+    loadFs().then(initAdmin);
     var res=await sb.from('tournament_sections')
       .select('id,name,name_bn,display_order,is_active,tournaments(id,title,banner_url,entry_fee,prize_pool,total_slots,status,created_at)')
       .eq('is_active',true).order('display_order',{ascending:true});
