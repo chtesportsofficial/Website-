@@ -192,12 +192,11 @@
     if(!st){ box.innerHTML='<div class="fs-soon">শীঘ্রই চালু হবে</div>'; return; }
     var h='';
     if(st.won_today){
-      var dayTxt=(st.won_slot&&st.today&&String(st.won_slot)===String(st.today))?'আজকের':'কালকের';
-      var num=st.contact_whatsapp?String(st.contact_whatsapp):'';
-      var wl=waLink(num);
-      h+='<div class="fs-win">🎉 অভিনন্দন! '+dayTxt+' ফ্রি স্লট আপনি পেয়েছেন।'+
-        (num?'<div style="margin-top:6px;font-weight:700">যোগাযোগ করুন (WhatsApp): <b>'+esc(num)+'</b></div>'+
-          (wl?'<a class="fs-wa" href="'+esc(wl)+'" target="_blank" rel="noopener">WhatsApp-এ মেসেজ করুন</a>':''):
+      var isToday=(st.won_slot&&st.today&&String(st.won_slot)===String(st.today));
+      var dayTxt=(isToday?'আজকের':'কালকের')+(st.won_slot?' ('+fmtDay(st.won_slot)+')':'');
+      var wl=waLink(st.contact_whatsapp?String(st.contact_whatsapp):'');
+      h+='<div class="fs-win">🎉 অভিনন্দন! '+dayTxt+' ৩৫ টাকা স্ক্রিমের ফ্রি স্লট আপনি পেয়েছেন।'+
+        (wl?'<div style="margin-top:6px;font-weight:700">স্লট নিতে WhatsApp-এ মেসেজ দিন।</div><a class="fs-wa" href="'+esc(wl)+'" target="_blank" rel="noopener">WhatsApp-এ মেসেজ দিন</a>':
           '<div style="margin-top:6px;font-weight:700">আমরা শীঘ্রই আপনার সাথে যোগাযোগ করব।</div>')+'</div>';
     }
     h+='<div class="fs-count"><i></i><span>আজ '+toBn(st.total_today||0)+' জন চেক-ইন করেছেন</span></div>';
