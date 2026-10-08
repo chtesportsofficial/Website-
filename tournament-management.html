@@ -75,6 +75,8 @@ html{min-height:100%;background-color:#1b2140;background-image:radial-gradient(c
 .section-actions .switch:not(.on) .switch-label{left:auto;right:10px}
 .section-actions .drag{margin-left:auto;flex:0 0 42px;width:42px;height:38px;border-radius:11px;padding:0}
 @media(max-width:520px){.section-actions{gap:6px}.section-actions .mini{padding:8px 12px}.section-actions .switch{width:60px;height:31px;flex-basis:60px}.section-actions .switch .knob{width:23px;height:23px}.section-actions .switch.on .knob{left:33px}.section-actions .switch-label{top:9px;font-size:8px}.section-actions .drag{width:38px;height:34px;flex-basis:38px}}
+#gdeadline{display:block;width:100%;box-sizing:border-box;margin-bottom:14px}
+#gm .box{padding-bottom:calc(28px + env(safe-area-inset-bottom,0px))}
 </style>
 <style>
 .homepage-panel.collapsed #homepageContent{display:none}
@@ -242,9 +244,8 @@ html{min-height:100%;background-color:#1b2140;background-image:radial-gradient(c
  <label>Description</label><textarea id="gdesc" placeholder="Giveaway details, rules, how to win..."></textarea>
  <label>Facebook Post Link (optional)</label><input id="gfb" type="url" inputmode="url" placeholder="https://facebook.com/...">
  <label>Google Form Link (optional)</label><input id="gform" type="url" inputmode="url" placeholder="https://forms.gle/...">
- <label>Registration Deadline (optional)</label>
+ <label>Registration Deadline (optional · Bangladesh time)</label>
  <input id="gdeadline" type="datetime-local">
- <div style="font-size:9px;color:#8fa0bd;margin:-4px 2px 8px;display:flex;justify-content:space-between;gap:8px"><span>Bangladesh time. Empty = no deadline.</span><a href="#" id="gdeadlineClear" style="color:#ffb36b;font-weight:800;text-decoration:none">Clear</a></div>
  <div class="modal-actions"><button type="button" id="cancelGmBtn">Cancel</button><button type="button" class="primary" id="saveGiveawayBtn">Save Giveaway</button></div>
 </div></div>
 
@@ -1541,7 +1542,6 @@ document.getElementById('createGiveawayBtn').addEventListener('click', newGiveaw
 document.getElementById('closeGmBtn').addEventListener('click', function(){closeM('gm')});
 document.getElementById('cancelGmBtn').addEventListener('click', function(){closeM('gm')});
 document.getElementById('saveGiveawayBtn').addEventListener('click', saveGiveaway);
-document.getElementById('gdeadlineClear').addEventListener('click', function(e){e.preventDefault();document.getElementById('gdeadline').value='';});
 document.getElementById('gslotMode').addEventListener('change', function(){ const c=this.value==='custom'; const el=document.getElementById('gslots'); el.style.display=c?'':'none'; if(c)el.focus(); });
   document.getElementById('addSectionBtn').addEventListener('click', newSection);
   document.getElementById('closeTmBtn').addEventListener('click', function(){closeM('tm')});
