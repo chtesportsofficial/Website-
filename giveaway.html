@@ -80,6 +80,14 @@
   .g-body{padding:12px}
   .g-name{font-weight:800;font-size:14px;margin-bottom:12px;line-height:1.35}
   .g-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+  .g-dl{display:flex;align-items:center;gap:10px;margin:0 0 10px;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,179,107,.35);background:rgba(255,138,61,.08)}
+  .g-dl .ic{font-size:18px}
+  .g-dl .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .g-dl .tx b{font-size:11px;font-weight:800;color:#ffb36b}
+  .g-dl .tx span{font-size:13px;font-weight:700;color:var(--text-primary)}
+  .g-dl .left{font-size:11.5px;font-weight:800;color:#7dffc0;background:rgba(34,224,138,.12);border:1px solid rgba(34,224,138,.35);padding:4px 9px;border-radius:999px;white-space:nowrap}
+  .g-dl.closed{border-color:rgba(255,120,120,.4);background:rgba(255,120,120,.08)}
+  .g-dl.closed .tx b{color:#ff9a9a}
   .g-chip{font-size:11px;font-weight:700;padding:5px 9px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--card-border);color:var(--text-primary)}
   .g-chip.prize{color:#ffb36b;border-color:rgba(255,138,61,.4)}
   .g-chip.free{color:#22e08a;border-color:rgba(34,224,138,.4)}
@@ -450,10 +458,50 @@
     renderFs();
   }
   var gaState={counts:{},mine:[]}, gaLogged=false, gaGroups=[], gaSections=[], gaErr=null, regT=null;
+  // ---------- registration deadline (column: tournaments.reg_deadline, Dhaka time) ----------
+  var BN_MON=['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+  function dlMs(t){ if(!t||!t.reg_deadline) return null; var m=new Date(t.reg_deadline).getTime(); return isNaN(m)?null:m; }
+  function dlClosed(t){ var m=dlMs(t); return m!==null && Date.now()>=m; }
+  function dlFmt(ms){
+    var o={}; try{ new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Dhaka',hour12:false,year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric'}).formatToParts(new Date(ms)).forEach(function(x){o[x.type]=x.value;}); }catch(e){ return ''; }
+    var h=Number(o.hour)%24, mi=Number(o.minute);
+    var per=h<4?'রাত':h<6?'ভোর':h<12?'সকাল':h<15?'দুপুর':h<17?'বিকাল':h<19?'সন্ধ্যা':'রাত';
+    var h12=h%12; if(h12===0) h12=12;
+    return toBn(o.day)+' '+BN_MON[Number(o.month)-1]+', '+per+' '+toBn(h12)+':'+toBn(String(mi).padStart(2,'0'));
+  }
+  function dlLeft(ms){
+    var d=ms-Date.now(); if(d<=0) return '';
+    var m=Math.floor(d/60000), days=Math.floor(m/1440), hrs=Math.floor((m%1440)/60), mins=m%60;
+    if(days>0) return toBn(days)+' দিন '+toBn(hrs)+' ঘণ্টা';
+    if(hrs>0) return toBn(hrs)+' ঘণ্টা '+toBn(mins)+' মিনিট';
+    return toBn(Math.max(mins,1))+' মিনিট';
+  }
+  function dlHTML(t){
+    var ms=dlMs(t); if(ms===null) return '';
+    var closed=Date.now()>=ms;
+    return '<div class="g-dl'+(closed?' closed':'')+'" data-dl="'+esc(String(t.id))+'"><span class="ic">'+(closed?'⛔':'⏳')+'</span>'+
+      '<span class="tx"><b>'+(closed?'রেজিস্ট্রেশন শেষ হয়েছে':'রেজিস্ট্রেশনের শেষ সময়')+'</b><span>'+esc(dlFmt(ms))+'</span></span>'+
+      (closed?'':'<span class="left">বাকি '+esc(dlLeft(ms))+'</span>')+'</div>';
+  }
+  var dlSeen={};
+  setInterval(function(){
+    var redo=false;
+    gaGroups.forEach(function(g){g.ts.forEach(function(t){
+      var id=String(t.id), c=dlClosed(t);
+      if(dlSeen[id]===undefined){dlSeen[id]=c;return;}
+      if(dlSeen[id]!==c){dlSeen[id]=c;redo=true;}
+    });});
+    if(redo){ renderGa(); return; }
+    document.querySelectorAll('.g-dl[data-dl]:not(.closed) .left').forEach(function(el){
+      var t=findT(el.parentNode.getAttribute('data-dl')); var ms=dlMs(t); if(ms!==null) el.textContent='বাকি '+dlLeft(ms);
+    });
+  },20000);
+
   function ctaHTML(t){
     var id=String(t.id), n=Number((gaState.counts||{})[id]||0), cap=Number(t.total_slots||0);
     var mine=(gaState.mine||[]).indexOf(id)!==-1;
     if(mine) return '<button type="button" class="g-cta done" disabled>✓ রেজিস্ট্রেশন সম্পন্ন</button>';
+    if(dlClosed(t)) return '<button type="button" class="g-cta done" disabled style="color:#ff9a9a;border-color:rgba(255,120,120,.4);background:rgba(255,120,120,.1)">রেজিস্ট্রেশন বন্ধ</button>';
     if(cap>0&&n>=cap) return '<button type="button" class="g-cta done" disabled style="color:#ff9a9a;border-color:rgba(255,120,120,.4);background:rgba(255,120,120,.1)">স্লট পূর্ণ</button>';
     return '<button type="button" class="g-cta" data-reg="'+esc(id)+'"><span>রেজিস্ট্রেশন করুন</span><span>›</span></button>';
   }
@@ -472,7 +520,7 @@
       '<div class="g-body"><div class="g-name">'+esc(t.title)+'</div>'+
       (chips?'<div class="g-meta">'+chips+'</div>':'')+
       (t.description?'<div class="g-desc">'+esc(t.description)+'</div>':'')+
-      ctaHTML(t)+
+      dlHTML(t)+ctaHTML(t)+
       (links?'<div class="g-links" style="margin:10px 0 0">'+links+'</div>':'')+
       (isAdminUser?'<button type="button" class="g-adm" data-adm="'+esc(id)+'" aria-expanded="false"><span class="ic">🔒</span><span class="t">রেজিস্ট্রেশন তালিকা</span><b class="cnt">'+toBn(n)+'</b><span class="arr">⌄</span></button><div class="g-admbox" id="admbox-'+esc(id)+'" hidden></div>':'')+
       '</div></article>';
@@ -722,6 +770,7 @@
   
   async function openReg(id){
     var t=findT(id); if(!t) return;
+    if(dlClosed(t)){ toast('রেজিস্ট্রেশনের সময় শেষ হয়ে গেছে।'); renderGa(); return; }
     var sess=await sb.auth.getSession();
     if(!sess.data||!sess.data.session){location.href='chteo_auth.html';return;}
     var uid=sess.data.session.user.id;
