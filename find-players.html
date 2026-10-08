@@ -122,6 +122,29 @@
 <style>
 :root{ --bg:var(--g-bg); --card:var(--g-surface); --card-border:var(--g-border); --text-primary:var(--g-text); --text-secondary:var(--g-muted); --soft:color-mix(in srgb,var(--g-text) 7%,transparent); --field:color-mix(in srgb,var(--g-text) 4%,var(--g-surface)); }
 </style>
+<style>
+/* ---- filter box (find-players / find-squad) ---- */
+.fbox{background:var(--card);border:1px solid var(--card-border);border-radius:18px;padding:14px;margin-bottom:14px}
+.fb-t{font-size:14px;font-weight:700}
+.fb-s{font-size:11.5px;line-height:1.5;color:var(--text-secondary);margin:3px 0 12px}
+.rtiles{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.rtiles .chip{flex-direction:column;justify-content:center;gap:4px;padding:9px 2px 8px;border-radius:14px;font-size:11px;background:var(--field);min-width:0}
+.rtiles .chip img{width:30px;height:30px}
+.rtiles .chip.on{box-shadow:0 0 0 1px var(--c,#39e77b) inset}
+.rtiles .allic{width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#39e77b}
+.fb-row{display:flex;gap:8px;margin-top:12px}
+.fbtn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 12px;border-radius:13px;background:var(--field);border:1px solid var(--card-border);color:var(--text-primary);font:600 13px 'Hind Siliguri','Inter',sans-serif;cursor:pointer}
+.fbtn svg{width:16px;height:16px;flex-shrink:0}
+.fbtn .bdg{min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#39e77b;color:#04210f;font-size:11.5px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+.fclr{flex:0 0 auto;height:44px;padding:0 14px;border-radius:13px;background:transparent;border:1px solid var(--card-border);color:var(--red);font:600 12.5px 'Hind Siliguri','Inter',sans-serif;cursor:pointer}
+.achips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.ac{display:inline-flex;align-items:center;gap:6px;padding:4px 5px 4px 10px;border-radius:999px;background:rgba(57,231,123,.1);border:1px solid rgba(57,231,123,.35);font-size:12px;font-weight:600}
+.ac button{width:20px;height:20px;border-radius:50%;border:0;background:var(--soft);color:var(--text-primary);cursor:pointer;font-size:11px;line-height:1}
+.rcount{font-size:11.5px;color:var(--text-secondary);margin:2px 3px 0}
+.fl-acts{display:flex;gap:10px}
+.fl-acts .btn{width:auto;flex:1}
+.fl-acts .btn.ghost{flex:0 0 36%}
+</style>
 </head>
 <body>
 <div class="screen">
@@ -159,6 +182,9 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const BASE='id,name,roles,live_avatar,ff_uid,experience_years,experience_months,age,network,active_mode,active_from,active_to,active_slots,device,clip_url,social_url,details,contact,created_at';let COLS=BASE+',location';
 async function fq(build){let r=await build(COLS);if(r.error&&/location/i.test(r.error.message||'')&&COLS!==BASE){COLS=BASE;r=await build(COLS)}return r}
 let session=null, filter='', posts=[], done=false, busy=false, mine=null;
+const noF=()=>({div:'',loc:'',amin:'',amax:'',exp:''});
+let F=noF();
+const bn=n=>String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
 
 function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2600)}
 function safeUrl(u){u=(u||'').trim();if(!u)return null;if(!/^[a-z][a-z0-9+.-]*:/i.test(u))u='https://'+u;try{const x=new URL(u);return(x.protocol==='https:'||x.protocol==='http:')?x.href:null}catch(e){return null}}
@@ -219,15 +245,15 @@ function cardHtml(p,isMine){
 }
 
 function render(){
-  const chips=`<div class="chips"><button class="chip${filter===''?' on':''}" data-f="">সব</button>`
-    +RK.map(r=>`<button class="chip${filter===r?' on':''}" style="--c:${ROLES[r].c}" data-f="${r}"><img src="${ICON[r]}" alt="">${ROLES[r].n}</button>`).join('')+`</div>`;
+  const chips=fboxHtml();
   const btnTxt=MODE==='squad'?'＋ আমি স্কোয়াড খুঁজছি':'＋ আমার স্কোয়াডে প্লেয়ার লাগবে';
   const myTitle=MODE==='squad'?'তোমার প্লেয়ার পোস্ট':'তোমার স্কোয়াড পোস্ট';
   let h=chips;
   if(mine){h+=`<div class="hint" style="margin:4px 0 8px">${myTitle}</div>`+cardHtml({...mine,type:POST_TYPE},true)}
   else h+=`<button class="btn green" id="newBtn">${btnTxt}</button>`;
+  if(posts.length)h+=`<div class="rcount">${bn(posts.length)}${done?'':'+'} টি ${MODE==='squad'?'স্কোয়াড':'প্লেয়ার'} পোস্ট</div>`;
   h+=`<div class="list" id="list">`+posts.map(p=>cardHtml({...p,type:VIEW_TYPE},false)).join('')+`</div>`;
-  if(!posts.length&&!busy)h+=`<div class="note">${filter?'এই role-এ এখনো কোনো পোস্ট নেই।':(MODE==='squad'?'এখনো কোনো স্কোয়াড পোস্ট নেই।':'এখনো কোনো প্লেয়ার পোস্ট নেই।')}</div>`;
+  if(!posts.length&&!busy)h+=`<div class="note">${(MODE!=='squad'&&fCount())?'এই ফিল্টারে কোনো প্লেয়ার পাওয়া যায়নি।<br>ফিল্টার একটু বদলে দেখো।':filter?(MODE==='squad'?'এই role খুঁজছে এমন কোনো স্কোয়াড এখনো নেই।':'এই role-এ এখনো কোনো পোস্ট নেই।'):(MODE==='squad'?'এখনো কোনো স্কোয়াড পোস্ট নেই।':'এখনো কোনো প্লেয়ার পোস্ট নেই।')}</div>`;
   if(busy)h+=`<div class="note">লোড হচ্ছে...</div>`;
   else if(!done&&posts.length)h+=`<button class="btn ghost more" id="moreBtn">আরও দেখো</button>`;
   $('app').innerHTML=h;
@@ -241,9 +267,17 @@ async function load(reset){
   const r=await fq(c=>{let q=db.from('recruit_feed').select(c)
     .eq('type',VIEW_TYPE).eq('status','active').order('created_at',{ascending:false}).range(from,from+PAGE-1);
   if(filter)q=q.contains('roles',[filter]);
+  if(MODE!=='squad'){
+    if(F.loc)q=q.eq('location',F.loc);
+    else if(F.div===OUT)q=q.eq('location',OUT);
+    else if(F.div&&DIVS[F.div])q=q.in('location',DIVS[F.div]);
+    if(F.amin)q=q.gte('age',+F.amin);
+    if(F.amax)q=q.lte('age',+F.amax);
+    if(F.exp){const m=+F.exp;q=q.or(`experience_months.gte.${m},and(experience_months.is.null,experience_years.gte.${Math.ceil(m/12)})`)}
+  }
   return q});
   busy=false;
-  if(r.error){toast(r.error.message);render();return}
+  if(r.error){toast(/location/i.test(r.error.message||'')?'লোকেশন ফিল্টার এখনো চালু হয়নি':r.error.message);render();return}
   posts=posts.concat(r.data||[]);
   if((r.data||[]).length<PAGE)done=true;
   render();
@@ -279,6 +313,7 @@ function dv(id){const d=document.querySelector('.dd[data-id="'+id+'"]');return d
 function ddClose(except){document.querySelectorAll('.dd-l').forEach(l=>{if(l.parentNode!==except){l.hidden=true;l.previousElementSibling.classList.remove('open')}})}
 function ddAfter(id,val){
   if(id==='role')sel=[val];
+  if(id==='flDiv'){const r=$('flDistRow');if(r)r.innerHTML=flDist(val,'')}
   if(id==='fClip')$('clipRow').style.display=val==='yes'?'':'none';
   if(id==='fDiv'){const r=$('distRow'),ds=DIVS[val];r.innerHTML=ds?'<label>জেলা *</label>'+ddHtml('fLoc',ds.map(x=>({v:x,l:x})),'জেলা বাছাই করো',''):''}
   if(id==='fSoc'){const r=$('socRow');if(r){r.style.display=val==='none'?'none':'';const i=$('fLink');if(i&&SOC[val])i.placeholder=SOC[val].n+' লিংক পেস্ট করো'}}
@@ -417,6 +452,48 @@ async function save(){
   closeForm();toast(editing?'পোস্ট আপডেট হয়েছে ✓':'পোস্ট হয়েছে ✓');await loadMine();render();
 }
 
+/* ---------- filter ---------- */
+function fCount(){return (F.div||F.loc?1:0)+(F.amin||F.amax?1:0)+(F.exp?1:0)}
+const EXPF_OPTS=[{v:'',l:'যেকোনো'},{v:'3',l:'৩ মাস+'},{v:'6',l:'৬ মাস+'},{v:'12',l:'১ বছর+'},{v:'24',l:'২ বছর+'},{v:'36',l:'৩ বছর+'},{v:'60',l:'৫ বছর+'}];
+function flDist(d,loc){return DIVS[d]?'<label>জেলা</label>'+ddHtml('flLoc',[{v:'',l:'সব জেলা'},...DIVS[d].map(x=>({v:x,l:x}))],'',loc||''):''}
+function fboxHtml(){
+  const players=MODE!=='squad';
+  const tiles=`<div class="rtiles"><button class="chip${filter===''?' on':''}" data-f=""><span class="allic">✦</span>সব</button>`
+    +RK.map(r=>`<button class="chip${filter===r?' on':''}" style="--c:${ROLES[r].c}" data-f="${r}"><img src="${ICON[r]}" alt="">${ROLES[r].n}</button>`).join('')+`</div>`;
+  let h=`<div class="fbox"><div class="fb-t">${players?'কোন role-এর প্লেয়ার লাগবে?':'তোমার role কোনটা?'}</div><div class="fb-s">${players?'role বাছাই করো, তারপর লোকেশন, বয়স আর অভিজ্ঞতা দিয়ে আরও ছোট করো।':'role বাছাই করলে ঠিক ওই role খুঁজছে এমন স্কোয়াডগুলোই দেখাবে।'}</div>${tiles}`;
+  if(players){
+    const n=fCount();
+    h+=`<div class="fb-row"><button class="fbtn" id="flBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>লোকেশন · বয়স · অভিজ্ঞতা${n?`<span class="bdg">${bn(n)}</span>`:''}</button>${n?`<button class="fclr" id="flClear" type="button">মুছো</button>`:''}</div>`;
+    const ch=[];
+    if(F.loc||F.div)ch.push(`<span class="ac">📍 ${esc(F.loc||F.div)}<button type="button" data-rm="loc">✕</button></span>`);
+    if(F.amin||F.amax){const t=F.amin&&F.amax?`${bn(F.amin)}–${bn(F.amax)} বছর`:(F.amin?`${bn(F.amin)}+ বছর`:`সর্বোচ্চ ${bn(F.amax)} বছর`);ch.push(`<span class="ac">🎂 ${t}<button type="button" data-rm="age">✕</button></span>`)}
+    if(F.exp){const o=EXPF_OPTS.find(x=>x.v===F.exp);ch.push(`<span class="ac">⏱ ${o?o.l:''}<button type="button" data-rm="exp">✕</button></span>`)}
+    if(ch.length)h+=`<div class="achips">${ch.join('')}</div>`;
+  }
+  return h+`</div>`;
+}
+function openFilter(){
+  const divOpts=[{v:'',l:'সব বিভাগ'},...Object.keys(DIVS).map(x=>({v:x,l:x})),{v:OUT,l:OUT}];
+  const ageOpts=[{v:'',l:'যেকোনো'},...AGE_OPTS];
+  $('sheet').innerHTML=`<div class="grip"></div><div class="sh-h"><h2>প্লেয়ার ফিল্টার</h2><button class="back-btn x" id="xBtn" type="button">✕</button></div>
+  <div class="sh-b"><div class="sec">লোকেশন</div>
+  <label style="margin-top:6px">বিভাগ</label>${ddHtml('flDiv',divOpts,'',F.div)}
+  <div id="flDistRow">${flDist(F.div,F.loc)}</div>
+  <div class="sec">বয়স</div>
+  <div class="row2"><div><label style="margin-top:6px">সর্বনিম্ন</label>${ddHtml('flAmin',ageOpts,'',F.amin)}</div><div><label style="margin-top:6px">সর্বোচ্চ</label>${ddHtml('flAmax',ageOpts,'',F.amax)}</div></div>
+  <div class="sec">অভিজ্ঞতা</div>
+  <label style="margin-top:6px">কমপক্ষে কত অভিজ্ঞতা?</label>${ddHtml('flExp',EXPF_OPTS,'',F.exp)}
+  <div class="hint" style="margin-top:10px">যেকোনো ঘরে "যেকোনো" রাখলে সেটা ফিল্টারে ধরা হবে না।</div></div>
+  <div class="sh-f"><div class="fl-acts"><button class="btn ghost" id="flReset" type="button">রিসেট</button><button class="btn green" id="flApply" type="button">ফিল্টার করো</button></div></div>`;
+  $('ov').classList.add('show');lock(true);
+}
+function applyFilter(){
+  F.div=dv('flDiv');F.loc=dv('flLoc')||'';
+  let a=dv('flAmin'),b=dv('flAmax');if(a&&b&&+a>+b){const x=a;a=b;b=x}
+  F.amin=a;F.amax=b;F.exp=dv('flExp');
+  closeForm();load(true);
+}
+
 /* ---------- events ---------- */
 document.addEventListener('click',async e=>{
   if(!e.target.closest('.dd'))ddClose(null);
@@ -436,6 +513,11 @@ document.addEventListener('click',async e=>{
     d.querySelectorAll('.dd-o').forEach(x=>x.classList.toggle('on',x===t));
     const lb=d.querySelector('.lbl');lb.classList.remove('ph');lb.innerHTML=t.innerHTML;
     d.querySelector('.dd-l').hidden=true;d.querySelector('.dd-b').classList.remove('open');ddAfter(d.dataset.id,o);return}
+  if(t.id==='flBtn'){openFilter();return}
+  if(t.id==='flApply'){applyFilter();return}
+  if(t.id==='flReset'){F=noF();closeForm();load(true);return}
+  if(t.id==='flClear'){F=noF();load(true);return}
+  if(t.dataset.rm){const k=t.dataset.rm;if(k==='loc'){F.div='';F.loc=''}else if(k==='age'){F.amin='';F.amax=''}else if(k==='exp')F.exp='';load(true);return}
   if(t.id==='newBtn'){openForm();return}
   if(t.id==='moreBtn'){load(false);return}
   if(t.id==='xBtn'){closeForm();return}
