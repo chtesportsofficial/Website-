@@ -171,6 +171,15 @@
 .mine-wrap .card.mine{margin-top:-2px;margin-bottom:10px}
 .det.clamp{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
 .more-t{background:none;border:0;padding:6px 0 0;color:#39e77b;font:700 12.5px 'Hind Siliguri','Inter',sans-serif;cursor:pointer}
+.cf{padding:8px 22px calc(24px + env(safe-area-inset-bottom,0px));text-align:center}
+.cf-ic{width:60px;height:60px;border-radius:50%;margin:10px auto 14px;display:flex;align-items:center;justify-content:center;font-size:28px;background:rgba(255,77,109,.14);border:1px solid rgba(255,77,109,.4)}
+.cf h2{font-size:18px;margin:0 0 6px}
+.cf p{font-size:13px;line-height:1.6;color:var(--text-secondary);margin:0 0 18px}
+.cf .btn.cf-yes{background:#ff4d6d;border-color:#ff4d6d;color:#fff}
+.c-ul{display:block;flex-shrink:0;line-height:0}
+.c-nl{color:inherit;text-decoration:none}
+.c-nl::after{content:' ›';color:#39e77b;font-weight:800}
+.adm-b{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#39e77b;margin-top:6px}
 </style>
 </head>
 <body>
@@ -206,9 +215,9 @@ const RK=Object.keys(ROLES);
 const db=window.supabase.createClient('https://myfficbwcbgbxbdqjexv.supabase.co','sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5');
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const BASE='id,name,roles,live_avatar,ff_uid,experience_years,experience_months,age,network,active_mode,active_from,active_to,active_slots,device,clip_url,social_url,details,contact,created_at';let COLS=BASE+',location';
+const BASE='id,user_id,name,roles,live_avatar,ff_uid,experience_years,experience_months,age,network,active_mode,active_from,active_to,active_slots,device,clip_url,social_url,details,contact,created_at';let COLS=BASE+',location';
 async function fq(build){let r=await build(COLS);if(r.error&&/location/i.test(r.error.message||'')&&COLS!==BASE){COLS=BASE;r=await build(COLS)}return r}
-let session=null, filter='', posts=[], done=false, busy=false, mine=null, mineOpen=false;
+let session=null, filter='', posts=[], done=false, busy=false, mine=null, mineOpen=false, isAdmin=false, admChecked=false;
 let ACTFMT='arr';
 const NETLBL={wifi:'শুধু WiFi',data:'শুধু Data',both:'WiFi + Data'};
 const noF=()=>({div:'',loc:'',amin:'',amax:'',exp:'',times:[],net:'',clip:false});
@@ -248,7 +257,9 @@ function cardHtml(p,isMine){
   const av=safeUrl(p.live_avatar)||DEF;
   const uid=isPlayer&&p.ff_uid?`<button class="uid" type="button" data-copy="${esc(p.ff_uid)}">UID ${esc(p.ff_uid)}${CP}</button>`:'';
   const rts=roles.map(rtagHtml).join('');
-  const head=`<img class="c-av" src="${esc(av)}" alt="" loading="lazy" referrerpolicy="no-referrer"><div class="c-main"><div class="c-nm"><div class="c-name">${esc(p.name)}</div><div class="c-time">${ago(p.created_at)}</div></div>${uid?`<div class="rrow">${uid}</div>`:''}</div>`;
+  const ulink=(!isMine&&isAdmin&&p.user_id)?'user-detail.html?uid='+encodeURIComponent(p.user_id):'';
+  const avImg=`<img class="c-av" src="${esc(av)}" alt="" loading="lazy" referrerpolicy="no-referrer">`;
+  const head=(ulink?`<a class="c-ul" href="${esc(ulink)}">${avImg}</a>`:avImg)+`<div class="c-main"><div class="c-nm"><div class="c-name">${ulink?`<a class="c-nl" href="${esc(ulink)}">${esc(p.name)}</a>`:esc(p.name)}</div><div class="c-time">${ago(p.created_at)}</div></div>${uid?`<div class="rrow">${uid}</div>`:''}</div>`;
   let meta='';
   if(isPlayer){
     const M=t=>`<span class="m">${esc(t)}</span>`;
@@ -266,6 +277,7 @@ function cardHtml(p,isMine){
   let acts='';
   if(clip)acts+=`<a class="btn ghost" href="${esc(clip)}" target="_blank" rel="noopener noreferrer nofollow">Clips দেখো</a>`;
   if(soc){const k=socOf(soc);acts+=`<a class="btn ghost" href="${esc(soc)}" target="_blank" rel="noopener noreferrer nofollow">${k?SOC[k].n:'Social Page'}</a>`}
+  if(ulink)acts+=`<a class="btn ghost" href="${esc(ulink)}">👤 ইউজার ডিটেইলস</a>`;
   if(!isMine)acts+=ch?`<a class="btn green" href="${esc(ch)}" target="_blank" rel="noopener noreferrer nofollow">যোগাযোগ করো</a>`
     :`<span class="m" style="flex:1">যোগাযোগ: ${esc(p.contact)}</span>`;
   else acts+=`<button class="btn ghost" data-act="edit">Edit</button><button class="btn red" data-act="del">ডিলিট</button>`;
@@ -318,6 +330,7 @@ async function loadMine(){
   const r=await fq(c=>db.from('recruit_feed').select(c)
     .eq('user_id',session.user.id).eq('type',POST_TYPE).eq('status','active').maybeSingle());
   mine=r.data||null;
+  if(!admChecked&&session){admChecked=true;try{const pr=await db.from('profiles').select('is_admin').eq('id',session.user.id).maybeSingle();isAdmin=!!(pr.data&&pr.data.is_admin)}catch(e){}}
 }
 
 /* ---------- form ---------- */
@@ -588,12 +601,17 @@ document.addEventListener('click',async e=>{
   }
   if(t.dataset.act==='edit'&&mine){openForm(true);return}
   if(t.dataset.act==='del'&&mine){
-    if(!confirm('পোস্টটা ডিলিট করবে?'))return;
-    const card=t.closest('.card');card.style.opacity='.5';card.querySelectorAll('button').forEach(b=>b.disabled=true);
-    t.textContent='ডিলিট হচ্ছে...';
+    $('sheet').innerHTML=`<div class="grip"></div><div class="cf"><div class="cf-ic">🗑</div><h2>পোস্টটা ডিলিট করবে?</h2><p>ডিলিট করলে পোস্টটা সবার কাছ থেকে মুছে যাবে। এটা আর ফেরানো যাবে না।</p><div class="fl-acts"><button class="btn ghost" id="cfNo" type="button">না, থাক</button><button class="btn cf-yes" id="cfYes" type="button">হ্যাঁ, ডিলিট করো</button></div></div>`;
+    $('ov').classList.add('show');lock(true);return;
+  }
+  if(t.id==='cfNo'){closeForm();return}
+  if(t.id==='cfYes'&&mine){
+    closeForm();
+    const card=document.querySelector('.mine-wrap .card');if(card){card.style.opacity='.5';card.querySelectorAll('button').forEach(b=>b.disabled=true)}
     const r=await db.from('recruit_posts').delete().eq('id',mine.id);
     if(r.error){toast(r.error.message);render();return}
-    mine=null;toast('ডিলিট হয়েছে');render();
+    mine=null;mineOpen=false;toast('ডিলিট হয়েছে ✓');render();
+    return;
   }
 });
 document.addEventListener('input',e=>{if(e.target.classList&&e.target.classList.contains('bad'))clearBad()});
