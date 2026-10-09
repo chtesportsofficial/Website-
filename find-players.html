@@ -152,6 +152,10 @@
 .chips.fit .chip{padding:8px 11px;font-size:12.5px;gap:4px;flex:0 0 auto}
 .chips.fit .fchip{padding:8px 10px}
 .chips.fit .chip.on{background:color-mix(in srgb,var(--c,#39e77b) 16%,transparent)}
+.fbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:10px}
+.fbar .fchip{padding:8px 13px;font-size:13px;gap:6px;flex:0 0 auto}
+.fbar .fchip.on{border-color:#39e77b}
+.ac img{display:block}
 </style>
 </head>
 <body>
@@ -461,43 +465,53 @@ async function save(){
 }
 
 /* ---------- filter ---------- */
-function fCount(){return (F.div||F.loc?1:0)+(F.amin||F.amax?1:0)+(F.exp?1:0)}
+function fCount(){return (filter?1:0)+(MODE!=='squad'?((F.div||F.loc?1:0)+(F.amin||F.amax?1:0)+(F.exp?1:0)):0)}
 const EXPF_OPTS=[{v:'',l:'যেকোনো'},...EXP_OPTS.filter(o=>o.v!=='0').map(o=>({v:o.v,l:o.l+'+'}))];
 function flDist(d,loc){return DIVS[d]?'<label>জেলা</label>'+ddHtml('flLoc',[{v:'',l:'সব জেলা'},...DIVS[d].map(x=>({v:x,l:x}))],'',loc||''):''}
 function fboxHtml(){
   const players=MODE!=='squad';
   const n=fCount();
-  const fb=players?`<button class="chip fchip${n?' on':''}" id="flBtn" type="button" aria-label="ফিল্টার"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>${n?`<span class="bdg">${bn(n)}</span>`:''}</button>`:'';
-  let h=`<div class="chips fit">${fb}<button class="chip${filter===''?' on':''}" data-f="">সব</button>`
-    +RK.map(r=>`<button class="chip${filter===r?' on':''}" style="--c:${ROLES[r].c}" data-f="${r}">${ROLES[r].n}</button>`).join('')+`</div>`;
-  if(players&&n){
-    const ch=[];
+  const ch=[];
+  if(filter)ch.push(`<span class="ac" style="--c:${ROLES[filter].c}"><img src="${ICON[filter]}" alt="" style="width:16px;height:16px">${ROLES[filter].n}<button type="button" data-rm="role">✕</button></span>`);
+  if(players){
     if(F.loc||F.div)ch.push(`<span class="ac">📍 ${esc(F.loc||F.div)}<button type="button" data-rm="loc">✕</button></span>`);
     if(F.amin||F.amax){const t=F.amin&&F.amax?`${bn(F.amin)}–${bn(F.amax)} বছর`:(F.amin?`${bn(F.amin)}+ বছর`:`সর্বোচ্চ ${bn(F.amax)} বছর`);ch.push(`<span class="ac">🎂 ${t}<button type="button" data-rm="age">✕</button></span>`)}
     if(F.exp){const o=EXPF_OPTS.find(x=>x.v===F.exp);ch.push(`<span class="ac">⏱ ${o?o.l:''}<button type="button" data-rm="exp">✕</button></span>`)}
-    h+=`<div class="achips" style="margin:0 0 8px">${ch.join('')}<button class="fclr" id="flClear" type="button" style="height:30px;padding:0 10px;font-size:12px;border-radius:999px">সব মুছো</button></div>`;
   }
-  return h;
+  return `<div class="fbar"><button class="chip fchip${n?' on':''}" id="flBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>ফিল্টার${n?`<span class="bdg">${bn(n)}</span>`:''}</button>${ch.join('')}${n?`<button class="fclr" id="flClear" type="button" style="height:30px;padding:0 10px;font-size:12px;border-radius:999px">সব মুছো</button>`:''}</div>`;
 }
+let flRole='';
 function openFilter(){
-  const divOpts=[{v:'',l:'সব বিভাগ'},...Object.keys(DIVS).map(x=>({v:x,l:x})),{v:OUT,l:OUT}];
-  const ageOpts=[{v:'',l:'যেকোনো'},...AGE_OPTS];
-  $('sheet').innerHTML=`<div class="grip"></div><div class="sh-h"><h2>প্লেয়ার ফিল্টার</h2><button class="back-btn x" id="xBtn" type="button">✕</button></div>
-  <div class="sh-b"><div class="sec">লোকেশন</div>
-  <label style="margin-top:6px">বিভাগ</label>${ddHtml('flDiv',divOpts,'',F.div)}
-  <div id="flDistRow">${flDist(F.div,F.loc)}</div>
-  <div class="sec">বয়স</div>
-  <div class="row2"><div><label style="margin-top:6px">সর্বনিম্ন</label>${ddHtml('flAmin',ageOpts,'',F.amin)}</div><div><label style="margin-top:6px">সর্বোচ্চ</label>${ddHtml('flAmax',ageOpts,'',F.amax)}</div></div>
-  <div class="sec">অভিজ্ঞতা</div>
-  <label style="margin-top:6px">কমপক্ষে কত অভিজ্ঞতা? (মাস/বছর)</label>${ddHtml('flExp',EXPF_OPTS,'',F.exp)}
-  <div class="hint" style="margin-top:10px">যেকোনো ঘরে "যেকোনো" রাখলে সেটা ফিল্টারে ধরা হবে না।</div></div>
+  flRole=filter;
+  const players=MODE!=='squad';
+  const tiles=`<button type="button" class="chip${flRole===''?' on':''}" data-sf=""><span class="allic">✦</span>সব</button>`
+    +RK.map(r=>`<button type="button" class="chip${flRole===r?' on':''}" style="--c:${ROLES[r].c}" data-sf="${r}"><img src="${ICON[r]}" alt="">${ROLES[r].n}</button>`).join('');
+  let body=`<div class="sec">Role</div><div class="rtiles" id="flRoles" style="margin-top:8px">${tiles}</div>`;
+  if(players){
+    const divOpts=[{v:'',l:'সব বিভাগ'},...Object.keys(DIVS).map(x=>({v:x,l:x})),{v:OUT,l:OUT}];
+    const ageOpts=[{v:'',l:'যেকোনো'},...AGE_OPTS];
+    body+=`<div class="sec">লোকেশন</div>
+    <label style="margin-top:6px">বিভাগ</label>${ddHtml('flDiv',divOpts,'',F.div)}
+    <div id="flDistRow">${flDist(F.div,F.loc)}</div>
+    <div class="sec">বয়স</div>
+    <div class="row2"><div><label style="margin-top:6px">সর্বনিম্ন</label>${ddHtml('flAmin',ageOpts,'',F.amin)}</div><div><label style="margin-top:6px">সর্বোচ্চ</label>${ddHtml('flAmax',ageOpts,'',F.amax)}</div></div>
+    <div class="sec">অভিজ্ঞতা</div>
+    <label style="margin-top:6px">কমপক্ষে কত অভিজ্ঞতা? (মাস/বছর)</label>${ddHtml('flExp',EXPF_OPTS,'',F.exp)}`;
+  }else{
+    body+=`<div class="hint" style="margin-top:12px">role বাছাই করলে ঠিক ওই role খুঁজছে এমন স্কোয়াডগুলোই দেখাবে।</div>`;
+  }
+  $('sheet').innerHTML=`<div class="grip"></div><div class="sh-h"><h2>ফিল্টার</h2><button class="back-btn x" id="xBtn" type="button">✕</button></div>
+  <div class="sh-b">${body}</div>
   <div class="sh-f"><div class="fl-acts"><button class="btn ghost" id="flReset" type="button">রিসেট</button><button class="btn green" id="flApply" type="button">ফিল্টার করো</button></div></div>`;
   $('ov').classList.add('show');lock(true);
 }
 function applyFilter(){
-  F.div=dv('flDiv');F.loc=dv('flLoc')||'';
-  let a=dv('flAmin'),b=dv('flAmax');if(a&&b&&+a>+b){const x=a;a=b;b=x}
-  F.amin=a;F.amax=b;F.exp=dv('flExp');
+  filter=flRole;
+  if(MODE!=='squad'){
+    F.div=dv('flDiv');F.loc=dv('flLoc')||'';
+    let a=dv('flAmin'),b=dv('flAmax');if(a&&b&&+a>+b){const x=a;a=b;b=x}
+    F.amin=a;F.amax=b;F.exp=dv('flExp');
+  }
   closeForm();load(true);
 }
 
@@ -520,11 +534,12 @@ document.addEventListener('click',async e=>{
     d.querySelectorAll('.dd-o').forEach(x=>x.classList.toggle('on',x===t));
     const lb=d.querySelector('.lbl');lb.classList.remove('ph');lb.innerHTML=t.innerHTML;
     d.querySelector('.dd-l').hidden=true;d.querySelector('.dd-b').classList.remove('open');ddAfter(d.dataset.id,o);return}
+  if(t.dataset.sf!==undefined){flRole=t.dataset.sf;document.querySelectorAll('#flRoles .chip').forEach(b=>b.classList.toggle('on',b.dataset.sf===flRole));return}
   if(t.id==='flBtn'){openFilter();return}
   if(t.id==='flApply'){applyFilter();return}
-  if(t.id==='flReset'){F=noF();closeForm();load(true);return}
-  if(t.id==='flClear'){F=noF();load(true);return}
-  if(t.dataset.rm){const k=t.dataset.rm;if(k==='loc'){F.div='';F.loc=''}else if(k==='age'){F.amin='';F.amax=''}else if(k==='exp')F.exp='';load(true);return}
+  if(t.id==='flReset'){F=noF();filter='';closeForm();load(true);return}
+  if(t.id==='flClear'){F=noF();filter='';load(true);return}
+  if(t.dataset.rm){const k=t.dataset.rm;if(k==='role')filter='';else if(k==='loc'){F.div='';F.loc=''}else if(k==='age'){F.amin='';F.amax=''}else if(k==='exp')F.exp='';load(true);return}
   if(t.id==='newBtn'){openForm();return}
   if(t.id==='moreBtn'){load(false);return}
   if(t.id==='xBtn'){closeForm();return}
