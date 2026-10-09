@@ -148,6 +148,10 @@
 .fchip svg{width:15px;height:15px;margin-left:2px}
 .fchip .bdg{min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#39e77b;color:#04210f;font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
 .chips{margin-bottom:8px}
+.chips.fit{overflow:visible;flex-wrap:wrap;gap:6px;padding-bottom:0}
+.chips.fit .chip{padding:8px 11px;font-size:12.5px;gap:4px;flex:0 0 auto}
+.chips.fit .fchip{padding:8px 10px}
+.chips.fit .chip.on{background:color-mix(in srgb,var(--c,#39e77b) 16%,transparent)}
 </style>
 </head>
 <body>
@@ -463,9 +467,9 @@ function flDist(d,loc){return DIVS[d]?'<label>জেলা</label>'+ddHtml('flLo
 function fboxHtml(){
   const players=MODE!=='squad';
   const n=fCount();
-  const fb=players?`<button class="chip fchip${n?' on':''}" id="flBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>ফিল্টার${n?`<span class="bdg">${bn(n)}</span>`:''}</button>`:'';
-  let h=`<div class="chips">${fb}<button class="chip${filter===''?' on':''}" data-f="">সব</button>`
-    +RK.map(r=>`<button class="chip${filter===r?' on':''}" style="--c:${ROLES[r].c}" data-f="${r}"><img src="${ICON[r]}" alt="">${ROLES[r].n}</button>`).join('')+`</div>`;
+  const fb=players?`<button class="chip fchip${n?' on':''}" id="flBtn" type="button" aria-label="ফিল্টার"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>${n?`<span class="bdg">${bn(n)}</span>`:''}</button>`:'';
+  let h=`<div class="chips fit">${fb}<button class="chip${filter===''?' on':''}" data-f="">সব</button>`
+    +RK.map(r=>`<button class="chip${filter===r?' on':''}" style="--c:${ROLES[r].c}" data-f="${r}">${ROLES[r].n}</button>`).join('')+`</div>`;
   if(players&&n){
     const ch=[];
     if(F.loc||F.div)ch.push(`<span class="ac">📍 ${esc(F.loc||F.div)}<button type="button" data-rm="loc">✕</button></span>`);
