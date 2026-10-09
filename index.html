@@ -868,6 +868,14 @@ html.intro-lock,html.intro-lock body{overflow:hidden !important}
     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
     <span>হোম</span>
   </button>
+  <div class="play-tabs" id="playTabs" role="tablist">
+    <button type="button" class="play-tab active" id="tabToday" role="tab" data-f="today">আজ</button>
+    <button type="button" class="play-tab" id="tabAll" role="tab" data-f="all">সব</button>
+  </div>
+  <div class="play-empty" id="playEmpty" hidden>
+    <div class="play-empty-title">আজ কোনো টুর্নামেন্টের লবি নেই</div>
+    <button type="button" class="play-empty-btn" id="playEmptyBtn">সব টুর্নামেন্ট দেখুন</button>
+  </div>
   <div id="dynamicTournamentSections"></div>
 </div>
 <style>
@@ -946,7 +954,7 @@ html.intro-lock,html.intro-lock body{overflow:hidden !important}
         return out;
       }
       const groups=(data||[]).map(s=>({s,ts:orderForSection(s.id,(s.tournaments||[]).filter(t=>t.status==='published'&&t.show_on_homepage===true))})).filter(x=>x.ts.length);
-      root.innerHTML=groups.map(x=>'<section class="dyn-section"><div class="dyn-head"><div class="dyn-title"><span class="bar"></span>'+esc(translateSectionName(x.s))+'</div></div><div class="dyn-scroll">'+x.ts.map((t,i)=>'<article class="dyn-card" data-index="'+(i+1)+'">'+(t.banner_url?'<img class="dyn-banner" '+(i===0?'loading="eager" fetchpriority="high"':'loading="lazy"')+' decoding="async" src="'+esc(t.banner_url)+'" alt="">':'')+'<div class="dyn-body"><a class="dyn-cta" aria-label="Open tournament" href="tournament-details.html?id='+encodeURIComponent(t.id)+'"><span>VIEW DETAILS</span><span class="arrow">›</span></a></div></article>').join('')+'</div></section>').join('');
+      root.innerHTML=groups.map(x=>'<section class="dyn-section"><div class="dyn-head"><div class="dyn-title"><span class="bar"></span>'+esc(translateSectionName(x.s))+'</div></div><div class="dyn-scroll">'+x.ts.map((t,i)=>'<article class="dyn-card" data-tid="'+esc(t.id)+'" data-index="'+(i+1)+'">'+(t.banner_url?'<img class="dyn-banner" '+(i===0?'loading="eager" fetchpriority="high"':'loading="lazy"')+' decoding="async" src="'+esc(t.banner_url)+'" alt="">':'')+'<div class="dyn-body"><a class="dyn-cta" aria-label="Open tournament" href="tournament-details.html?id='+encodeURIComponent(t.id)+'"><span>VIEW DETAILS</span><span class="arrow">›</span></a></div></article>').join('')+'</div></section>').join('');
     }
     load();
   }
@@ -966,7 +974,10 @@ html.intro-lock,html.intro-lock body{overflow:hidden !important}
         <span class="play-hero-title">টুর্নামেন্ট খেলুন</span>
         <span class="play-hero-sub" id="playHeroSub">ব্যানারে ট্যাপ করে স্লট নিন</span>
       </span>
-      <button type="button" class="play-hero-all" id="playHeroBtn">সব দেখুন <span>›</span></button>
+      <div class="play-hero-btns">
+        <button type="button" class="play-hero-today" id="playTodayBtn"><span class="pt-dot"></span><span id="playTodayLabel">আজকের</span></button>
+        <button type="button" class="play-hero-all" id="playHeroBtn">সব দেখুন <span>›</span></button>
+      </div>
     </div>
   </div>
 
@@ -1014,12 +1025,24 @@ html.intro-lock,html.intro-lock body{overflow:hidden !important}
 .play-thumb img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover}
 .play-thumb:active{transform:scale(.96)}
 .play-strip-empty{font-size:11.5px;font-weight:700;color:rgba(4,20,31,.7);padding:50px 0}
-.play-hero-bottom{position:relative;display:flex;align-items:center;gap:10px;padding-right:14px;margin-top:13px}
+.play-hero-bottom{position:relative;display:flex;flex-direction:column;align-items:stretch;gap:12px;padding-right:14px;margin-top:13px}
+.play-hero-btns{display:flex;gap:8px}
 .play-hero-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .play-hero-title{font-weight:900;font-size:17px;line-height:1.2}
 .play-hero-sub{font-weight:600;font-size:11px;line-height:1.3;color:rgba(4,20,31,.7)}
-.play-hero-all{flex:0 0 auto;border:0;border-radius:999px;padding:10px 16px;background:#04141f;color:var(--green);font-family:inherit;font-weight:800;font-size:12px;cursor:pointer}
+.play-hero-all{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;border:0;border-radius:999px;padding:11px 12px;background:#04141f;color:var(--green);font-family:inherit;font-weight:800;font-size:12px;cursor:pointer}
 .play-hero-all:active{transform:scale(.96)}
+.play-hero-today{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;border:2px solid #04141f;border-radius:999px;padding:9px 12px;background:rgba(255,255,255,.35);color:#04141f;font-family:inherit;font-weight:900;font-size:12px;cursor:pointer}
+.play-hero-today:active{transform:scale(.96)}
+.play-hero-today .pt-dot{width:8px;height:8px;border-radius:50%;background:#e5233d;box-shadow:0 0 0 0 rgba(229,35,61,.6);animation:ptPulse 1.6s infinite;flex-shrink:0}
+@keyframes ptPulse{0%{box-shadow:0 0 0 0 rgba(229,35,61,.55)}70%{box-shadow:0 0 0 7px rgba(229,35,61,0)}100%{box-shadow:0 0 0 0 rgba(229,35,61,0)}}
+.play-tabs{display:flex;gap:8px;margin:0 0 14px}
+.play-tab{flex:1;padding:10px 0;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--text-dim);font-family:inherit;font-weight:800;font-size:13px;cursor:pointer}
+.play-tab.active{background:linear-gradient(135deg,var(--green),#7dffc0);border-color:var(--green);color:#04141f}
+.play-empty{text-align:center;padding:34px 14px;border:1px dashed var(--line);border-radius:16px;background:var(--surface);margin-bottom:16px}
+.play-empty[hidden]{display:none}
+.play-empty-title{font-weight:800;font-size:13.5px;color:var(--text);margin-bottom:12px}
+.play-empty-btn{border:0;border-radius:999px;padding:10px 18px;background:#04141f;color:var(--green);font-family:inherit;font-weight:800;font-size:12px;cursor:pointer}
 .fg-home{gap:10px}
 .fg-card{display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:14px;min-height:92px;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:16px;text-decoration:none;color:var(--text)}
 .fg-card:active{background:var(--surface-2)}
@@ -1058,6 +1081,7 @@ html.intro-lock,html.intro-lock body{overflow:hidden !important}
     if(location.hash==='#play') history.back(); else show(false);
   }
   heroBtn.addEventListener('click',openPlay);
+  window.chteoOpenPlay=openPlay;
   backBtn.addEventListener('click',closePlay);
   window.addEventListener('popstate',function(){ show(location.hash==='#play'); });
   if(location.hash==='#play') show(true,false);
@@ -1090,8 +1114,106 @@ html.intro-lock,html.intro-lock body{overflow:hidden !important}
 })();
 </script>
 
+<script>
+/* ============ আজকের টুর্নামেন্ট (Today filter) ============
+   "আজ" = ঢাকার তারিখ। tournament_lobbies.lobby_date আজকের তারিখ, আর
+   status upcoming/live/full — এমন লবি যে টুর্নামেন্টের আছে সেটাই আজকের।
+   যে লবির সময় + ১০ মিনিট পার হয়ে গেছে (জয়েন বন্ধ) সেটা বাদ। */
+(function(){
+  var SB_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
+  var SB_KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+  var root=document.getElementById('dynamicTournamentSections');
+  var emptyBox=document.getElementById('playEmpty');
+  var tabToday=document.getElementById('tabToday');
+  var tabAll=document.getElementById('tabAll');
+  var todayBtn=document.getElementById('playTodayBtn');
+  var todayLabel=document.getElementById('playTodayLabel');
+  var heroBtn=document.getElementById('playHeroBtn');
+  var emptyBtn=document.getElementById('playEmptyBtn');
+  if(!root||!todayBtn) return;
+
+  var filter='all';
+  var todayIds=null; // null = এখনো লোড হয়নি
+  var bn='০১২৩৪৫৬৭৮৯';
+  function toBn(n){return String(n).replace(/\d/g,function(d){return bn[d];});}
+
+  function dhakaToday(){
+    return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Dhaka'}).format(new Date());
+  }
+  // "9:00 PM" -> ঢাকা সময়ে মিলিসেকেন্ড। "12:00 AM" লবি আগের সন্ধ্যার তারিখে
+  // সেভ থাকে কিন্তু আসলে পরের দিনের শুরু, তাই ১ দিন যোগ।
+  function lobbyTime(date,label){
+    var m=/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec((label||'').trim());
+    if(!m) return null;
+    var h=(+m[1])%12; if(/pm/i.test(m[3])) h+=12;
+    var t=Date.parse(date+'T'+String(h).padStart(2,'0')+':'+m[2]+':00+06:00');
+    if(isNaN(t)) return null;
+    if(h===0) t+=86400000;
+    return t;
+  }
+
+  function apply(){
+    var cards=root.querySelectorAll('.dyn-card');
+    var matched=0, visible=0;
+    [].forEach.call(cards,function(c){
+      var isToday=!!(todayIds&&todayIds[c.getAttribute('data-tid')]);
+      if(isToday) matched++;
+      var show=filter==='all'||isToday;
+      c.style.display=show?'':'none';
+    });
+    [].forEach.call(root.querySelectorAll('.dyn-section'),function(s){
+      var any=[].some.call(s.querySelectorAll('.dyn-card'),function(c){return c.style.display!=='none';});
+      s.style.display=any?'':'none';
+      if(any) visible++;
+    });
+    if(todayIds&&cards.length){
+      todayLabel.textContent='আজকের ('+toBn(matched)+')';
+      tabToday.textContent='আজ ('+toBn(matched)+')';
+    }
+    emptyBox.hidden=!(filter==='today'&&todayIds&&cards.length&&visible===0);
+    tabToday.classList.toggle('active',filter==='today');
+    tabAll.classList.toggle('active',filter==='all');
+  }
+  function setFilter(f){filter=f;apply();}
+
+  tabToday.addEventListener('click',function(){setFilter('today');});
+  tabAll.addEventListener('click',function(){setFilter('all');});
+  heroBtn.addEventListener('click',function(){setFilter('all');});
+  todayBtn.addEventListener('click',function(){
+    setFilter('today');
+    if(window.chteoOpenPlay) window.chteoOpenPlay();
+  });
+  if(emptyBtn) emptyBtn.addEventListener('click',function(){setFilter('all');window.scrollTo(0,0);});
+
+  if(window.MutationObserver) new MutationObserver(apply).observe(root,{childList:true});
+
+  function start(){
+    if(!window.supabase||!window.supabase.createClient){setTimeout(start,250);return;}
+    var sb=window.supabase.createClient(SB_URL,SB_KEY);
+    async function loadToday(){
+      var r=await sb.from('tournament_lobbies')
+        .select('tournament_id,lobby_date,time_label,status')
+        .eq('lobby_date',dhakaToday())
+        .in('status',['upcoming','live','full']);
+      if(r.error){console.warn('[Index] today lobbies failed:',r.error.message);return;}
+      var set={}, now=Date.now();
+      (r.data||[]).forEach(function(l){
+        var t=lobbyTime(l.lobby_date,l.time_label);
+        if(t!==null&&now>=t+10*60000) return; // জয়েন বন্ধ
+        set[l.tournament_id]=true;
+      });
+      todayIds=set;
+      apply();
+    }
+    loadToday();
+    setInterval(loadToday,60000);
+  }
+  start();
+})();
+</script>
+
 <div class="section">
-  <div class="section-head"><div class="section-title"><span class="bar"></span><span data-i18n="index.topTeams">This Month's Top Teams</span></div></div>
+  <div class="section-head"><div class="section-title"><span class="bar"></span><span data-i18n="index.topTeams"This Month's Top Teams</span></div></div>
   <div class="lb-card">
     <div class="lb-list" id="lbTopTeams"><div class="lb-row"><div class="lb-name" style="color:var(--text-dim)">লোডিং...</div></div></div>
     <a class="lb-see" href="leaderboard.html" data-i18n="index.seeOther">See all teams</a>
