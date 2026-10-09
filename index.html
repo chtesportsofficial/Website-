@@ -977,7 +977,6 @@ html.intro-lock,html.intro-lock body{overflow:hidden !important}
     </div>
     <div class="play-hero-bottom">
       <div class="play-hero-btns">
-        <button type="button" class="play-hero-today" id="playTodayBtn"><span class="pt-dot"></span><span id="playTodayLabel">আজকের</span></button>
         <button type="button" class="play-hero-all" id="playHeroBtn">সব দেখুন <span>›</span></button>
       </div>
     </div>
@@ -1034,11 +1033,11 @@ html.intro-lock,html.intro-lock body{overflow:hidden !important}
 .play-hero-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .play-hero-title{font-weight:900;font-size:17px;line-height:1.2}
 .play-hero-sub{font-weight:600;font-size:11px;line-height:1.3;color:rgba(4,20,31,.7)}
-.play-hero-all{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;border:0;border-radius:999px;padding:11px 12px;background:transparent;color:var(--green);font-family:inherit;font-weight:800;font-size:12.5px;cursor:pointer}
+.play-hero-all{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:999px;padding:13px 12px;background:transparent;color:var(--green);font-family:inherit;font-weight:800;font-size:13px;cursor:pointer}
 .play-hero-all:active{background:rgba(255,255,255,.1)}
-.play-hero-today{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;border:0;border-radius:999px;padding:11px 12px;background:var(--green);color:#04141f;font-family:inherit;font-weight:900;font-size:12.5px;cursor:pointer}
-.play-hero-today:active{filter:brightness(.92)}
-.play-hero-today .pt-dot{width:8px;height:8px;border-radius:50%;background:#e5233d;box-shadow:0 0 0 0 rgba(229,35,61,.6);animation:ptPulse 1.6s infinite;flex-shrink:0}
+.play-thumb{position:relative}
+.today-badge{position:absolute;top:7px;left:7px;z-index:2;display:inline-flex;align-items:center;gap:5px;padding:4px 9px 4px 7px;border-radius:999px;background:rgba(4,20,31,.82);backdrop-filter:blur(4px);color:#fff;font-weight:900;font-size:10.5px;line-height:1;letter-spacing:.02em;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.today-badge i{width:7px;height:7px;border-radius:50%;background:#ff3b5c;animation:ptPulse 1.6s infinite}
 @keyframes ptPulse{0%{box-shadow:0 0 0 0 rgba(229,35,61,.55)}70%{box-shadow:0 0 0 7px rgba(229,35,61,0)}100%{box-shadow:0 0 0 0 rgba(229,35,61,0)}}
 .play-tabs{display:flex;gap:8px;margin:0 0 14px}
 .play-tab{flex:1;padding:10px 0;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--text-dim);font-family:inherit;font-weight:800;font-size:13px;cursor:pointer}
@@ -1130,11 +1129,10 @@ html.intro-lock,html.intro-lock body{overflow:hidden !important}
   var emptyBox=document.getElementById('playEmpty');
   var tabToday=document.getElementById('tabToday');
   var tabAll=document.getElementById('tabAll');
-  var todayBtn=document.getElementById('playTodayBtn');
-  var todayLabel=document.getElementById('playTodayLabel');
+  var strip=document.getElementById('playStrip');
   var heroBtn=document.getElementById('playHeroBtn');
   var emptyBtn=document.getElementById('playEmptyBtn');
-  if(!root||!todayBtn) return;
+  if(!root||!heroBtn) return;
 
   var filter='all';
   var todayIds=null; // null = এখনো লোড হয়নি
@@ -1171,8 +1169,35 @@ html.intro-lock,html.intro-lock body{overflow:hidden !important}
       if(any) visible++;
     });
     if(todayIds&&cards.length){
-      todayLabel.textContent='আজকের ('+toBn(matched)+')';
       tabToday.textContent='আজ ('+toBn(matched)+')';
+    }
+    if(todayIds){
+      // হোমের ব্যানার স্ট্রিপ: আজকেরগুলো আগে + "আজ" ব্যাজ
+      if(strip){
+        var thumbs=[].slice.call(strip.querySelectorAll('.play-thumb')), tt=[], oo=[];
+        thumbs.forEach(function(a){
+          var id=decodeURIComponent((a.getAttribute('href')||'').split('id=')[1]||'');
+          if(todayIds[id]){
+            if(!a.querySelector('.today-badge')){
+              var b=document.createElement('span'); b.className='today-badge'; b.innerHTML='<i></i>আজ'; a.appendChild(b);
+            }
+            tt.push(a);
+          } else oo.push(a);
+        });
+        tt.concat(oo).forEach(function(a){strip.appendChild(a);});
+      }
+      // প্লে ভিউয়ের কার্ড: আজকেরগুলো সারির শুরুতে + ব্যাজ
+      [].forEach.call(root.querySelectorAll('.dyn-scroll'),function(row){
+        var cs=[].slice.call(row.querySelectorAll('.dyn-card'));
+        var ct=cs.filter(function(c){return todayIds[c.getAttribute('data-tid')];});
+        var co=cs.filter(function(c){return !todayIds[c.getAttribute('data-tid')];});
+        ct.forEach(function(c){
+          if(!c.querySelector('.today-badge')){
+            var b=document.createElement('span'); b.className='today-badge'; b.innerHTML='<i></i>আজ'; c.appendChild(b);
+          }
+        });
+        ct.concat(co).forEach(function(c){row.appendChild(c);});
+      });
     }
     emptyBox.hidden=!(filter==='today'&&todayIds&&cards.length&&visible===0);
     tabToday.classList.toggle('active',filter==='today');
@@ -1183,10 +1208,6 @@ html.intro-lock,html.intro-lock body{overflow:hidden !important}
   tabToday.addEventListener('click',function(){setFilter('today');});
   tabAll.addEventListener('click',function(){setFilter('all');});
   heroBtn.addEventListener('click',function(){setFilter('all');});
-  todayBtn.addEventListener('click',function(){
-    setFilter('today');
-    if(window.chteoOpenPlay) window.chteoOpenPlay();
-  });
   if(emptyBtn) emptyBtn.addEventListener('click',function(){setFilter('all');window.scrollTo(0,0);});
 
   if(window.MutationObserver) new MutationObserver(apply).observe(root,{childList:true});
