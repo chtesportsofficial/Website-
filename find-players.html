@@ -171,15 +171,23 @@
 .mine-wrap .card.mine{margin-top:-2px;margin-bottom:10px}
 .det.clamp{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
 .more-t{background:none;border:0;padding:6px 0 0;color:#39e77b;font:700 12.5px 'Hind Siliguri','Inter',sans-serif;cursor:pointer}
-.cf{padding:8px 22px calc(24px + env(safe-area-inset-bottom,0px));text-align:center}
+.cf{padding:14px 22px calc(24px + env(safe-area-inset-bottom,0px));text-align:center}
 .cf-ic{width:60px;height:60px;border-radius:50%;margin:10px auto 14px;display:flex;align-items:center;justify-content:center;font-size:28px;background:rgba(255,77,109,.14);border:1px solid rgba(255,77,109,.4)}
 .cf h2{font-size:18px;margin:0 0 6px}
 .cf p{font-size:13px;line-height:1.6;color:var(--text-secondary);margin:0 0 18px}
 .cf .btn.cf-yes{background:#ff4d6d;border-color:#ff4d6d;color:#fff}
 .c-ul{display:block;flex-shrink:0;line-height:0}
 .c-nl{color:inherit;text-decoration:none}
-.c-nl::after{content:' ›';color:#39e77b;font-weight:800}
 .adm-b{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#39e77b;margin-top:6px}
+.cfo{position:fixed;inset:0;background:rgba(4,6,12,.72);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:24px;z-index:2147483001;overscroll-behavior:contain}
+.cfo.show{display:flex;animation:fade .18s ease}
+.cfd{width:100%;max-width:340px;background:var(--card);border:1px solid var(--card-border);border-radius:22px;padding:24px 20px 18px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.5);animation:cfpop .2s ease}
+@keyframes cfpop{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+.cfd h2{font-size:18px;margin:0 0 8px}
+.cfd p{font-size:13px;line-height:1.6;color:var(--text-secondary);margin:0 0 20px}
+.cfb{display:flex;gap:10px}
+.cfb .btn{flex:1;width:auto;margin:0}
+.cfb .btn.cf-yes{background:#ff4d6d;border-color:#ff4d6d;color:#fff}
 </style>
 </head>
 <body>
@@ -277,7 +285,6 @@ function cardHtml(p,isMine){
   let acts='';
   if(clip)acts+=`<a class="btn ghost" href="${esc(clip)}" target="_blank" rel="noopener noreferrer nofollow">Clips দেখো</a>`;
   if(soc){const k=socOf(soc);acts+=`<a class="btn ghost" href="${esc(soc)}" target="_blank" rel="noopener noreferrer nofollow">${k?SOC[k].n:'Social Page'}</a>`}
-  if(ulink)acts+=`<a class="btn ghost" href="${esc(ulink)}">👤 ইউজার ডিটেইলস</a>`;
   if(!isMine)acts+=ch?`<a class="btn green" href="${esc(ch)}" target="_blank" rel="noopener noreferrer nofollow">যোগাযোগ করো</a>`
     :`<span class="m" style="flex:1">যোগাযোগ: ${esc(p.contact)}</span>`;
   else acts+=`<button class="btn ghost" data-act="edit">Edit</button><button class="btn red" data-act="del">ডিলিট</button>`;
@@ -561,6 +568,19 @@ function applyFilter(){
   closeForm();load(true);
 }
 
+/* ---------- delete confirm (centered dialog) ---------- */
+function openCf(){
+  let o=$('cfOv');
+  if(!o){
+    o=document.createElement('div');o.id='cfOv';o.className='cfo';
+    o.innerHTML=`<div class="cfd" role="dialog" aria-modal="true"><h2>পোস্ট ডিলিট করতে চান?</h2><p>ডিলিট করলে পোস্টটা সবার কাছ থেকে মুছে যাবে। এটা আর ফেরানো যাবে না।</p><div class="cfb"><button class="btn ghost" id="cfNo" type="button">না, থাক</button><button class="btn cf-yes" id="cfYes" type="button">হ্যাঁ, ডিলিট করো</button></div></div>`;
+    o.addEventListener('click',e=>{if(e.target===o)closeCf()});
+    document.body.appendChild(o);
+  }
+  o.classList.add('show');lock(true);
+}
+function closeCf(){const o=$('cfOv');if(o)o.classList.remove('show');lock(false)}
+
 /* ---------- events ---------- */
 document.addEventListener('click',async e=>{
   if(!e.target.closest('.dd'))ddClose(null);
@@ -601,12 +621,11 @@ document.addEventListener('click',async e=>{
   }
   if(t.dataset.act==='edit'&&mine){openForm(true);return}
   if(t.dataset.act==='del'&&mine){
-    $('sheet').innerHTML=`<div class="grip"></div><div class="cf"><div class="cf-ic">🗑</div><h2>পোস্টটা ডিলিট করবে?</h2><p>ডিলিট করলে পোস্টটা সবার কাছ থেকে মুছে যাবে। এটা আর ফেরানো যাবে না।</p><div class="fl-acts"><button class="btn ghost" id="cfNo" type="button">না, থাক</button><button class="btn cf-yes" id="cfYes" type="button">হ্যাঁ, ডিলিট করো</button></div></div>`;
-    $('ov').classList.add('show');lock(true);return;
+    openCf();return;
   }
-  if(t.id==='cfNo'){closeForm();return}
+  if(t.id==='cfNo'){closeCf();return}
   if(t.id==='cfYes'&&mine){
-    closeForm();
+    closeCf();
     const card=document.querySelector('.mine-wrap .card');if(card){card.style.opacity='.5';card.querySelectorAll('button').forEach(b=>b.disabled=true)}
     const r=await db.from('recruit_posts').delete().eq('id',mine.id);
     if(r.error){toast(r.error.message);render();return}
