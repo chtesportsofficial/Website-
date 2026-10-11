@@ -4,90 +4,93 @@
   var BASE   = '/Website-/';                      // GitHub Pages sub-folder
   var WORKER = 'Website-/OneSignalSDKWorker.js';  // origin-relative path
 
-  
-
   /* ---- OneSignal SDK ---- */
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   var sdk = document.createElement('script');
   sdk.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
   sdk.defer = true;
   document.head.appendChild(sdk);
-  window.OneSignalDeferred.push(async function (OneSignal) {
-    await OneSignal.init({
-      appId: APP_ID,
-      serviceWorkerPath: WORKER,
-      serviceWorkerParam: { scope: BASE },
-      notifyButton: { enable: false },
-      allowLocalhostAsSecureOrigin: true
-    });
-  });
+  var readyRes, ready = new Promise(function (r) { readyRes = r; });
 
-  /* ---- helpers for the rest of the site ---- */
-  window.CHTPush = {
-    // user login korle call koro: CHTPush.login(session.user.id)
-    login:  function (id) { window.OneSignalDeferred.push(function (OS) { try { OS.login(String(id)); } catch (e) {} }); },
-    logout: function () { window.OneSignalDeferred.push(function (OS) { try { OS.logout(); } catch (e) {} }); },
-    ask:    function () { return askPermission(); }
-  };
-
-  function askPermission() {
-    return new Promise(function (res) {
-      window.OneSignalDeferred.push(async function (OS) {
-        try { await OS.Notifications.requestPermission(); } catch (e) {}
-        res(typeof Notification !== 'undefined' ? Notification.permission : 'denied');
-      });
-    });
+  // Supabase session theke user id (supabase-js localStorage-e rakhe)
+  function sbUserId() {
+    try {
+      var raw = localStorage.getItem('sb-myfficbwcbgbxbdqjexv-auth-token');
+      if (!raw) return null;
+      var o = JSON.parse(raw);
+      var u = (o && o.user) || (o && o.currentSession && o.currentSession.user);
+      return (u && u.id) || null;
+    } catch (e) { return null; }
   }
 
-  /* ---- little bottom banner ---- */
-  var KEY = 'cht_push_dismiss';
-  function dismissedRecently() {
-    try { var t = +localStorage.getItem(KEY) || 0; return Date.now() - t < 7 * 864e5; } catch (e) { return false; }
+  window.OneSignalDeferred.push(async function (OneSignal) {
+    try {
+      await OneSignal.init({
+        appId: APP_ID,
+        serviceWorkerPath: WORKER,
+        serviceWorkerParam: { scope: BASE },
+        notifyButton: { enable: false },
+        allowLocalhostAsSecureOrigin: true
+      });
+      // login thakle OneSignal-er External ID = Supabase user id
+      var uid = sbUserId();
+      if (uid) { if (String(OneSignal.User.externalId || '') !== uid) await OneSignal.login(uid); }
+      else if (OneSignal.User.externalId) { await OneSignal.logout(); }
+    } catch (e) { console.warn('[push] init', e); }
+    readyRes();
+  });
+
+  function withOS(fn) {
+    return ready.then(function () {
+      return new Promise(function (res) {
+        window.OneSignalDeferred.push(async function (OS) {
+          try { res(await fn(OS)); } catch (e) { console.warn('[push]', e); res(null); }
+        });
+      });
+    });
   }
   function isIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent); }
   function standalone() { return window.navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches); }
 
-  function css() {
-    var s = document.createElement('style');
-    s.textContent =
-      '.cp-bar{position:fixed;left:12px;right:12px;bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:9999;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:18px;background:#10161f;color:#fff;border:1px solid rgba(57,231,123,.45);box-shadow:0 14px 34px rgba(0,0,0,.35);font-family:"Hind Siliguri","Inter",sans-serif;animation:cpin .25s ease}' +
-      '@keyframes cpin{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}' +
-      '.cp-ic{font-size:22px;flex-shrink:0}' +
-      '.cp-tx{flex:1;min-width:0;font-size:13px;line-height:1.45}' +
-      '.cp-tx b{display:block;font-size:14px;margin-bottom:1px}' +
-      '.cp-tx span{color:#aab6c8;font-size:12px}' +
-      '.cp-yes{border:0;border-radius:12px;padding:10px 14px;background:#39e77b;color:#04210f;font:800 13px "Hind Siliguri","Inter",sans-serif;cursor:pointer;flex-shrink:0}' +
-      '.cp-no{border:0;background:transparent;color:#8fa0bd;font-size:18px;padding:4px 2px;cursor:pointer;flex-shrink:0}';
-    document.head.appendChild(s);
-  }
-
-  function show(html, onYes) {
-    css();
-    var d = document.createElement('div');
-    d.className = 'cp-bar';
-    d.innerHTML = html;
-    document.body.appendChild(d);
-    function close(remember) {
-      if (remember) { try { localStorage.setItem(KEY, String(Date.now())); } catch (e) {} }
-      d.remove();
+  /* ---- API for the rest of the site ---- */
+  window.CHTPush = {
+    // browser/device ei feature support kore kina
+    supported: function () {
+      if (typeof Notification === 'undefined' || !('serviceWorker' in navigator)) return false;
+      if (isIOS() && !standalone()) return false;   // iPhone: Add to Home Screen lagbe
+      return true;
+    },
+    needsHomeScreen: function () { return isIOS() && !standalone(); },
+    // 'granted' | 'denied' | 'default'
+    permission: function () { return typeof Notification === 'undefined' ? 'denied' : Notification.permission; },
+    // push ekhon chalu ase kina (true/false)
+    isOn: function () {
+      return withOS(function (OS) { return !!OS.User.PushSubscription.optedIn; }).then(function (v) { return !!v; });
+    },
+    // chalu koro (permission chaibe), chalu hole true
+    enable: function () {
+      return withOS(async function (OS) {
+        if (Notification.permission === 'denied') return false;
+        if (Notification.permission === 'default') await OS.Notifications.requestPermission();
+        if (Notification.permission !== 'granted') return false;
+        await OS.User.PushSubscription.optIn();
+        return !!OS.User.PushSubscription.optedIn;
+      }).then(function (v) { return !!v; });
+    },
+    // bondho koro (permission thakbe, shudhu notification jabe na)
+    disable: function () {
+      return withOS(async function (OS) { await OS.User.PushSubscription.optOut(); return true; });
+    },
+    // preference gulo OneSignal tag hishebe rakhe: CHTPush.setTags({new_tournament:'1', promo:'0'})
+    setTags: function (obj) { return withOS(function (OS) { return OS.User.addTags(obj); }); },
+    // login korle: CHTPush.login(session.user.id)   logout: CHTPush.logout()
+    login:  function (id) { return withOS(function (OS) { return OS.login(String(id)); }); },
+    logout: function () { return withOS(function (OS) { return OS.logout(); }); },
+    // status bodlale call hobe: CHTPush.onChange(function(on){...})
+    onChange: function (cb) {
+      window.OneSignalDeferred.push(function (OS) {
+        try { OS.User.PushSubscription.addEventListener('change', function (e) { cb(!!(e && e.current && e.current.optedIn)); }); } catch (e) {}
+      });
     }
-    d.querySelector('.cp-no').onclick = function () { close(true); };
-    var y = d.querySelector('.cp-yes');
-    if (y) y.onclick = async function () { y.disabled = true; await onYes(); close(false); };
-  }
-
-  function init() {
-    if (dismissedRecently()) return;
-    // iPhone: web push shudhu "Add to Home Screen" korle kaj kore
-    if (isIOS() && !standalone()) {
-      show('<div class="cp-ic">🔔</div><div class="cp-tx"><b>নোটিফিকেশন পেতে</b><span>Safari-র Share বাটন চেপে "Add to Home Screen" করুন, তারপর অ্যাপ থেকে চালু করুন।</span></div><button class="cp-no" aria-label="বন্ধ">✕</button>');
-      return;
-    }
-    if (typeof Notification === 'undefined' || !('serviceWorker' in navigator)) return;
-    if (Notification.permission !== 'default') return;
-    show('<div class="cp-ic">🔔</div><div class="cp-tx"><b>নোটিফিকেশন চালু করুন</b><span>আজকের লবি আর ম্যাচের সময় মিস করবেন না</span></div><button class="cp-yes">চালু করুন</button><button class="cp-no" aria-label="বন্ধ">✕</button>', askPermission);
-  }
-
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(init, 2500); });
-  else setTimeout(init, 2500);
+  };
 })();

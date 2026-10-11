@@ -6,6 +6,7 @@
 <title>Notification</title>
 <link rel="stylesheet" href="theme.css">
 <script src="global.js" defer></script>
+<script src="push.js" defer></script>
 <style>
   :root{
     --bg:#0b0f19;
@@ -186,6 +187,8 @@
     margin:18px 8px 0;
     line-height:1.5;
   }
+  .n-toast{position:fixed;left:16px;right:16px;bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:9999;background:#1c2438;color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:12px 14px;font-size:13px;line-height:1.5;text-align:center;box-shadow:0 12px 30px rgba(0,0,0,.4);opacity:0;pointer-events:none;transform:translateY(8px);transition:.2s}
+  .n-toast.show{opacity:1;transform:none}
 </style>
 <style>
 :root{
@@ -356,7 +359,7 @@ function toggleQuietHours(){
 // remembers each toggle's state from before push notifications was turned off
 let savedStates = null;
 
-function togglePush(){
+function applyPushUI(){
   const pushOn = document.getElementById('pushToggle').checked;
   const prefRows = document.querySelectorAll('#prefsCard .row');
   const prefToggles = ['prefTournament','prefMatch','prefWin','prefPromo'].map(id => document.getElementById(id));
@@ -390,5 +393,87 @@ function togglePush(){
     toggleQuietHours();
   }
 }
+
+/* ===== OneSignal wiring ===== */
+const PREF_KEY = 'cht_notif_prefs';
+const $n = id => document.getElementById(id);
+function nToast(msg){
+  let t = $n('nToast');
+  if(!t){ t = document.createElement('div'); t.id = 'nToast'; t.className = 'n-toast'; document.body.appendChild(t); }
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(nToast._t); nToast._t = setTimeout(() => t.classList.remove('show'), 3800);
+}
+function readPrefs(){ try{ return JSON.parse(localStorage.getItem(PREF_KEY)) || null; }catch(e){ return null; } }
+function currentPrefs(){
+  return {
+    tournament: $n('prefTournament').checked, match: $n('prefMatch').checked,
+    win: $n('prefWin').checked, promo: $n('prefPromo').checked,
+    quiet: $n('quietHoursToggle').checked,
+    start: $n('startTimeInput').value || '22:00', end: $n('endTimeInput').value || '08:00'
+  };
+}
+// preference gulo localStorage + OneSignal tag-e save (server ei tag dekhe notification pathay)
+function savePrefs(){
+  if(!$n('pushToggle').checked) return;     // push bondho thakle toggle-gulo visually off, tai save kori na
+  const p = currentPrefs();
+  try{ localStorage.setItem(PREF_KEY, JSON.stringify(p)); }catch(e){}
+  if(window.CHTPush){
+    const b = v => v ? '1' : '0';
+    CHTPush.setTags({
+      pref_tournament: b(p.tournament), pref_match: b(p.match), pref_win: b(p.win), pref_promo: b(p.promo),
+      quiet_on: b(p.quiet), quiet_start: p.start, quiet_end: p.end
+    });
+  }
+}
+async function togglePush(){
+  const cb = $n('pushToggle');
+  if(cb.checked){
+    if(!window.CHTPush || !CHTPush.supported()){
+      cb.checked = false; applyPushUI();
+      nToast(window.CHTPush && CHTPush.needsHomeScreen()
+        ? 'iPhone-এ আগে Safari-র Share বাটন চেপে "Add to Home Screen" করুন, তারপর অ্যাপ থেকে চালু করুন।'
+        : 'এই ব্রাউজারে নোটিফিকেশন সাপোর্ট করে না।');
+      return;
+    }
+    const ok = await CHTPush.enable();
+    if(!ok){
+      cb.checked = false; applyPushUI();
+      nToast(CHTPush.permission() === 'denied'
+        ? 'নোটিফিকেশন ব্লক করা আছে। ফোন বা ব্রাউজারের সেটিংস থেকে Allow করে আবার চেষ্টা করুন।'
+        : 'নোটিফিকেশন চালু করা যায়নি, আবার চেষ্টা করুন।');
+      return;
+    }
+    applyPushUI();
+    savePrefs();
+  } else {
+    // bondho korar age ager preference gulo save kore rakhi
+    savePrefs();
+    applyPushUI();
+    if(window.CHTPush) await CHTPush.disable();
+  }
+}
+
+// page khulle: saved preference + actual push status dekhaw
+async function initNotifPage(){
+  const saved = readPrefs();
+  if(saved){
+    $n('prefTournament').checked = !!saved.tournament; $n('prefMatch').checked = !!saved.match;
+    $n('prefWin').checked = !!saved.win; $n('prefPromo').checked = !!saved.promo;
+    $n('quietHoursToggle').checked = !!saved.quiet;
+    $n('startTimeInput').value = saved.start || '22:00'; $n('endTimeInput').value = saved.end || '08:00';
+    updateTime('start'); updateTime('end');
+  }
+  toggleQuietHours();
+  let on = false;
+  try{
+    for(let i = 0; i < 40 && !window.CHTPush; i++) await new Promise(r => setTimeout(r, 100));
+    if(window.CHTPush && CHTPush.supported() && CHTPush.permission() === 'granted') on = await CHTPush.isOn();
+  }catch(e){}
+  $n('pushToggle').checked = !!on;
+  applyPushUI();
+  ['prefTournament','prefMatch','prefWin','prefPromo','quietHoursToggle','startTimeInput','endTimeInput']
+    .forEach(id => $n(id).addEventListener('change', savePrefs));
+}
+document.addEventListener('DOMContentLoaded', initNotifPage);
 </script></body>
 </html>
