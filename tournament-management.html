@@ -980,6 +980,7 @@ function renderLobbies(){
     <div class="lobby-item">
       <div class="lobby-top"><div class="lobby-date">${lobbyLabel(l)}</div>${badgeHtml}</div>
       <div class="lobby-meta">${l.joined_count||0}/${l.total_slots||0} joined</div>
+      <div class="lobby-actions"><button class="mini t-delete" onclick="deleteLobby('${l.id}',false)">Delete</button></div>
     </div>`;
   }).join(''):'<div class="empty">No active lobbies.</div>';
 }
@@ -1038,6 +1039,7 @@ function renderHistory(){
       <div class="lobby-actions">
         <button class="mini green" onclick="openResultsFromHistory('${l.id}')">View Results</button>
         <button class="mini" onclick="openTeamsFromHistory('${l.id}')">Add Team</button>
+        <button class="mini t-delete" onclick="deleteLobby('${l.id}',true)">Delete</button>
       </div>
     </div>`).join(''):`<div class="empty">${filterDate?'No completed lobbies on this date.':'No completed lobbies yet.'}</div>`;
 }
@@ -1172,11 +1174,33 @@ async function setLobbyStatus(id,status){
   await logActivity('lobby_status_changed','tournament','tournament_lobby',id,l?`${fmtLobbyDate(l.lobby_date)} ${l.time_label}`:null,{narration:`set lobby ${l?fmtLobbyDate(l.lobby_date)+' '+l.time_label:''} to ${status}.`});
   await loadLobbies(currentLobbyTournament.id);
 }
-async function deleteLobby(id){
-  askConfirm('Delete lobby?','This lobby slot will be permanently removed.',async()=>{
-    const {error}=await sb.from('tournament_lobbies').delete().eq('id',id);
+async function deleteLobby(id,fromHistory){
+  const l=lobbies.find(x=>x.id===id)||historyList.find(x=>x.id===id);
+  if(!l)return msg('Lobby not found — reload and try again.');
+  const done=l.status==='completed'||l.status==='cancelled';
+  const label=fmtLobbyDate(l.lobby_date)+' '+l.time_label;
+  // A running/upcoming lobby that already has paid teams must NOT be deleted
+  // here: deleting wipes the team rows, so those players would lose their
+  // slot AND never get refunded. Turning the lobby Off (Host Panel) refunds
+  // them first — only then can the empty lobby be removed.
+  if(!done){
+    const {count,error:ce}=await sb.from('lobby_teams').select('id',{count:'exact',head:true}).eq('lobby_id',id).neq('confirmation_status','rejected');
+    if(ce)return msg(ce.message);
+    if(count>0)return msg('This lobby still has '+count+' team'+(count>1?'s':'')+'. Turn it Off from the Host Panel first (that refunds them), then delete it.');
+  }
+  askConfirm('Delete lobby?',done
+    ?label+' — the lobby, its teams and saved results will be permanently removed. Prizes already credited to wallets stay credited.'
+    :label+' — this empty lobby slot will be permanently removed.',async()=>{
+    // Child rows first so foreign keys never block the delete.
+    await sb.from('lobby_results').delete().eq('lobby_id',id);
+    await sb.from('lobby_teams').delete().eq('lobby_id',id);
+    const {data,error}=await sb.from('tournament_lobbies').delete().eq('id',id).select();
     if(error)return msg(error.message);
-    await loadLobbies(currentLobbyTournament.id);
+    if(!data||data.length===0)return msg('Delete blocked (0 rows) — check the DELETE RLS policy on tournament_lobbies.');
+    await logActivity('lobby_deleted','tournament','tournament_lobby',id,label,{narration:'deleted the lobby '+label+'.'});
+    const tid=currentLobbyTournament.id;
+    if(fromHistory)await loadHistory(tid);
+    await loadLobbies(tid,{includeOlder:lobbiesShowingAll});
   });
 }
 
