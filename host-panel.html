@@ -1346,6 +1346,18 @@ function getChangedCreditedRows(){
     return Math.abs(newAmt-oldAmt)>=0.005;
   });
 }
+// Result save হলে লবি নিজে থেকেই COMPLETED হয়ে যাবে — আলাদা করে Complete চাপা লাগবে না।
+// Off (cancelled) বা আগে থেকেই completed লবিতে কিছু করা হয় না।
+async function autoCompleteLobby(){
+  const l=currentLobby;
+  if(!l||l.status==='completed'||l.status==='cancelled')return;
+  const r=await sb.from('tournament_lobbies').update({status:'completed'}).eq('id',l.id).select();
+  if(r.error){msg('Results saved, but could not auto-complete the lobby: '+r.error.message);return}
+  if(!r.data?.length){msg('Results saved, but auto-complete was blocked (0 rows) — check tournament_lobbies UPDATE RLS.');return}
+  l.status='completed';
+  await logActivity('lobby_completed',l.id,fmtShort(l.lobby_date)+' '+l.time_label,{narration:'lobby auto-completed after results were saved.'});
+  render();
+}
 async function saveResultsClick(){
   if(resultSubmitting)return;
   resultSubmitting=true;$('saveBtn').disabled=true;$('saveBtn').textContent='Saving…';
@@ -1355,6 +1367,7 @@ async function saveResultsClick(){
   try{saved=await saveResults()}catch(e){finish();throw e}
   if(!saved){finish();return}
   if(currentLobby){resultsLobbyIds.add(currentLobby.id);render()}
+  await autoCompleteLobby();
 
   const changed=getChangedCreditedRows();
   if(!changed.length){
