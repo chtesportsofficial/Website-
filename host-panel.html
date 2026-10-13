@@ -400,14 +400,14 @@ async function load(dateStr){
   if(tr.error){$('content').innerHTML='<div class="empty">Could not load tournaments: '+esc(tr.error.message)+'</div>';return}
   tournaments=new Map((tr.data||[]).map(t=>[t.id,t]));
   let q=sb.from('tournament_lobbies').select('*').eq('lobby_date',viewDate).order('time_label');
-  if(isToday)q=q.in('status',['upcoming','live','full','cancelled']);
+  if(isToday)q=q.in('status',['upcoming','live','full','cancelled','completed']);
   const lr=await q;
   if(lr.error){$('content').innerHTML='<div class="empty">Could not load lobbies: '+esc(lr.error.message)+'</div>';return}
   lobbies=lr.data||[];
   if(isToday){
     await applyAutoStatus(lobbies);
     // Keep only today's rows after the client-side status refresh (cancelled ones stay so Off lobbies remain manageable).
-    lobbies=lobbies.filter(l=>l.lobby_date===realToday&&['upcoming','live','full','cancelled'].includes(l.status));
+    lobbies=lobbies.filter(l=>l.lobby_date===realToday&&['upcoming','live','full','cancelled','completed'].includes(l.status));
   }
   resultsLobbyIds=new Set();
   if(lobbies.length){
@@ -530,13 +530,13 @@ async function completeLobbyRow(id){
   const l=lobbies.find(x=>x.id===id);if(!l)return;
   askConfirm(
     'Complete lobby?',
-    `Mark ${fmtShort(l.lobby_date)} ${l.time_label} as completed and remove it from active lobbies? Make sure results have been saved (Enter Result → Save Results) first.`,
+    `Mark ${fmtShort(l.lobby_date)} ${l.time_label} as completed? It will stay in the list as COMPLETED (history). Make sure results have been saved (Enter Result → Save Results) first.`,
     async()=>{
       const r=await sb.from('tournament_lobbies').update({status:'completed'}).eq('id',id).select();
       if(r.error)return msg(r.error.message);
       if(!r.data?.length)return msg('Update blocked (0 rows) — check tournament_lobbies UPDATE RLS.');
       await logActivity('lobby_completed',id,fmtShort(l.lobby_date)+' '+l.time_label,{narration:`completed the lobby from Host Panel.`});
-      lobbies=lobbies.filter(x=>x.id!==id);render();
+      l.status='completed';render();
     }
   );
 }
