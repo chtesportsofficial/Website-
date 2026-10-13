@@ -373,8 +373,9 @@ async function applyAutoStatus(list){
   list.forEach(l=>{
     if(!['upcoming','live','full'].includes(l.status))return;
     const dt=parseLobbyDateTime(l.lobby_date,l.time_label),eff=dt?ymd(dt):l.lobby_date;
-    if(eff<today){done.push(l.id);l.status='completed'}
-    else if(eff===today&&l.status==='upcoming'&&dt&&dt<=now){live.push(l.id);l.status='live'}
+    // আর কোনো লবি সময় পেরোলেই নিজে থেকে completed হবে না —
+    // রেজাল্ট সেভ (auto) অথবা manual Complete না দিলে PENDING থাকবে।
+    if(eff===today&&l.status==='upcoming'&&dt&&dt<=now){live.push(l.id);l.status='live'}
   });
   if(live.length)await sb.from('tournament_lobbies').update({status:'live'}).in('id',live);
   if(done.length)await sb.from('tournament_lobbies').update({status:'completed'}).in('id',done);
@@ -468,7 +469,7 @@ function renderLobby(l){
   // (today's own clock — applyAutoStatus — already turns real overdue
   // "upcoming" rows into "completed"). Never show UPCOMING for a slot
   // that's already in the past.
-  else if(timeOver) badge='<div class="lobby-status" style="background:#182a1e;color:#5ee98b">✔ COMPLETED</div>';
+  else if(timeOver) badge='<div class="lobby-status pending">● PENDING</div>';
   else badge='<div class="lobby-status">○ UPCOMING</div>';
 
   const room=l.room_id||'Not set';
