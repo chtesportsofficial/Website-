@@ -261,6 +261,30 @@ html{min-height:100%;background-color:#1b2140;background-image:radial-gradient(c
 #tm .upl-txt small{font-weight:500}
 #tm .upl-txt b{font-weight:800}
 
+#tm .tm-card>.tm-l:first-child,#tm .tm-two .tm-l{margin-top:0}
+/* dropdown */
+#tm .drop{position:relative}
+#tm .drop-t{font-size:13.5px!important;width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#0a101d;border:1px solid #26324a;color:#f4f6fb;border-radius:14px;padding:13px 14px;font-size:14px;font-weight:600;font-family:inherit;text-align:left}
+#tm .drop-t span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#tm .drop-t svg{width:18px;height:18px;flex:0 0 18px;color:#8d98ab;transition:transform .18s}
+#tm .drop.open .drop-t{border-color:#25d366;box-shadow:0 0 0 3px rgba(37,211,102,.14)}
+#tm .drop.open .drop-t svg{transform:rotate(180deg);color:#25d366}
+#tm .drop-m{display:none;position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:30;background:#121a2b;border:1px solid #2b3852;border-radius:16px;padding:6px;max-height:250px;overflow:auto;box-shadow:0 18px 40px rgba(0,0,0,.55)}
+#tm .drop.open .drop-m{display:block}
+#tm .drop-m button{display:flex;align-items:center;justify-content:space-between;width:100%;border:0;background:transparent;color:#d5dcea;font-size:14px;font-weight:600;padding:12px 12px;border-radius:11px;font-family:inherit;text-align:left}
+#tm .drop-m button:active{background:#1b2640}
+#tm .drop-m button.on{background:rgba(37,211,102,.12);color:#5ee98b}
+#tm .drop-m button.on::after{content:"";width:8px;height:8px;border-radius:50%;background:#25d366;flex:0 0 8px}
+#tm .drop-m button:disabled{opacity:.5}
+/* maps: 3 per row */
+#tm .map-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#tm .map-box-edit{display:flex;flex-direction:column;gap:8px;align-items:stretch;padding:9px}
+#tm .map-n{width:26px;height:26px;border-radius:9px;font-size:12px}
+#tm .map-f{gap:7px}
+#tm .map-box-edit input.mapName{padding:9px 8px!important;font-size:12.5px!important;border-radius:11px!important}
+#tm .map-up{align-self:stretch;justify-content:center;padding:8px 6px;font-size:11.5px;border-radius:10px;min-width:0}
+#tm .map-box-edit .existing-img{grid-column:auto;font-size:10.5px;margin:0}
+
 </style>
 </head>
 <body>
@@ -289,12 +313,8 @@ html{min-height:100%;background-color:#1b2140;background-image:radial-gradient(c
   <input type="hidden" id="tid">
 
   <section class="tm-card">
-    <h4 class="tm-h">Basics</h4>
     <label class="tm-l" for="title">Tournament name *</label>
     <input id="title" placeholder="CHT DAILY SCRIM #01" autocomplete="off">
-
-    <label class="tm-l">Homepage section *</label>
-    <select id="section" class="enh" data-ui="chips"></select>
 
     <label class="tm-l">Banner</label>
     <label class="upl" id="bannerUpl">
@@ -303,10 +323,12 @@ html{min-height:100%;background-color:#1b2140;background-image:radial-gradient(c
       <span class="upl-txt"><b>Upload banner</b><small>PNG, JPG or WebP</small></span>
       <img class="upl-prev" alt="">
     </label>
+
+    <label class="tm-l">Homepage section *</label>
+    <select id="section" class="enh" data-ui="drop"></select>
   </section>
 
   <section class="tm-card">
-    <h4 class="tm-h">Entry</h4>
     <div class="tm-two">
       <div><label class="tm-l" for="entry">Entry fee</label><div class="tk"><i>৳</i><input id="entry" type="number" min="0" value="0" inputmode="numeric"></div></div>
       <div><label class="tm-l" for="slots">Slots (default)</label><input id="slots" type="number" min="0" value="0" inputmode="numeric"></div>
@@ -322,7 +344,6 @@ html{min-height:100%;background-color:#1b2140;background-image:radial-gradient(c
   </section>
 
   <section class="tm-card">
-    <h4 class="tm-h">Match setup</h4>
     <label class="tm-l">Format</label>
     <select id="format" class="enh" data-ui="seg"><option value="solo">Solo</option><option value="duo">Duo</option><option value="squad">Squad</option></select>
     <label class="tm-l">Mode</label>
@@ -338,7 +359,6 @@ html{min-height:100%;background-color:#1b2140;background-image:radial-gradient(c
   </section>
 
   <section class="tm-card">
-    <h4 class="tm-h">Rules and points</h4>
     <label class="tm-l" for="rulesText">Tournament rules</label>
     <textarea id="rulesText" placeholder="Write the rules here..."></textarea>
     <label class="upl upl-sm" id="rulesUpl">
@@ -363,7 +383,6 @@ html{min-height:100%;background-color:#1b2140;background-image:radial-gradient(c
   </section>
 
   <section class="tm-card">
-    <h4 class="tm-h">Maps</h4>
     <label class="tm-l">Number of maps</label>
     <div class="step" data-for="mapCount"><button type="button" data-d="-1" aria-label="Fewer maps">−</button><output></output><button type="button" data-d="1" aria-label="More maps">+</button></div>
     <select id="mapCount" class="enh" onchange="renderMapBoxes()"></select>
@@ -791,8 +810,8 @@ function renderMapBoxes(prefill){
   return `<div class="map-box-edit">
     <span class="map-n">${i+1}</span>
     <div class="map-f">
-      <input class="mapName" data-i="${i}" placeholder="Map name, e.g. Bermuda" value="${esc(m.name||'')}">
-      <label class="map-up"><input type="file" class="mapImg" data-i="${i}" accept="image/png,image/jpeg,image/webp"><span class="map-up-t">${m.image_url?'Replace image':'Add image'}</span></label>
+      <input class="mapName" data-i="${i}" placeholder="Name" value="${esc(m.name||'')}">
+      <label class="map-up"><input type="file" class="mapImg" data-i="${i}" accept="image/png,image/jpeg,image/webp"><span class="map-up-t">${m.image_url?'Change':'Add image'}</span></label>
     </div>
     <input type="hidden" class="mapImgUrl" data-i="${i}" value="${esc(m.image_url||'')}">
     ${m.image_url?`<div class="existing-img" title="${esc(m.image_url)}">✓ Image set</div>`:''}
@@ -1817,20 +1836,33 @@ document.getElementById('gslotMode').addEventListener('change', function(){ cons
       sel.parentNode.insertBefore(wrap,sel.nextSibling);
       wrap.addEventListener('click',function(e){
         var b=e.target.closest('button'); if(!b||b.disabled) return;
+        if(b.classList.contains('drop-t')){wrap.classList.toggle('open');return;}
+        wrap.classList.remove('open');
         sel.value=b.getAttribute('data-v');
         sel.dispatchEvent(new Event('change',{bubbles:true}));
         sync();
       });
     }
-    wrap.className=ui==='chips'?'chips':(ui==='tog'?'seg tog':'seg');
-    wrap.innerHTML=Array.prototype.map.call(sel.options,function(o){
+    wrap.className=ui==='chips'?'chips':(ui==='tog'?'seg tog':(ui==='drop'?'drop':'seg'));
+    var btns=Array.prototype.map.call(sel.options,function(o){
       var yn=ui==='tog'?(o.value==='true'?' yes':' no'):'';
       return '<button type="button" data-v="'+o.value.replace(/"/g,'&quot;')+'" data-yn="'+yn+'"'+(o.value===''?' disabled':'')+'>'+o.text.replace(/</g,'&lt;')+'</button>';
     }).join('');
+    if(ui==='drop'){
+      var was=wrap.classList.contains('open');
+      wrap.innerHTML='<button type="button" class="drop-t"><span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button><div class="drop-m">'+btns+'</div>';
+      if(was) wrap.classList.add('open');
+    }else wrap.innerHTML=btns;
     paint(sel,wrap);
   }
   function paint(sel,wrap){
-    Array.prototype.forEach.call(wrap.children,function(b){
+    var list=wrap.children;
+    if(wrap.classList.contains('drop')){
+      var o=sel.options[sel.selectedIndex];
+      wrap.querySelector('.drop-t span').textContent=o?o.text:'Select';
+      list=wrap.querySelector('.drop-m').children;
+    }
+    Array.prototype.forEach.call(list,function(b){
       var on=b.getAttribute('data-v')===sel.value;
       b.className=(on?'on':'')+(on?b.getAttribute('data-yn'):'');
     });
@@ -1885,6 +1917,7 @@ document.getElementById('gslotMode').addEventListener('change', function(){ cons
   }
 
   Array.prototype.forEach.call(tm.querySelectorAll('select[data-ui]'),build);
+  document.addEventListener('click',function(e){Array.prototype.forEach.call(tm.querySelectorAll('.drop.open'),function(d){if(!d.contains(e.target))d.classList.remove('open')})});
 
   /* stepper clicks */
   tm.addEventListener('click',function(e){
