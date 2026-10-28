@@ -1144,6 +1144,7 @@ function addGroupRow(){
   const d=document.createElement('div'); d.className='grp-row';
   d.innerHTML='<input class="grpName" placeholder="Group name" value="Group '+groupLetter(idx)+'"><div class="grp-dt"><input type="date" class="grpDate" value="'+ymd(new Date())+'"><input type="time" class="grpTime"></div>';
   box.appendChild(d);
+  if(window.__enhanceDates)window.__enhanceDates(d);
 }
 function setupLobbyForm(){
   const ty=tt(currentLobbyTournament);
@@ -1884,6 +1885,8 @@ document.getElementById('gslotMode').addEventListener('change', function(){ cons
     refresh();
   }
   document.querySelectorAll('input[type=date]').forEach(enhance);
+  // lets date inputs created later (e.g. group rows) get the same d/m/yy display
+  window.__enhanceDates=function(root){(root||document).querySelectorAll('input[type=date]').forEach(enhance);};
 })();
 </script>
 
