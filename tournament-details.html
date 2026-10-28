@@ -252,6 +252,15 @@ function getProfile(){
   catch(e){ return {}; }
 }
 let currentTournament=null, currentJoinLobbyIds=[];
+// Copy shown for each tour type. daily = hourly lobbies, paid = groups,
+// weekly = a single match on one day.
+function tourCopy(t){
+  const ty=(t&&t.tour_type)||'daily';
+  if(ty==='paid')return{title:'Groups',sub:'Pick the group you want to play. You can join more than one group.',loading:'Loading groups...',empty:'No groups open right now.'};
+  if(ty==='weekly')return{title:'Match day',sub:'One match on one day. Join the slot below.',loading:'Loading match...',empty:'No match scheduled yet.'};
+  return{title:'Hourly lobbies',sub:'Play the tournament at whichever time suits you.',loading:'Loading lobbies...',empty:'No lobbies open right now.'};
+}
+function lobbyTag(l){return (currentTournament&&currentTournament.tour_type==='paid'&&l&&l.custom_title)?String(l.custom_title).trim()+' · ':''}
 
 function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 // A lobby's "BUY SLOT" stays open right up to 10 minutes after its own
@@ -494,9 +503,9 @@ async function initUser(){
       ${maps.map(m=>`<div class="map-box"><div class="img" style="background-image:url('${esc(m.image_url||'')}')">${m.image_url?'':'No image'}</div><div class="name">${esc(m.name||'—')}</div></div>`).join('')}
     </div>`:''}
 
-    <div class="section-title">Hourly lobbies</div>
-    <div class="lobby-sub">Play the tournament at whichever time suits you.</div>
-    <div class="lobby-list" id="lobbyList"><div class="empty">Loading lobbies...</div></div>
+    <div class="section-title">${tourCopy(t).title}</div>
+    <div class="lobby-sub">${tourCopy(t).sub}</div>
+    <div class="lobby-list" id="lobbyList"><div class="empty">${tourCopy(t).loading}</div></div>
   `;
 
   // load lobbies
@@ -514,7 +523,7 @@ async function initUser(){
 
   const lobbyBox=document.getElementById('lobbyList');
   if(lerr){lobbyBox.innerHTML='<div class="empty">Could not load lobbies.</div>';return}
-  if(!lobbies||!lobbies.length){lobbyBox.innerHTML='<div class="empty">No lobbies open right now.</div>';return}
+  if(!lobbies||!lobbies.length){lobbyBox.innerHTML='<div class="empty">'+tourCopy(t).empty+'</div>';return}
 
   lobbies.forEach(l=>{lobbyDataById[l.id]=l;});
 
@@ -542,14 +551,15 @@ async function initUser(){
     // "8 PM" typed by admin -> "8 PM SLOT (35 BDT)" shown automatically,
     // using the tournament's own entry fee — no need to type the fee
     // into every lobby's time label.
-    const timeLabelFull=`${l.time_label||''} SLOT (${Number(t.entry_fee||0)} BDT)`.trim();
+    const grpName=(t.tour_type==='paid'&&l.custom_title)?String(l.custom_title).trim():'';
+    const timeLabelFull=grpName?`${grpName} — ${l.time_label||''}`:`${l.time_label||''} SLOT (${Number(t.entry_fee||0)} BDT)`.trim();
     // lobby_date is stored as YYYY-MM-DD -> shown as DD-MM-YYYY
     const dateParts=(l.lobby_date||'').split('-');
     const dateLabel=dateParts.length===3?`${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`:(l.lobby_date||'');
     return `<div class="lobby-card" id="lcard-${l.id}">
       <div class="lobby-top">
         <div class="lobby-left">
-          <div class="lobby-avatar ${full?'full':''}">${esc((l.time_label||'?')[0])}</div>
+          <div class="lobby-avatar ${full?'full':''}">${esc((grpName?grpName.split(/\s+/).pop():(l.time_label||'?'))[0])}</div>
           <div class="lobby-time">${esc(timeLabelFull)}</div>
         </div>
         <div class="lobby-date">${esc(dateLabel)}</div>
@@ -585,7 +595,7 @@ function updateSelectBar(){
   bar.classList.add('open');
   document.body.style.paddingBottom='74px';
   const fee=(Number(currentTournament?.entry_fee)||0)*n;
-  document.getElementById('selectBarCount').textContent=`${n}টি লবি সিলেক্ট করা হয়েছে`;
+  document.getElementById('selectBarCount').textContent=`${n}টি ${currentTournament?.tour_type==='paid'?'গ্রুপ':'লবি'} সিলেক্ট করা হয়েছে`;
   document.getElementById('selectBarFee').textContent=`মোট এন্ট্রি ফি: ৳${fee}`;
 }
 function clearSelection(){
@@ -661,7 +671,7 @@ function renderQuantityControls(){
   const wrap=document.getElementById('jfQuantityWrap');
   wrap.innerHTML=currentJoinLobbyIds.map(id=>{
     const l=lobbyDataById[id]||{};
-    const label=`${esc(l.time_label||'')} ${esc(l.lobby_date||'')}`.trim();
+    const label=`${esc(lobbyTag(l))}${esc(l.time_label||'')} ${esc(l.lobby_date||'')}`.trim();
     const c=getTeamCount(id);
     const max=getMaxTeamCount(id);
     return `<div class="jf-qty-row">
@@ -696,7 +706,7 @@ function openJoinFormMulti(){
 function renderLobbyChips(){
   document.getElementById('jfLobbyChips').innerHTML=currentJoinLobbyIds.map(id=>{
     const l=lobbyDataById[id]||{};
-    return `<span class="jf-lobby-chip"><b>${esc(l.time_label||'')}</b> ${esc(l.lobby_date||'')}</span>`;
+    return `<span class="jf-lobby-chip"><b>${esc(lobbyTag(l))}${esc(l.time_label||'')}</b> ${esc(l.lobby_date||'')}</span>`;
   }).join('');
 }
 function renderTeamBlocks(){
@@ -720,7 +730,7 @@ function renderTeamBlocks(){
   });
   wrap.innerHTML=currentJoinLobbyIds.map(id=>{
     const l=lobbyDataById[id]||{};
-    const label=`${esc(l.time_label||'')} ${esc(l.lobby_date||'')}`.trim();
+    const label=`${esc(lobbyTag(l))}${esc(l.time_label||'')} ${esc(l.lobby_date||'')}`.trim();
     const c=getTeamCount(id);
     let blocks='';
     for(let i=1;i<=c;i++){
@@ -780,7 +790,7 @@ function collectTeamData(){
       const key=id+'__'+i;
       const teamName=(document.getElementById('jfTeamName_'+key)?.value||'').trim();
       const playerName=(document.getElementById('jfPlayerName_'+key)?.value||'').trim();
-      const label=`${l.time_label||''} ${l.lobby_date||''}`.trim()+(c>1?` টিম ${i}`:'');
+      const label=`${lobbyTag(l)}${l.time_label||''} ${l.lobby_date||''}`.trim()+(c>1?` টিম ${i}`:'');
       if(!teamName)return{error:`Team name is required for ${label}.`};
       if(!playerName)return{error:`Player name is required for ${label}.`};
       const dupKey=(teamName+'||'+playerName).toLowerCase();
