@@ -76,6 +76,14 @@
 
   .link-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;}
   .link-box{background:var(--card);border:none;border-radius:8px;padding:7px 8px;display:flex;align-items:center;justify-content:space-between;color:var(--text);font-size:10px;font-weight:500;text-align:left;cursor:pointer;font-family:inherit;}
+  .link-box-wide{grid-column:1/-1;}
+  .pz-list{display:flex;flex-direction:column;gap:6px;}
+  .pz-row{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;}
+  .pz-rank{font-size:12.5px;color:var(--text-mid);font-weight:600;}
+  .pz-amt{font-size:14px;font-weight:700;color:var(--gold);}
+  .pz-total{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding:10px 12px;border-radius:10px;background:rgba(242,183,5,.1);border:1px solid rgba(242,183,5,.35);font-size:12px;color:var(--text-mid);}
+  .pz-total b{font-size:15px;color:var(--gold);}
+  .pz-empty{text-align:center;color:var(--text-dim);padding:10px 0;}
   .link-box .chev{color:var(--text-dim);font-size:12px;}
 
   .section-title{font-size:11px;font-weight:500;color:var(--text-mid);margin-bottom:6px;}
@@ -96,11 +104,8 @@
   .lobby-dt-date{font-size:15px;font-weight:700;color:var(--text);}
   .lobby-dt-dot{color:var(--text-dim);font-size:14px;}
   .lobby-dt-time{font-size:15px;font-weight:700;color:var(--gold);}
-  .grp-chip{flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:56px;padding:5px 12px;border-radius:10px;background:rgba(245,166,35,.12);border:1px solid rgba(245,166,35,.45);}
-  .grp-chip-label{font-size:8px;letter-spacing:.08em;color:var(--text-dim);font-weight:600;}
-  .grp-chip b{font-size:15px;font-weight:800;color:var(--orange);line-height:1.15;}
-  .grp-chip.full{background:rgba(255,255,255,.04);border-color:var(--border);}
-  .grp-chip.full b{color:var(--text-dim);}
+  .grp-chip{flex-shrink:0;padding:6px 14px;border-radius:999px;background:var(--orange);color:#241705;font-size:12.5px;font-weight:800;white-space:nowrap;}
+  .grp-chip.full{background:#2a3145;color:var(--text-dim);}
   .lobby-meta{display:flex;justify-content:space-between;margin-bottom:5px;font-size:11px;color:var(--text-mid);}
   .lobby-bar{height:5px;background:#2a3145;border-radius:4px;overflow:hidden;margin-bottom:10px;}
   .lobby-bar-fill{height:100%;background:var(--orange);}
@@ -479,6 +484,15 @@ async function initUser(){
   const matchTypeLabel=t.match_type==='clash_squad'?'Clash squad':'Full map';
   const formatLabel=t.format?t.format.charAt(0).toUpperCase()+t.format.slice(1):'—';
 
+  // Prize distribution popup: rank list + total pool, plus any prize images
+  // the admin attached (optional column: prize_distribution_images).
+  const prizeImages=Array.isArray(t.prize_distribution_images)?t.prize_distribution_images:[];
+  const prizeTotal=prizeDist.reduce((s,p)=>s+(Number(p.amount)||0),0);
+  window.prizeHtml=(prizeDist.length
+    ?`<div class="pz-list">${prizeDist.map(p=>`<div class="pz-row"><span class="pz-rank">${ordinal(p.rank)}</span><span class="pz-amt">৳${Number(p.amount||0)}</span></div>`).join('')}</div><div class="pz-total"><span>Total prize pool</span><b>৳${prizeTotal}</b></div>`
+    :'<div class="pz-empty">No prize distribution added yet.</div>')
+    +prizeImages.map(u=>`<img src="${esc(u)}">`).join('');
+
   root.innerHTML=`
     <div class="stat-row">
       <div class="stat-box"><div class="label">Entry fee</div><div class="value">৳${Number(t.entry_fee||0)}</div></div>
@@ -486,12 +500,6 @@ async function initUser(){
     </div>
 
     <div class="combo-row">
-      <div class="prize-card">
-        <div class="title">Prize distribution</div>
-        <div class="prize-list">
-          ${prizeDist.length?prizeDist.map(p=>`<div class="row"><span class="rank">${ordinal(p.rank)}</span><span class="amount">৳${Number(p.amount||0)}</span></div>`).join(''):'<div class="row"><span class="rank">—</span></div>'}
-        </div>
-      </div>
       <div class="info-col">
         <div class="info-box"><span class="label">Format</span><span class="value">${esc(formatLabel)}</span></div>
         <div class="info-box"><span class="label">Mode</span><span class="value">${t.game_mode==='classic'?'Classic':'ESports'}</span></div>
@@ -503,6 +511,7 @@ async function initUser(){
     </div>
 
     <div class="link-row">
+      <button class="link-box link-box-wide" type="button" onclick="openPopup('💰 Prize distribution', prizeHtml)">Prize distribution<span class="chev">›</span></button>
       <button class="link-box" type="button" onclick="openPopup('📋 Tournament rules', rulesHtml)">Tournament rules<span class="chev">›</span></button>
       <button class="link-box" type="button" onclick="openPopup('🏆 Point system', pointHtml)">Point system<span class="chev">›</span></button>
     </div>
@@ -574,7 +583,7 @@ async function initUser(){
     const topHtml=(t.tour_type==='paid')
       ?`<div class="lobby-top">
         <div class="lobby-dt"><span class="lobby-dt-date">${esc(niceDate)}</span><span class="lobby-dt-dot">•</span><span class="lobby-dt-time">${esc(niceTime)}</span></div>
-        <div class="grp-chip ${full?'full':''}"><span class="grp-chip-label">GROUP</span><b>${esc(grpName?grpName.replace(/^group\s*/i,''):'—')}</b></div>
+        <div class="grp-chip ${full?'full':''}">${esc(grpName||'Group')}</div>
       </div>`
       :`<div class="lobby-top">
         <div class="lobby-left">
