@@ -161,6 +161,107 @@ html{min-height:100%;background-color:#1b2140;background-image:radial-gradient(c
 .dfmt-txt{position:absolute;top:1px;bottom:1px;left:1px;right:46px;display:flex;align-items:center;pointer-events:none;color:#fff;white-space:nowrap;overflow:hidden;border-radius:10px 0 0 10px;z-index:2}
 .dfmt-txt.ph{color:#6b768a}
 </style>
+<style>
+/* ===== Create / Edit Tournament — redesigned modal (scoped to #tm) ===== */
+#tm .box{background:#090e17;border:1px solid #1f2a40;border-bottom:0;border-radius:28px 28px 0 0;padding:0 14px 0;max-height:94vh;max-height:94dvh;scroll-behavior:smooth}
+#tm .mh{background:#090e17;padding:18px 2px 14px;align-items:center;border-bottom:1px solid #18223a;margin-bottom:12px}
+#tm .mh-t{display:flex;flex-direction:column;gap:3px;min-width:0}
+#tm .mh-t b{font-size:19px;font-weight:800;letter-spacing:-.01em;color:#f4f6fb}
+#tm .mh-t span{font-size:12px;color:#7f8ba1}
+#tm .mh button{width:40px;height:40px;border-radius:13px;border:1px solid #26324a;background:#121a2b;color:#c9d2e3;font-size:22px;line-height:1;display:grid;place-items:center;padding:0}
+#tm .mh button:active{background:#1a2438}
+
+#tm .tm-card{background:#0f1625;border:1px solid #1d2840;border-radius:20px;padding:16px 14px 16px;margin-bottom:12px}
+#tm .tm-h{margin:0 0 4px;font-size:15px;font-weight:800;color:#eef2fa;letter-spacing:-.005em}
+#tm .tm-hrow{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:2px}
+#tm .tm-l{display:block;margin:14px 0 7px;font-size:12.5px;font-weight:700;color:#93a0b7}
+#tm .tm-sep{height:1px;background:#1b2740;margin:18px 0 2px}
+
+#tm input:not([type=file]):not([type=hidden]),#tm textarea{width:100%;background:#0a101d;border:1px solid #26324a;color:#f4f6fb;border-radius:14px;padding:13px 14px;font-size:14px;font-family:inherit;outline:none;transition:border-color .15s,box-shadow .15s}
+#tm textarea{min-height:104px;resize:vertical;line-height:1.5}
+#tm input::placeholder,#tm textarea::placeholder{color:#55607a}
+#tm input:focus:not([type=file]),#tm textarea:focus{border-color:#25d366;box-shadow:0 0 0 3px rgba(37,211,102,.14)}
+#tm select.enh{display:none}
+#tm .tm-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#tm .tk{position:relative}
+#tm .tk i{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-style:normal;color:#25d366;font-weight:800;font-size:15px;pointer-events:none}
+#tm .tk input{padding-left:32px!important}
+
+/* segmented + chips + toggles */
+#tm .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;background:#0a101d;border:1px solid #26324a;border-radius:15px;padding:4px}
+#tm .seg button{border:0;background:transparent;color:#93a0b7;font-size:13.5px;font-weight:700;padding:11px 6px;border-radius:11px;font-family:inherit;transition:background .15s,color .15s}
+#tm .seg button.on{background:#25d366;color:#05140a;box-shadow:0 3px 12px rgba(37,211,102,.28)}
+#tm .chips{display:flex;flex-wrap:wrap;gap:8px}
+#tm .chips button{border:1px solid #2a3855;background:#0a101d;color:#b6c1d4;font-size:13px;font-weight:700;padding:10px 14px;border-radius:999px;font-family:inherit;transition:all .15s}
+#tm .chips button.on{background:rgba(37,211,102,.13);border-color:#25d366;color:#5ee98b}
+#tm .chips button:disabled{opacity:.5}
+#tm .rule-list{margin-top:18px;border-top:1px solid #1b2740}
+#tm .rule-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid #1b2740}
+#tm .rule-row:last-child{border-bottom:0;padding-bottom:0}
+#tm .rule-row>span{font-size:14px;font-weight:700;color:#e3e9f4}
+#tm .seg.tog{grid-auto-columns:auto;flex:0 0 auto;border-radius:13px}
+#tm .seg.tog button{padding:9px 13px;font-size:12.5px;border-radius:9px}
+#tm .seg.tog button.on.yes{background:#25d366;color:#05140a}
+#tm .seg.tog button.on.no{background:#3a1a24;color:#ff8591;box-shadow:none}
+
+/* stepper */
+#tm .step{display:inline-flex;align-items:center;background:#0a101d;border:1px solid #26324a;border-radius:15px;overflow:hidden}
+#tm .step button{width:48px;height:46px;border:0;background:transparent;color:#dfe6f2;font-size:22px;font-weight:600;font-family:inherit}
+#tm .step button:active{background:#18223a}
+#tm .step button:disabled{opacity:.3}
+#tm .step output{min-width:58px;text-align:center;font-size:17px;font-weight:800;color:#fff;border-left:1px solid #1b2740;border-right:1px solid #1b2740;line-height:46px}
+
+/* prize */
+#tm .pool{text-align:right;background:linear-gradient(160deg,#241d08,#17130a);border:1px solid #4a3a0e;border-radius:14px;padding:7px 12px;flex:0 0 auto}
+#tm .pool small{display:block;font-size:10.5px;color:#b89a45;font-weight:700}
+#tm .pool b{font-size:17px;font-weight:800;color:#f6c453;letter-spacing:-.01em}
+#tm .prize-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+#tm .prize-box-edit{background:#0a101d;border:1px solid #26324a;border-left-width:3px;border-radius:14px;padding:10px 12px 12px}
+#tm .prize-box-edit label{margin:0 0 6px;font-size:12px;font-weight:800;color:#93a0b7}
+#tm .prize-box-edit input{padding:10px 12px!important;background:#070b14!important}
+#tm .prize-box-edit:nth-child(1){border-left-color:#f6c453}#tm .prize-box-edit:nth-child(1) label{color:#f6c453}
+#tm .prize-box-edit:nth-child(2){border-left-color:#c9cfdb}#tm .prize-box-edit:nth-child(2) label{color:#c9cfdb}
+#tm .prize-box-edit:nth-child(3){border-left-color:#e0a370}#tm .prize-box-edit:nth-child(3) label{color:#e0a370}
+
+/* upload tiles */
+#tm .upl{position:relative;display:flex;align-items:center;gap:12px;padding:13px;border:1.5px dashed #34435f;border-radius:16px;background:#0a101d;cursor:pointer;overflow:hidden;margin:0;transition:border-color .15s,background .15s}
+#tm .upl:active{background:#101a2c}
+#tm .upl input[type=file]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;padding:0;border:0;background:transparent;border-radius:0;font-size:0}
+#tm .upl-ico{width:44px;height:44px;flex:0 0 44px;border-radius:13px;background:rgba(37,211,102,.12);color:#25d366;display:grid;place-items:center}
+#tm .upl-ico svg{width:22px;height:22px}
+#tm .upl-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+#tm .upl-txt b{font-size:14px;font-weight:800;color:#eef2fa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tm .upl-txt small{font-size:11.5px;color:#7f8ba1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tm .upl-prev{display:none;margin-left:auto;width:76px;height:50px;object-fit:cover;border-radius:10px;border:1px solid #2b3852;flex:0 0 76px}
+#tm .upl.has{border-style:solid;border-color:#25d366;background:rgba(37,211,102,.06)}
+#tm .upl.has .upl-prev.show{display:block}
+#tm .upl-sm{margin-top:10px}
+#tm .img-note{font-size:11.5px;color:#7f8ba1;margin:8px 2px 0;line-height:1.4}
+#tm .img-note:empty{display:none}
+
+/* maps */
+#tm .map-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:14px}
+#tm .map-box-edit{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start;background:#0a101d;border:1px solid #26324a;border-radius:16px;padding:12px}
+#tm .map-n{width:34px;height:34px;border-radius:11px;background:#141d31;border:1px solid #2b3852;display:grid;place-items:center;font-size:13px;font-weight:800;color:#9eabc0}
+#tm .map-f{display:flex;flex-direction:column;gap:9px;min-width:0}
+#tm .map-box-edit input.mapName{padding:11px 12px!important;background:#070b14!important;font-size:14px!important}
+#tm .map-up{position:relative;display:inline-flex;align-self:flex-start;align-items:center;gap:7px;padding:9px 13px;border:1.5px dashed #34435f;border-radius:11px;color:#b6c1d4;font-size:12.5px;font-weight:700;margin:0;cursor:pointer;overflow:hidden;max-width:100%}
+#tm .map-up input[type=file]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;padding:0;border:0;background:transparent;font-size:0}
+#tm .map-up.has{border-style:solid;border-color:#25d366;color:#5ee98b}
+#tm .map-up-t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tm .map-box-edit .existing-img{grid-column:2;font-size:11px;color:#5ee98b;margin-top:-2px}
+
+/* sticky footer */
+#tm .tm-foot{position:sticky;bottom:0;z-index:15;display:grid;grid-template-columns:1fr 1.7fr;gap:10px;margin:0 -14px;padding:12px 14px calc(14px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,rgba(9,14,23,0),#090e17 26%);border-top:1px solid #18223a;backdrop-filter:blur(6px)}
+#tm .tm-foot button{border-radius:15px;padding:15px 10px;font-size:14.5px;font-weight:800;font-family:inherit;border:1px solid #2a3855;background:#121a2b;color:#dfe6f2}
+#tm .tm-foot .primary{background:linear-gradient(135deg,#20ca5f,#2fe07a);border-color:#25d366;color:#05140a;box-shadow:0 6px 22px rgba(37,211,102,.25)}
+#tm .tm-foot button:disabled{opacity:.6}
+#tm .tm-foot button:active{transform:scale(.98)}
+@media (prefers-reduced-motion:reduce){#tm *{transition:none!important}}
+#tm .upl-txt small{font-weight:500}
+#tm .upl-txt b{font-weight:800}
+
+</style>
 </head>
 <body>
 <main class="wrap">
@@ -184,47 +285,92 @@ html{min-height:100%;background-color:#1b2140;background-image:radial-gradient(c
 </main>
 
 <div class="modal" id="tm"><div class="box">
-  <div class="mh"><b id="tmTitle">Create Tournament</b><button type="button" id="closeTmBtn">×</button></div>
+  <div class="mh"><div class="mh-t"><b id="tmTitle">Create Tournament</b><span>Fill in the details, then save</span></div><button type="button" id="closeTmBtn" aria-label="Close">×</button></div>
   <input type="hidden" id="tid">
-  <label>Tournament Name *</label><input id="title" placeholder="CHT DAILY SCRIM #01">
-  <label>Homepage Section *</label><select id="section"></select>
-  <label>Banner</label><input id="banner" type="file" accept="image/png,image/jpeg,image/webp">
 
-  <div class="grid">
-    <div><label>Entry Fee</label><input id="entry" type="number" min="0" value="0"></div>
-    <div><label>Slot (default)</label><input id="slots" type="number" min="0" value="0"></div>
-  </div>
+  <section class="tm-card">
+    <h4 class="tm-h">Basics</h4>
+    <label class="tm-l" for="title">Tournament name *</label>
+    <input id="title" placeholder="CHT DAILY SCRIM #01" autocomplete="off">
 
-  <label>Prize Distribution (Top N)</label>
-  <select id="rankCount" onchange="renderPrizeBoxes()"></select>
-  <div id="prizeBoxes" class="prize-grid"></div>
+    <label class="tm-l">Homepage section *</label>
+    <select id="section" class="enh" data-ui="chips"></select>
 
-  <div class="grid">
-    <div><label>Format</label><select id="format"><option value="solo">Solo</option><option value="duo">Duo</option><option value="squad">Squad</option></select></div>
-    <div><label>Mode</label><select id="gameMode"><option value="esports">ESports</option><option value="classic">Classic</option></select></div>
-    <div><label>Type</label><select id="matchType"><option value="full_map">Full map</option><option value="clash_squad">Clash squad</option></select></div>
-    <div><label>Vehicle</label><select id="vehicle"><option value="true">✅ Allowed</option><option value="false">❌ Not allowed</option></select></div>
-    <div><label>Gun Skin</label><select id="gunskin"><option value="false">❌ Not allowed</option><option value="true">✅ Allowed</option></select></div>
-    <div><label>Emote</label><select id="emote"><option value="false">❌ Not allowed</option><option value="true">✅ Allowed</option></select></div>
-  </div>
+    <label class="tm-l">Banner</label>
+    <label class="upl" id="bannerUpl">
+      <input id="banner" type="file" accept="image/png,image/jpeg,image/webp">
+      <span class="upl-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg></span>
+      <span class="upl-txt"><b>Upload banner</b><small>PNG, JPG or WebP</small></span>
+      <img class="upl-prev" alt="">
+    </label>
+  </section>
 
-  <div class="field-pair">
-    <div><label>Tournament Rules</label><textarea id="rulesText" placeholder="Write the rules here..."></textarea></div>
-    <div><label>Rules Images (optional, multiple)</label><input id="rulesImages" type="file" accept="image/png,image/jpeg,image/webp" multiple><div class="img-note" id="rulesImagesNote"></div></div>
-  </div>
-  <input type="hidden" id="rulesImagesOld" value="[]">
+  <section class="tm-card">
+    <h4 class="tm-h">Entry</h4>
+    <div class="tm-two">
+      <div><label class="tm-l" for="entry">Entry fee</label><div class="tk"><i>৳</i><input id="entry" type="number" min="0" value="0" inputmode="numeric"></div></div>
+      <div><label class="tm-l" for="slots">Slots (default)</label><input id="slots" type="number" min="0" value="0" inputmode="numeric"></div>
+    </div>
+  </section>
 
-  <div class="field-pair">
-    <div><label>Point System</label><textarea id="pointText" placeholder="Write the point system here..."></textarea></div>
-    <div><label>Point System Images (optional, multiple)</label><input id="pointImages" type="file" accept="image/png,image/jpeg,image/webp" multiple><div class="img-note" id="pointImagesNote"></div></div>
-  </div>
-  <input type="hidden" id="pointImagesOld" value="[]">
+  <section class="tm-card tm-prize">
+    <div class="tm-hrow"><h4 class="tm-h">Prize distribution</h4><div class="pool"><small>Prize pool</small><b id="prizePoolView">৳ 0</b></div></div>
+    <label class="tm-l">Paid ranks (Top N)</label>
+    <div class="step" data-for="rankCount"><button type="button" data-d="-1" aria-label="Fewer ranks">−</button><output></output><button type="button" data-d="1" aria-label="More ranks">+</button></div>
+    <select id="rankCount" class="enh" onchange="renderPrizeBoxes()"></select>
+    <div id="prizeBoxes" class="prize-grid"></div>
+  </section>
 
-  <label>Maps</label>
-  <select id="mapCount" onchange="renderMapBoxes()"></select>
-  <div id="mapBoxes" class="map-grid"></div>
+  <section class="tm-card">
+    <h4 class="tm-h">Match setup</h4>
+    <label class="tm-l">Format</label>
+    <select id="format" class="enh" data-ui="seg"><option value="solo">Solo</option><option value="duo">Duo</option><option value="squad">Squad</option></select>
+    <label class="tm-l">Mode</label>
+    <select id="gameMode" class="enh" data-ui="seg"><option value="esports">ESports</option><option value="classic">Classic</option></select>
+    <label class="tm-l">Type</label>
+    <select id="matchType" class="enh" data-ui="seg"><option value="full_map">Full map</option><option value="clash_squad">Clash squad</option></select>
 
-  <div class="modal-actions"><button type="button" id="cancelTmBtn">Cancel</button><button type="button" class="primary" id="saveTournamentBtn">Save Tournament</button></div>
+    <div class="rule-list">
+      <div class="rule-row"><span>Vehicle</span><select id="vehicle" class="enh" data-ui="tog"><option value="true">Allowed</option><option value="false">Not allowed</option></select></div>
+      <div class="rule-row"><span>Gun skin</span><select id="gunskin" class="enh" data-ui="tog"><option value="false">Not allowed</option><option value="true">Allowed</option></select></div>
+      <div class="rule-row"><span>Emote</span><select id="emote" class="enh" data-ui="tog"><option value="false">Not allowed</option><option value="true">Allowed</option></select></div>
+    </div>
+  </section>
+
+  <section class="tm-card">
+    <h4 class="tm-h">Rules and points</h4>
+    <label class="tm-l" for="rulesText">Tournament rules</label>
+    <textarea id="rulesText" placeholder="Write the rules here..."></textarea>
+    <label class="upl upl-sm" id="rulesUpl">
+      <input id="rulesImages" type="file" accept="image/png,image/jpeg,image/webp" multiple>
+      <span class="upl-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg></span>
+      <span class="upl-txt"><b>Rules images</b><small data-def="Optional, you can pick several">Optional, you can pick several</small></span>
+    </label>
+    <div class="img-note" id="rulesImagesNote"></div>
+    <input type="hidden" id="rulesImagesOld" value="[]">
+
+    <div class="tm-sep"></div>
+
+    <label class="tm-l" for="pointText">Point system</label>
+    <textarea id="pointText" placeholder="Write the point system here..."></textarea>
+    <label class="upl upl-sm" id="pointUpl">
+      <input id="pointImages" type="file" accept="image/png,image/jpeg,image/webp" multiple>
+      <span class="upl-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg></span>
+      <span class="upl-txt"><b>Point system images</b><small data-def="Optional, you can pick several">Optional, you can pick several</small></span>
+    </label>
+    <div class="img-note" id="pointImagesNote"></div>
+    <input type="hidden" id="pointImagesOld" value="[]">
+  </section>
+
+  <section class="tm-card">
+    <h4 class="tm-h">Maps</h4>
+    <label class="tm-l">Number of maps</label>
+    <div class="step" data-for="mapCount"><button type="button" data-d="-1" aria-label="Fewer maps">−</button><output></output><button type="button" data-d="1" aria-label="More maps">+</button></div>
+    <select id="mapCount" class="enh" onchange="renderMapBoxes()"></select>
+    <div id="mapBoxes" class="map-grid"></div>
+  </section>
+
+  <div class="tm-foot"><button type="button" id="cancelTmBtn">Cancel</button><button type="button" class="primary" id="saveTournamentBtn">Save Tournament</button></div>
 </div></div>
 
 <div class="modal" id="gm"><div class="box">
@@ -643,8 +789,11 @@ function renderMapBoxes(prefill){
  $('mapBoxes').innerHTML=Array.from({length:n},(_,i)=>{
   const m=old[i]||{};
   return `<div class="map-box-edit">
-    <label>Map ${i+1}</label><input class="mapName" data-i="${i}" placeholder="Bermuda" value="${esc(m.name||'')}">
-    <label>Image</label><input type="file" class="mapImg" data-i="${i}" accept="image/png,image/jpeg,image/webp">
+    <span class="map-n">${i+1}</span>
+    <div class="map-f">
+      <input class="mapName" data-i="${i}" placeholder="Map name, e.g. Bermuda" value="${esc(m.name||'')}">
+      <label class="map-up"><input type="file" class="mapImg" data-i="${i}" accept="image/png,image/jpeg,image/webp"><span class="map-up-t">${m.image_url?'Replace image':'Add image'}</span></label>
+    </div>
     <input type="hidden" class="mapImgUrl" data-i="${i}" value="${esc(m.image_url||'')}">
     ${m.image_url?`<div class="existing-img" title="${esc(m.image_url)}">✓ Image set</div>`:''}
   </div>`;
@@ -1651,5 +1800,124 @@ document.getElementById('gslotMode').addEventListener('change', function(){ cons
 })();
 </script>
 
+<script>
+/* Create / Edit Tournament modal — UI layer.
+   The original <select>/<input> elements stay in the DOM (hidden) so all existing
+   save/edit logic keeps working; these controls just read and write them. */
+(function(){
+  var tm=document.getElementById('tm'); if(!tm) return;
+  var $=function(id){return document.getElementById(id)};
+  var CHECK='';
+
+  function build(sel){
+    var ui=sel.getAttribute('data-ui'); if(!ui) return;
+    var wrap=sel.nextElementSibling;
+    if(!wrap||wrap.getAttribute('data-for')!==sel.id){
+      wrap=document.createElement('div'); wrap.setAttribute('data-for',sel.id);
+      sel.parentNode.insertBefore(wrap,sel.nextSibling);
+      wrap.addEventListener('click',function(e){
+        var b=e.target.closest('button'); if(!b||b.disabled) return;
+        sel.value=b.getAttribute('data-v');
+        sel.dispatchEvent(new Event('change',{bubbles:true}));
+        sync();
+      });
+    }
+    wrap.className=ui==='chips'?'chips':(ui==='tog'?'seg tog':'seg');
+    wrap.innerHTML=Array.prototype.map.call(sel.options,function(o){
+      var yn=ui==='tog'?(o.value==='true'?' yes':' no'):'';
+      return '<button type="button" data-v="'+o.value.replace(/"/g,'&quot;')+'" data-yn="'+yn+'"'+(o.value===''?' disabled':'')+'>'+o.text.replace(/</g,'&lt;')+'</button>';
+    }).join('');
+    paint(sel,wrap);
+  }
+  function paint(sel,wrap){
+    Array.prototype.forEach.call(wrap.children,function(b){
+      var on=b.getAttribute('data-v')===sel.value;
+      b.className=(on?'on':'')+(on?b.getAttribute('data-yn'):'');
+    });
+  }
+  function steppers(){
+    Array.prototype.forEach.call(tm.querySelectorAll('.step'),function(st){
+      var sel=$(st.getAttribute('data-for')); if(!sel) return;
+      var vals=Array.prototype.map.call(sel.options,function(o){return +o.value});
+      var min=Math.min.apply(null,vals),max=Math.max.apply(null,vals),cur=+sel.value||min;
+      st.querySelector('output').textContent=vals.length?cur:'–';
+      st.children[0].disabled=!vals.length||cur<=min;
+      st.children[2].disabled=!vals.length||cur>=max;
+    });
+  }
+  function files(){
+    [['banner','bannerUpl'],['rulesImages','rulesUpl'],['pointImages','pointUpl']].forEach(function(p){
+      var inp=$(p[0]),box=$(p[1]); if(!inp||!box) return;
+      var f=inp.files||[],title=box.querySelector('.upl-txt b'),small=box.querySelector('.upl-txt small'),prev=box.querySelector('.upl-prev');
+      if(!box.__t){box.__t=title.textContent;}
+      if(f.length){
+        box.classList.add('has');
+        if(p[0]==='banner'){
+          title.textContent=f[0].name; small.textContent='Tap to change';
+          if(prev){ if(prev.__u) URL.revokeObjectURL(prev.__u); prev.__u=URL.createObjectURL(f[0]); prev.src=prev.__u; prev.classList.add('show'); }
+        }else{
+          title.textContent=f.length+(f.length>1?' images':' image')+' selected'; small.textContent='Tap to change';
+        }
+      }else{
+        box.classList.remove('has'); title.textContent=box.__t;
+        small.textContent=small.getAttribute('data-def')||'PNG, JPG or WebP';
+        if(prev){prev.classList.remove('show');prev.removeAttribute('src');}
+      }
+    });
+  }
+  function mapFiles(){
+    Array.prototype.forEach.call(tm.querySelectorAll('.map-up'),function(l){
+      var inp=l.querySelector('input'),t=l.querySelector('.map-up-t');
+      if(!l.__t) l.__t=t.textContent;
+      if(inp.files&&inp.files[0]){l.classList.add('has');if(t.textContent!==inp.files[0].name)t.textContent=inp.files[0].name;}
+      else{l.classList.remove('has');if(t.textContent!==l.__t)t.textContent=l.__t;}
+    });
+  }
+  function pool(){
+    var s=0; Array.prototype.forEach.call(tm.querySelectorAll('.prizeAmt'),function(i){s+=(+i.value||0)});
+    var v=$('prizePoolView'); if(v) v.textContent='৳ '+s.toLocaleString('en-US');
+  }
+  function sync(){
+    Array.prototype.forEach.call(tm.querySelectorAll('select[data-ui]'),function(sel){
+      var w=sel.nextElementSibling; if(w&&w.getAttribute('data-for')===sel.id) paint(sel,w);
+    });
+    steppers(); files(); mapFiles(); pool();
+  }
+
+  Array.prototype.forEach.call(tm.querySelectorAll('select[data-ui]'),build);
+
+  /* stepper clicks */
+  tm.addEventListener('click',function(e){
+    var b=e.target.closest('.step button'); if(!b) return;
+    var st=b.parentNode,sel=$(st.getAttribute('data-for')),d=+b.getAttribute('data-d');
+    var vals=Array.prototype.map.call(sel.options,function(o){return +o.value});
+    var next=(+sel.value||vals[0])+d;
+    if(vals.indexOf(next)<0) return;
+    sel.value=String(next); sel.dispatchEvent(new Event('change',{bubbles:true})); sync();
+  });
+  tm.addEventListener('change',function(e){
+    if(e.target.type==='file'){files();mapFiles();}
+  });
+  tm.addEventListener('input',function(e){
+    if(e.target.classList&&e.target.classList.contains('prizeAmt')) pool();
+  });
+
+  /* react to programmatic changes made by the existing code */
+  var mo=new MutationObserver(function(muts){
+    muts.forEach(function(m){
+      if(m.type==='childList'&&m.target.tagName==='SELECT'&&m.target.getAttribute('data-ui')) build(m.target);
+    });
+    sync();
+  });
+  Array.prototype.forEach.call(tm.querySelectorAll('select'),function(s){mo.observe(s,{childList:true})});
+  mo.observe($('prizeBoxes'),{childList:true,subtree:true});
+  mo.observe($('mapBoxes'),{childList:true,subtree:true});
+  new MutationObserver(function(){
+    if(tm.classList.contains('open')){ sync(); var b=tm.querySelector('.box'); if(b) b.scrollTop=0; }
+  }).observe(tm,{attributes:true,attributeFilter:['class']});
+  sync();
+})();
+
+</script>
 </body>
 </html>
