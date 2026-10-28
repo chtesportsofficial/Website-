@@ -92,6 +92,15 @@
   .lobby-avatar.full{border-color:#555c6c;}
   .lobby-time{font-size:15px;font-weight:500;}
   .lobby-date{font-size:9px;color:var(--text-dim);flex-shrink:0;white-space:nowrap;}
+  .lobby-dt{display:flex;align-items:center;gap:8px;min-width:0;}
+  .lobby-dt-date{font-size:15px;font-weight:700;color:var(--text);}
+  .lobby-dt-dot{color:var(--text-dim);font-size:14px;}
+  .lobby-dt-time{font-size:15px;font-weight:700;color:var(--gold);}
+  .grp-chip{flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:56px;padding:5px 12px;border-radius:10px;background:rgba(245,166,35,.12);border:1px solid rgba(245,166,35,.45);}
+  .grp-chip-label{font-size:8px;letter-spacing:.08em;color:var(--text-dim);font-weight:600;}
+  .grp-chip b{font-size:15px;font-weight:800;color:var(--orange);line-height:1.15;}
+  .grp-chip.full{background:rgba(255,255,255,.04);border-color:var(--border);}
+  .grp-chip.full b{color:var(--text-dim);}
   .lobby-meta{display:flex;justify-content:space-between;margin-bottom:5px;font-size:11px;color:var(--text-mid);}
   .lobby-bar{height:5px;background:#2a3145;border-radius:4px;overflow:hidden;margin-bottom:10px;}
   .lobby-bar-fill{height:100%;background:var(--orange);}
@@ -556,14 +565,26 @@ async function initUser(){
     // lobby_date is stored as YYYY-MM-DD -> shown as DD-MM-YYYY
     const dateParts=(l.lobby_date||'').split('-');
     const dateLabel=dateParts.length===3?`${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`:(l.lobby_date||'');
-    return `<div class="lobby-card" id="lcard-${l.id}">
-      <div class="lobby-top">
+    // Paid tournaments: "28 October • 10 PM" on the left (date first, then
+    // time) and the group name as its own small card on the right.
+    const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const dp=(l.lobby_date||'').split('-');
+    const niceDate=dp.length===3?`${+dp[2]} ${MONTHS[(+dp[1])-1]||''}`:(l.lobby_date||'');
+    const niceTime=String(l.time_label||'').replace(/:00(\s*[AP]M)/i,'$1');
+    const topHtml=(t.tour_type==='paid')
+      ?`<div class="lobby-top">
+        <div class="lobby-dt"><span class="lobby-dt-date">${esc(niceDate)}</span><span class="lobby-dt-dot">•</span><span class="lobby-dt-time">${esc(niceTime)}</span></div>
+        <div class="grp-chip ${full?'full':''}"><span class="grp-chip-label">GROUP</span><b>${esc(grpName?grpName.replace(/^group\s*/i,''):'—')}</b></div>
+      </div>`
+      :`<div class="lobby-top">
         <div class="lobby-left">
           <div class="lobby-avatar ${full?'full':''}">${esc((grpName?grpName.split(/\s+/).pop():(l.time_label||'?'))[0])}</div>
           <div class="lobby-time">${esc(timeLabelFull)}</div>
         </div>
         <div class="lobby-date">${esc(dateLabel)}</div>
-      </div>
+      </div>`;
+    return `<div class="lobby-card" id="lcard-${l.id}">
+      ${topHtml}
       <div class="lobby-meta"><span>Joined: ${joined}</span><span>last ${left} slot left</span><span>Slots: ${slots}</span></div>
       <div class="lobby-bar"><div class="lobby-bar-fill ${full?'full':''}" style="width:${pct}%"></div></div>
       <button class="join-btn ${full?'full':''}" id="jbtn-${l.id}" type="button" ${full?'disabled':`onclick="toggleLobbySelect('${l.id}')"`}>${full?'FULL':'BUY SLOT'}</button>
