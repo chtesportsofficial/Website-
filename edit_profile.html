@@ -10,7 +10,22 @@
 :root{--bg:#0b0d10;--card:#15181d;--field:#181c21;--border:#2a3037;--text:#f4f5f7;--muted:#9ba2ad;--green:#22c55e;--red:#ef4444}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Segoe UI,Roboto,Arial,sans-serif;display:flex;justify-content:center;padding:16px 0 40px}.phone{width:100%;max-width:420px;padding:0 16px}
 .topbar{display:flex;align-items:center;gap:12px;margin-bottom:18px}.back-btn{width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer}.back-btn svg{width:20px;height:20px}.topbar h1{margin:0;font-size:19px;font-weight:750}
-.photo-card{height:128px;background:var(--field);border:1px solid var(--border);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:20px}
+.completion-card{background:var(--field);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.cc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.cc-title{font-size:13px;font-weight:700;color:#aeb5c0}
+.cc-top b{font-size:15px;color:var(--green)}
+.cc-bar{height:7px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden}
+.cc-fill{height:100%;width:0;background:linear-gradient(90deg,#1eae50,#2bc75f);border-radius:5px;transition:width .35s ease}
+.cc-hint{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.45}
+.photo-card{background:var(--field);border:1px solid var(--border);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px 16px 16px;margin-bottom:20px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.photo-cta{font-size:15px;font-weight:750;color:var(--text)}
+.photo-sub{font-size:11.5px;color:var(--muted);margin-top:-10px}
+.photo-card.empty{border:1.5px dashed var(--green);background:rgba(34,197,94,.06)}
+.photo-card.empty .photo-cta{color:var(--green)}
+.photo-card.empty .avatar-wrap:before{border-color:var(--green);animation:logoPulse 1.8s ease-out infinite}
+.photo-card.empty .camera-btn{background:var(--green);border-color:var(--green);color:#04141f}
+@keyframes logoPulse{0%{transform:scale(1);opacity:.9}100%{transform:scale(1.3);opacity:0}}
+@media (prefers-reduced-motion:reduce){.photo-card.empty .avatar-wrap:before{animation:none}.cc-fill{transition:none}}
 .avatar-wrap{width:76px;height:76px;border-radius:50%;position:relative}.avatar-wrap:before{content:"";position:absolute;inset:-10px;border:1px solid var(--border);border-radius:50%}.avatar-wrap:after{content:"";position:absolute;inset:-4px;border:1px solid var(--border);border-radius:50%}
 .avatar{width:76px;height:76px;border-radius:50%;overflow:hidden;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;position:relative;z-index:1}.avatar svg{width:40px;height:40px;color:var(--muted)}#avatarImg{display:none;width:100%;height:100%;object-fit:cover}
 .camera-btn{position:absolute;z-index:3;right:-2px;bottom:-2px;width:28px;height:28px;border-radius:50%;border:2px solid var(--border);background:var(--card);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer}.camera-btn svg{width:14px;height:14px}
@@ -44,7 +59,7 @@ input,select{width:100%;border:0;outline:0;background:transparent;color:var(--te
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast.success{background:#1c7c4d}
 .toast.error{background:#7c1c2b}
-@media(max-width:380px){.back-btn{width:40px;height:40px}.topbar h1{font-size:18px}.photo-card{height:112px}.avatar,.avatar-wrap{width:68px;height:68px}}
+@media(max-width:380px){.back-btn{width:40px;height:40px}.topbar h1{font-size:18px}.avatar,.avatar-wrap{width:68px;height:68px}}
 
 /* Photo picker bottom sheet */
 .sheet-overlay{display:none;position:fixed;left:0;top:0;width:100%;height:calc(var(--vvh, 100vh));background:rgba(0,0,0,.55);z-index:99999;align-items:flex-end;justify-content:center;pointer-events:none}
@@ -163,14 +178,16 @@ input,select{width:100%;border:0;outline:0;background:transparent;color:var(--te
 <div class="topbar"><button class="back-btn" type="button" onclick="history.back()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button><h1 data-i18n="editprofile.title">Edit your Profile</h1></div>
 <form id="profileForm" novalidate>
 
-<div class="photo-card"><div class="avatar-wrap"><div class="avatar">
+<div class="completion-card"><div class="cc-top"><span class="cc-title">প্রোফাইল সম্পূর্ণ</span><b id="ccPct">0%</b></div><div class="cc-bar"><div class="cc-fill" id="ccFill"></div></div><div class="cc-hint" id="ccHint"></div></div>
+
+<div class="photo-card" id="photoCard" role="button" tabindex="0"><div class="avatar-wrap"><div class="avatar">
 <svg id="avatarPlaceholder" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
 <img id="avatarImg" alt="Profile picture">
 </div>
 <button class="camera-btn" type="button" id="cameraBtn" aria-label="Change profile picture"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
 <input id="galleryInput" type="file" accept="image/*" hidden>
 <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden>
-</div></div>
+</div><div class="photo-cta" id="photoCta">টিমের লোগো যোগ করুন</div><div class="photo-sub" id="photoSub">ট্যাপ করে আপনার টিমের লোগো দিন</div></div>
 
 <div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label" data-i18n="editprofile.whatsapp">WHATSAPP NUMBER :</span></div><div class="input-wrap" id="whatsapp-wrap"><input id="whatsapp" type="tel" placeholder="Enter your WhatsApp number" data-i18n-placeholder="editprofile.whatsappPh"></div><div class="field-error-text" id="whatsapp-err" data-i18n="editprofile.whatsappErr">Please enter a valid WhatsApp number (at least 7 digits).</div></div>
 <div class="field-group"><div class="label-row"><span class="label-bar"></span><span class="label" data-i18n="editprofile.email">EMAIL :</span></div><div class="input-wrap readonly"><input id="email" type="email" placeholder="Enter your email" data-i18n-placeholder="editprofile.emailPh" readonly></div><div class="field-note" data-i18n="editprofile.emailNote">Login email — contact support to change.</div></div>
@@ -406,6 +423,7 @@ function renderLocationList(filter){
     btn.querySelector('.loc-name').textContent=d;
     btn.addEventListener('click', function(){
       fields.location.value=d;
+      updateCompletion();
       closeLocationOverlay();
     });
     locationList.appendChild(btn);
@@ -474,6 +492,46 @@ function showPlaceholder(){
 
 const savedPicture=localStorage.getItem('profile_picture');
 if(savedPicture) showPicture(savedPicture);
+
+/* Logo prompt + profile completion %. The whole photo card is tappable
+   (not just the small camera icon), and it pulses green while no logo is
+   set. Completion counts 5 editable items, 20% each. */
+const photoCard=document.getElementById('photoCard');
+const photoCta=document.getElementById('photoCta');
+const photoSub=document.getElementById('photoSub');
+const ccPct=document.getElementById('ccPct');
+const ccFill=document.getElementById('ccFill');
+const ccHint=document.getElementById('ccHint');
+
+function updateCompletion(){
+  const hasPic=!!avatarImg.getAttribute('src');
+  photoCard.classList.toggle('empty',!hasPic);
+  photoCta.textContent=hasPic?'লোগো পরিবর্তন করুন':'টিমের লোগো যোগ করুন';
+  photoSub.style.display=hasPic?'none':'';
+  const items=[
+    {ok:hasPic,label:'টিমের লোগো'},
+    {ok:isWhatsappValid(fields.whatsapp.value.trim()),label:'WhatsApp নম্বর'},
+    {ok:!!fields.teamName.value.trim(),label:'টিমের নাম'},
+    {ok:!!fields.slogan.value.trim(),label:'টিম স্লোগান'},
+    {ok:!!fields.location.value.trim(),label:'লোকেশন'}
+  ];
+  const done=items.filter(i=>i.ok).length;
+  const pct=done*20;
+  ccPct.textContent=pct+'%';
+  ccFill.style.width=pct+'%';
+  const missing=items.filter(i=>!i.ok).map(i=>i.label);
+  ccHint.textContent=missing.length?('বাকি আছে: '+missing.join(', ')):'দারুণ! আপনার প্রোফাইল সম্পূর্ণ ✓';
+}
+photoCard.addEventListener('click',e=>{
+  if(e.target.closest('#cameraBtn')) return; // camera button has its own handler
+  cameraBtn.click();
+});
+photoCard.addEventListener('keydown',e=>{
+  if(e.key==='Enter'||e.key===' '){ e.preventDefault(); cameraBtn.click(); }
+});
+new MutationObserver(updateCompletion).observe(avatarImg,{attributes:true,attributeFilter:['src','style']});
+['whatsapp','teamName','slogan','location'].forEach(k=>fields[k].addEventListener('input',updateCompletion));
+updateCompletion();
 
 function updateDeleteAvailability(){
   const hasPicture = !!avatarImg.getAttribute('src');
