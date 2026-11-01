@@ -109,6 +109,10 @@
   .lobby-dt-dot{color:var(--text-dim);font-size:14px;}
   .lobby-dt-time{font-size:15px;font-weight:700;color:var(--gold);}
   .grp-chip{flex-shrink:0;padding:6px 14px;border-radius:999px;background:var(--orange);color:#241705;font-size:12.5px;font-weight:800;white-space:nowrap;}
+  .qual-row{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 10px;}
+  .qual-chip{padding:4px 10px;border-radius:999px;font-size:11.5px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;background:rgba(53,214,128,.12);border:1px solid rgba(53,214,128,.4);color:#35d680;}
+  .qual-chip.bottom{background:rgba(96,165,250,.12);border-color:rgba(96,165,250,.4);color:#60a5fa;}
+  html[data-theme="light"] .qual-chip{color:#0e8f55;} html[data-theme="light"] .qual-chip.bottom{color:#1d6fd1;}
   .grp-chip.full{background:#2a3145;color:var(--text-dim);}
   .lobby-meta{display:flex;justify-content:space-between;margin-bottom:5px;font-size:11px;color:var(--text-mid);}
   .lobby-bar{height:5px;background:#2a3145;border-radius:4px;overflow:hidden;margin-bottom:10px;}
@@ -282,6 +286,17 @@ function tourCopy(t){
   if(ty==='paid')return{title:'Groups',sub:'Pick the group you want to play. You can join more than one group.',loading:'Loading groups...',empty:'No groups open right now.'};
   if(ty==='weekly')return{title:'Match day',sub:'One match on one day. Join the slot below.',loading:'Loading match...',empty:'No match scheduled yet.'};
   return{title:'Hourly lobbies',sub:'Play the tournament at whichever time suits you.',loading:'Loading lobbies...',empty:'No lobbies open right now.'};
+}
+// Qualify rules per group, e.g. [{type:'top',n:6,dest:'R2'}] -> "TOP 6 → R2"
+function qualChips(l){
+  const r=Array.isArray(l&&l.qualify_rules)?l.qualify_rules:[];
+  if(!r.length)return '';
+  return '<div class="qual-row">'+r.map(x=>{
+    const n=Math.max(0,Number(x.n)||0); if(!n)return '';
+    const kind=x.type==='bottom'?'bottom':'top';
+    const dest=String(x.dest||'').trim();
+    return `<span class="qual-chip ${kind}">${kind==='bottom'?'Bottom':'Top'} ${n} ${dest?'→ '+esc(dest):'qualify'}</span>`;
+  }).join('')+'</div>';
 }
 function lobbyTag(l){return (currentTournament&&currentTournament.tour_type==='paid'&&l&&l.custom_title)?String(l.custom_title).trim()+' · ':''}
 
@@ -598,6 +613,7 @@ async function initUser(){
       </div>`;
     return `<div class="lobby-card" id="lcard-${l.id}">
       ${topHtml}
+      ${t.tour_type==='paid'?qualChips(l):''}
       <div class="lobby-meta"><span>Joined: ${joined}</span><span>last ${left} slot left</span><span>Slots: ${slots}</span></div>
       <div class="lobby-bar"><div class="lobby-bar-fill ${full?'full':''}" style="width:${pct}%"></div></div>
       <div class="lobby-buy-row">

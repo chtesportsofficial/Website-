@@ -295,6 +295,14 @@ html{min-height:100%;background-color:#1b2140;background-image:radial-gradient(c
 .grp-dt{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .grp-dt input{min-width:0}
 </style>
+<style>
+.grp-q{margin-top:9px;padding-top:9px;border-top:1px dashed #2b3852}
+.grp-q-h{font-size:10.5px;font-weight:800;color:#8d98ab;margin-bottom:6px}
+.grp-q-row{display:grid;grid-template-columns:52px 62px 14px 1fr;gap:6px;align-items:center;margin-top:6px}
+.grp-q-row span{font-size:12px;font-weight:700;color:#b6c1d4}
+.grp-q-row i{font-style:normal;color:#25d366;text-align:center;font-weight:800}
+.grp-q-row input{min-width:0}
+</style>
 </head>
 <body>
 <main class="wrap">
@@ -1137,12 +1145,21 @@ function openLobbies(tid){
 //  daily  -> date + one or more hourly times (lobbies)
 //  weekly -> one date + one time, only ONE match at a time
 //  paid   -> groups, each with its own name, date and time
+function qualText(l){
+  const r=Array.isArray(l.qualify_rules)?l.qualify_rules:[];
+  return r.length?' · '+r.map(x=>(x.type==='bottom'?'Bottom ':'Top ')+x.n+(x.dest?' → '+esc(x.dest):'')).join(', '):'';
+}
 function groupLetter(i){return String.fromCharCode(65+(i%26))}
 function addGroupRow(){
   const box=$('groupRows');
   const idx=(lobbies||[]).filter(l=>l.custom_title).length+box.children.length;
   const d=document.createElement('div'); d.className='grp-row';
-  d.innerHTML='<input class="grpName" placeholder="Group name" value="Group '+groupLetter(idx)+'"><div class="grp-dt"><input type="date" class="grpDate" value="'+ymd(new Date())+'"><input type="time" class="grpTime"></div>';
+  const prev=box.lastElementChild;
+  const pv=c=>prev?(prev.querySelector('.'+c).value||''):'';
+  d.innerHTML='<input class="grpName" placeholder="Group name" value="Group '+groupLetter(idx)+'"><div class="grp-dt"><input type="date" class="grpDate" value="'+ymd(new Date())+'"><input type="time" class="grpTime"></div>'
+   +'<div class="grp-q"><div class="grp-q-h">Qualify (optional)</div>'
+   +'<div class="grp-q-row"><span>Top</span><input type="number" min="0" inputmode="numeric" class="qTopN" placeholder="6" value="'+pv('qTopN')+'"><i>→</i><input class="qTopDest" placeholder="R2 / Final" value="'+pv('qTopDest').replace(/"/g,'&quot;')+'"></div>'
+   +'<div class="grp-q-row"><span>Bottom</span><input type="number" min="0" inputmode="numeric" class="qBotN" placeholder="–" value="'+pv('qBotN')+'"><i>→</i><input class="qBotDest" placeholder="Semi Final" value="'+pv('qBotDest').replace(/"/g,'&quot;')+'"></div></div>';
   box.appendChild(d);
   if(window.__enhanceDates)window.__enhanceDates(d);
 }
@@ -1259,7 +1276,7 @@ function renderHistory(){
         <div class="lobby-date">${fmtLobbyDate(l.lobby_date)} — ${esc(l.time_label)}${l.custom_title?` <span style="color:#8b96aa;font-weight:700">(${esc(l.custom_title)})</span>`:''}</div>
         <div class="lobby-status completed">✔ COMPLETED</div>
       </div>
-      <div class="lobby-meta">${l.joined_count||0}/${l.total_slots||0} joined · ${Number(l.booked_slots)||0} booked</div>
+      <div class="lobby-meta">${l.joined_count||0}/${l.total_slots||0} joined · ${Number(l.booked_slots)||0} booked${qualText(l)}</div>
       <div class="lobby-actions">
         <button class="mini green" onclick="openResultsFromHistory('${l.id}')">View Results</button>
         <button class="mini" onclick="openTeamsFromHistory('${l.id}')">Add Team</button>
@@ -1375,11 +1392,15 @@ async function saveLobbies(){
   const slots=currentLobbyTournament.default_slots||currentLobbyTournament.total_slots||0;
   let rows=[];
   if(ty==='paid'){
-    const gs=[...document.querySelectorAll('#groupRows .grp-row')].map(r=>({name:r.querySelector('.grpName').value.trim(),date:r.querySelector('.grpDate').value,time:timeValueTo12h(r.querySelector('.grpTime').value)}));
+    const gs=[...document.querySelectorAll('#groupRows .grp-row')].map(r=>({name:r.querySelector('.grpName').value.trim(),date:r.querySelector('.grpDate').value,time:timeValueTo12h(r.querySelector('.grpTime').value),rules:(function(){
+      const out=[],tn=+r.querySelector('.qTopN').value||0,bn=+r.querySelector('.qBotN').value||0;
+      if(tn>0)out.push({type:'top',n:tn,dest:r.querySelector('.qTopDest').value.trim()});
+      if(bn>0)out.push({type:'bottom',n:bn,dest:r.querySelector('.qBotDest').value.trim()});
+      return out;})()}));
     if(!gs.length)return msg('Add at least one group.');
     if(gs.some(g=>!g.name))return msg('Every group needs a name.');
     if(gs.some(g=>!g.date||!g.time))return msg('Every group needs a date and a time.');
-    rows=gs.map(g=>({tournament_id:tid,lobby_date:g.date,time_label:g.time,total_slots:slots,status:'upcoming',custom_title:g.name}));
+    rows=gs.map(g=>({tournament_id:tid,lobby_date:g.date,time_label:g.time,total_slots:slots,status:'upcoming',custom_title:g.name,qualify_rules:g.rules.length?g.rules:null}));
   }else{
     const date=$('lobbyDate').value; if(!date)return msg('Pick a date.');
     let times=[...document.querySelectorAll('.lobby-time-row')].map(row=>timeValueTo12h(row.querySelector('.lobbyTimeInput').value)).filter(Boolean);
