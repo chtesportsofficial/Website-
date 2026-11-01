@@ -110,10 +110,16 @@
   .lobby-dt-time{font-size:15px;font-weight:700;color:var(--gold);}
   .grp-chip{flex-shrink:0;padding:6px 14px;border-radius:999px;background:var(--orange);color:#241705;font-size:12.5px;font-weight:800;white-space:nowrap;}
   .grp-left{display:flex;align-items:center;gap:8px;min-width:0;}
-  .qual-btn{flex:0 0 auto;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;padding:0;cursor:pointer;background:rgba(53,214,128,.14);border:1.5px solid rgba(53,214,128,.55);color:#35d680;}
+  .paid-top{flex-wrap:wrap;row-gap:8px;}
+  .lobby-right{display:flex;align-items:center;gap:8px;margin-left:auto;min-width:0;}
+  .qual-btn{flex:0 0 auto;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;padding:0;cursor:pointer;background:#22c55e;border:none;color:#fff;animation:qpulse 2.2s ease-out infinite;}
   .qual-btn svg{width:16px;height:16px;}
-  .qual-btn:active{transform:scale(.94);}
-  html[data-theme="light"] .qual-btn{color:#0e8f55;}
+  .qual-btn:active{transform:scale(.92);}
+  @keyframes qpulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.55);}70%{box-shadow:0 0 0 9px rgba(34,197,94,0);}100%{box-shadow:0 0 0 0 rgba(34,197,94,0);}}
+  @media (prefers-reduced-motion:reduce){.qual-btn{animation:none;}}
+  #popupOverlay.center{align-items:center;padding:20px;}
+  #popupOverlay.center .popup-box{max-width:360px;border:1px solid rgba(255,255,255,0.1);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.55);animation:popIn .2s ease;}
+  @keyframes popIn{from{transform:scale(.94);opacity:0;}to{transform:scale(1);opacity:1;}}
   .qz-rank{font-size:14px;font-weight:700;}
   .qz-dest{font-size:14px;font-weight:800;color:#35d680;}
   html[data-theme="light"] .qz-dest{color:#0e8f55;}
@@ -307,6 +313,7 @@ function qualifyHtml(l){
 function openQualify(id){
   const l=lobbyDataById[id]; if(!l)return;
   openPopup('🏅 '+(l.custom_title||'Group')+' — Qualify',qualifyHtml(l));
+  document.getElementById('popupOverlay').classList.add('center');
 }
 function lobbyTag(l){return (currentTournament&&currentTournament.tour_type==='paid'&&l&&l.custom_title)?String(l.custom_title).trim()+' · ':''}
 
@@ -610,9 +617,9 @@ async function initUser(){
     const niceDate=dp.length===3?`${+dp[2]} ${MONTHS[(+dp[1])-1]||''}`:(l.lobby_date||'');
     const niceTime=String(l.time_label||'').replace(/:00(\s*[AP]M)/i,'$1');
     const topHtml=(t.tour_type==='paid')
-      ?`<div class="lobby-top">
-        <div class="grp-left"><div class="grp-chip ${full?'full':''}">${esc(grpName||'Group')}</div>${qualRules(l).length?`<button class="qual-btn" type="button" aria-label="Qualify info" onclick="openQualify('${l.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 16.5v-5M12 7.8h.01"/></svg></button>`:''}</div>
-        <div class="lobby-dt"><span class="lobby-dt-date">${esc(niceDate)}</span><span class="lobby-dt-dot">•</span><span class="lobby-dt-time">${esc(niceTime)}</span></div>
+      ?`<div class="lobby-top paid-top">
+        <div class="grp-chip ${full?'full':''}">${esc(grpName||'Group')}</div>
+        <div class="lobby-right"><div class="lobby-dt"><span class="lobby-dt-date">${esc(niceDate)}</span><span class="lobby-dt-dot">•</span><span class="lobby-dt-time">${esc(niceTime)}</span></div>${qualRules(l).length?`<button class="qual-btn" type="button" aria-label="Qualify info" onclick="openQualify('${l.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M12 11v6.5M12 6.8h.01"/></svg></button>`:''}</div>
       </div>`
       :`<div class="lobby-top">
         <div class="lobby-left">
@@ -703,7 +710,7 @@ function openPopup(title,html,onClose){
   lockBodyScroll();
 }
 function closePopup(){
-  document.getElementById('popupOverlay').classList.remove('open');
+  document.getElementById('popupOverlay').classList.remove('open','center');
   if(popupOnClose){const fn=popupOnClose;popupOnClose=null;fn();}
   unlockBodyScroll();
 }
