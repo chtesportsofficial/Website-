@@ -109,10 +109,14 @@
   .lobby-dt-dot{color:var(--text-dim);font-size:14px;}
   .lobby-dt-time{font-size:15px;font-weight:700;color:var(--gold);}
   .grp-chip{flex-shrink:0;padding:6px 14px;border-radius:999px;background:var(--orange);color:#241705;font-size:12.5px;font-weight:800;white-space:nowrap;}
-  .qual-row{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 10px;}
-  .qual-chip{padding:4px 10px;border-radius:999px;font-size:11.5px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;background:rgba(53,214,128,.12);border:1px solid rgba(53,214,128,.4);color:#35d680;}
-  .qual-chip.bottom{background:rgba(96,165,250,.12);border-color:rgba(96,165,250,.4);color:#60a5fa;}
-  html[data-theme="light"] .qual-chip{color:#0e8f55;} html[data-theme="light"] .qual-chip.bottom{color:#1d6fd1;}
+  .grp-left{display:flex;align-items:center;gap:8px;min-width:0;}
+  .qual-btn{flex:0 0 auto;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;padding:0;cursor:pointer;background:rgba(53,214,128,.14);border:1.5px solid rgba(53,214,128,.55);color:#35d680;}
+  .qual-btn svg{width:16px;height:16px;}
+  .qual-btn:active{transform:scale(.94);}
+  html[data-theme="light"] .qual-btn{color:#0e8f55;}
+  .qz-rank{font-size:14px;font-weight:700;}
+  .qz-dest{font-size:14px;font-weight:800;color:#35d680;}
+  html[data-theme="light"] .qz-dest{color:#0e8f55;}
   .grp-chip.full{background:#2a3145;color:var(--text-dim);}
   .lobby-meta{display:flex;justify-content:space-between;margin-bottom:5px;font-size:11px;color:var(--text-mid);}
   .lobby-bar{height:5px;background:#2a3145;border-radius:4px;overflow:hidden;margin-bottom:10px;}
@@ -287,16 +291,22 @@ function tourCopy(t){
   if(ty==='weekly')return{title:'Match day',sub:'One match on one day. Join the slot below.',loading:'Loading match...',empty:'No match scheduled yet.'};
   return{title:'Hourly lobbies',sub:'Play the tournament at whichever time suits you.',loading:'Loading lobbies...',empty:'No lobbies open right now.'};
 }
-// Qualify rules per group, e.g. [{type:'top',n:6,dest:'R2'}] -> "TOP 6 → R2"
-function qualChips(l){
-  const r=Array.isArray(l&&l.qualify_rules)?l.qualify_rules:[];
-  if(!r.length)return '';
-  return '<div class="qual-row">'+r.map(x=>{
-    const n=Math.max(0,Number(x.n)||0); if(!n)return '';
-    const kind=x.type==='bottom'?'bottom':'top';
+// Qualify rules per group, e.g. [{type:'top',n:6,dest:'Round 2'}].
+// Shown in a popup that opens from the small trophy icon on the group card.
+function qualRules(l){
+  return (Array.isArray(l&&l.qualify_rules)?l.qualify_rules:[]).filter(x=>Math.max(0,Number(x.n)||0)>0);
+}
+function qualifyHtml(l){
+  const rows=qualRules(l).map(x=>{
+    const label=(x.type==='bottom'?'Bottom ':'Top ')+Number(x.n);
     const dest=String(x.dest||'').trim();
-    return `<span class="qual-chip ${kind}">${kind==='bottom'?'Bottom':'Top'} ${n} ${dest?'→ '+esc(dest):'qualify'}</span>`;
-  }).join('')+'</div>';
+    return `<div class="pz-row"><span class="pz-rank qz-rank">${label}</span><span class="qz-dest">${dest?'→ '+esc(dest):'Qualify'}</span></div>`;
+  }).join('');
+  return rows?`<div class="pz-list">${rows}</div>`:'<div class="pz-empty">No qualify info added yet.</div>';
+}
+function openQualify(id){
+  const l=lobbyDataById[id]; if(!l)return;
+  openPopup('🏅 '+(l.custom_title||'Group')+' — Qualify',qualifyHtml(l));
 }
 function lobbyTag(l){return (currentTournament&&currentTournament.tour_type==='paid'&&l&&l.custom_title)?String(l.custom_title).trim()+' · ':''}
 
@@ -601,7 +611,7 @@ async function initUser(){
     const niceTime=String(l.time_label||'').replace(/:00(\s*[AP]M)/i,'$1');
     const topHtml=(t.tour_type==='paid')
       ?`<div class="lobby-top">
-        <div class="grp-chip ${full?'full':''}">${esc(grpName||'Group')}</div>
+        <div class="grp-left"><div class="grp-chip ${full?'full':''}">${esc(grpName||'Group')}</div>${qualRules(l).length?`<button class="qual-btn" type="button" aria-label="Qualify info" onclick="openQualify('${l.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 16.5v-5M12 7.8h.01"/></svg></button>`:''}</div>
         <div class="lobby-dt"><span class="lobby-dt-date">${esc(niceDate)}</span><span class="lobby-dt-dot">•</span><span class="lobby-dt-time">${esc(niceTime)}</span></div>
       </div>`
       :`<div class="lobby-top">
@@ -613,7 +623,6 @@ async function initUser(){
       </div>`;
     return `<div class="lobby-card" id="lcard-${l.id}">
       ${topHtml}
-      ${t.tour_type==='paid'?qualChips(l):''}
       <div class="lobby-meta"><span>Joined: ${joined}</span><span>last ${left} slot left</span><span>Slots: ${slots}</span></div>
       <div class="lobby-bar"><div class="lobby-bar-fill ${full?'full':''}" style="width:${pct}%"></div></div>
       <div class="lobby-buy-row">
