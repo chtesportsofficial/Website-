@@ -34,7 +34,11 @@
     --text:#12141a;
     --text-dim:#8a93a6;
     --text-mid:#606a7d;
+    --gold:#b45309;
   }
+  html[data-theme="light"] .fee-box{background:#fff3d1;border-color:#e0a82e;}
+  html[data-theme="light"] .fee-label{color:#7a5a12;}
+  html[data-theme="light"] .lobby-dt-time{color:#b45309;}
   *{box-sizing:border-box;margin:0;padding:0;}
   /* global.js injects a ".app-footer" copyright line on every page, styled
      normally via theme.css — this page doesn't link theme.css (to avoid
@@ -570,7 +574,7 @@ async function initUser(){
     // using the tournament's own entry fee — no need to type the fee
     // into every lobby's time label.
     const grpName=(t.tour_type==='paid'&&l.custom_title)?String(l.custom_title).trim():'';
-    const timeLabelFull=grpName?`${grpName} — ${l.time_label||''}`:`${l.time_label||''} SLOT (${Number(t.entry_fee||0)} BDT)`.trim();
+    const timeLabelFull=grpName?`${grpName} — ${l.time_label||''}`:`${l.time_label||''} SLOT`.trim();
     // lobby_date is stored as YYYY-MM-DD -> shown as DD-MM-YYYY
     const dateParts=(l.lobby_date||'').split('-');
     const dateLabel=dateParts.length===3?`${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`:(l.lobby_date||'');
@@ -582,8 +586,8 @@ async function initUser(){
     const niceTime=String(l.time_label||'').replace(/:00(\s*[AP]M)/i,'$1');
     const topHtml=(t.tour_type==='paid')
       ?`<div class="lobby-top">
-        <div class="lobby-dt"><span class="lobby-dt-date">${esc(niceDate)}</span><span class="lobby-dt-dot">•</span><span class="lobby-dt-time">${esc(niceTime)}</span></div>
         <div class="grp-chip ${full?'full':''}">${esc(grpName||'Group')}</div>
+        <div class="lobby-dt"><span class="lobby-dt-date">${esc(niceDate)}</span><span class="lobby-dt-dot">•</span><span class="lobby-dt-time">${esc(niceTime)}</span></div>
       </div>`
       :`<div class="lobby-top">
         <div class="lobby-left">
