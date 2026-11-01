@@ -110,6 +110,11 @@
   .lobby-bar{height:5px;background:#2a3145;border-radius:4px;overflow:hidden;margin-bottom:10px;}
   .lobby-bar-fill{height:100%;background:var(--orange);}
   .lobby-bar-fill.full{background:#5f6472;}
+  .lobby-buy-row{display:flex;align-items:stretch;gap:8px;}
+  .fee-box{flex:0 0 auto;min-width:84px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 12px;border-radius:10px;background:rgba(242,183,5,.1);border:1px solid rgba(242,183,5,.35);}
+  .fee-label{font-size:8.5px;letter-spacing:.06em;color:var(--text-dim);font-weight:600;}
+  .fee-amt{font-size:16px;font-weight:800;color:var(--gold);line-height:1.2;}
+  .lobby-buy-row .join-btn{flex:1;width:auto;}
   .join-btn{background:var(--orange);border:none;border-bottom:3px solid var(--orange-dark);border-radius:10px;padding:10px;text-align:center;color:#241705;font-size:13px;font-weight:500;width:100%;cursor:pointer;font-family:inherit;}
   .join-btn.full{background:#2a3145;border-bottom-color:#1c2233;color:var(--text-dim);cursor:not-allowed;}
   .join-btn.selected{background:var(--teal);border-bottom-color:#1f9d8f;color:#04211d;}
@@ -494,11 +499,6 @@ async function initUser(){
     +prizeImages.map(u=>`<img src="${esc(u)}">`).join('');
 
   root.innerHTML=`
-    <div class="stat-row">
-      <div class="stat-box"><div class="label">Entry fee</div><div class="value">৳${Number(t.entry_fee||0)}</div></div>
-      <div class="stat-box"><div class="label">Slot</div><div class="value">${Number(t.default_slots||t.total_slots||0)}</div></div>
-    </div>
-
     <div class="combo-row">
       <div class="info-col">
         <div class="info-box"><span class="label">Format</span><span class="value">${esc(formatLabel)}</span></div>
@@ -596,7 +596,10 @@ async function initUser(){
       ${topHtml}
       <div class="lobby-meta"><span>Joined: ${joined}</span><span>last ${left} slot left</span><span>Slots: ${slots}</span></div>
       <div class="lobby-bar"><div class="lobby-bar-fill ${full?'full':''}" style="width:${pct}%"></div></div>
-      <button class="join-btn ${full?'full':''}" id="jbtn-${l.id}" type="button" ${full?'disabled':`onclick="toggleLobbySelect('${l.id}')"`}>${full?'FULL':'BUY SLOT'}</button>
+      <div class="lobby-buy-row">
+        <div class="fee-box"><span class="fee-label">ENTRY FEE</span><b class="fee-amt">৳${Number(t.entry_fee||0)}</b></div>
+        <button class="join-btn ${full?'full':''}" id="jbtn-${l.id}" type="button" ${full?'disabled':`onclick="toggleLobbySelect('${l.id}')"`}>${full?'FULL':'BUY SLOT'}</button>
+      </div>
     </div>`;
   }).join('');
 })();
