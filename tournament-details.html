@@ -81,6 +81,17 @@
   .info-box .value{font-size:10px;font-weight:500;}
   .info-box .emoji{font-size:11px;}
 
+  /* banner on the left, the tournament info + popups stacked on the right, so the top of the page takes less height */
+  .hero-row{display:flex;gap:8px;align-items:stretch;margin-bottom:12px;}
+  .hero-banner{flex:0 0 46%;min-height:190px;border-radius:12px;background:#1f2740 center/cover no-repeat;}
+  .hero-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;}
+  .hero-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+  .hero-cell{background:var(--card);border-radius:8px;padding:5px 7px;min-width:0;display:flex;flex-direction:column;gap:1px;}
+  .hero-cell .label{font-size:8.5px;color:var(--text-dim);}
+  .hero-cell .value{font-size:10.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .hero-cell .emoji{font-size:12px;line-height:1.2;}
+  .hero-info .link-box{padding:8px;font-size:10.5px;}
+  .hero-row.no-banner .hero-grid{grid-template-columns:repeat(3,1fr);}
   .link-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;}
   .link-box{background:var(--card);border:none;border-radius:8px;padding:7px 8px;display:flex;align-items:center;justify-content:space-between;color:var(--text);font-size:10px;font-weight:500;text-align:left;cursor:pointer;font-family:inherit;}
   .link-box-wide{grid-column:1/-1;}
@@ -538,21 +549,21 @@ async function initUser(){
     +prizeImages.map(u=>`<img src="${esc(u)}">`).join('');
 
   root.innerHTML=`
-    <div class="combo-row">
-      <div class="info-col">
-        <div class="info-box"><span class="label">Format</span><span class="value">${esc(formatLabel)}</span></div>
-        <div class="info-box"><span class="label">Mode</span><span class="value">${t.game_mode==='classic'?'Classic':'ESports'}</span></div>
-        <div class="info-box"><span class="label">Types</span><span class="value">${esc(matchTypeLabel)}</span></div>
-        <div class="info-box"><span class="label">Gun skin</span><span class="emoji">${t.gun_skin_allowed?'✅':'❌'}</span></div>
-        <div class="info-box"><span class="label">Vehicle</span><span class="emoji">${t.vehicle_allowed?'✅':'❌'}</span></div>
-        <div class="info-box"><span class="label">Emote</span><span class="emoji">${t.emote_allowed?'✅':'❌'}</span></div>
+    <div class="hero-row ${t.banner_url?'':'no-banner'}">
+      ${t.banner_url?`<div class="hero-banner" role="img" aria-label="${esc(t.title||'Tournament banner')}" style="background-image:url('${esc(t.banner_url)}')"></div>`:''}
+      <div class="hero-info">
+        <div class="hero-grid">
+          <div class="hero-cell"><span class="label">Format</span><span class="value">${esc(formatLabel)}</span></div>
+          <div class="hero-cell"><span class="label">Mode</span><span class="value">${t.game_mode==='classic'?'Classic':'ESports'}</span></div>
+          <div class="hero-cell"><span class="label">Types</span><span class="value">${esc(matchTypeLabel)}</span></div>
+          <div class="hero-cell"><span class="label">Gun skin</span><span class="emoji">${t.gun_skin_allowed?'✅':'❌'}</span></div>
+          <div class="hero-cell"><span class="label">Vehicle</span><span class="emoji">${t.vehicle_allowed?'✅':'❌'}</span></div>
+          <div class="hero-cell"><span class="label">Emote</span><span class="emoji">${t.emote_allowed?'✅':'❌'}</span></div>
+        </div>
+        <button class="link-box" type="button" onclick="openPopup('💰 Prize distribution', prizeHtml)">Prize distribution<span class="chev">›</span></button>
+        <button class="link-box" type="button" onclick="openPopup('📋 Tournament rules', rulesHtml)">Tournament rules<span class="chev">›</span></button>
+        <button class="link-box" type="button" onclick="openPopup('🏆 Point system', pointHtml)">Point system<span class="chev">›</span></button>
       </div>
-    </div>
-
-    <div class="link-row">
-      <button class="link-box link-box-wide" type="button" onclick="openPopup('💰 Prize distribution', prizeHtml)">Prize distribution<span class="chev">›</span></button>
-      <button class="link-box" type="button" onclick="openPopup('📋 Tournament rules', rulesHtml)">Tournament rules<span class="chev">›</span></button>
-      <button class="link-box" type="button" onclick="openPopup('🏆 Point system', pointHtml)">Point system<span class="chev">›</span></button>
     </div>
 
     ${maps.length?`<div class="section-title">Maps</div>
