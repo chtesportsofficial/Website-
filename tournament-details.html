@@ -39,6 +39,9 @@
   html[data-theme="light"] .fee-box{background:#fff3d1;border-color:#e0a82e;}
   html[data-theme="light"] .fee-label{color:#7a5a12;}
   html[data-theme="light"] .lobby-dt-time{color:#b45309;}
+  /* light theme: the group/lobby card was almost the same shade as the page, so make it a bit darker */
+  html[data-theme="light"] .lobby-card{background:#e3e8f2;border-color:rgba(18,20,26,0.14);}
+  html[data-theme="light"] .lobby-card.selected{background:rgba(255,183,3,.14);border-color:var(--fire-2);}
   *{box-sizing:border-box;margin:0;padding:0;}
   /* global.js injects a ".app-footer" copyright line on every page, styled
      normally via theme.css — this page doesn't link theme.css (to avoid
@@ -142,6 +145,8 @@
   .select-bar-inner{width:100%;max-width:420px;display:flex;align-items:center;gap:8px;}
   .select-bar-info{flex:1;min-width:0;}
   .select-bar-info b{display:block;font-size:12.5px;color:var(--text);font-weight:700;}
+  /* the bar stays dark in light theme, so its title must stay light too */
+  html[data-theme="light"] .select-bar-info b{color:#f4f6fb;}
   .select-bar-info span{display:block;font-size:10px;color:var(--text-dim);margin-top:1px;}
   .select-bar-clear{background:none;border:none;color:var(--text-dim);font-size:10px;text-decoration:underline;cursor:pointer;font-family:inherit;padding:6px 4px;flex-shrink:0;}
   .select-bar-btn{background:var(--fire-grad);border:none;border-radius:11px;padding:11px 16px;color:#241705;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;}
