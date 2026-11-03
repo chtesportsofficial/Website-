@@ -395,7 +395,19 @@ html{min-height:100%;background-color:#1b2140;background-image:radial-gradient(c
   <section class="tm-card">
     <div class="tm-two">
       <div><label class="tm-l" for="entry">Entry fee</label><div class="tk"><i>৳</i><input id="entry" type="number" min="0" value="0" inputmode="numeric"></div></div>
-      <div><label class="tm-l" for="slots">Slots (default)</label><input id="slots" type="number" min="0" value="0" inputmode="numeric"></div>
+      <div id="slotsCol"><label class="tm-l" for="slots">Slots (default)</label><input id="slots" type="number" min="0" value="0" inputmode="numeric"></div>
+      <div id="groupsCol" style="display:none"><label class="tm-l" for="groupCountInput">Groups</label><input id="groupCountInput" type="number" min="1" max="26" value="1" inputmode="numeric" oninput="updatePaidTotal()"></div>
+    </div>
+    <div id="paidInfo" style="display:none">
+      <div class="img-note" id="paidTotalNote"></div>
+      <label class="tm-l">Pro Phase (premium teams)</label>
+      <select id="proEnableT" class="enh" data-ui="tog" onchange="updatePaidTotal()"><option value="false">No</option><option value="true">Yes</option></select>
+      <div id="proFields" style="display:none">
+        <div class="tm-two">
+          <div><label class="tm-l" for="proFeeT">Pro entry fee</label><div class="tk"><i>৳</i><input id="proFeeT" type="number" min="0" inputmode="numeric" placeholder="e.g. 100"></div></div>
+          <div><label class="tm-l" for="proSlotsT">Pro slots</label><input id="proSlotsT" type="number" min="1" value="12" inputmode="numeric" oninput="updatePaidTotal()"></div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -1144,9 +1156,46 @@ function newTournament(){
  $('banner').value='';
  fillRankCount(4);renderPrizeBoxes([]);
  fillMapCount(3);renderMapBoxes([]);
- fillSections();openM('tm');
+ fillSections();
+ existingProLobby=null;existingNormalGroups=0;
+ $('groupCountInput').value=1;$('groupCountInput').min=1;$('proEnableT').value='false';$('proFeeT').value='';$('proSlotsT').value=12;
+ applyTourTypeUI();openM('tm');
 }
-function editTournament(id){
+// ===== Paid tournaments: "Groups" replaces "Slots" in the form =====
+let existingProLobby=null, existingNormalGroups=0;
+function applyTourTypeUI(){
+  const paid=$('tourType').value==='paid';
+  $('slotsCol').style.display=paid?'none':'';
+  $('groupsCol').style.display=paid?'':'none';
+  $('paidInfo').style.display=paid?'':'none';
+  $('proFields').style.display=(paid&&$('proEnableT').value==='true')?'':'none';
+  if(paid)updatePaidTotal();
+  if(window.__tmSync)window.__tmSync();
+}
+function updatePaidTotal(){
+  const g=Math.max(1,+$('groupCountInput').value||1);
+  $('proFields').style.display=$('proEnableT').value==='true'?'':'none';
+  const proOn=$('proEnableT').value==='true';
+  const proSlots=existingProLobby?(+existingProLobby.total_slots||0):(proOn?(Math.max(1,+$('proSlotsT').value||12)):0);
+  $('paidTotalNote').textContent=g+' group × 12 = '+(g*12)+' slots'+(proOn||existingProLobby?(' + Pro Phase '+proSlots+' slots'):'')+' (auto). তারিখ পরে Groups থেকে বসাবেন — তার আগে TBD থাকবে।';
+  return {g,proOn,proSlots};
+}
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='tourType')applyTourTypeUI();});
+async function syncPaidGroupsForTournament(tid,g,proNew){
+  const ex=await sb.from('tournament_lobbies').select('id,custom_title,status').eq('tournament_id',tid);
+  if(ex.error)throw ex.error;
+  const live=(ex.data||[]).filter(l=>l.status!=='cancelled'&&l.status!=='completed');
+  const normal=live.filter(l=>!isProLobby(l)).length;
+  const hasPro=live.some(isProLobby);
+  const rows=[];
+  for(let i=normal;i<g;i++)rows.push({tournament_id:tid,lobby_date:TBD_DATE,time_label:'TBD',total_slots:GROUP_SLOTS,status:'upcoming',custom_title:'Group '+groupLetter(i),qualify_rules:null});
+  if(proNew&&!hasPro)rows.push({tournament_id:tid,lobby_date:TBD_DATE,time_label:'TBD',total_slots:proNew.slots,status:'upcoming',custom_title:'Pro Phase',entry_fee:proNew.fee,qualify_rules:null});
+  if(!rows.length)return 0;
+  const ins=await sb.from('tournament_lobbies').insert(rows).select();
+  if(ins.error)throw ins.error;
+  return rows.length;
+}
+async function editTournament(id){
  let t=tournaments.find(x=>x.id===id);if(!t)return; if(isGiveawaySection(sections.find(x=>x.id===t.section_id)))return editGiveaway(id);
  $('tid').value=t.id;$('tmTitle').textContent='Edit Tournament';fillSections(t.section_id);
  $('title').value=t.title||'';$('entry').value=t.entry_fee||0;$('slots').value=t.default_slots||t.total_slots||0;
@@ -1163,7 +1212,18 @@ function editTournament(id){
  fillRankCount(dist.length||4);renderPrizeBoxes(dist);
  const maps=Array.isArray(t.maps)?t.maps:[];
  fillMapCount(maps.length||3);renderMapBoxes(maps);
- openM('tm');
+ existingProLobby=null;existingNormalGroups=0;
+ $('groupCountInput').value=1;$('groupCountInput').min=1;$('proEnableT').value='false';$('proFeeT').value='';$('proSlotsT').value=12;
+ if((t.tour_type||'daily')==='paid'){
+  const lr=await sb.from('tournament_lobbies').select('id,custom_title,status,total_slots,entry_fee').eq('tournament_id',t.id);
+  const live=(lr.data||[]).filter(l=>l.status!=='cancelled'&&l.status!=='completed');
+  existingNormalGroups=live.filter(l=>!isProLobby(l)).length;
+  existingProLobby=live.find(isProLobby)||null;
+  $('groupCountInput').value=Math.max(1,existingNormalGroups);
+  $('groupCountInput').min=Math.max(1,existingNormalGroups);
+  if(existingProLobby){$('proEnableT').value='true';$('proFeeT').value=existingProLobby.entry_fee||'';$('proSlotsT').value=existingProLobby.total_slots||12;}
+ }
+ applyTourTypeUI();openM('tm');
 }
 async function saveTournament(){
  let id=$('tid').value,old=tournaments.find(x=>x.id===id),banner=old?.banner_url||null,file=$('banner').files[0];
@@ -1205,6 +1265,21 @@ async function saveTournament(){
   // switch in the Tournaments list. Editing an existing tournament must
   // never touch these two fields, so its current ON/OFF state survives.
   if(!id){ p.status='unpublished'; p.show_on_homepage=false; }
+  // Paid: slots are never typed — total = groups x 12 (+ Pro Phase slots).
+  let paidInfo=null;
+  if(p.tour_type==='paid'){
+    const pt=updatePaidTotal();
+    if(pt.g<existingNormalGroups)throw new Error('গ্রুপ কমানো যাবে না — Groups থেকে অপ্রয়োজনীয় গ্রুপ Delete করুন।');
+    let proNew=null;
+    if(pt.proOn&&!existingProLobby){
+      const fee=Number($('proFeeT').value)||0;
+      if(fee<=0)throw new Error('Pro Phase এর entry fee দিন।');
+      proNew={fee,slots:pt.proSlots};
+    }
+    p.default_slots=GROUP_SLOTS;
+    p.total_slots=pt.g*GROUP_SLOTS+pt.proSlots;
+    paidInfo={g:pt.g,proNew};
+  }
   let q=id?sb.from('tournaments').update(p).eq('id',id).select():sb.from('tournaments').insert(p).select();let r=await q;if(r.error)throw r.error;
   if(id&&(!r.data||r.data.length===0))throw new Error('Update blocked (0 rows affected) — check the UPDATE RLS policy on the tournaments table.');
   const savedRow=(r.data&&Array.isArray(r.data)?r.data[0]:null);
@@ -1229,6 +1304,10 @@ async function saveTournament(){
     // no fields actually changed: skip logging, nothing to say
   }else{
     await logActivity('tournament_created','tournament','tournament',newId,p.title,{narration:`created the tournament ${p.title}.`,highlight_targets:[p.title]});
+  }
+  if(paidInfo&&newId){
+    try{await syncPaidGroupsForTournament(newId,paidInfo.g,paidInfo.proNew);}
+    catch(e){console.error(e);msg('Tournament saved, but groups could not be created: '+(e.message||e)+(/entry_fee/i.test(e.message||'')?' — Supabase এ: alter table tournament_lobbies add column entry_fee numeric;':''));}
   }
   closeM('tm');await load();
  }catch(e){console.error(e);msg(e.message||'Save failed')}
