@@ -305,7 +305,11 @@ html{min-height:100%;background-color:#1b2140;background-image:radial-gradient(c
 </style>
 <style>
 /* ===== Map library + map picker ===== */
-.ml-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:2px 0 6px}
+.ml-grid{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding:2px 0 8px;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scrollbar-width:none}
+.ml-grid::-webkit-scrollbar{display:none}
+.ml-grid .ml-card{flex:0 0 78px}
+#mapLibPanel.collapsed #mapLibContent{display:none}
+#mapLibPanel:not(.collapsed) #mapLibCollapse span{transform:rotate(180deg)}
 .ml-card,.mp-tile{background:#111827;border:1px solid #26324a;border-radius:12px;padding:6px;color:#fff;text-align:center;font-family:inherit;cursor:pointer;min-width:0}
 .ml-card:active,.mp-tile:active{background:#18223a}
 .ml-img{aspect-ratio:1/1;border-radius:8px;background:#1f2740 center/cover no-repeat}
@@ -349,10 +353,12 @@ html{min-height:100%;background-color:#1b2140;background-image:radial-gradient(c
     </div>
   </section>
 
-  <section class="panel management-panel" id="mapLibPanel">
-    <div class="ph"><b>Map Library</b><span class="count" id="mlcount">0</span></div>
-    <div id="mapLib"><div class="loading">Loading...</div></div>
-    <div class="inline-add"><button type="button" id="addMapLibBtn" onclick="openMapLib('',false)">＋ Add New Map</button></div>
+  <section class="panel management-panel homepage-panel collapsed" id="mapLibPanel">
+    <div class="ph homepage-panel-head"><b>Map Library</b><div class="head-controls"><span class="count" id="mlcount">0</span><button type="button" class="section-chevron" id="mapLibCollapse" aria-label="Expand or collapse Map Library"><span>⌄</span></button></div></div>
+    <div id="mapLibContent">
+      <div id="mapLib"><div class="loading">Loading...</div></div>
+      <div class="inline-add"><button type="button" id="addMapLibBtn" onclick="openMapLib('',false)">＋ Add New Map</button></div>
+    </div>
   </section>
 
   <section class="panel management-panel tournaments-panel">
@@ -2004,6 +2010,8 @@ async function creditPrizes(){
 document.addEventListener('DOMContentLoaded', function(){
   const hc=$('homepageCollapse');
   hc.addEventListener('click',()=>{const panel=$('homepagePanel');panel.classList.toggle('collapsed');hc.classList.toggle('on',!panel.classList.contains('collapsed'));});
+  const mc=$('mapLibCollapse');
+  if(mc)mc.addEventListener('click',()=>{$('mapLibPanel').classList.toggle('collapsed');});
   document.getElementById('createTournamentBtn').addEventListener('click', newTournament);
 document.getElementById('createGiveawayBtn').addEventListener('click', newGiveaway);
 document.getElementById('closeGmBtn').addEventListener('click', function(){closeM('gm')});
