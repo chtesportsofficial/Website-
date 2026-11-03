@@ -336,6 +336,18 @@ function openQualify(id){
   openPopup('🏅 '+(l.custom_title||'Group')+' — Qualify',qualifyHtml(l));
   document.getElementById('popupOverlay').classList.add('center');
 }
+// Paid tournaments: groups have no date until the admin sets one (placeholder
+// date 2099-12-31 = "TBD"). Pro Phase lobbies carry their own entry_fee.
+const TBD_DATE='2099-12-31';
+const isTbdLobby=l=>!!l&&l.lobby_date===TBD_DATE;
+const isProLobby=l=>/^pro\b/i.test((l&&l.custom_title)||'');
+function lobbyFeeOf(l){
+  const own=Number(l&&l.entry_fee);
+  return own>0?own:(Number(currentTournament&&currentTournament.entry_fee)||0);
+}
+function totalFee(ids,countFn){
+  return (ids||[]).reduce((s,id)=>s+lobbyFeeOf(lobbyDataById[id])*(countFn?countFn(id):1),0);
+}
 function lobbyTag(l){return (currentTournament&&currentTournament.tour_type==='paid'&&l&&l.custom_title)?String(l.custom_title).trim()+' · ':''}
 
 function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
@@ -617,7 +629,7 @@ async function initUser(){
     if(pa!==pb)return pa?1:-1;
     const da=parseLobbyDateTime(a.lobby_date,a.time_label),db=parseLobbyDateTime(b.lobby_date,b.time_label);
     if(da&&db)return da-db;
-    return (a.time_label||'').localeCompare(b.time_label||'');
+    return (a.custom_title||a.time_label||'').localeCompare(b.custom_title||b.time_label||'');
   });
 
   lobbyBox.innerHTML=lobbies.map(l=>{
@@ -643,8 +655,10 @@ async function initUser(){
     const niceTime=String(l.time_label||'').replace(/:00(\s*[AP]M)/i,'$1');
     const topHtml=(t.tour_type==='paid')
       ?`<div class="lobby-top paid-top">
-        <div class="grp-chip ${full?'full':''}">${esc(grpName||'Group')}</div>
-        <div class="lobby-dt"><span class="lobby-dt-date">${esc(niceDate)}</span><span class="lobby-dt-dot">•</span><span class="lobby-dt-time">${esc(niceTime)}</span></div>${qualRules(l).length?`<button class="qual-btn" type="button" aria-label="Qualify info" onclick="openQualify('${l.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M12 11v6.5M12 6.8h.01"/></svg></button>`:'<span class="qual-spacer"></span>'}
+        <div class="grp-chip ${full?'full':''}" ${isProLobby(l)&&!full?'style="background:linear-gradient(135deg,#f6c453,#ff9a52)"':''}>${isProLobby(l)?'⭐ ':''}${esc(grpName||'Group')}</div>
+        ${isTbdLobby(l)
+          ?`<div class="lobby-dt"><span class="lobby-dt-time">TBD</span><span class="lobby-dt-dot">•</span><span class="lobby-date" style="white-space:normal;text-align:center">${full?'স্লট ফুল — তারিখ শীঘ্রই জানানো হবে':'তারিখ পরে জানানো হবে'}</span></div>`
+          :`<div class="lobby-dt"><span class="lobby-dt-date">${esc(niceDate)}</span><span class="lobby-dt-dot">•</span><span class="lobby-dt-time">${esc(niceTime)}</span></div>`}${qualRules(l).length?`<button class="qual-btn" type="button" aria-label="Qualify info" onclick="openQualify('${l.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M12 11v6.5M12 6.8h.01"/></svg></button>`:'<span class="qual-spacer"></span>'}
       </div>`
       :`<div class="lobby-top">
         <div class="lobby-left">
@@ -658,7 +672,7 @@ async function initUser(){
       <div class="lobby-meta"><span>Joined: ${joined}</span><span>last ${left} slot left</span><span>Slots: ${slots}</span></div>
       <div class="lobby-bar"><div class="lobby-bar-fill ${full?'full':''}" style="width:${pct}%"></div></div>
       <div class="lobby-buy-row">
-        <div class="fee-box"><span class="fee-label">ENTRY FEE</span><b class="fee-amt">৳${Number(t.entry_fee||0)}</b></div>
+        <div class="fee-box"><span class="fee-label">ENTRY FEE</span><b class="fee-amt">৳${lobbyFeeOf(l)}</b></div>
         <button class="join-btn ${full?'full':''}" id="jbtn-${l.id}" type="button" ${full?'disabled':`onclick="toggleLobbySelect('${l.id}')"`}>${full?'FULL':'BUY SLOT'}</button>
       </div>
     </div>`;
@@ -688,7 +702,7 @@ function updateSelectBar(){
   if(!n){bar.classList.remove('open');document.body.style.paddingBottom='';return}
   bar.classList.add('open');
   document.body.style.paddingBottom='74px';
-  const fee=(Number(currentTournament?.entry_fee)||0)*n;
+  const fee=totalFee([...selectedLobbies]);
   document.getElementById('selectBarCount').textContent=`${n}টি ${currentTournament?.tour_type==='paid'?'গ্রুপ':'লবি'} সিলেক্ট করা হয়েছে`;
   document.getElementById('selectBarFee').textContent=`মোট এন্ট্রি ফি: ৳${fee}`;
 }
@@ -905,7 +919,7 @@ document.getElementById('joinOverlay').addEventListener('click',function(e){
 });
 
 function renderPaymentOptions(){
-  const fee=(Number(currentTournament?.entry_fee)||0)*(totalEntryCount()||1);
+  const fee=totalFee(currentJoinLobbyIds,getTeamCount);
   const canPayBalance=sessionUser && walletBalance!=null;
   const enough=canPayBalance && walletBalance>=fee;
   let html='';
@@ -932,7 +946,7 @@ function renderPaymentOptions(){
 function renderPaymentExtra(){
   const sel=document.querySelector('input[name="jfPay"]:checked')?.value;
   const box=document.getElementById('jfPaymentExtra');
-  const fee=(Number(currentTournament?.entry_fee)||0)*(totalEntryCount()||1);
+  const fee=totalFee(currentJoinLobbyIds,getTeamCount);
   if(sel==='balance'){
     box.innerHTML=`<div class="jf-note">সাবমিট করলেই আপনার ওয়ালেট ব্যালেন্স থেকে ৳${fee} কেটে নেওয়া হবে${totalEntryCount()>1?` (${totalEntryCount()}টি এন্ট্রি)`:''}।</div>`;
   }else if(sel==='zinipay'){
@@ -988,7 +1002,7 @@ async function submitJoin(){
   if(payMethod==='zinipay'){
     try{
       const {data:{session}}=await sb.auth.getSession();
-      const fee=(Number(currentTournament?.entry_fee)||0)*lobbyCount;
+      const fee=teamData.entries.reduce((s,e)=>s+lobbyFeeOf(lobbyDataById[e.lobbyId]),0);
       const entries=teamData.entries.map(e=>({
         lobby_id:e.lobbyId,
         team_name:e.teamName,
@@ -1027,7 +1041,7 @@ async function submitJoin(){
   {
     try{
       const {data:{session}}=await sb.auth.getSession();
-      const fee=(Number(currentTournament?.entry_fee)||0)*lobbyCount;
+      const fee=teamData.entries.reduce((s,e)=>s+lobbyFeeOf(lobbyDataById[e.lobbyId]),0);
       const slotTimes=[...new Set(currentJoinLobbyIds.map(id=>lobbyDataById[id]?.time_label).filter(Boolean))];
       const entryDetails=teamData.entries.map(e=>({
         team_name:e.teamName,

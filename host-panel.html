@@ -282,6 +282,13 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function fmtDate(d){try{return new Date(d+'T00:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric'})}catch(e){return d}}
 function fmtShort(d){try{return new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short'})}catch(e){return d}}
+const TBD_DATE='2099-12-31'; // placeholder date = paid group with date not announced yet
+const isTbd=l=>!!l&&l.lobby_date===TBD_DATE;
+// Label shown for a lobby: paid groups show their group name, TBD ones show "TBD".
+function lobbyLabel(l){
+  const when=isTbd(l)?'TBD':fmtShort(l.lobby_date)+' — '+l.time_label;
+  return (l.custom_title?l.custom_title+' — ':'')+when;
+}
 function parseLobbyDateTime(date,label){
   const m=/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec((label||'').trim()); if(!m)return null;
   let h=(+m[1])%12;if(/pm/i.test(m[3]))h+=12;
@@ -409,6 +416,10 @@ async function load(dateStr){
     await applyAutoStatus(lobbies);
     // Keep only today's rows after the client-side status refresh (cancelled ones stay so Off lobbies remain manageable).
     lobbies=lobbies.filter(l=>l.lobby_date===realToday&&['upcoming','live','full','cancelled','completed'].includes(l.status));
+    // Paid groups whose date isn't announced yet (placeholder date) are always
+    // shown in today's view so the host can manage them (Teams, Full, Off...).
+    const tbd=await sb.from('tournament_lobbies').select('*').eq('lobby_date',TBD_DATE).in('status',['upcoming','full','cancelled']);
+    if(!tbd.error)lobbies=lobbies.concat(tbd.data||[]);
   }
   resultsLobbyIds=new Set();
   if(lobbies.length){
@@ -448,7 +459,9 @@ function render(){
         const da=parseLobbyDateTime(a.lobby_date,a.time_label);
         const db=parseLobbyDateTime(b.lobby_date,b.time_label);
         if(da&&db)return da-db;
-        return (a.time_label||'').localeCompare(b.time_label||'');
+        if(da)return -1;
+        if(db)return 1;
+        return (a.custom_title||a.time_label||'').localeCompare(b.custom_title||b.time_label||'');
       }).map(renderLobby).join('')}
     </section>
   `).join('');
@@ -477,7 +490,7 @@ function renderLobby(l){
 
   return `<div class="lobby-item">
     <div class="lobby-top">
-      <div class="lobby-date">${fmtShort(l.lobby_date)} — ${esc(l.time_label)}</div>
+      <div class="lobby-date">${esc(lobbyLabel(l))}</div>
       ${badge}
     </div>
     <div class="lobby-meta">${Number(l.joined_count)||0} / ${Number(l.total_slots)||0} teams joined</div>
@@ -583,7 +596,7 @@ async function changeStatus(id,status){
 // before crediting, so nobody is ever refunded twice.
 async function refundOffLobby(l){
   const t=tournaments.get(l.tournament_id);
-  const feeAmount=Number(t?.entry_fee)||0;
+  const feeAmount=Number(l.entry_fee)>0?Number(l.entry_fee):(Number(t?.entry_fee)||0); // Pro Phase has its own fee
   if(feeAmount<=0)return;
   const r=await sb.from('lobby_teams').select('id,submitted_by,payment_method,paid_withdrawable,paid_non_withdrawable').eq('lobby_id',l.id);
   if(r.error){msg('Lobby set to Off, but could not load its teams to refund: '+esc(r.error.message));return}
@@ -877,7 +890,7 @@ async function searchByEmail(){
   const pr=await sb.from('profiles').select('id,email,full_name,user_number').ilike('email',email).maybeSingle();
   if(pr.error){$('emailTeamsList').innerHTML='<div class="empty">Could not search: '+esc(pr.error.message)+'</div>';return}
   if(!pr.data){$('emailTeamsList').innerHTML='<div class="empty">No account found with that email.</div>';return}
-  const r=await sb.from('lobby_teams').select('*, tournament_lobbies(id,lobby_date,time_label,status,joined_count,tournaments(title,entry_fee))').eq('submitted_by',pr.data.id).order('joined_at',{ascending:false});
+  const r=await sb.from('lobby_teams').select('*, tournament_lobbies(id,lobby_date,time_label,status,joined_count,entry_fee,custom_title,tournaments(title,entry_fee))').eq('submitted_by',pr.data.id).order('joined_at',{ascending:false});
   if(r.error){$('emailTeamsList').innerHTML='<div class="empty">Could not load: '+esc(r.error.message)+'</div>';return}
   emailTeamsCache=r.data||[];
   renderEmailTeamsList();
@@ -902,7 +915,7 @@ async function removeEmailTeam(teamId){
   const isBalance=tm.payment_method==='balance';
   askConfirm('Delete this slot?',`Remove "${tm.team_name}" from ${fmtShort(lb.lobby_date)} ${lb.time_label}?`+(isBalance?'\n\nThe entry fee paid from wallet balance will be refunded automatically.':''),async()=>{
     if(isBalance){
-      const feeAmount=Number(trn.entry_fee)||0;
+      const feeAmount=Number(lb.entry_fee)>0?Number(lb.entry_fee):(Number(trn.entry_fee)||0);
       if(feeAmount>0){
         const {data:{session:s}}=await sb.auth.getSession();
         if(!s){msg('Could not refund — please sign in again. Slot not deleted.');return}

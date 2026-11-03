@@ -523,8 +523,25 @@ html{min-height:100%;background-color:#1b2140;background-image:radial-gradient(c
     <button type="button" class="mini" id="addTimeBtn" style="margin-top:8px;width:100%" onclick="addTimeInput()">＋ Add another time</button>
     </div>
     <div id="lobbyGroups" style="display:none">
-      <div id="groupRows"></div>
-      <button type="button" class="mini" style="margin-top:8px;width:100%" onclick="addGroupRow()">＋ Add another group</button>
+      <div class="grp-row">
+        <label style="margin-top:0">Number of groups (each group = 12 teams)</label>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button type="button" class="mini" onclick="stepGroups(-1)">−</button>
+          <b id="grpCountView" style="min-width:28px;text-align:center;font-size:16px">1</b>
+          <button type="button" class="mini" onclick="stepGroups(1)">＋</button>
+          <span style="margin-left:auto;font-size:11px;color:#8b96aa">Total slots: <b id="grpTotalView" style="color:#f6c453">12</b> (auto)</span>
+        </div>
+      </div>
+      <div class="grp-row">
+        <label style="margin-top:0;display:flex;align-items:center;gap:8px"><input type="checkbox" id="proEnable" style="width:auto" onchange="$('proBox').style.display=this.checked?'':'none'"> Add Pro Phase (premium teams)</label>
+        <div id="proBox" style="display:none">
+          <div class="grp-dt">
+            <div><label>Pro entry fee ৳</label><input type="number" id="proFee" min="0" inputmode="numeric" placeholder="e.g. 100"></div>
+            <div><label>Pro slots (default 12)</label><input type="number" id="proSlots" min="1" value="12" inputmode="numeric"></div>
+          </div>
+        </div>
+      </div>
+      <div class="img-note" style="font-size:10.5px">Save করলে গ্রুপগুলো অটো তৈরি হবে (Date = TBD)। তারিখ/সময় নিচের লিস্ট থেকে "Set date" দিয়ে বসান।</div>
     </div>
     <button type="button" class="create-bottom" id="saveLobbiesBtn" onclick="saveLobbies()">Save Lobby(s)</button>
   </div>
@@ -1339,9 +1356,82 @@ function setupLobbyForm(){
   $('addTimeBtn').style.display=ty==='weekly'?'none':'';
   $('lobbyGroups').style.display=ty==='paid'?'':'none';
   $('saveLobbiesBtn').textContent=ty==='paid'?'Save Group(s)':ty==='weekly'?'Save Match':'Save Lobby(s)';
-  $('groupRows').innerHTML='';
-  if(ty==='paid')addGroupRow();
+  if(ty==='paid'){
+    const existing=(lobbies||[]).filter(l=>!isProLobby(l)&&l.status!=='cancelled').length;
+    grpCount=Math.max(1,existing||1);
+    $('proEnable').checked=false;$('proBox').style.display='none';$('proFee').value='';$('proSlots').value=12;
+    updateGrpView();
+  }
   updateLobbyFormState();
+}
+// ===== Paid tournament: automatic groups (12 teams each) + optional Pro Phase =====
+const TBD_DATE='2099-12-31';          // placeholder date = "date not announced yet"
+const GROUP_SLOTS=12;
+const isTbd=l=>l&&l.lobby_date===TBD_DATE;
+const isProLobby=l=>/^pro\b/i.test((l&&l.custom_title)||'');
+let grpCount=1;
+function updateGrpView(){
+  $('grpCountView').textContent=grpCount;
+  $('grpTotalView').textContent=grpCount*GROUP_SLOTS;
+}
+function stepGroups(d){grpCount=Math.max(1,Math.min(26,grpCount+d));updateGrpView();}
+async function savePaidGroups(){
+  const tid=currentLobbyTournament.id;
+  const normal=(lobbies||[]).filter(l=>!isProLobby(l)&&l.status!=='cancelled');
+  const hasPro=(lobbies||[]).some(l=>isProLobby(l)&&l.status!=='cancelled');
+  const rows=[];
+  for(let i=normal.length;i<grpCount;i++){
+    rows.push({tournament_id:tid,lobby_date:TBD_DATE,time_label:'TBD',total_slots:GROUP_SLOTS,status:'upcoming',custom_title:'Group '+groupLetter(i),qualify_rules:null});
+  }
+  if($('proEnable').checked&&!hasPro){
+    const fee=Number($('proFee').value)||0, ps=Math.max(1,Number($('proSlots').value)||GROUP_SLOTS);
+    if(fee<=0)return msg('Pro Phase এর entry fee দিন।');
+    rows.push({tournament_id:tid,lobby_date:TBD_DATE,time_label:'TBD',total_slots:ps,status:'upcoming',custom_title:'Pro Phase',entry_fee:fee,qualify_rules:null});
+  }
+  if(normal.length>grpCount)return msg('গ্রুপ কমানো যাবে না — নিচের লিস্ট থেকে অপ্রয়োজনীয় গ্রুপ Delete করুন।');
+  if(!rows.length)return msg('নতুন কিছু যোগ হয়নি — গ্রুপ সংখ্যা বাড়ান বা Pro Phase চালু করুন।','warn');
+  const btn=$('saveLobbiesBtn'),label=btn.textContent;btn.disabled=true;btn.textContent='Saving…';
+  try{
+    const {data,error}=await sb.from('tournament_lobbies').insert(rows).select();
+    if(error)return msg(error.message+(/entry_fee/i.test(error.message||'')?' — Supabase এ: alter table tournament_lobbies add column entry_fee numeric;':''));
+    if(!data||!data.length)return msg('Insert blocked (0 rows) — check the INSERT RLS policy on tournament_lobbies.');
+    // keep tournament total/default slots in sync: groups x 12 (+ pro slots)
+    const all=[...(lobbies||[]).filter(l=>l.status!=='cancelled'),...data];
+    const totalSlots=all.reduce((s,l)=>s+(Number(l.total_slots)||0),0);
+    await sb.from('tournaments').update({default_slots:GROUP_SLOTS,total_slots:totalSlots}).eq('id',tid);
+    await logActivity('lobbies_added','tournament','tournament_lobby',tid,currentLobbyTournament.title,{narration:`created ${rows.length} group(s) for ${currentLobbyTournament.title}.`,highlight_targets:[currentLobbyTournament.title]});
+    await loadLobbies(tid);
+    await load();
+    currentLobbyTournament=tournaments.find(x=>x.id===tid)||currentLobbyTournament;
+    setupLobbyForm();
+  }finally{btn.disabled=false;btn.textContent=label;}
+}
+function toggleGrpEdit(id){const el=document.getElementById('gedit-'+id);if(el)el.style.display=el.style.display==='none'?'block':'none';}
+function time12ToValue(label){
+  const m=/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec((label||'').trim());
+  if(!m)return '';
+  let h=(+m[1])%12; if(/pm/i.test(m[3]))h+=12;
+  return String(h).padStart(2,'0')+':'+m[2];
+}
+async function saveGroupInfo(id){
+  const l=lobbies.find(x=>x.id===id); if(!l)return;
+  const date=document.getElementById('gdate-'+id).value;
+  const time=timeValueTo12h(document.getElementById('gtime-'+id).value);
+  const tn=+document.getElementById('gtopn-'+id).value||0, td=document.getElementById('gtopd-'+id).value.trim();
+  const upd={qualify_rules:tn>0?[{type:'top',n:tn,dest:td}]:null};
+  if(date&&time){upd.lobby_date=date;upd.time_label=time;}
+  else if(date||time)return msg('Date আর Time দুটোই দিন (অথবা দুটোই ফাঁকা রাখলে TBD থাকবে)।');
+  else{upd.lobby_date=TBD_DATE;upd.time_label='TBD';}
+  const sl=document.getElementById('gslots-'+id);
+  if(sl){const v=Math.max(1,+sl.value||GROUP_SLOTS);upd.total_slots=v;}
+  if(upd.total_slots!==undefined&&upd.total_slots<(Number(l.joined_count)||0))return msg('Slots আগেই জয়েন করা টিমের চেয়ে কম হতে পারে না।');
+  const {data,error}=await sb.from('tournament_lobbies').update(upd).eq('id',id).select();
+  if(error)return msg(error.message);
+  if(!data||!data.length)return msg('Update blocked (0 rows) — check the UPDATE RLS policy on tournament_lobbies.');
+  await logActivity('lobby_updated','tournament','tournament_lobby',id,l.custom_title||null,{narration:`updated ${l.custom_title||'group'} date/time/slots.`,highlight_targets:[l.custom_title||'Group']});
+  await loadLobbies(currentLobbyTournament.id);
+  await load();
+  currentLobbyTournament=tournaments.find(x=>x.id===currentLobbyTournament.id)||currentLobbyTournament;
 }
 function updateLobbyFormState(){
   if(!currentLobbyTournament)return;
@@ -1349,6 +1439,7 @@ function updateLobbyFormState(){
   const act=(lobbies||[]).filter(l=>l.status!=='completed'&&l.status!=='cancelled');
   const lock=ty==='weekly'&&act.length>0;
   $('lobbySimple').style.display=(ty==='paid'||lock)?'none':'';
+  $('lobbyGroups').style.display=ty==='paid'?'':'none';
   $('saveLobbiesBtn').style.display=lock?'none':'';
   const n=$('lobbyNote');
   n.style.display=lock?'':'none';
@@ -1381,7 +1472,7 @@ function renderLobbies(){
     if(a.lobby_date!==b.lobby_date)return a.lobby_date<b.lobby_date?-1:1;
     const da=parseLobbyDateTime(a.lobby_date,a.time_label),db=parseLobbyDateTime(b.lobby_date,b.time_label);
     if(da&&db)return da-db;
-    return (a.time_label||'').localeCompare(b.time_label||'');
+    return (a.custom_title||a.time_label||'').localeCompare(b.custom_title||b.time_label||'');
   });
   const lobbyLabel=l=>fmtLobbyDate(l.lobby_date)+' — '+esc(l.time_label)+(l.custom_title?' <span style="color:#8b96aa;font-weight:700">('+esc(l.custom_title)+')</span>':'');
   $('lobbiesActive').innerHTML=active.length?active.map(l=>{
@@ -1389,11 +1480,21 @@ function renderLobbies(){
     const badgeHtml=l.status==='cancelled'?`<div class="lobby-status cancelled">${lobbyDot(l.status)} CANCELLED</div>`:l.status==='full'?`<div class="lobby-status pending">${lobbyDot(l.status)} FULL</div>`:liveBadge?`<div class="lobby-status ${liveBadge.cls}">${lobbyDot(l.status)} ${liveBadge.text}</div>`:'';
     return `
     <div class="lobby-item">
-      <div class="lobby-top"><div class="lobby-date">${lobbyLabel(l)}</div>${badgeHtml}</div>
-      <div class="lobby-meta">${l.joined_count||0}/${l.total_slots||0} joined</div>
-      <div class="lobby-actions"><button class="mini t-delete" onclick="deleteLobby('${l.id}',false,this)">Delete</button></div>
+      <div class="lobby-top"><div class="lobby-date">${tt(currentLobbyTournament)==='paid'?(esc(l.custom_title||'Group')+' — '+(isTbd(l)?'<span style="color:#f6c453">TBD (date not set)</span>':fmtLobbyDate(l.lobby_date)+' '+esc(l.time_label))):lobbyLabel(l)}</div>${badgeHtml}</div>
+      <div class="lobby-meta">${l.joined_count||0}/${l.total_slots||0} joined${isProLobby(l)&&l.entry_fee?' · Entry ৳'+l.entry_fee:''}${qualText(l)}</div>
+      <div class="lobby-actions">${tt(currentLobbyTournament)==='paid'?`<button class="mini green" onclick="toggleGrpEdit('${l.id}')">Set date</button>`:''}<button class="mini t-delete" onclick="deleteLobby('${l.id}',false,this)">Delete</button></div>
+      ${tt(currentLobbyTournament)==='paid'?`<div id="gedit-${l.id}" class="grp-q" style="display:none">
+        <div class="grp-dt"><input type="date" id="gdate-${l.id}" value="${isTbd(l)?'':esc(l.lobby_date)}"><input type="time" id="gtime-${l.id}" value="${isTbd(l)?'':time12ToValue(l.time_label)}"></div>
+        ${isProLobby(l)?`<label>Slots (12 / 18 / 24…)</label><input type="number" id="gslots-${l.id}" min="1" value="${l.total_slots||12}">`:''}
+        <div class="grp-q-row"><span>Top</span><input type="number" min="0" inputmode="numeric" id="gtopn-${l.id}" value="${(Array.isArray(l.qualify_rules)&&l.qualify_rules[0]&&l.qualify_rules[0].n)||''}" placeholder="–"><i>→</i><input id="gtopd-${l.id}" placeholder="R2 / Final" value="${esc((Array.isArray(l.qualify_rules)&&l.qualify_rules[0]&&l.qualify_rules[0].dest)||'')}"></div>
+        <button type="button" class="create-bottom" style="margin-top:9px" onclick="saveGroupInfo('${l.id}')">Save</button>
+      </div>`:''}
     </div>`;
   }).join(''):'<div class="empty">No active '+({daily:'lobbies',weekly:'match',paid:'groups'})[tt(currentLobbyTournament)]+'.</div>';
+  if(tt(currentLobbyTournament)==='paid'){
+    const n=(lobbies||[]).filter(l=>!isProLobby(l)&&l.status!=='cancelled').length;
+    if(n>grpCount){grpCount=n;updateGrpView();}
+  }
   updateLobbyFormState();
 }
 
@@ -1560,6 +1661,7 @@ function timeValueTo12h(v){
 async function saveLobbies(){
   const tid=currentLobbyTournament?.id; if(!tid)return;
   const ty=tt(currentLobbyTournament);
+  if(ty==='paid')return savePaidGroups();
   const slots=currentLobbyTournament.default_slots||currentLobbyTournament.total_slots||0;
   let rows=[];
   if(ty==='paid'){
