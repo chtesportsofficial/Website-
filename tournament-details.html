@@ -403,7 +403,7 @@ function getAutoBookedRemaining(l){
 
 function lobbyDisplayJoined(l){
   const total=Math.max(0,Number(l.total_slots)||0);
-  if(l.status==='full')return total;
+  if(l.status==='full'||l.status==='completed')return total;
   const actual=Math.max(0,Number(l.joined_count)||0);
   const manualBooked=Math.max(0,Number(l.booked_slots)||0);
   const autoTarget=getAutoBookedTarget(l);
@@ -416,7 +416,7 @@ function lobbyDisplayLeft(l){
 }
 function lobbyIsFull(l){
   const slots=l.total_slots||0,joined=lobbyDisplayJoined(l);
-  return l.status==='full'||joined>=slots||isJoinWindowClosed(l);
+  return l.status==='full'||l.status==='completed'||joined>=slots||isJoinWindowClosed(l);
 }
 let sessionUser=null, sessionAccessToken=null, userProfile=null, walletBalance=null, walletBalanceError=false, walletBalanceLoading=false, walletBalanceErrorDetail='';
 let selectedLobbies=new Set(), lobbyDataById={};
@@ -603,12 +603,15 @@ async function initUser(){
   // (applyAutoStatus runs client-side there). If it never got opened,
   // an old lobby can stay stuck as 'full' forever. So date is filtered
   // here too, not just status, to guarantee old lobbies never resurface.
-  const {data:lobbies,error:lerr}=await sb.from('tournament_lobbies')
-    .select('*')
-    .eq('tournament_id',id)
-    .in('status',['upcoming','live','full'])
-    .gte('lobby_date',ymd(new Date()))
-    .order('lobby_date',{ascending:true});
+  // Paid tournaments: every group stays visible (past/completed ones too,
+  // as COMPLETED) so players can see which groups already happened and
+  // when — nothing is auto-removed by date or status (cancelled excepted).
+  const isPaidTour=t.tour_type==='paid';
+  let lq=sb.from('tournament_lobbies').select('*').eq('tournament_id',id);
+  lq=isPaidTour
+    ?lq.in('status',['upcoming','live','full','completed'])
+    :lq.in('status',['upcoming','live','full']).gte('lobby_date',ymd(new Date()));
+  const {data:lobbies,error:lerr}=await lq.order('lobby_date',{ascending:true});
 
   const lobbyBox=document.getElementById('lobbyList');
   if(lerr){lobbyBox.innerHTML='<div class="empty">Could not load lobbies.</div>';return}
@@ -624,6 +627,8 @@ async function initUser(){
   // yet. Only once a lobby's own time has actually passed (its 10-minute
   // join window has closed) does it drop below the still-upcoming ones.
   lobbies.sort((a,b)=>{
+    // paid: always Group A, B, C… then Pro Phase, so teams read them in order
+    if(isPaidTour)return (a.custom_title||'').localeCompare(b.custom_title||'',undefined,{numeric:true});
     if(a.lobby_date!==b.lobby_date)return a.lobby_date<b.lobby_date?-1:1;
     const pa=isJoinWindowClosed(a),pb=isJoinWindowClosed(b);
     if(pa!==pb)return pa?1:-1;
@@ -673,7 +678,7 @@ async function initUser(){
       <div class="lobby-bar"><div class="lobby-bar-fill ${full?'full':''}" style="width:${pct}%"></div></div>
       <div class="lobby-buy-row">
         <div class="fee-box"><span class="fee-label">ENTRY FEE</span><b class="fee-amt">৳${lobbyFeeOf(l)}</b></div>
-        <button class="join-btn ${full?'full':''}" id="jbtn-${l.id}" type="button" ${full?'disabled':`onclick="toggleLobbySelect('${l.id}')"`}>${full?'FULL':'BUY SLOT'}</button>
+        <button class="join-btn ${full?'full':''}" id="jbtn-${l.id}" type="button" ${full?'disabled':`onclick="toggleLobbySelect('${l.id}')"`}>${l.status==='completed'?'COMPLETED':full?'FULL':'BUY SLOT'}</button>
       </div>
     </div>`;
   }).join('');
