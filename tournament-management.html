@@ -303,6 +303,38 @@ html{min-height:100%;background-color:#1b2140;background-image:radial-gradient(c
 .grp-q-row i{font-style:normal;color:#25d366;text-align:center;font-weight:800}
 .grp-q-row input{min-width:0}
 </style>
+<style>
+/* ===== Map library + map picker ===== */
+.ml-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:2px 0 6px}
+.ml-card,.mp-tile{background:#111827;border:1px solid #26324a;border-radius:12px;padding:6px;color:#fff;text-align:center;font-family:inherit;cursor:pointer;min-width:0}
+.ml-card:active,.mp-tile:active{background:#18223a}
+.ml-img{aspect-ratio:1/1;border-radius:8px;background:#1f2740 center/cover no-repeat}
+.ml-name{font-size:10.5px;font-weight:700;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:6px 0 12px}
+.mp-tile.on{border-color:#25d366;background:rgba(37,211,102,.1)}
+.mp-new{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:1.5px dashed #34435f;border-radius:12px;background:#0a101d;color:#25d366;font-weight:800;font-size:11.5px;font-family:inherit;cursor:pointer;min-height:84px}
+.mp-new span{font-size:22px;line-height:1}
+.ml-up{position:relative;display:flex;align-items:center;gap:12px;padding:12px;border:1.5px dashed #34435f;border-radius:14px;background:#0a101d;overflow:hidden;cursor:pointer;margin:6px 0 0}
+.ml-up input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;padding:0;border:0;font-size:0}
+.ml-prev{display:none;width:72px;height:72px;object-fit:cover;border-radius:10px;flex:0 0 72px}
+.ml-up-t{font-size:13px;font-weight:700;color:#cdd6e6}
+.ml-up.has{border-style:solid;border-color:#25d366}
+.ml-actions{display:grid;grid-template-columns:1fr 1.5fr;gap:8px;margin:16px 0 14px}
+.ml-actions button{padding:14px 8px;border-radius:14px;border:1px solid #2a3855;background:#121a2b;color:#dfe6f2;font-weight:800;font-size:14px;font-family:inherit}
+.ml-actions .primary{background:linear-gradient(135deg,#20ca5f,#2fe07a);border-color:#25d366;color:#05140a}
+.ml-actions .del{grid-column:1/-1;color:#ff8591;border-color:#4a2230;background:#1c1018}
+.ml-actions button:disabled{opacity:.6}
+#mlm .box,#mpm .box{padding-bottom:6px}
+/* map slots inside the tournament form */
+#tm .map-box-edit{position:relative;display:block;padding:6px;gap:0}
+#tm .map-pick{display:block;width:100%;background:none;border:0;padding:0;margin:0;color:#fff;font-family:inherit;text-align:center;cursor:pointer}
+#tm .map-pick-img{display:grid;place-items:center;aspect-ratio:1/1;border-radius:10px;background:#141c2e center/cover no-repeat;border:1.5px dashed #34435f;color:#25d366}
+#tm .map-pick-img i{font-style:normal;font-size:24px;line-height:1}
+#tm .map-pick-img.has{border:1px solid #2b3852}
+#tm .map-pick-name{display:block;font-size:11px;font-weight:700;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#dfe6f2}
+#tm .map-pick-name.ph{color:#7f8ba1;font-weight:600}
+#tm .map-n{position:absolute;top:10px;left:10px;width:22px;height:22px;border-radius:8px;background:rgba(10,16,29,.85);border:1px solid #2b3852;font-size:11px}
+</style>
 </head>
 <body>
 <main class="wrap">
@@ -315,6 +347,12 @@ html{min-height:100%;background-color:#1b2140;background-image:radial-gradient(c
       <div id="sections"><div class="loading">Loading...</div></div>
       <div class="inline-add"><button type="button" id="addSectionBtn">＋ Add New Section</button></div>
     </div>
+  </section>
+
+  <section class="panel management-panel" id="mapLibPanel">
+    <div class="ph"><b>Map Library</b><span class="count" id="mlcount">0</span></div>
+    <div id="mapLib"><div class="loading">Loading...</div></div>
+    <div class="inline-add"><button type="button" id="addMapLibBtn" onclick="openMapLib('',false)">＋ Add New Map</button></div>
   </section>
 
   <section class="panel management-panel tournaments-panel">
@@ -410,6 +448,30 @@ html{min-height:100%;background-color:#1b2140;background-image:radial-gradient(c
   </section>
 
   <div class="tm-foot"><button type="button" id="cancelTmBtn">Cancel</button><button type="button" class="primary" id="saveTournamentBtn">Save Tournament</button></div>
+</div></div>
+
+<div class="modal" id="mpm"><div class="box">
+  <div class="mh"><b>Choose map</b><button type="button" onclick="closeM('mpm')" aria-label="Close">×</button></div>
+  <div id="mpGrid" class="mp-grid"></div>
+  <div class="ml-actions"><button type="button" class="del" id="mpClear" onclick="clearPick()">Clear this slot</button></div>
+</div></div>
+
+<div class="modal" id="mlm"><div class="box">
+  <div class="mh"><b id="mlmTitle">Add Map</b><button type="button" onclick="closeM('mlm')" aria-label="Close">×</button></div>
+  <input type="hidden" id="mlId">
+  <label for="mlName">Map name</label>
+  <input id="mlName" placeholder="e.g. Bermuda" autocomplete="off">
+  <label style="margin-top:12px">Map image</label>
+  <label class="ml-up" id="mlUp">
+    <input id="mlFile" type="file" accept="image/png,image/jpeg,image/webp">
+    <img class="ml-prev" alt="">
+    <span class="ml-up-t">Tap to upload image</span>
+  </label>
+  <div class="ml-actions">
+    <button type="button" class="del" id="mlDelete" onclick="deleteMapLib()">Delete map</button>
+    <button type="button" onclick="closeM('mlm')">Cancel</button>
+    <button type="button" class="primary" id="mlSave" onclick="saveMapLib()">Save Map</button>
+  </div>
 </div></div>
 
 <div class="modal" id="gm"><div class="box">
@@ -601,6 +663,7 @@ async function load(){
    renderTournaments()
  }
  fillSections();
+ await loadMapLibrary();
 }
 
 function renderSections(){
@@ -830,19 +893,123 @@ function renderPrizeBoxes(prefill){
   return `<div class="prize-box-edit"><label>Rank ${rank}</label><input type="number" min="0" class="prizeAmt" data-rank="${rank}" value="${amt}"></div>`;
  }).join('');
 }
+// ---------- Map library: upload each map once, then just pick it ----------
+let mapLibrary=[], pickSlot=null, libFromPicker=false;
+async function loadMapLibrary(){
+  const r=await sb.from('map_library').select('*').order('name');
+  if(r.error){
+    mapLibrary=[];console.error(r.error);
+    $('mlcount').textContent='0';
+    $('mapLib').innerHTML='<div class="empty">Map library is not set up yet. Run the map_library SQL in Supabase first.</div>';
+    return;
+  }
+  mapLibrary=r.data||[];
+  renderMapLibrary();
+}
+function renderMapLibrary(){
+  $('mlcount').textContent=mapLibrary.length;
+  $('mapLib').innerHTML=mapLibrary.length
+    ?`<div class="ml-grid">${mapLibrary.map(m=>`<button type="button" class="ml-card" onclick="openMapLib('${m.id}',false)"><div class="ml-img" style="background-image:url('${esc(m.image_url||'')}')"></div><div class="ml-name">${esc(m.name)}</div></button>`).join('')}</div>`
+    :'<div class="empty">No maps yet. Tap “Add New Map”.</div>';
+}
+function setMlPrev(url){
+  const up=$('mlUp'),img=up.querySelector('.ml-prev'),t=up.querySelector('.ml-up-t');
+  if(url){img.src=url;img.style.display='block';up.classList.add('has');t.textContent='Tap to change image';}
+  else{img.removeAttribute('src');img.style.display='none';up.classList.remove('has');t.textContent='Tap to upload image';}
+}
+function openMapLib(id,fromPicker){
+  libFromPicker=!!fromPicker;
+  const m=id?mapLibrary.find(x=>x.id===id):null;
+  $('mlId').value=m?m.id:'';
+  $('mlName').value=m?m.name:'';
+  $('mlFile').value='';
+  $('mlmTitle').textContent=m?'Edit Map':'Add Map';
+  $('mlDelete').style.display=m?'':'none';
+  setMlPrev(m?m.image_url:'');
+  openM('mlm');
+}
+document.addEventListener('change',e=>{
+  if(e.target&&e.target.id==='mlFile'){
+    const f=e.target.files&&e.target.files[0];
+    if(f)setMlPrev(URL.createObjectURL(f));
+  }
+});
+async function saveMapLib(){
+  const id=$('mlId').value,name=$('mlName').value.trim(),file=$('mlFile').files[0];
+  if(!name)return msg('Enter a map name.');
+  const old=id?mapLibrary.find(x=>x.id===id):null;
+  if(!old&&!file)return msg('Upload an image for the map.');
+  const btn=$('mlSave'),label=btn.textContent;
+  btn.disabled=true;btn.textContent='Saving…';
+  try{
+    let url=old?old.image_url:null;
+    if(file){const up=await uploadMany([file]);url=up[0];}
+    const q=id?sb.from('map_library').update({name,image_url:url}).eq('id',id):sb.from('map_library').insert({name,image_url:url});
+    const r=await q.select().single();
+    if(r.error)throw r.error;
+    closeM('mlm');
+    await loadMapLibrary();
+    if(libFromPicker&&pickSlot!==null&&!id){applyPick(pickSlot,r.data);closeM('mpm');}
+  }catch(e){
+    msg((e&&e.message)||'Could not save the map.');
+  }finally{btn.disabled=false;btn.textContent=label;}
+}
+function deleteMapLib(){
+  const id=$('mlId').value; if(!id)return;
+  askConfirm('Delete this map?','It is removed from the library. Tournaments that already use it keep their image.',async()=>{
+    const r=await sb.from('map_library').delete().eq('id',id);
+    if(r.error)return msg(r.error.message);
+    closeM('mlm');
+    await loadMapLibrary();
+  });
+}
+// ---- picking a map for a tournament slot ----
+function slotBox(i){return document.querySelector('#mapBoxes .map-box-edit[data-i="'+i+'"]');}
+function paintSlot(box){
+  const name=box.querySelector('.mapName').value,url=box.querySelector('.mapImgUrl').value;
+  const img=box.querySelector('.map-pick-img'),nm=box.querySelector('.map-pick-name');
+  img.style.backgroundImage=url?`url('${url.replace(/'/g,"%27")}')`:'';
+  img.classList.toggle('has',!!url);
+  img.innerHTML=url?'':'<i>＋</i>';
+  nm.textContent=name||'Select map';
+  nm.classList.toggle('ph',!name);
+}
+function applyPick(i,m){
+  const box=slotBox(i); if(!box)return;
+  box.querySelector('.mapName').value=m?m.name:'';
+  box.querySelector('.mapImgUrl').value=m?m.image_url:'';
+  paintSlot(box);
+}
+function openMapPicker(i){
+  pickSlot=i;
+  const cur=slotBox(i);
+  const curUrl=cur?cur.querySelector('.mapImgUrl').value:'';
+  $('mpGrid').innerHTML=`<button type="button" class="mp-new" onclick="openMapLib('',true)"><span>＋</span>New map</button>`
+    +mapLibrary.map(m=>`<button type="button" class="mp-tile ${m.image_url===curUrl?'on':''}" onclick="pickMap('${m.id}')"><div class="ml-img" style="background-image:url('${esc(m.image_url||'')}')"></div><div class="ml-name">${esc(m.name)}</div></button>`).join('');
+  openM('mpm');
+}
+function pickMap(id){
+  const m=mapLibrary.find(x=>x.id===id); if(!m||pickSlot===null)return;
+  applyPick(pickSlot,m);closeM('mpm');
+}
+function clearPick(){if(pickSlot!==null)applyPick(pickSlot,null);closeM('mpm');}
+function currentMapValues(){
+  return [...document.querySelectorAll('#mapBoxes .map-box-edit')].map(b=>({name:b.querySelector('.mapName').value,image_url:b.querySelector('.mapImgUrl').value}));
+}
 function renderMapBoxes(prefill){
  const n=+$('mapCount').value||1;
- const old=Array.isArray(prefill)?prefill:[];
+ // changing the number of maps must not wipe the maps already picked
+ const old=Array.isArray(prefill)?prefill:currentMapValues();
  $('mapBoxes').innerHTML=Array.from({length:n},(_,i)=>{
   const m=old[i]||{};
-  return `<div class="map-box-edit">
+  return `<div class="map-box-edit" data-i="${i}">
+    <button type="button" class="map-pick" onclick="openMapPicker(${i})">
+      <span class="map-pick-img ${m.image_url?'has':''}" style="${m.image_url?`background-image:url('${esc(m.image_url).replace(/'/g,'%27')}')`:''}">${m.image_url?'':'<i>＋</i>'}</span>
+      <span class="map-pick-name ${m.name?'':'ph'}">${esc(m.name||'Select map')}</span>
+    </button>
     <span class="map-n">${i+1}</span>
-    <div class="map-f">
-      <input class="mapName" data-i="${i}" placeholder="Name" value="${esc(m.name||'')}">
-      <label class="map-up"><input type="file" class="mapImg" data-i="${i}" accept="image/png,image/jpeg,image/webp"><span class="map-up-t">${m.image_url?'Change':'Add image'}</span></label>
-    </div>
-    <input type="hidden" class="mapImgUrl" data-i="${i}" value="${esc(m.image_url||'')}">
-    ${m.image_url?`<div class="existing-img" title="${esc(m.image_url)}">✓ Image set</div>`:''}
+    <input type="hidden" class="mapName" value="${esc(m.name||'')}">
+    <input type="hidden" class="mapImgUrl" value="${esc(m.image_url||'')}">
   </div>`;
  }).join('');
 }
@@ -993,14 +1160,11 @@ async function saveTournament(){
   const pointNewFiles=[...($('pointImages').files||[])];
   const pointSystemImages=pointNewFiles.length?await uploadMany(pointNewFiles):JSON.parse($('pointImagesOld').value||'[]');
 
-  const mapBoxEls=[...document.querySelectorAll('#mapBoxes .map-box-edit')];
-  const maps=[];
-  for(const box of mapBoxEls){
-   const nameEl=box.querySelector('.mapName'),fileEl=box.querySelector('.mapImg'),urlEl=box.querySelector('.mapImgUrl');
-   let imgUrl=urlEl.value||'';
-   if(fileEl.files&&fileEl.files[0]){const up=await uploadMany([fileEl.files[0]]);imgUrl=up[0];}
-   maps.push({name:nameEl.value.trim(),image_url:imgUrl});
-  }
+  // Maps come from the Map Library now: each slot already holds the picked name + image url.
+  // Empty (unpicked) slots are skipped so no blank "No image" boxes are saved.
+  const maps=[...document.querySelectorAll('#mapBoxes .map-box-edit')]
+    .map(box=>({name:box.querySelector('.mapName').value.trim(),image_url:box.querySelector('.mapImgUrl').value||''}))
+    .filter(m=>m.name||m.image_url);
 
   let p={
    section_id:$('section').value,title:$('title').value.trim(),banner_url:banner,
