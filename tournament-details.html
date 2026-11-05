@@ -150,6 +150,19 @@
   html[data-theme="light"] .lobby-card.act{border-color:rgba(21,128,61,.55);}
   html[data-theme="light"] .lobby-card.act .lobby-dt-time,html[data-theme="light"] .lobby-card.act .fee-amt{color:#15803d;}
   html[data-theme="light"] .lobby-card.act .fee-box{background:#e2f6e9;border-color:#6bbf8a;}
+  /* Finished group (completed / date already passed): everything grey, sits at the bottom */
+  .lobby-card.done{border-color:rgba(255,255,255,.06);}
+  .lobby-card.done .grp-chip{background:#2a3145;color:var(--text-dim);}
+  .lobby-card.done .lobby-dt-date,.lobby-card.done .lobby-dt-time,.lobby-card.done .lobby-dt-dot{color:var(--text-dim);}
+  .lobby-card.done .qual-btn{background:#3a4152;color:#9aa3b5;}
+  .lobby-card.done .lobby-bar-fill{background:#5f6472;}
+  .lobby-card.done .fee-box{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.12);}
+  /* fee stays fully readable (players see what the entry was), just not highlighted */
+  .lobby-card.done .fee-amt{color:#aab3c5;}
+  .lobby-card.done .fee-label{color:var(--text-dim);}
+  html[data-theme="light"] .lobby-card.done .fee-amt{color:#5a6479;}
+  html[data-theme="light"] .lobby-card.done .qual-btn{background:#c3cad8;color:#5a6479;}
+  html[data-theme="light"] .lobby-card.done .fee-box{background:#e3e8f2;border-color:#c3cad8;}
   .grp-chip{flex-shrink:0;padding:6px 14px;border-radius:999px;background:var(--orange);color:#241705;font-size:12.5px;font-weight:800;white-space:nowrap;}
   .grp-left{display:flex;align-items:center;gap:8px;min-width:0;}
   .paid-top{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;}
@@ -382,6 +395,13 @@ function totalFee(ids,countFn){
 }
 function lobbyTag(l){return (currentTournament&&currentTournament.tour_type==='paid'&&l&&l.custom_title)?String(l.custom_title).trim()+' · ':''}
 
+// A paid group is "finished" once it's marked completed, or its (real) date is before today.
+function isLobbyFinished(l){
+  if(!l)return false;
+  if(l.status==='completed')return true;
+  if(l.lobby_date===TBD_DATE||!l.lobby_date)return false;
+  return l.lobby_date<ymd(new Date());
+}
 function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 // A lobby's "BUY SLOT" stays open right up to 10 minutes after its own
 // scheduled time (e.g. a 3:20 lobby closes at 3:30) — after that the match
@@ -660,7 +680,12 @@ async function initUser(){
   // join window has closed) does it drop below the still-upcoming ones.
   lobbies.sort((a,b)=>{
     // paid: always Group A, B, C… then Pro Phase, so teams read them in order
-    if(isPaidTour)return (a.custom_title||'').localeCompare(b.custom_title||'',undefined,{numeric:true});
+    if(isPaidTour){
+      // finished groups always sink to the very bottom, rest stay Group A, B, C… then Pro Phase
+      const fa=isLobbyFinished(a)?1:0,fb=isLobbyFinished(b)?1:0;
+      if(fa!==fb)return fa-fb;
+      return (a.custom_title||'').localeCompare(b.custom_title||'',undefined,{numeric:true});
+    }
     if(a.lobby_date!==b.lobby_date)return a.lobby_date<b.lobby_date?-1:1;
     const pa=isJoinWindowClosed(a),pb=isJoinWindowClosed(b);
     if(pa!==pb)return pa?1:-1;
@@ -705,14 +730,15 @@ async function initUser(){
         <div class="lobby-date">${esc(dateLabel)}</div>
       </div>`;
     // paid cards: orange dashed = date not announced, green = active (dated, open), grey = full/completed
-    const cardCls=(t.tour_type==='paid')?(isTbdLobby(l)?' tbd':(!full?' act':'')):'';
+    const finished=(t.tour_type==='paid')&&isLobbyFinished(l);
+    const cardCls=(t.tour_type==='paid')?(finished?' done':isTbdLobby(l)?' tbd':(!full?' act':'')):'';
     return `<div class="lobby-card${cardCls}" id="lcard-${l.id}">
       ${topHtml}
       <div class="lobby-meta"><span>Joined: ${joined}</span><span>last ${left} slot left</span><span>Slots: ${slots}</span></div>
       <div class="lobby-bar"><div class="lobby-bar-fill ${full?'full':''}" style="width:${pct}%"></div></div>
       <div class="lobby-buy-row">
         <div class="fee-box"><span class="fee-label">ENTRY FEE</span><b class="fee-amt">৳${lobbyFeeOf(l)}</b></div>
-        <button class="join-btn ${full?'full':''}" id="jbtn-${l.id}" type="button" ${full?'disabled':`onclick="toggleLobbySelect('${l.id}')"`}>${l.status==='completed'?'COMPLETED':full?'FULL':'BUY SLOT'}</button>
+        <button class="join-btn ${full?'full':''}" id="jbtn-${l.id}" type="button" ${full?'disabled':`onclick="toggleLobbySelect('${l.id}')"`}>${(l.status==='completed'||finished)?'COMPLETED':full?'FULL':'BUY SLOT'}</button>
       </div>
     </div>`;
   }).join('');
