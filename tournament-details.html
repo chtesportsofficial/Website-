@@ -137,6 +137,19 @@
   html[data-theme="light"] .lobby-card.tbd{border-color:rgba(180,83,9,.5);}
   html[data-theme="light"] .tbd-pill,html[data-theme="light"] .tbd-note b{color:#b45309;border-color:rgba(180,83,9,.6);}
   html[data-theme="light"] .tbd-note{background:rgba(180,83,9,.08);}
+  /* Paid group WITH a date and still open = ACTIVE -> green. TBD = orange/gold (above). Full/completed = grey. */
+  .lobby-card.act{border-color:rgba(34,197,94,.5);}
+  .lobby-card.act .grp-chip:not(.full){background:#22c55e;color:#04210f;}
+  .lobby-card.act .lobby-dt-time{color:#22c55e;}
+  .lobby-card.act .lobby-bar-fill:not(.full){background:#22c55e;}
+  .lobby-card.act .qual-btn{background:#22c55e;color:#04210f;}
+  .lobby-card.act .fee-box{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.4);}
+  .lobby-card.act .fee-amt{color:#4ade80;}
+  .lobby-card.act .join-btn:not(.full):not(.selected){background:#22c55e;border-bottom-color:#15803d;color:#04210f;}
+  .lobby-card.act .join-btn.selected{background:#0f3d24;border:2px solid #22c55e;border-bottom-width:3px;color:#4ade80;}
+  html[data-theme="light"] .lobby-card.act{border-color:rgba(21,128,61,.55);}
+  html[data-theme="light"] .lobby-card.act .lobby-dt-time,html[data-theme="light"] .lobby-card.act .fee-amt{color:#15803d;}
+  html[data-theme="light"] .lobby-card.act .fee-box{background:#e2f6e9;border-color:#6bbf8a;}
   .grp-chip{flex-shrink:0;padding:6px 14px;border-radius:999px;background:var(--orange);color:#241705;font-size:12.5px;font-weight:800;white-space:nowrap;}
   .grp-left{display:flex;align-items:center;gap:8px;min-width:0;}
   .paid-top{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;}
@@ -320,6 +333,17 @@ function getProfile(){
 let currentTournament=null, currentJoinLobbyIds=[];
 // Copy shown for each tour type. daily = hourly lobbies, paid = groups,
 // weekly = a single match on one day.
+// Site language (Bangla vs English). This page has no language switch of its
+// own, so it reads the common keys a switch would store, or <html lang="bn">.
+function pageIsBangla(){
+  try{
+    for(const k of ['lang','language','site_lang','chteo_lang','app_lang']){
+      const v=String(localStorage.getItem(k)||'').trim().toLowerCase();
+      if(v==='bn'||v.startsWith('bn-')||v==='bangla'||v==='bengali'||v==='বাংলা')return true;
+    }
+  }catch(e){}
+  return /^bn/i.test(document.documentElement.lang||'');
+}
 function tourCopy(t){
   const ty=(t&&t.tour_type)||'daily';
   if(ty==='paid')return{title:'Groups',sub:'Pick the group you want to play. You can join more than one group.',loading:'Loading groups...',empty:'No groups open right now.'};
@@ -670,7 +694,7 @@ async function initUser(){
       ?`<div class="lobby-top paid-top">
         <div class="grp-chip ${full?'full':''}" ${isProLobby(l)&&!full?'style="background:linear-gradient(135deg,#f6c453,#ff9a52)"':''}>${isProLobby(l)?'⭐ ':''}${esc(grpName||'Group')}</div>
         ${isTbdLobby(l)
-          ?`<div class="lobby-dt"><span class="tbd-pill">📅 Date TBA</span></div>`
+          ?`<div class="lobby-dt"><span class="tbd-pill">${pageIsBangla()?'শীঘ্রই জানানো হবে':'To Be Announced'}</span></div>`
           :`<div class="lobby-dt"><span class="lobby-dt-date">${esc(niceDate)}</span><span class="lobby-dt-dot">•</span><span class="lobby-dt-time">${esc(niceTime)}</span></div>`}${qualRules(l).length?`<button class="qual-btn" type="button" aria-label="Qualify info" onclick="openQualify('${l.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M12 11v6.5M12 6.8h.01"/></svg></button>`:'<span class="qual-spacer"></span>'}
       </div>`
       :`<div class="lobby-top">
@@ -680,11 +704,10 @@ async function initUser(){
         </div>
         <div class="lobby-date">${esc(dateLabel)}</div>
       </div>`;
-    const tbdNote=(t.tour_type==='paid'&&isTbdLobby(l))
-      ?`<div class="tbd-note"><span>ℹ️</span><span>${full?'<b>স্লট ফুল হয়ে গেছে।</b> ম্যাচের তারিখ ও সময় শীঘ্রই জানানো হবে।':'<b>তারিখ ও সময় এখনো ঠিক হয়নি।</b> ঠিক হলেই এখানে আর আপনার টিমকে জানানো হবে।'}</span></div>`:'';
-    return `<div class="lobby-card${(t.tour_type==='paid'&&isTbdLobby(l))?' tbd':''}" id="lcard-${l.id}">
+    // paid cards: orange dashed = date not announced, green = active (dated, open), grey = full/completed
+    const cardCls=(t.tour_type==='paid')?(isTbdLobby(l)?' tbd':(!full?' act':'')):'';
+    return `<div class="lobby-card${cardCls}" id="lcard-${l.id}">
       ${topHtml}
-      ${tbdNote}
       <div class="lobby-meta"><span>Joined: ${joined}</span><span>last ${left} slot left</span><span>Slots: ${slots}</span></div>
       <div class="lobby-bar"><div class="lobby-bar-fill ${full?'full':''}" style="width:${pct}%"></div></div>
       <div class="lobby-buy-row">
@@ -693,6 +716,26 @@ async function initUser(){
       </div>
     </div>`;
   }).join('');
+
+  // "Date not decided yet" note — shown ONLY to players who already bought a
+  // slot in that (TBD) group. Everyone else just sees the "To Be Announced" pill.
+  if(t.tour_type==='paid'){
+    const tbdIds=lobbies.filter(isTbdLobby).map(l=>l.id);
+    if(tbdIds.length){
+      try{
+        const {data:{session}}=await sb.auth.getSession();
+        const uid=session&&session.user&&session.user.id;
+        if(uid){
+          const {data:mine,error:me}=await sb.from('lobby_teams').select('lobby_id').eq('submitted_by',uid).in('lobby_id',tbdIds).neq('confirmation_status','rejected');
+          if(!me)(mine||[]).forEach(r=>{
+            const card=document.getElementById('lcard-'+r.lobby_id);
+            const top=card&&card.querySelector('.lobby-top');
+            if(top&&!card.querySelector('.tbd-note'))top.insertAdjacentHTML('afterend','<div class="tbd-note"><span>ℹ️</span><span><b>আপনি স্লট কিনেছেন।</b> তারিখ ও সময় এখনো ঠিক হয়নি — ঠিক হলেই আপনাকে জানানো হবে।</span></div>');
+          });
+        }
+      }catch(e){console.warn('TBD note check failed',e);}
+    }
+  }
 })();
 
 function toggleLobbySelect(id){
