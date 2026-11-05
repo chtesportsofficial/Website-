@@ -129,6 +129,14 @@
   .lobby-dt-date{font-size:15px;font-weight:700;color:var(--text);}
   .lobby-dt-dot{color:var(--text-dim);font-size:14px;}
   .lobby-dt-time{font-size:15px;font-weight:700;color:var(--gold);}
+  /* Paid group whose date isn't announced yet — clearly different from a dated card */
+  .lobby-card.tbd{border:1px dashed rgba(246,196,83,.55);background:linear-gradient(180deg,rgba(246,196,83,.06),transparent 70%),var(--card-2);}
+  .tbd-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;border:1px dashed rgba(246,196,83,.7);color:var(--gold);font-size:13px;font-weight:800;letter-spacing:.2px;white-space:nowrap;}
+  .tbd-note{display:flex;align-items:flex-start;gap:7px;margin:-2px 0 10px;padding:8px 10px;border-radius:10px;background:rgba(246,196,83,.08);color:var(--text-dim);font-size:11.5px;line-height:1.45;}
+  .tbd-note b{color:var(--gold);font-weight:700;}
+  html[data-theme="light"] .lobby-card.tbd{border-color:rgba(180,83,9,.5);}
+  html[data-theme="light"] .tbd-pill,html[data-theme="light"] .tbd-note b{color:#b45309;border-color:rgba(180,83,9,.6);}
+  html[data-theme="light"] .tbd-note{background:rgba(180,83,9,.08);}
   .grp-chip{flex-shrink:0;padding:6px 14px;border-radius:999px;background:var(--orange);color:#241705;font-size:12.5px;font-weight:800;white-space:nowrap;}
   .grp-left{display:flex;align-items:center;gap:8px;min-width:0;}
   .paid-top{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;}
@@ -662,7 +670,7 @@ async function initUser(){
       ?`<div class="lobby-top paid-top">
         <div class="grp-chip ${full?'full':''}" ${isProLobby(l)&&!full?'style="background:linear-gradient(135deg,#f6c453,#ff9a52)"':''}>${isProLobby(l)?'⭐ ':''}${esc(grpName||'Group')}</div>
         ${isTbdLobby(l)
-          ?`<div class="lobby-dt"><span class="lobby-dt-time">TBD</span><span class="lobby-dt-dot">•</span><span class="lobby-date" style="white-space:normal;text-align:center">${full?'স্লট ফুল — তারিখ শীঘ্রই জানানো হবে':'তারিখ পরে জানানো হবে'}</span></div>`
+          ?`<div class="lobby-dt"><span class="tbd-pill">📅 Date TBA</span></div>`
           :`<div class="lobby-dt"><span class="lobby-dt-date">${esc(niceDate)}</span><span class="lobby-dt-dot">•</span><span class="lobby-dt-time">${esc(niceTime)}</span></div>`}${qualRules(l).length?`<button class="qual-btn" type="button" aria-label="Qualify info" onclick="openQualify('${l.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M12 11v6.5M12 6.8h.01"/></svg></button>`:'<span class="qual-spacer"></span>'}
       </div>`
       :`<div class="lobby-top">
@@ -672,8 +680,11 @@ async function initUser(){
         </div>
         <div class="lobby-date">${esc(dateLabel)}</div>
       </div>`;
-    return `<div class="lobby-card" id="lcard-${l.id}">
+    const tbdNote=(t.tour_type==='paid'&&isTbdLobby(l))
+      ?`<div class="tbd-note"><span>ℹ️</span><span>${full?'<b>স্লট ফুল হয়ে গেছে।</b> ম্যাচের তারিখ ও সময় শীঘ্রই জানানো হবে।':'<b>তারিখ ও সময় এখনো ঠিক হয়নি।</b> ঠিক হলেই এখানে আর আপনার টিমকে জানানো হবে।'}</span></div>`:'';
+    return `<div class="lobby-card${(t.tour_type==='paid'&&isTbdLobby(l))?' tbd':''}" id="lcard-${l.id}">
       ${topHtml}
+      ${tbdNote}
       <div class="lobby-meta"><span>Joined: ${joined}</span><span>last ${left} slot left</span><span>Slots: ${slots}</span></div>
       <div class="lobby-bar"><div class="lobby-bar-fill ${full?'full':''}" style="width:${pct}%"></div></div>
       <div class="lobby-buy-row">
