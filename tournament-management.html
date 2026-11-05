@@ -558,7 +558,6 @@ html{min-height:100%;background-color:#1b2140;background-image:radial-gradient(c
           </div>
         </div>
       </div>
-      <div class="img-note" style="font-size:10.5px">Save করলে Group A, B, C, D… অটো তৈরি হবে (Date = TBD)। তারিখ প্রতিটা গ্রুপের "Set date" থেকে বসান। Qualify একবারই Create/Edit Tournament ফর্মে দেওয়া হয়, নতুন গ্রুপ সেটা নিজে থেকে পায়।</div>
     </div>
     <button type="button" class="create-bottom" id="saveLobbiesBtn" onclick="saveLobbies()">Save Lobby(s)</button>
   </div>
@@ -1541,8 +1540,15 @@ function time12ToValue(label){
   let h=(+m[1])%12; if(/pm/i.test(m[3]))h+=12;
   return String(h).padStart(2,'0')+':'+m[2];
 }
-async function saveGroupInfo(id){
+async function saveGroupInfo(id,btn){
   const l=lobbies.find(x=>x.id===id); if(!l)return;
+  if(btn&&btn.disabled)return;
+  const btnLabel=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  try{await saveGroupInfoInner(id,l);}
+  finally{if(btn&&btn.isConnected){btn.disabled=false;btn.textContent=btnLabel;}}
+}
+async function saveGroupInfoInner(id,l){
   const date=document.getElementById('gdate-'+id).value;
   const time=timeValueTo12h(document.getElementById('gtime-'+id).value);
   const upd={}; // qualify is set once for all groups in Create/Edit Tournament
@@ -1614,12 +1620,12 @@ function renderLobbies(){
     <div class="lobby-item">
       <div class="lobby-top"><div class="lobby-date">${tt(currentLobbyTournament)==='paid'?(esc(l.custom_title||'Group')+' — '+(isTbd(l)?'<span style="color:#f6c453">TBD (date not set)</span>':fmtLobbyDate(l.lobby_date)+' '+esc(l.time_label))):lobbyLabel(l)}</div>${badgeHtml}</div>
       <div class="lobby-meta">${l.joined_count||0}/${l.total_slots||0} joined${isProLobby(l)&&l.entry_fee?' · Entry ৳'+l.entry_fee:''}${qualText(l)}</div>
-      <div class="lobby-actions">${tt(currentLobbyTournament)==='paid'?`<button class="mini green" onclick="toggleGrpEdit('${l.id}')">Set date</button>`:''}<button class="mini t-delete" onclick="deleteLobby('${l.id}',false,this)">Delete</button></div>
+      <div class="lobby-actions">${tt(currentLobbyTournament)==='paid'?`<button class="mini green" onclick="toggleGrpEdit('${l.id}')">${isTbd(l)?'Set date':'Change date'}</button>`:''}<button class="mini t-delete" onclick="deleteLobby('${l.id}',false,this)">Delete</button></div>
       ${tt(currentLobbyTournament)==='paid'?`<div id="gedit-${l.id}" class="grp-q" style="display:none">
         <div class="grp-q-h">Date/Time ফাঁকা রাখলে TBD থাকবে</div>
         <div class="grp-dt"><input type="date" id="gdate-${l.id}" value="${isTbd(l)?'':esc(l.lobby_date)}"><input type="time" id="gtime-${l.id}" value="${isTbd(l)?'':time12ToValue(l.time_label)}"></div>
         ${isProLobby(l)?`<label>Slots (12 / 18 / 24…)</label><input type="number" id="gslots-${l.id}" min="1" value="${l.total_slots||12}">`:''}
-        <button type="button" class="create-bottom" style="margin-top:9px" onclick="saveGroupInfo('${l.id}')">Save</button>
+        <button type="button" class="create-bottom" style="margin-top:9px" onclick="saveGroupInfo('${l.id}',this)">Save</button>
       </div>`:''}
     </div>`;
   }).join(''):'<div class="empty">No '+(paidT?'':'active ')+({daily:'lobbies',weekly:'match',paid:'groups'})[tt(currentLobbyTournament)]+'.</div>';
