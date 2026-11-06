@@ -32,6 +32,15 @@ input,select,textarea{font-family:inherit}
 .mchip{flex-shrink:0;padding:8px 16px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--dim);font-size:13px;font-weight:800}
 .mchip.on{background:var(--green);border-color:var(--green);color:#052e1c}
 
+.thead{margin:0 16px 12px;border-radius:14px;overflow:hidden}
+.tupd{background:#2f66d0;color:#fff;font-size:11.5px;font-weight:700;text-align:center;padding:5px}
+.ttl{display:flex;align-items:center;gap:8px;background:#ff9800;color:#1a1200;padding:12px 8px 12px 14px}
+.ttl b{flex:1;font-size:17px;font-weight:900;letter-spacing:.3px;overflow-wrap:anywhere}
+.ttl button{width:34px;height:34px;border-radius:10px;border:none;background:rgba(0,0,0,.15);font-size:16px}
+.teams{display:flex;gap:8px;overflow-x:auto;padding:0 16px 10px;scrollbar-width:none}
+.teams::-webkit-scrollbar{display:none}
+.tchip{flex-shrink:0;padding:8px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--line);color:var(--dim);font-size:13px;font-weight:800}
+.tchip.on{background:#ff9800;border-color:#ff9800;color:#1a1200}
 .sum{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 8px}
 .scard{background:linear-gradient(145deg,#1d4fbf,#173f9a);border-radius:16px;padding:12px 14px;color:#fff;border:1px solid rgba(255,255,255,.12)}
 .scard .l{font-size:11px;font-weight:800;letter-spacing:.5px;opacity:.85}
@@ -104,6 +113,8 @@ input,select,textarea{font-family:inherit}
   <div id="gate" class="gate">Loading…</div>
 
   <div id="main" style="display:none">
+    <div class="teams" id="teams"></div>
+    <div class="thead"><div class="tupd" id="tUpd"></div><div class="ttl"><b id="tName"></b><button type="button" id="tEdit" aria-label="Edit team">✎</button></div></div>
     <div class="months" id="months"></div>
     <div class="sum">
       <div class="scard"><div class="l">TOTAL COST</div><div class="v" id="sCost">0</div><div class="h">all entry fees</div></div>
@@ -168,7 +179,8 @@ const num=v=>Number(v)||0;
 const fmt=n=>Math.round(n).toLocaleString('en-US');
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(window._tt);window._tt=setTimeout(()=>t.classList.remove('show'),2800);}
 
-let uid=null, entries=[], ym=null;           // ym = 'YYYY-MM' currently shown
+let uid=null, entries=[], teams=[], tid=null, ym=null;
+const cur=()=>entries.filter(e=>e.team_id===tid);           // ym = 'YYYY-MM' currently shown
 let editing=null;                            // entry being edited (null = new)
 let banUrl='', banFile=null, banOld='';      // banner state inside the sheet
 const todayStr=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})();
@@ -181,13 +193,18 @@ function safeImg(u){return typeof u==='string'&&u.startsWith(SUPABASE_URL+'/stor
 
 // ---------- render ----------
 function monthKeys(){
-  const s=new Set(entries.map(e=>monthOf(e.entry_date))); s.add(todayStr.slice(0,7));
+  const s=new Set(cur().map(e=>monthOf(e.entry_date))); s.add(todayStr.slice(0,7));
   return [...s].sort().reverse();
 }
 function render(){
+  const T=teams.find(t=>t.id===tid)||{name:''};
+  $('teams').innerHTML=teams.map(t=>`<button type="button" class="tchip ${t.id===tid?'on':''}" data-t="${t.id}">${esc(t.name)}</button>`).join('')+'<button type="button" class="tchip" id="tAdd">＋ Team</button>';
+  $('tName').textContent=(T.name+' SCHEDULE').toUpperCase();
+  const lu=cur().map(e=>e.updated_at||e.created_at||'').sort().pop();
+  $('tUpd').textContent='last updated : '+(lu?new Date(lu).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—');
   const keys=monthKeys(); if(!ym||!keys.includes(ym)) ym=todayStr.slice(0,7);
   $('months').innerHTML=keys.map(k=>`<button type="button" class="mchip ${k===ym?'on':''}" data-m="${k}">${monthLabel(k)}</button>`).join('');
-  const list=entries.filter(e=>monthOf(e.entry_date)===ym).sort((a,b)=>a.entry_date.localeCompare(b.entry_date)||String(a.entry_time||'').localeCompare(String(b.entry_time||'')));
+  const list=cur().filter(e=>monthOf(e.entry_date)===ym).sort((a,b)=>a.entry_date.localeCompare(b.entry_date)||String(a.entry_time||'').localeCompare(String(b.entry_time||'')));
   const cost=list.reduce((s,e)=>s+num(e.fee),0), paid=list.reduce((s,e)=>s+(e.fee_paid?num(e.fee):0),0);
   const prize=list.reduce((s,e)=>s+num(e.prize),0), rec=list.reduce((s,e)=>s+(e.prize_received?num(e.prize):0),0);
   const setV=(id,v,signed)=>{const el=$(id);el.textContent=fmt(v);el.className='v'+(signed?(v<0?' neg':v>0?' pos':''):'');};
@@ -293,6 +310,7 @@ $('shSave').addEventListener('click',async()=>{
       url=sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
     }
     const row={
+      team_id:editing?editing.team_id:tid,
       entry_date:date, entry_time:$('fTime').value||null, type:$('fType').value.trim()||null,
       maps:$('fMaps').value===''?null:Math.max(0,parseInt($('fMaps').value,10)||0),
       name, banner_url:url||null,
@@ -303,7 +321,7 @@ $('shSave').addEventListener('click',async()=>{
     };
     let r;
     if(editing) r=await sb.from('user_schedule_entries').update(row).eq('id',editing.id).select().single();
-    else r=await sb.from('user_schedule_entries').insert({...row,user_id:uid}).select().single();
+    else r=await sb.from('user_schedule_entries').insert({...row,user_id:uid,team_id:tid}).select().single();
     if(r.error)throw r.error;
     if(banOld&&banOld!==url) dropBanner(banOld);
     if(editing) entries=entries.map(x=>x.id===editing.id?r.data:x); else entries.push(r.data);
@@ -330,6 +348,33 @@ $('shDel').addEventListener('click',async()=>{
   finally{ btn.disabled=false; }
 });
 
+// ---------- teams ----------
+$('teams').addEventListener('click',e=>{
+  const b=e.target.closest('[data-t]'); if(b){tid=b.dataset.t;render();return;}
+  if(e.target.closest('#tAdd'))addTeam();
+});
+async function addTeam(){
+  const n=(prompt('Team name?')||'').trim().slice(0,40); if(!n)return;
+  const r=await sb.from('user_schedule_teams').insert({name:n,user_id:uid}).select().single();
+  if(r.error){toast('Failed: '+r.error.message);return;}
+  teams.push(r.data); tid=r.data.id; render(); toast('Team added ✓');
+}
+$('tEdit').addEventListener('click',async()=>{
+  const t=teams.find(x=>x.id===tid); if(!t)return;
+  const n=prompt('Team name. Leave EMPTY to delete this team and its whole schedule.',t.name); if(n===null)return;
+  const name=n.trim().slice(0,40);
+  if(name){
+    const r=await sb.from('user_schedule_teams').update({name}).eq('id',t.id); if(r.error){toast('Failed: '+r.error.message);return;}
+    t.name=name; render(); toast('Saved ✓'); return;
+  }
+  if(teams.length<2){toast('You need at least one team.');return;}
+  if(!confirm('Delete "'+t.name+'" and ALL its tournaments?'))return;
+  const gone=cur(); const r=await sb.from('user_schedule_teams').delete().eq('id',t.id);
+  if(r.error){toast('Failed: '+r.error.message);return;}
+  gone.forEach(e=>dropBanner(e.banner_url));
+  entries=entries.filter(e=>e.team_id!==t.id); teams=teams.filter(x=>x.id!==t.id); tid=teams[0].id; ym=null; render(); toast('Team deleted');
+});
+
 // ---------- start ----------
 function gate(html){ $('gate').style.display='block'; $('main').style.display='none'; $('fab').style.display='none'; $('gate').innerHTML=html; }
 (async function init(){
@@ -345,6 +390,12 @@ function gate(html){ $('gate').style.display='block'; $('main').style.display='n
       return;
     }
     entries=r.data||[];
+    const tr=await sb.from('user_schedule_teams').select('*').order('created_at',{ascending:true});
+    if(tr.error){ gate('This feature is being set up.<br>Please check back soon.'); return; }
+    teams=tr.data||[];
+    if(!teams.length){ const d=await sb.from('user_schedule_teams').insert({name:'My Team',user_id:uid}).select().single(); if(d.error)throw d.error; teams=[d.data]; }
+    tid=teams[0].id;
+    if(entries.some(e=>!e.team_id)){ await sb.from('user_schedule_entries').update({team_id:tid}).is('team_id',null); entries.forEach(e=>{if(!e.team_id)e.team_id=tid;}); }
     $('gate').style.display='none'; $('main').style.display='block'; $('fab').style.display='block';
     render();
     const t=document.getElementById('d-'+todayStr); if(t) t.scrollIntoView({block:'start'});
