@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Join our WhatsApp - CHT ESP ORG</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --bg: #f3f1fb;
@@ -16,6 +17,7 @@
     --green: #22c55e;
     --green-soft: #e7f9ee;
     --green-border: #b7ecc9;
+    --danger: #e5484d;
     --shadow: 0 4px 18px rgba(30, 20, 70, 0.06);
     --radius: 20px;
   }
@@ -46,8 +48,11 @@
     color: var(--ink);
     text-decoration:none;
     flex-shrink:0;
+    cursor:pointer;
   }
   .back-btn svg{width:20px; height:20px;}
+  .edit-btn{margin-left:auto;}
+  .edit-btn.on{background:var(--purple);border-color:var(--purple);color:#fff;}
   header h1{
     font-size: 19px;
     font-weight: 750;
@@ -64,80 +69,6 @@
     padding: 22px 18px 0;
   }
 
-  .hero{
-    text-align:center;
-    padding: 10px 10px 26px;
-  }
-  .hero .wa-badge{
-    width:64px; height:64px;
-    border-radius:20px;
-    background: var(--green-soft);
-    border: 1.5px solid var(--green-border);
-    display:flex; align-items:center; justify-content:center;
-    margin: 0 auto 14px;
-  }
-  .hero .wa-badge svg{width:32px; height:32px;}
-  .hero h2{
-    font-size: 22px;
-    font-weight: 800;
-    letter-spacing: -0.3px;
-  }
-  .hero p{
-    color: var(--sub);
-    font-size: 13.5px;
-    margin-top:6px;
-    line-height:1.5;
-  }
-
-  .section-label{
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--sub);
-    margin: 22px 4px 10px;
-  }
-
-  .card{
-    background: var(--card);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    padding: 6px;
-    margin-bottom: 4px;
-  }
-
-  a.row{
-    display:flex;
-    align-items:center;
-    gap:14px;
-    padding: 14px 12px;
-    text-decoration:none;
-    color: inherit;
-    border-radius: 16px;
-    transition: background 0.15s ease;
-  }
-  a.row:active{ background: #f6f4ff; }
-
-  .icon{
-    width:46px; height:46px;
-    border-radius:50%;
-    background: var(--green-soft);
-    display:flex; align-items:center; justify-content:center;
-    flex-shrink:0;
-  }
-  .icon svg{width:22px; height:22px;}
-
-  .row-text{flex:1; min-width:0;}
-  .row-text .title{
-    font-size:15.5px;
-    font-weight:700;
-    color: var(--ink);
-  }
-  .row-text .desc{
-    font-size:12.5px;
-    color: var(--sub);
-    margin-top:2px;
-  }
   .badge{
     display:inline-block;
     font-size:10px;
@@ -156,12 +87,6 @@
   }
   .chevron svg{width:18px; height:18px;}
 
-  .divider{
-    height:1px;
-    background:#f0eef8;
-    margin: 2px 14px;
-  }
-
   .combo-card{
     background: var(--card);
     border-radius: var(--radius);
@@ -177,11 +102,6 @@
     font-size:18px;
     font-weight:800;
     letter-spacing:-0.2px;
-  }
-  .combo-center .sub{
-    font-size:12.5px;
-    color: var(--sub);
-    margin-top:4px;
   }
   .combo-links{
     display:flex;
@@ -219,13 +139,67 @@
     text-overflow: ellipsis;
     font-size:12.5px;
   }
-  .mini-row .badge{
-    margin-left:auto;
-  }
-  .mini-row .chevron{
-    margin-left:2px;
-  }
+  .mini-row .badge{ margin-left:auto; }
+  .mini-row .chevron{ margin-left:2px; }
   .mini-row .chevron svg{width:16px; height:16px;}
+
+  .empty-note{ text-align:center; color:var(--sub); font-size:13px; padding:14px 6px; }
+
+  /* ---------- admin edit mode ---------- */
+  .edit-row{
+    background:#faf9ff;
+    border:1px solid #e6e1fb;
+    border-radius:14px;
+    padding:10px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .er-top{ display:flex; align-items:center; gap:8px; }
+  .er-top select{ flex:1; }
+  .edit-row input,.edit-row select{
+    width:100%;
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:10px 12px;
+    font:inherit;
+    font-size:13.5px;
+    background:#fff;
+    color:var(--ink);
+    outline:none;
+  }
+  .edit-row input:focus,.edit-row select:focus{ border-color:var(--purple); }
+  .edit-row .bad{ border-color:var(--danger); }
+  .er-btn{
+    width:38px; height:38px; flex-shrink:0;
+    border:1px solid var(--border); border-radius:10px;
+    background:#fff; color:var(--ink); font-size:15px; cursor:pointer;
+  }
+  .er-del{ color:var(--danger); }
+  .er-btn:disabled{ opacity:.35; cursor:not-allowed; }
+  .add-row{
+    border:1.5px dashed #c9c0f5; background:transparent; color:var(--purple);
+    border-radius:14px; padding:11px; font:inherit; font-size:13.5px; font-weight:700; cursor:pointer;
+  }
+  .edit-bar{
+    position:fixed; left:0; right:0; bottom:0; z-index:20;
+    display:none; gap:10px; padding:12px 18px calc(12px + env(safe-area-inset-bottom));
+    background:rgba(243,241,251,.96); backdrop-filter:blur(8px); border-top:1px solid var(--border);
+  }
+  .edit-bar.show{ display:flex; }
+  .edit-bar button{
+    flex:1; border:none; border-radius:12px; padding:13px; font:inherit; font-size:14.5px; font-weight:800; cursor:pointer;
+  }
+  .edit-bar .cancel{ background:#fff; color:var(--ink); border:1px solid var(--border); }
+  .edit-bar .save{ background:var(--purple); color:#fff; }
+  .edit-bar button:disabled{ opacity:.6; cursor:not-allowed; }
+  body.editing{ padding-bottom:90px; }
+  .toast{
+    position:fixed; left:50%; bottom:90px; transform:translateX(-50%) translateY(14px);
+    background:#17151f; color:#fff; padding:11px 16px; border-radius:10px; font-size:13px; font-weight:600;
+    max-width:90%; text-align:center; opacity:0; pointer-events:none; transition:.25s; z-index:30;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
   footer{
     text-align:center;
@@ -239,64 +213,245 @@
 <body>
 
 <header>
-  <button class="back-btn" type="button" onclick="history.back()">
+  <button class="back-btn" type="button" onclick="history.back()" aria-label="Back">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
   </button>
   <div>
     <h1>Join our WhatsApp</h1>
   </div>
+  <!-- Owner/admin only: edit names + links right here -->
+  <button class="back-btn edit-btn" id="editBtn" type="button" aria-label="Edit links" title="Edit links" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+  </button>
 </header>
 
 <main>
-
-  <div class="combo-card">
-    <div class="combo-center">
-      <div class="title">DAILY TOURNAMENTS</div>
-    </div>
-    <div class="combo-links">
-      <a class="mini-row" href="https://whatsapp.com/channel/0029Vb8h7iAHltY9Uvl9nY22" target="_blank" rel="noopener">
-        <div class="mini-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 11-14h-7l1-6z"/></svg></div>
-        <div class="label nowrap">Follow for daily updates</div>
-        <span class="badge channel">Channel</span>
-        <div class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
-      </a>
-      <a class="mini-row" href="https://chat.whatsapp.com/LvuvfHUw6gjB9g3j98LS1p" target="_blank" rel="noopener">
-        <div class="mini-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/></svg></div>
-        <div class="label nowrap">CHTEO DAILY SCRIM</div>
-        <span class="badge group">Group</span>
-        <div class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
-      </a>
-    </div>
-  </div>
-
-  <div class="combo-card">
-    <div class="combo-center">
-      <div class="title">QUALIFY PAID TOURNAMENTS</div>
-    </div>
-    <div class="combo-links">
-      <a class="mini-row" href="https://whatsapp.com/channel/0029Vb6djCfGOj9t3QeBtl3G" target="_blank" rel="noopener">
-        <div class="mini-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 11-14h-7l1-6z"/></svg></div>
-        <div class="label nowrap">Follow for updates</div>
-        <span class="badge channel">Channel</span>
-        <div class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
-      </a>
-      <a class="mini-row" href="https://chat.whatsapp.com/E9Onb3Hm5URJNLskkTFhd8" target="_blank" rel="noopener">
-        <div class="mini-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/></svg></div>
-        <div class="label nowrap">CHT ESP ORG - BIG PAID</div>
-        <span class="badge group">Group</span>
-        <div class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
-      </a>
-      <a class="mini-row" href="https://chat.whatsapp.com/Fptli3hePGX3GN970ppGGh" target="_blank" rel="noopener">
-        <div class="mini-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/></svg></div>
-        <div class="label nowrap">CHT ESP ORG - MINI, WEEKLY PAID</div>
-        <span class="badge group">Group</span>
-        <div class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
-      </a>
-    </div>
-  </div>
+  <div id="sections"></div>
   <footer>©CHT ESP ORG. All Rights Reserved</footer>
-
 </main>
+
+<div class="edit-bar" id="editBar">
+  <button type="button" class="cancel" id="cancelBtn">Cancel</button>
+  <button type="button" class="save" id="saveBtn">Save changes</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://myfficbwcbgbxbdqjexv.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+
+// The two cards on this page. Their headings stay fixed; the links inside are editable.
+const SECTIONS = [
+  {key:'daily', title:'DAILY TOURNAMENTS'},
+  {key:'paid',  title:'QUALIFY PAID TOURNAMENTS'}
+];
+// Shown when the whatsapp_links table doesn't exist yet / is empty, so the page never goes blank.
+const DEFAULTS = [
+  {section:'daily', kind:'channel', label:'Follow for daily updates',          url:'https://whatsapp.com/channel/0029Vb8h7iAHltY9Uvl9nY22'},
+  {section:'daily', kind:'group',   label:'CHTEO DAILY SCRIM',                 url:'https://chat.whatsapp.com/LvuvfHUw6gjB9g3j98LS1p'},
+  {section:'paid',  kind:'channel', label:'Follow for updates',                url:'https://whatsapp.com/channel/0029Vb6djCfGOj9t3QeBtl3G'},
+  {section:'paid',  kind:'group',   label:'CHT ESP ORG - BIG PAID',            url:'https://chat.whatsapp.com/E9Onb3Hm5URJNLskkTFhd8'},
+  {section:'paid',  kind:'group',   label:'CHT ESP ORG - MINI, WEEKLY PAID',   url:'https://chat.whatsapp.com/Fptli3hePGX3GN970ppGGh'}
+];
+const ALLOWED_HOSTS = ['chat.whatsapp.com','whatsapp.com','www.whatsapp.com','wa.me'];
+
+const ICON_CHANNEL = '<svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 11-14h-7l1-6z"/></svg>';
+const ICON_GROUP   = '<svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/></svg>';
+const ICON_CHEV    = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>';
+
+let sb = null;
+try{ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }catch(e){ sb = null; }
+
+let rows = [];          // working copy: {id?, section, kind, label, url}
+let removedIds = [];    // ids deleted while editing
+let editing = false;
+let isAdmin = false;
+let tableReady = false; // false => table missing/unreadable (page still shows DEFAULTS)
+
+const $ = id => document.getElementById(id);
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(window._tt); window._tt=setTimeout(()=>t.classList.remove('show'),3200); }
+
+// only real WhatsApp https links are ever used as a href
+function safeUrl(u){
+  try{
+    const x = new URL(String(u||'').trim());
+    if(x.protocol!=='https:' || !ALLOWED_HOSTS.includes(x.hostname.toLowerCase())) return '';
+    return x.href;
+  }catch(e){ return ''; }
+}
+
+async function fetchRows(){
+  if(!sb){ tableReady=false; return DEFAULTS.map(d=>({...d})); }
+  try{
+    const {data,error} = await sb.from('whatsapp_links').select('*')
+      .order('sort_order',{ascending:true}).order('created_at',{ascending:true});
+    if(error) throw error;
+    tableReady = true;
+    if(data && data.length) return data.map(r=>({id:r.id,section:r.section,kind:r.kind,label:r.label,url:r.url}));
+    return DEFAULTS.map(d=>({...d}));
+  }catch(e){
+    console.warn('whatsapp_links not available, showing defaults', e);
+    tableReady = false;
+    return DEFAULTS.map(d=>({...d}));
+  }
+}
+
+function render(){
+  document.body.classList.toggle('editing', editing);
+  $('editBar').classList.toggle('show', editing);
+  $('editBtn').classList.toggle('on', editing);
+  $('sections').innerHTML = SECTIONS.map(sec=>{
+    const items = rows.map((r,i)=>({r,i})).filter(x=>x.r.section===sec.key);
+    let body;
+    if(!editing){
+      body = items.length ? items.map(({r})=>{
+        const href = safeUrl(r.url);
+        const k = r.kind==='channel' ? 'channel' : 'group';
+        return `<a class="mini-row" ${href?`href="${esc(href)}" target="_blank" rel="noopener"`:''}>
+          <div class="mini-icon">${k==='channel'?ICON_CHANNEL:ICON_GROUP}</div>
+          <div class="label nowrap">${esc(r.label)}</div>
+          <span class="badge ${k}">${k==='channel'?'Channel':'Group'}</span>
+          <div class="chevron">${ICON_CHEV}</div>
+        </a>`;
+      }).join('') : '<div class="empty-note">No links yet.</div>';
+    }else{
+      body = items.map(({r,i},pos)=>`<div class="edit-row" data-i="${i}">
+          <div class="er-top">
+            <select data-f="kind"><option value="group"${r.kind!=='channel'?' selected':''}>Group</option><option value="channel"${r.kind==='channel'?' selected':''}>Channel</option></select>
+            <button type="button" class="er-btn" data-act="up" ${pos===0?'disabled':''} aria-label="Move up">↑</button>
+            <button type="button" class="er-btn" data-act="down" ${pos===items.length-1?'disabled':''} aria-label="Move down">↓</button>
+            <button type="button" class="er-btn er-del" data-act="del" aria-label="Remove">✕</button>
+          </div>
+          <input data-f="label" value="${esc(r.label)}" placeholder="Name (e.g. CHT ESP ORG - BIG PAID)" maxlength="80">
+          <input data-f="url" value="${esc(r.url)}" placeholder="https://chat.whatsapp.com/…" inputmode="url" autocapitalize="off" autocomplete="off">
+        </div>`).join('')
+        + `<button type="button" class="add-row" data-add="${sec.key}">＋ Add link</button>`;
+    }
+    return `<div class="combo-card">
+      <div class="combo-center"><div class="title">${esc(sec.title)}</div></div>
+      <div class="combo-links">${body}</div>
+    </div>`;
+  }).join('');
+}
+
+// ----- editing -----
+$('sections').addEventListener('input', e=>{
+  const row = e.target.closest('.edit-row'); if(!row) return;
+  const f = e.target.dataset.f; if(!f) return;
+  rows[+row.dataset.i][f] = e.target.value;
+  e.target.classList.remove('bad');
+});
+$('sections').addEventListener('change', e=>{
+  const row = e.target.closest('.edit-row'); if(!row || e.target.dataset.f!=='kind') return;
+  rows[+row.dataset.i].kind = e.target.value;
+});
+$('sections').addEventListener('click', e=>{
+  const add = e.target.closest('[data-add]');
+  if(add){
+    rows.push({section:add.dataset.add, kind:'group', label:'', url:''});
+    render();
+    const inputs = document.querySelectorAll('.edit-row[data-i="'+(rows.length-1)+'"] input');
+    if(inputs[0]) inputs[0].focus();
+    return;
+  }
+  const btn = e.target.closest('[data-act]'); if(!btn) return;
+  const i = +btn.closest('.edit-row').dataset.i;
+  const act = btn.dataset.act;
+  if(act==='del'){
+    if(rows[i].id) removedIds.push(rows[i].id);
+    rows.splice(i,1);
+  }else{
+    // swap with the neighbour that lives in the same card
+    const dir = act==='up' ? -1 : 1;
+    let j = i+dir;
+    while(j>=0 && j<rows.length && rows[j].section!==rows[i].section) j+=dir;
+    if(j>=0 && j<rows.length){ const t=rows[i]; rows[i]=rows[j]; rows[j]=t; }
+  }
+  render();
+});
+
+async function startEdit(){
+  editing = true; removedIds = [];
+  render();
+}
+async function cancelEdit(){
+  editing = false; removedIds = [];
+  rows = await fetchRows();
+  render();
+}
+$('editBtn').addEventListener('click', ()=>{ editing ? cancelEdit() : startEdit(); });
+$('cancelBtn').addEventListener('click', cancelEdit);
+
+function validate(){
+  let ok = true, first = null;
+  document.querySelectorAll('.edit-row').forEach(el=>{
+    const r = rows[+el.dataset.i];
+    const li = el.querySelector('[data-f="label"]'), ui = el.querySelector('[data-f="url"]');
+    li.classList.remove('bad'); ui.classList.remove('bad');
+    if(!String(r.label||'').trim()){ li.classList.add('bad'); ok=false; first=first||li; }
+    if(!safeUrl(r.url)){ ui.classList.add('bad'); ok=false; first=first||ui; }
+  });
+  if(!ok){ toast('নাম দিন আর সঠিক WhatsApp লিংক (https://chat.whatsapp.com/… বা https://whatsapp.com/channel/…) দিন।'); if(first) first.focus(); }
+  return ok;
+}
+
+$('saveBtn').addEventListener('click', async ()=>{
+  if(!sb){ toast('Server connection failed.'); return; }
+  if(!validate()) return;
+  const btn = $('saveBtn'); btn.disabled = true; btn.textContent = 'Saving…';
+  try{
+    // clean + keep order: sort_order follows on-screen order
+    rows.forEach(r=>{ r.label=String(r.label).trim(); r.url=safeUrl(r.url); });
+    const payload = rows.map((r,i)=>({section:r.section,kind:r.kind==='channel'?'channel':'group',label:r.label,url:r.url,sort_order:(i+1)*10}));
+
+    if(removedIds.length){
+      const d = await sb.from('whatsapp_links').delete().in('id', removedIds);
+      if(d.error) throw d.error;
+    }
+    for(let i=0;i<rows.length;i++){
+      if(rows[i].id){
+        const u = await sb.from('whatsapp_links').update(payload[i]).eq('id', rows[i].id);
+        if(u.error) throw u.error;
+      }
+    }
+    const fresh = payload.filter((p,i)=>!rows[i].id);
+    if(fresh.length){
+      const ins = await sb.from('whatsapp_links').insert(fresh);
+      if(ins.error) throw ins.error;
+    }
+    editing = false; removedIds = [];
+    rows = await fetchRows();
+    render();
+    toast('Saved ✓');
+  }catch(e){
+    console.error(e);
+    const m = String(e && e.message || e);
+    toast(/relation .*whatsapp_links|does not exist|schema cache/i.test(m)
+      ? 'Table নেই — আগে Supabase এ whatsapp_links.sql চালান।'
+      : /row-level security|permission/i.test(m) ? 'Permission নেই — admin অ্যাকাউন্টে লগইন করুন।' : 'Save failed: '+m);
+  }finally{
+    btn.disabled = false; btn.textContent = 'Save changes';
+  }
+});
+
+// edit button is for owner/admin accounts only
+async function checkAdmin(){
+  if(!sb) return;
+  try{
+    const {data:{session}} = await sb.auth.getSession();
+    if(!session) return;
+    const {data:p} = await sb.from('profiles').select('is_admin,is_owner').eq('id', session.user.id).single();
+    if(p && (p.is_admin || p.is_owner)){ isAdmin = true; $('editBtn').style.display = 'flex'; }
+  }catch(e){ /* guests / non-admins never see the edit button */ }
+}
+
+(async function init(){
+  rows = await fetchRows();
+  render();
+  checkAdmin();
+})();
+</script>
 
 </body>
 </html>
