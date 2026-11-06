@@ -346,6 +346,12 @@ html{min-height:100%;background-color:#1b2140;background-image:radial-gradient(c
 body.focus-mode #mainTopbar,body.focus-mode #homepagePanel,body.focus-mode #mapLibPanel,
 body.focus-mode #createTournamentBtn,body.focus-mode #createGiveawayBtn,
 body.focus-mode .tournament-drag,body.focus-mode .t-index{display:none!important}
+/* card has [number | picture | text] columns — number is hidden here, so drop that column too */
+body.focus-mode .tournament-top{grid-template-columns:108px minmax(0,1fr)!important}
+body.focus-mode .t-actions{padding-left:0!important}
+@media(max-width:520px){
+ body.focus-mode .tournament-top{grid-template-columns:88px minmax(0,1fr)!important}
+}
 </style>
 <main class="wrap">
   <div class="head"><button class="back-btn" type="button" onclick="history.back()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button><div><h1 id="mgmtTitle">Tournament Management</h1><div class="sub" id="mgmtSub">Create, edit and publish Homepage tournaments</div></div></div>
