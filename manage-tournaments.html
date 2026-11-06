@@ -18,7 +18,7 @@ html{-webkit-text-size-adjust:100%}
 body{background:var(--bg);color:var(--text);font-family:Arial,"Noto Sans Bengali",sans-serif}
 button{font-family:inherit;cursor:pointer;color:inherit}
 input,select,textarea{font-family:inherit}
-.app{width:100%;max-width:560px;margin:0 auto;min-height:100vh;padding-bottom:110px}
+.app{width:100%;max-width:560px;margin:0 auto;min-height:100vh;padding-bottom:200px}
 .topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg)}
 .icon-btn{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--surface);border:1px solid var(--line);color:var(--text);flex-shrink:0}
 .icon-btn svg{width:20px;height:20px}
@@ -36,7 +36,7 @@ input,select,textarea{font-family:inherit}
 .tupd{background:#2f66d0;color:#fff;font-size:11.5px;font-weight:700;text-align:center;padding:5px}
 .ttl{display:flex;align-items:center;gap:8px;background:#ff9800;color:#1a1200;padding:12px 8px 12px 14px}
 .ttl b{flex:1;font-size:17px;font-weight:900;letter-spacing:.3px;overflow-wrap:anywhere}
-.ttl button{width:34px;height:34px;border-radius:10px;border:none;background:rgba(0,0,0,.15);font-size:16px}
+.ttl button{width:38px;height:38px;border-radius:11px;border:none;background:rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;color:#1a1200}.ttl button svg{width:19px;height:19px}
 .teams{display:flex;gap:8px;overflow-x:auto;padding:0 16px 10px;scrollbar-width:none}
 .teams::-webkit-scrollbar{display:none}
 .tchip{flex-shrink:0;padding:8px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--line);color:var(--dim);font-size:13px;font-weight:800}
@@ -69,12 +69,28 @@ input,select,textarea{font-family:inherit}
 .tag.sold{background:var(--red);color:#fff}
 .e-cm{font-size:11.5px;color:var(--dim);margin-top:6px;overflow-wrap:anywhere}
 .e-banner{width:58px;height:58px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid var(--line);align-self:flex-start;background:#0c1320}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:6px;padding-bottom:6px}
+table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
+.sh td{border:1px solid #2a3350;padding:9px 8px;text-align:center;white-space:nowrap;background:#05070c}
+.sh tr.dh td{padding:0;background:#7c3aed;border-color:#7c3aed}
+.dhin{position:sticky;left:0;display:flex;align-items:center;gap:8px;width:min(100vw,560px);padding:7px 10px;color:#fff}
+.dhin b{flex:1;font-size:14px;font-weight:900;text-align:left}.dhin small{opacity:.75;font-size:11px;margin-left:5px}
+.dhin button{width:30px;height:30px;border-radius:9px;border:none;background:rgba(255,255,255,.22);color:#fff;font-size:20px;line-height:1}
+.sh tr.hd td{background:#00e5e5;color:#00292b;font-weight:800;font-size:11.5px;padding:7px 8px}
+.sh tr:not(.dh) td:first-child{position:sticky;left:0;z-index:2}
+.sh tr.er{cursor:pointer}.sh tr.er:active td{filter:brightness(1.25)}
+.sh td.c-n{text-align:left;min-width:210px;white-space:normal;font-weight:700}
+.sh td.c-c{text-align:left;min-width:150px;white-space:normal;color:var(--dim)}
+.sh td.g{background:#12c458;color:#04210f;font-weight:800}
+.sh td.r{background:#e0243c;color:#fff;font-weight:800}
+.sh td.pz{color:var(--green);font-weight:800}.sh td.pz.un{color:#ffb020}
+.sh td img{width:38px;height:38px;border-radius:7px;object-fit:cover;display:block;margin:0 auto}
 .empty{text-align:center;color:var(--dim);font-size:13.5px;line-height:1.7;padding:46px 26px}
 
-.fab{position:fixed;right:max(18px,calc(50% - 262px));bottom:22px;z-index:45;width:58px;height:58px;border-radius:50%;border:none;background:var(--green);color:#052e1c;font-size:32px;font-weight:700;box-shadow:0 8px 22px rgba(34,224,138,.4)}
+.fab{position:fixed;right:max(18px,calc(50% - 262px));bottom:calc(100px + env(safe-area-inset-bottom));z-index:45;width:58px;height:58px;border-radius:50%;border:none;background:var(--green);color:#052e1c;font-size:32px;font-weight:700;box-shadow:0 8px 22px rgba(34,224,138,.4)}
 
 /* bottom sheet */
-.ov{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.55);display:none}
+.ov{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);display:none}
 .ov.show{display:block}
 .sheet{position:absolute;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;max-height:92vh;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-bottom:none;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
 .sheet h2{font-size:17px;font-weight:850;margin-bottom:12px}
@@ -97,7 +113,7 @@ input,select,textarea{font-family:inherit}
 .acts .save{background:var(--green);border-color:var(--green);color:#052e1c}
 .acts .del{color:var(--red);flex:0 0 auto;padding:13px 16px}
 .acts button:disabled{opacity:.6}
-.toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%) translateY(12px);background:#000c;color:#fff;border:1px solid #fff3;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:700;opacity:0;pointer-events:none;transition:.25s;z-index:80;max-width:90%;text-align:center}
+.toast{position:fixed;left:50%;bottom:150px;transform:translateX(-50%) translateY(12px);background:#000c;color:#fff;border:1px solid #fff3;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:700;opacity:0;pointer-events:none;transition:.25s;z-index:80;max-width:90%;text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
@@ -114,7 +130,7 @@ input,select,textarea{font-family:inherit}
 
   <div id="main" style="display:none">
     <div class="teams" id="teams"></div>
-    <div class="thead"><div class="tupd" id="tUpd"></div><div class="ttl"><b id="tName"></b><button type="button" id="tEdit" aria-label="Edit team">✎</button></div></div>
+    <div class="thead"><div class="tupd" id="tUpd"></div><div class="ttl"><b id="tName"></b><button type="button" id="tEdit" aria-label="Edit team"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button></div></div>
     <div class="months" id="months"></div>
     <div class="sum">
       <div class="scard"><div class="l">TOTAL COST</div><div class="v" id="sCost">0</div><div class="h">all entry fees</div></div>
@@ -163,6 +179,10 @@ input,select,textarea{font-family:inherit}
     </div>
   </div>
 </div>
+<div class="ov" id="ovT"><div class="sheet"><h2 id="tsTitle">New team</h2>
+  <div class="fld"><label for="tsName">Team name</label><input id="tsName" maxlength="40" placeholder="e.g. Hill Dominators"></div>
+  <div class="acts"><button type="button" class="del" id="tsDel" style="display:none">Delete</button><button type="button" id="tsCancel">Cancel</button><button type="button" class="save" id="tsSave">Save</button></div>
+</div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -212,28 +232,19 @@ function render(){
 
   if(!list.length){ $('days').innerHTML='<div class="empty">No tournaments in '+esc(MONTHS[+ym.slice(5)-1])+' yet.<br>Tap <b>＋</b> to add your schedule.</div>'; return; }
   const byDay={}; list.forEach(e=>(byDay[e.entry_date]=byDay[e.entry_date]||[]).push(e));
-  $('days').innerHTML=Object.keys(byDay).sort().map(d=>{
+  const H='<tr class="hd"><td>TIME</td><td>TYPE</td><td>MAP</td><td>TOURNAMENT NAME</td><td>FEE</td><td>Q | DIS</td><td>RANK</td><td>PRIZE 🏆</td><td>COMMENT</td><td>BANNER</td></tr>';
+  const body=Object.keys(byDay).sort().map(d=>{
     const dl=dayLabel(d);
-    return `<div class="day" id="d-${d}"><div class="dayhead"><b>${esc(dl.t)}<small>${dl.w}</small></b><button type="button" data-add="${d}" aria-label="Add on this day">＋</button></div>`+
-      byDay[d].map(e=>{
-        const rk=String(e.rank||'').trim(); const rkTxt=/^\d+$/.test(rk)?'#'+rk:rk;
-        const img=safeImg(e.banner_url);
-        return `<button type="button" class="entry" data-id="${e.id}">
-          <div class="e-time">${esc(timeLabel(e.entry_time))}</div>
-          <div class="e-main">
-            <div class="e-name">${esc(e.name)}</div>
-            <div class="e-sub">
-              ${e.type?`<span class="tag">${esc(e.type)}</span>`:''}${e.maps?`<span class="tag">${num(e.maps)} map${num(e.maps)===1?'':'s'}</span>`:''}
-              ${num(e.fee)?`<span class="tag fee ${e.fee_paid?'':'unpaid'}">Fee ৳${fmt(num(e.fee))}</span>`:''}
-              ${e.result==='qualified'?'<span class="tag q">Qualified</span>':e.result==='disqualified'?'<span class="tag dq">Disqualified</span>':''}
-              ${rkTxt?`<span class="tag ${/^sold$/i.test(rk)?'sold':''}">${esc(rkTxt)}</span>`:''}
-              ${num(e.prize)?`<span class="tag prize ${e.prize_received?'':'unrec'}">🏆 ৳${fmt(num(e.prize))}</span>`:''}
-            </div>
-            ${e.comment?`<div class="e-cm">${esc(e.comment)}</div>`:''}
-          </div>
-          ${img?`<img class="e-banner" src="${esc(img)}" alt="" loading="lazy">`:''}
-        </button>`;}).join('')+`</div>`;
+    return `<tr class="dh"><td colspan="10"><div class="dhin" id="d-${d}"><b>${esc(dl.t)}<small>${dl.w}</small></b><button type="button" data-add="${d}" aria-label="Add on this day">＋</button></div></td></tr>`+H+
+    byDay[d].map(e=>{
+      const rk=String(e.rank||'').trim(), sold=/^sold$/i.test(rk), rkTxt=/^\d+$/.test(rk)?'#'+rk:rk;
+      const img=safeImg(e.banner_url), q=e.result==='qualified', dq=e.result==='disqualified';
+      return `<tr class="er" data-id="${e.id}"><td>${esc(timeLabel(e.entry_time))}</td><td>${esc(e.type||'')}</td><td>${e.maps!=null&&e.maps!==''?num(e.maps):''}</td>`+
+      `<td class="c-n">${esc(e.name)}</td><td class="${num(e.fee)&&!e.fee_paid?'r':''}">${num(e.fee)?fmt(num(e.fee)):''}</td>`+
+      `<td class="${q?'g':dq?'r':''}">${q?'qualified':dq?'disqualified':''}</td><td class="${sold?'r':''}">${esc(rkTxt)}</td>`+
+      `<td class="pz ${e.prize_received?'':'un'}">${num(e.prize)?fmt(num(e.prize)):''}</td><td class="c-c">${esc(e.comment||'')}</td><td>${img?`<img src="${esc(img)}" alt="" loading="lazy">`:''}</td></tr>`;}).join('');
   }).join('');
+  $('days').innerHTML='<div class="tw"><table class="sh"><tbody>'+body+'</tbody></table></div>';
 }
 
 $('months').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;ym=b.dataset.m;render();});
@@ -256,6 +267,7 @@ function closeSheet(fromBack){
   if(!fromBack&&window.CHTEO&&CHTEO.closeModal)CHTEO.closeModal();
 }
 function openSheet(e,date){
+  if(!tid){openT('new');return;}
   editing=e||null;
   $('shTitle').textContent=e?'Edit tournament':'Add tournament';
   $('fDate').value=e?e.entry_date:(date||todayStr);
@@ -349,30 +361,48 @@ $('shDel').addEventListener('click',async()=>{
 });
 
 // ---------- teams ----------
+let tMode='new';
+function openT(mode){
+  tMode=mode; const t=teams.find(x=>x.id===tid);
+  $('tsTitle').textContent=mode==='new'?'New team':'Edit team';
+  $('tsName').value=mode==='edit'&&t?t.name:'';
+  $('tsDel').style.display=mode==='edit'&&teams.length>1?'block':'none';
+  $('ovT').classList.add('show'); setTimeout(()=>$('tsName').focus(),60);
+}
+function closeT(){ $('ovT').classList.remove('show'); }
+$('tsCancel').addEventListener('click',closeT);
+$('ovT').addEventListener('click',e=>{if(e.target.id==='ovT')closeT();});
 $('teams').addEventListener('click',e=>{
   const b=e.target.closest('[data-t]'); if(b){tid=b.dataset.t;render();return;}
-  if(e.target.closest('#tAdd'))addTeam();
+  if(e.target.closest('#tAdd'))openT('new');
 });
-async function addTeam(){
-  const n=(prompt('Team name?')||'').trim().slice(0,40); if(!n)return;
-  const r=await sb.from('user_schedule_teams').insert({name:n,user_id:uid}).select().single();
-  if(r.error){toast('Failed: '+r.error.message);return;}
-  teams.push(r.data); tid=r.data.id; render(); toast('Team added ✓');
-}
-$('tEdit').addEventListener('click',async()=>{
-  const t=teams.find(x=>x.id===tid); if(!t)return;
-  const n=prompt('Team name. Leave EMPTY to delete this team and its whole schedule.',t.name); if(n===null)return;
-  const name=n.trim().slice(0,40);
-  if(name){
-    const r=await sb.from('user_schedule_teams').update({name}).eq('id',t.id); if(r.error){toast('Failed: '+r.error.message);return;}
-    t.name=name; render(); toast('Saved ✓'); return;
-  }
-  if(teams.length<2){toast('You need at least one team.');return;}
+$('tEdit').addEventListener('click',()=>{ if(!tid){openT('new');return;} openT('edit'); });
+$('tsSave').addEventListener('click',async()=>{
+  const name=$('tsName').value.trim().slice(0,40);
+  if(!name){$('tsName').classList.add('bad');toast('Write the team name.');return;}
+  $('tsName').classList.remove('bad');
+  const btn=$('tsSave'); btn.disabled=true;
+  try{
+    if(tMode==='new'){
+      const r=await sb.from('user_schedule_teams').insert({name,user_id:uid}).select().single(); if(r.error)throw r.error;
+      teams.push(r.data); const hadNone=!tid; tid=r.data.id;
+      if(hadNone&&entries.some(e=>!e.team_id)){ await sb.from('user_schedule_entries').update({team_id:tid}).is('team_id',null); entries.forEach(e=>{if(!e.team_id)e.team_id=tid;}); }
+    }else{
+      const t=teams.find(x=>x.id===tid);
+      const r=await sb.from('user_schedule_teams').update({name}).eq('id',t.id); if(r.error)throw r.error; t.name=name;
+    }
+    closeT(); render(); toast('Saved ✓');
+  }catch(e){ toast('Failed: '+(e.message||e)); }
+  finally{ btn.disabled=false; }
+});
+$('tsDel').addEventListener('click',async()=>{
+  const t=teams.find(x=>x.id===tid); if(!t||teams.length<2)return;
   if(!confirm('Delete "'+t.name+'" and ALL its tournaments?'))return;
   const gone=cur(); const r=await sb.from('user_schedule_teams').delete().eq('id',t.id);
   if(r.error){toast('Failed: '+r.error.message);return;}
   gone.forEach(e=>dropBanner(e.banner_url));
-  entries=entries.filter(e=>e.team_id!==t.id); teams=teams.filter(x=>x.id!==t.id); tid=teams[0].id; ym=null; render(); toast('Team deleted');
+  entries=entries.filter(e=>e.team_id!==t.id); teams=teams.filter(x=>x.id!==t.id); tid=teams[0].id; ym=null;
+  closeT(); render(); toast('Team deleted');
 });
 
 // ---------- start ----------
@@ -393,12 +423,11 @@ function gate(html){ $('gate').style.display='block'; $('main').style.display='n
     const tr=await sb.from('user_schedule_teams').select('*').order('created_at',{ascending:true});
     if(tr.error){ gate('This feature is being set up.<br>Please check back soon.'); return; }
     teams=tr.data||[];
-    if(!teams.length){ const d=await sb.from('user_schedule_teams').insert({name:'My Team',user_id:uid}).select().single(); if(d.error)throw d.error; teams=[d.data]; }
-    tid=teams[0].id;
-    if(entries.some(e=>!e.team_id)){ await sb.from('user_schedule_entries').update({team_id:tid}).is('team_id',null); entries.forEach(e=>{if(!e.team_id)e.team_id=tid;}); }
+    tid=teams.length?teams[0].id:null;
+    if(tid&&entries.some(e=>!e.team_id)){ await sb.from('user_schedule_entries').update({team_id:tid}).is('team_id',null); entries.forEach(e=>{if(!e.team_id)e.team_id=tid;}); }
     $('gate').style.display='none'; $('main').style.display='block'; $('fab').style.display='block';
     render();
-    const t=document.getElementById('d-'+todayStr); if(t) t.scrollIntoView({block:'start'});
+    if(!tid) openT('new'); else { const t=document.getElementById('d-'+todayStr); if(t) t.scrollIntoView({block:'start'}); }
   }catch(e){ console.error(e); gate('Something went wrong. Please try again.'); }
 })();
 </script>
