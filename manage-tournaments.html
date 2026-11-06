@@ -137,6 +137,19 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 #bgImg{width:100%;max-height:62vh;object-fit:contain;border-radius:14px;background:#000;margin-bottom:12px}
 #bgSub{color:var(--dim);font-size:13px;font-weight:700;margin:-6px 0 14px}
 .pdel{width:100%;margin-top:10px;padding:11px;border-radius:11px;background:transparent;border:1px solid #5b2430;color:#ff6b6b;font-weight:800;font-size:13px}
+.tupd{font-size:10px;padding:3px}
+.ttl{padding:7px 6px 7px 12px}.ttl b{font-size:13px;letter-spacing:.2px}
+.ttl button{width:30px;height:30px;border-radius:9px}.ttl button svg{width:15px;height:15px}
+.thead{margin-bottom:10px;border-radius:12px}
+.bplus{position:absolute;top:6px;right:6px;width:18px;height:18px;border-radius:50%;background:#12c458;color:#052e1c;font-size:14px;font-weight:900;line-height:18px;text-align:center}
+.fnr{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.fnr small{display:block;color:var(--dim);font-size:11px}.fnr span{color:var(--dim);margin-left:6px}
+.fnr .pos{color:var(--green)}.fnr .neg{color:#ff6b6b}
+.fnr button{background:none;border:none;color:#ff6b6b;font-size:16px;padding:6px 10px}
+.warn{background:#2a1218;border:1px solid #5b2430;border-radius:12px;padding:12px;font-size:13.5px;line-height:1.55;margin-bottom:12px}
+.sh tr.hd td.hn{white-space:normal;min-width:210px}
+.pc.on{box-shadow:0 0 0 2px rgba(255,152,0,.35)}
+.pok:disabled{opacity:.45}
 </style>
 </head>
 <body>
@@ -157,7 +170,7 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
       <div class="scard"><div class="l">TOTAL COST</div><div class="v" id="sCost">0</div><div class="h">all entry fees</div></div>
       <div class="scard"><div class="l">PRIZEPOOL</div><div class="v" id="sPrize">0</div><div class="h">prize won</div></div>
       <div class="scard"><div class="l">PROFIT</div><div class="v" id="sProfit">0</div><div class="h">prize − cost</div></div>
-      <div class="scard"><div class="l">BALANCE</div><div class="v" id="sBal">0</div><div class="h">received − paid</div></div>
+      <div class="scard" id="sBalCard" style="position:relative;cursor:pointer"><span class="bplus">＋</span><div class="l">BALANCE</div><div class="v" id="sBal">0</div><div class="h">received − paid</div></div>
     </div>
     <div class="months" id="months"></div>
     <div id="days"></div>
@@ -178,7 +191,7 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
       <div class="fld"><label for="fMaps">Maps</label><input id="fMaps" type="number" min="0" inputmode="numeric" placeholder="3"></div>
     </div>
     <datalist id="typeList"><option value="scrim"><option value="top 6 semi"><option value="semi"><option value="final"><option value="Round 1"><option value="R1"><option value="24 slot"><option value="CR"></datalist>
-    <div class="fld"><label for="fName">Tournament name (add prize pool like "(10k)")</label><input id="fName" maxlength="120" placeholder="CHT WARZONE S2 (10k)"></div>
+    <div class="fld"><label for="fName">Tournament name / Organized by (add prize pool like "(10k)")</label><input id="fName" maxlength="120" placeholder="CHT WARZONE S2 (10k)"></div>
     <div class="fld"><label>Banner (optional)</label>
       <div class="bn"><img id="fBanImg" alt="">
         <div class="btns"><button type="button" class="sbtn" id="banPick">Add banner</button><button type="button" class="sbtn red" id="banDel" style="display:none">Remove</button></div>
@@ -206,6 +219,12 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
   <div class="acts"><button type="button" class="del" id="tsDel" style="display:none">Delete</button><button type="button" id="tsCancel">Cancel</button><button type="button" class="save" id="tsSave">Save</button></div>
 </div></div>
 <div class="ov" id="ovP"><div class="sheet"><h2 id="pkTitle"></h2><div id="pkBody"></div></div></div>
+<div class="ov" id="ovF"><div class="sheet"><h2>Add to balance</h2>
+  <div class="pcu"><input id="fnAmt" type="number" inputmode="numeric" min="0" placeholder="Amount ৳ (e.g. 1000)"></div>
+  <div class="pcu" style="margin-top:8px"><input id="fnNote" maxlength="60" placeholder="Note (e.g. Sponsor)"></div>
+  <div class="acts" style="margin-top:10px"><button type="button" id="fnSub">− Deduct</button><button type="button" class="save" id="fnAdd">＋ Add</button></div>
+  <div class="cap">History</div><div id="fnList"></div>
+  <button type="button" class="pmore" id="fnClose">Close</button></div></div>
 <div class="ov" id="ovB"><div class="sheet" style="text-align:center"><img id="bgImg" alt=""><h2 id="bgName"></h2><div id="bgSub"></div><div class="acts"><button type="button" id="bgClose">Close</button><button type="button" class="save" id="bgEdit">Edit</button></div></div></div>
 <div class="toast" id="toast"></div>
 
@@ -223,6 +242,7 @@ const num=v=>Number(v)||0;
 const fmt=n=>Math.round(n).toLocaleString('en-US');
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(window._tt);window._tt=setTimeout(()=>t.classList.remove('show'),2800);}
 
+let funds=[]; const curF=()=>funds.filter(f=>f.team_id===tid);
 let uid=null, entries=[], teams=[], tid=null, ym=null;
 const cur=()=>entries.filter(e=>e.team_id===tid);           // ym = 'YYYY-MM' currently shown
 let editing=null;                            // entry being edited (null = new)
@@ -236,6 +256,7 @@ function timeLabel(t){if(!t)return '—';const [h,m]=t.split(':').map(Number);co
 function safeImg(u){return typeof u==='string'&&u.startsWith(SUPABASE_URL+'/storage/')?u:'';}
 
 // ---------- render ----------
+function tkey(t){ if(!t)return ''; const h=+t.slice(0,2); return String(h<6?h+24:h).padStart(2,'0')+t.slice(2,5); }
 function monthKeys(){
   const s=new Set(cur().map(e=>monthOf(e.entry_date))); s.add(todayStr.slice(0,7));
   return [...s].sort().reverse();
@@ -249,15 +270,15 @@ function render(){
   $('tUpd').textContent='last updated : '+(lu?new Date(lu).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—');
   const keys=monthKeys(); if(!ym||(ym!=='all'&&!keys.includes(ym))) ym=todayStr.slice(0,7);
   $('months').innerHTML=`<button type="button" class="mchip ${ym==='all'?'on':''}" data-m="all">ALL</button>`+keys.map(k=>`<button type="button" class="mchip ${k===ym?'on':''}" data-m="${k}">${monthLabel(k)}</button>`).join('');
-  const list=cur().filter(e=>ym==='all'||monthOf(e.entry_date)===ym).sort((a,b)=>a.entry_date.localeCompare(b.entry_date)||String(a.entry_time||'').localeCompare(String(b.entry_time||'')));
-  const cost=list.reduce((s,e)=>s+num(e.fee),0), paid=list.reduce((s,e)=>s+(e.fee_paid?num(e.fee):0),0);
-  const prize=list.reduce((s,e)=>s+num(e.prize),0), rec=list.reduce((s,e)=>s+(e.prize_received?num(e.prize):0),0);
+  const list=cur().filter(e=>ym==='all'||monthOf(e.entry_date)===ym).sort((a,b)=>a.entry_date.localeCompare(b.entry_date)||tkey(a.entry_time).localeCompare(tkey(b.entry_time)));
+  const cost=cur().reduce((s,e)=>s+num(e.fee),0), paid=cur().reduce((s,e)=>s+(e.fee_paid?num(e.fee):0),0);
+  const prize=cur().reduce((s,e)=>s+num(e.prize),0), rec=cur().reduce((s,e)=>s+(e.prize_received?num(e.prize):0),0);
   const setV=(id,v,signed)=>{const el=$(id);el.textContent=fmt(v);el.className='v'+(signed?(v<0?' neg':v>0?' pos':''):'');};
-  setV('sCost',cost); setV('sPrize',prize); setV('sProfit',prize-cost,true); setV('sBal',rec-paid,true);
+  setV('sCost',cost); setV('sPrize',prize); setV('sProfit',prize-cost,true); setV('sBal',rec-paid+curF().reduce((x,f)=>x+num(f.amount),0),true);
 
   if(!list.length){ $('days').innerHTML='<div class="empty">'+(ym==='all'?'No tournaments yet.':'No tournaments in '+esc(MONTHS[+ym.slice(5)-1])+' yet.')+'<br>Tap <b>＋</b> to add your schedule.</div>'; return; }
   const byDay={}; list.forEach(e=>(byDay[e.entry_date]=byDay[e.entry_date]||[]).push(e));
-  const H='<tr class="hd"><td>TIME</td><td>TYPE</td><td>MAP</td><td>TOURNAMENT NAME</td><td>FEE</td><td>STATUS</td><td>RANK</td><td>PRIZE 🏆</td><td>P/L</td><td>COMMENT</td><td>BANNER</td><td>DEL</td></tr>';
+  const H='<tr class="hd"><td>TIME</td><td>TYPE</td><td>MAP</td><td class="hn">TOURNAMENT NAME / ORGANIZED BY</td><td>FEE</td><td>STATUS</td><td>RANK</td><td>PRIZE 🏆</td><td>P/L</td><td>COMMENT</td><td>BANNER</td><td>DEL</td></tr>';
   const body=Object.keys(byDay).sort().map(d=>{
     const dl=dayLabel(d);
     return `<tr class="dh"><td colspan="12"><div class="dhin" id="d-${d}"><b>${esc(dl.t)}<small>${dl.w}</small></b><button type="button" data-add="${d}" aria-label="Add on this day">＋</button></div></td></tr>`+H+
@@ -266,7 +287,7 @@ function render(){
       const img=safeImg(e.banner_url), q=e.result==='qualified', dq=e.result==='disqualified';
       const pl=num(e.prize)-num(e.fee), hasPl=num(e.prize)||num(e.fee);
       return `<tr class="er" data-id="${e.id}"><td data-f="entry_time">${e.entry_time?esc(timeLabel(e.entry_time)):''}</td><td data-f="type">${esc(e.type||'')}</td><td data-f="maps">${e.maps!=null&&e.maps!==''?num(e.maps):''}</td>`+
-      `<td class="c-n" data-f="name">${e.name?esc(e.name):'<span class="ph">＋ tournament name</span>'}</td><td data-f="fee" class="${num(e.fee)&&!e.fee_paid?'r':''}">${num(e.fee)?fmt(num(e.fee)):''}</td>`+
+      `<td class="c-n" data-f="name">${e.name?esc(e.name):'<span class="ph">＋ name / organized by</span>'}</td><td data-f="fee" class="${num(e.fee)&&!e.fee_paid?'r':''}">${num(e.fee)?fmt(num(e.fee)):''}</td>`+
       `<td data-f="result" class="${RC[e.result]||''}">${esc(e.result||'')}</td><td data-f="rank" class="${sold?'r':''}">${esc(rkTxt)}</td>`+
       `<td data-f="prize" class="pz ${e.prize_received?'':'un'}">${num(e.prize)?fmt(num(e.prize)):''}</td><td class="${hasPl?(pl>=0?'pl-p':'pl-n'):''}">${hasPl?(pl>0?'+':'')+fmt(pl):''}</td>`+
       `<td class="c-c" data-f="comment">${esc(e.comment||'')}</td><td data-f="banner">${img?`<img src="${esc(img)}" alt="" loading="lazy">`:''}</td><td class="tr" data-f="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6"/></svg></td></tr>`;}).join('');
@@ -290,7 +311,7 @@ let pk=null;
 const TIMES=[['15:00','3 PM'],['16:00','4 PM'],['17:00','5 PM'],['18:00','6 PM'],['19:00','7 PM'],['20:00','8 PM'],['21:00','9 PM'],['22:00','10 PM'],['23:00','11 PM'],['00:00','12 AM'],['01:00','1 AM']];
 const TYPES=['scrim','semi','top 6 semi','final','Round 1','Round 2','Round 3','24 slot','CR'].map(x=>[x,x]);
 const RC={qualified:'g',disqualified:'r',profit:'b',loss:'o'};
-const PT={del:'Delete this tournament?',entry_time:'Time',type:'Type',maps:'Map',result:'Status',rank:'Rank',fee:'Entry fee ৳',prize:'Prize ৳',comment:'Comment',name:'Tournament name',newtime:'Add tournament · pick time'};
+const PT={del:'Delete this tournament?',entry_time:'Time',type:'Type',maps:'Map',result:'Status',rank:'Rank',fee:'Entry fee ৳',prize:'Prize ৳',comment:'Comment',name:'Tournament name / Organized by',newtime:'Add tournament · pick time'};
 function openPick(e,f,date){
   if(!tid){openT('new');return;}
   pk={e,f,date}; $('pkTitle').textContent=PT[f];
@@ -298,7 +319,7 @@ function openPick(e,f,date){
   const inp=(cap,t,v,ph)=>`<div class="cap">${cap}</div><div class="pcu"><input id="pkIn" type="${t}" value="${esc(v)}" placeholder="${ph||''}" ${t==='number'?'inputmode="numeric" min="0"':''}><button type="button" class="pok" id="pkOk">OK</button></div>`;
   const chk=(l,on)=>`<label class="chk" style="margin-top:12px"><input type="checkbox" id="pkChk" ${on?'checked':''}> ${l}</label>`;
   const v=e?(e[f]==null?'':String(e[f])):''; let h='';
-  if(f==='newtime') h=`<div class="cap" style="margin-top:0">Date</div>`+dateSel('pd',date)+`<div class="cap">Time</div>`+chips(TIMES,'')+inp('Custom time','time','');
+  if(f==='newtime') h=newTimeHtml(date);
   else if(f==='entry_time') h=chips(TIMES.concat([['','Clear']]),v.slice(0,5))+inp('Custom time','time',v.slice(0,5));
   else if(f==='type') h=chips(TYPES.concat([['','Clear']]),v)+inp('Custom','text',v,'type name');
   else if(f==='maps') h=chips([1,2,3,4,5,6].map(x=>[x,x]).concat([['','Clear']]),v)+inp('Custom','number',v,'maps');
@@ -307,7 +328,7 @@ function openPick(e,f,date){
   else if(f==='fee') h=inp('Amount','number',num(v)?v:'','0')+chk('Fee paid',e.fee_paid);
   else if(f==='prize') h=inp('Amount','number',num(v)?v:'','0')+chk('Prize received',e.prize_received);
   else if(f==='comment') h=`<div class="cap">Note</div><div class="pcu"><textarea id="pkIn" rows="3" maxlength="300">${esc(v)}</textarea><button type="button" class="pok" id="pkOk">OK</button></div>`;
-  else if(f==='name') h=inp('Name (add prize pool like "(10k)")','text',v,'CHT WARZONE S2 (10k)')+'<button type="button" class="pmore" id="pkMore">Banner · date · more…</button><button type="button" class="pdel" id="pkDel">Delete this row</button>';
+  else if(f==='name') h=inp('Name / Organized by (add prize pool like "(10k)")','text',v,'CHT WARZONE S2 (10k)')+'<button type="button" class="pmore" id="pkMore">Banner · date · more…</button><button type="button" class="pdel" id="pkDel">Delete this row</button>';
   else if(f==='del') h=`<div class="cap" style="margin-top:0;font-size:14px;color:var(--text)">${esc(e.name||'This row')}</div><div class="acts"><button type="button" id="pkNo">Cancel</button><button type="button" id="pkYes" style="background:#e0243c;border-color:#e0243c;color:#fff">Delete</button></div>`;
   $('pkBody').innerHTML=h; $('ovP').classList.add('show');
   if(['name','comment','type','fee','prize'].includes(f)) setTimeout(()=>{const i=$('pkIn');if(i)i.focus();},80);
@@ -315,16 +336,19 @@ function openPick(e,f,date){
 function closePick(){ $('ovP').classList.remove('show'); }
 $('ovP').addEventListener('click',e=>{ if(e.target.id==='ovP'){closePick();return;} });
 $('pkBody').addEventListener('click',e=>{
+  if(e.target.closest('#ctNo')){closePick();return;}
+  if(e.target.closest('#ctYes')){doDelTeam();return;}
   if(e.target.closest('#pkDel')){openPick(pk.e,'del');return;}
   if(e.target.closest('#pkNo')){closePick();return;}
   if(e.target.closest('#pkYes')){doDel();return;}
   if(e.target.closest('#pkMore')){const en=pk.e;closePick();openSheet(en);return;}
-  const c=e.target.closest('.pc'); if(c){pkApply(c.dataset.v,false);return;}
+  if(e.target.closest('#pkGo')){createEntries([...pkSel]);return;}
+  if(e.target.closest('#pkCust')){pkCustom();return;}
+  const c=e.target.closest('.pc'); if(c){ if(pk.f==='newtime')pkToggle(c); else pkApply(c.dataset.v,false); return; }
   if(e.target.closest('#pkOk'))pkApply('',true);
 });
 async function pkApply(v,fromIn){
   const {e,f}=pk; let val=v; if(fromIn){const i=$('pkIn'); val=i?i.value.trim():'';}
-  if(f==='newtime') return createEntry(val||null);
   let patch;
   if(f==='entry_time')patch={entry_time:val||null};
   else if(f==='type')patch={type:val.slice(0,30)||null};
@@ -373,13 +397,31 @@ $('bgEdit').addEventListener('click',()=>{$('ovB').classList.remove('show');open
   vv.addEventListener('resize',fit); vv.addEventListener('scroll',fit);
   document.addEventListener('focusin',e=>{if(e.target.closest&&e.target.closest('.ov'))setTimeout(()=>e.target.scrollIntoView({block:'nearest'}),320);});
 })();
-async function createEntry(time){
+let pkSel=new Set();
+function newTimeHtml(date){
+  pkSel=new Set();
+  return `<div class="cap" style="margin-top:0">Date</div>`+dateSel('pd',date)+
+  `<div class="cap">Select time(s) — tap more than one</div><div class="pcs" id="pkChips">`+TIMES.map(([v,l])=>`<button type="button" class="pc" data-v="${v}">${l}</button>`).join('')+`</div>`+
+  `<div class="cap">Custom time</div><div class="pcu"><input id="pkIn" type="time"><button type="button" class="pc" id="pkCust" style="padding:11px 20px">＋</button></div>`+
+  `<button type="button" class="pok" id="pkGo" style="width:100%;margin-top:16px;padding:14px" disabled>Select time</button>`;
+}
+function pkCount(){ const n=pkSel.size,b=$('pkGo'); b.disabled=!n; b.textContent=n?'OK · add '+n+' row'+(n>1?'s':''):'Select time'; }
+function pkToggle(btn){ const v=btn.dataset.v; if(pkSel.has(v)){pkSel.delete(v);btn.classList.remove('on');}else{pkSel.add(v);btn.classList.add('on');} pkCount(); }
+function pkCustom(){
+  const i=$('pkIn'), v=(i.value||'').slice(0,5); if(!v){toast('Pick a time first.');return;}
+  let b=[...$('pkChips').children].find(x=>x.dataset.v===v);
+  if(!b){ b=document.createElement('button'); b.type='button'; b.className='pc'; b.dataset.v=v; b.textContent=timeLabel(v); $('pkChips').appendChild(b); }
+  if(!pkSel.has(v)){pkSel.add(v);b.classList.add('on');} i.value=''; pkCount();
+}
+async function createEntries(times){
+  if(!times.length)return;
   const date=$('pdD')?getDate('pd'):pk.date;
+  const rows=times.slice().sort((a,b)=>tkey(a).localeCompare(tkey(b))).map(t=>({user_id:uid,team_id:tid,entry_date:date,entry_time:t,name:'',fee:0,fee_paid:true,result:'',prize:0,prize_received:true}));
+  const btn=$('pkGo'); btn.disabled=true;
   try{
-    const r=await sb.from('user_schedule_entries').insert({user_id:uid,team_id:tid,entry_date:date,entry_time:time,name:'',fee:0,fee_paid:true,result:'',prize:0,prize_received:true}).select().single();
-    if(r.error)throw r.error;
-    entries.push(r.data); if(ym!=='all')ym=monthOf(date); closePick(); render(); openPick(r.data,'name');
-  }catch(err){ toast('Failed: '+(err.message||err)); }
+    const r=await sb.from('user_schedule_entries').insert(rows).select(); if(r.error)throw r.error;
+    entries.push(...r.data); if(ym!=='all')ym=monthOf(date); closePick(); render(); toast(rows.length+' row'+(rows.length>1?'s':'')+' added ✓');
+  }catch(err){ btn.disabled=false; toast('Failed: '+(err.message||err)); }
 }
 
 // ---------- sheet ----------
@@ -522,14 +564,44 @@ $('tsSave').addEventListener('click',async()=>{
   }catch(e){ toast('Failed: '+(e.message||e)); }
   finally{ btn.disabled=false; }
 });
-$('tsDel').addEventListener('click',async()=>{
+$('tsDel').addEventListener('click',()=>{
   const t=teams.find(x=>x.id===tid); if(!t)return;
-  if(!confirm('Delete "'+t.name+'" and ALL its tournaments?'))return;
+  const n=cur().length; closeT(); pk={f:'delteam'};
+  $('pkTitle').textContent='Delete team?';
+  $('pkBody').innerHTML=`<div class="warn"><b>${esc(t.name)}</b><br>${n} tournament${n===1?'':'s'}, all banners and balance history will be permanently deleted. This cannot be undone.</div><div class="acts"><button type="button" id="ctNo">Keep team</button><button type="button" id="ctYes" style="background:#e0243c;border-color:#e0243c;color:#fff">Delete team</button></div>`;
+  $('ovP').classList.add('show');
+});
+async function doDelTeam(){
+  const t=teams.find(x=>x.id===tid); if(!t)return;
   const gone=cur(); const r=await sb.from('user_schedule_teams').delete().eq('id',t.id);
   if(r.error){toast('Failed: '+r.error.message);return;}
   gone.forEach(e=>dropBanner(e.banner_url));
-  entries=entries.filter(e=>e.team_id!==t.id); teams=teams.filter(x=>x.id!==t.id); tid=teams.length?teams[0].id:null; ym=null;
-  closeT(); render(); toast('Team deleted');
+  entries=entries.filter(e=>e.team_id!==t.id); funds=funds.filter(f=>f.team_id!==t.id); teams=teams.filter(x=>x.id!==t.id);
+  tid=teams.length?teams[0].id:null; ym=null; closePick(); render(); toast('Team deleted');
+}
+
+// ---------- balance (sponsor money etc.) ----------
+function renderFunds(){
+  const l=curF().slice().sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
+  $('fnList').innerHTML=l.length?l.map(f=>`<div class="fnr"><div><b class="${num(f.amount)>=0?'pos':'neg'}">${num(f.amount)>0?'+':''}${fmt(num(f.amount))}</b><span>${esc(f.note||'')}</span><small>${new Date(f.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</small></div><button type="button" data-fd="${f.id}" aria-label="Remove">✕</button></div>`).join(''):'<div style="color:var(--dim);font-size:13px">Nothing added yet.</div>';
+}
+$('sBalCard').addEventListener('click',()=>{ if(!tid){openT('new');return;} $('fnAmt').value='';$('fnNote').value='';renderFunds();$('ovF').classList.add('show'); });
+$('fnClose').addEventListener('click',()=>$('ovF').classList.remove('show'));
+$('ovF').addEventListener('click',e=>{if(e.target.id==='ovF')$('ovF').classList.remove('show');});
+async function addFund(sign){
+  const a=Math.max(0,num($('fnAmt').value)); if(!a){toast('Write an amount.');return;}
+  try{
+    const r=await sb.from('user_schedule_funds').insert({user_id:uid,team_id:tid,amount:sign*a,note:$('fnNote').value.trim().slice(0,60)||null}).select().single();
+    if(r.error)throw r.error;
+    funds.push(r.data); $('fnAmt').value='';$('fnNote').value=''; renderFunds(); render(); toast('Balance updated ✓');
+  }catch(e){ toast(/relation|schema cache/i.test(String(e.message||e))?'Run funds_upgrade.sql in Supabase first.':'Failed: '+(e.message||e)); }
+}
+$('fnAdd').addEventListener('click',()=>addFund(1));
+$('fnSub').addEventListener('click',()=>addFund(-1));
+$('fnList').addEventListener('click',async e=>{
+  const b=e.target.closest('[data-fd]'); if(!b)return;
+  const r=await sb.from('user_schedule_funds').delete().eq('id',b.dataset.fd); if(r.error){toast('Failed: '+r.error.message);return;}
+  funds=funds.filter(f=>f.id!==b.dataset.fd); renderFunds(); render();
 });
 
 // ---------- start ----------
@@ -550,6 +622,7 @@ function gate(html){ $('gate').style.display='block'; $('main').style.display='n
     const tr=await sb.from('user_schedule_teams').select('*').order('created_at',{ascending:true});
     if(tr.error){ gate('This feature is being set up.<br>Please check back soon.'); return; }
     teams=tr.data||[];
+    const fr=await sb.from('user_schedule_funds').select('*').order('created_at',{ascending:true}); funds=fr.error?[]:(fr.data||[]);
     tid=teams.length?teams[0].id:null;
     if(tid&&entries.some(e=>!e.team_id)){ await sb.from('user_schedule_entries').update({team_id:tid}).is('team_id',null); entries.forEach(e=>{if(!e.team_id)e.team_id=tid;}); }
     $('gate').style.display='none'; $('main').style.display='block'; $('fab').style.display='block';
