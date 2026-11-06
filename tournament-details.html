@@ -283,9 +283,13 @@
         <path d="M19 12H5M12 19l-7-7 7-7"/>
       </svg>
     </button>
-    <div>
+    <div style="min-width:0;flex:1">
       <h1 id="hTitle">Loading...</h1>
     </div>
+    <!-- Owner/admin only: opens Tournament Management showing just this tournament -->
+    <button class="back-btn settings-btn" id="settingsBtn" type="button" aria-label="Tournament settings" title="Settings" style="display:none;flex-shrink:0">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
   </div>
 
   <div id="content"><div class="loading">Loading tournament...</div></div>
@@ -559,6 +563,23 @@ async function initUser(){
   }catch(e){/* not logged in — guest flow still works */}
 }
 
+// ⚙ Settings button: visible ONLY to owner/admin accounts. Same rule the
+// Tournament Management page enforces (profiles.is_admin); also accepts a
+// role/is_owner flag if the profile has one. Everyone else never sees it.
+async function showSettingsForAdmin(tid){
+  try{
+    if(!sessionUser)return;
+    const {data:p}=await sb.from('profiles').select('*').eq('id',sessionUser.id).single();
+    if(!p)return;
+    const role=String(p.role||'').toLowerCase();
+    if(!(p.is_admin===true||p.is_owner===true||role==='admin'||role==='owner'))return;
+    const b=document.getElementById('settingsBtn');
+    if(!b)return;
+    b.style.display='flex';
+    b.onclick=()=>{location.href='tournament-management.html?id='+encodeURIComponent(tid);};
+  }catch(e){/* not an admin / no access — button stays hidden */}
+}
+
 (async function(){
   const root=document.getElementById('content');
   const id=new URLSearchParams(location.search).get('id');
@@ -572,6 +593,7 @@ async function initUser(){
     root.innerHTML='<div class="empty">This tournament is not available right now.</div>';return
   }
   currentTournament=t;
+  showSettingsForAdmin(t.id); // not awaited — only reveals the ⚙ button for owner/admin
 
   // ZiniPay sends the user back here with ?entry_paid=<id> or
   // ?entry_cancelled=<id> after the hosted bKash/Nagad payment page. The
