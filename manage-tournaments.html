@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHT ESP ORG — Manage All Tour</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
+<style>
+:root{
+  --bg:#0a0d13;--surface:#131826;--surface-2:#171d2d;
+  --line:#232b3d;--green:#22e08a;--text:#eef1f7;--text-dim:#8b93a9;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--text);font-family:Arial,"Noto Sans Bengali",sans-serif}
+button{font-family:inherit;cursor:pointer}
+.app{width:100%;min-height:100vh;margin:auto;background:
+  radial-gradient(120% 60% at 15% 0%,rgba(255,90,46,.10),transparent 55%),
+  radial-gradient(90% 50% at 100% 10%,rgba(33,230,193,.07),transparent 55%),var(--bg)}
+.topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;padding:14px 16px;background:transparent;backdrop-filter:blur(14px)}
+.icon-btn{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--surface);border:1px solid var(--line);color:var(--text);flex-shrink:0}
+.icon-btn svg{width:20px;height:20px}
+.topbar h1{font-size:19px;font-weight:750;letter-spacing:.02em}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:90px 24px;color:var(--text-dim)}
+.empty .badge{width:72px;height:72px;border-radius:22px;background:rgba(34,224,138,.12);border:1px solid rgba(34,224,138,.3);display:flex;align-items:center;justify-content:center;margin-bottom:18px;color:var(--green)}
+.empty .badge svg{width:34px;height:34px}
+.empty h2{font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px}
+.empty p{font-size:13px;line-height:1.6;max-width:300px}
+</style>
+<style>
+/* follow the site's theme (light/dark) the same way support.html does */
+:root{
+  --bg: var(--g-bg);
+  --surface: var(--g-surface);
+  --surface-2: var(--g-surface-2);
+  --line: var(--g-border);
+  --text: var(--g-text);
+  --text-dim: var(--g-muted);
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <button type="button" class="icon-btn" onclick="history.back()" aria-label="Back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <h1>Manage All Tour</h1>
+  </div>
+
+  <!-- Placeholder: users will add and manage their own tournaments here later. -->
+  <div class="empty">
+    <div class="badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a2 2 0 0 0 2 4"/><path d="M17 6h3a2 2 0 0 1-2 4"/></svg>
+    </div>
+    <h2>Coming soon</h2>
+    <p>Very soon you will be able to create and manage your own tournaments from here.</p>
+  </div>
+</div>
+</body>
+</html>
