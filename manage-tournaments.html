@@ -130,6 +130,13 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 .pcu input,.pcu textarea{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:11px 12px;color:var(--text);font-size:14px;outline:none}
 .pok{border:none;border-radius:11px;padding:12px 20px;background:var(--green);color:#052e1c;font-weight:900;font-size:14px}
 .pmore{width:100%;margin-top:14px;padding:11px;border-radius:11px;background:transparent;border:1px dashed var(--line);color:var(--dim);font-weight:700;font-size:13px}
+.sheet{max-height:94%}
+.dsel{display:flex;gap:8px}.dsel select{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:11px 8px;color:var(--text);font-size:14px}.dsel select:nth-child(2){flex:1.7}
+.sh td.b{background:#2f66d0;color:#fff;font-weight:800}.sh td.o{background:#ff9800;color:#1a1200;font-weight:800}
+.sh td.tr{color:#ff6b6b;min-width:46px}.sh td.tr svg{width:18px;height:18px;display:block;margin:0 auto}
+#bgImg{width:100%;max-height:62vh;object-fit:contain;border-radius:14px;background:#000;margin-bottom:12px}
+#bgSub{color:var(--dim);font-size:13px;font-weight:700;margin:-6px 0 14px}
+.pdel{width:100%;margin-top:10px;padding:11px;border-radius:11px;background:transparent;border:1px solid #5b2430;color:#ff6b6b;font-weight:800;font-size:13px}
 </style>
 </head>
 <body>
@@ -163,7 +170,7 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
   <div class="sheet" id="sheet">
     <h2 id="shTitle">Add tournament</h2>
     <div class="row2">
-      <div class="fld"><label for="fDate">Date</label><input id="fDate" type="date"></div>
+      <div class="fld"><label>Date</label><div id="fDateBox"></div></div>
       <div class="fld"><label for="fTime">Time</label><input id="fTime" type="time"></div>
     </div>
     <div class="row2">
@@ -183,7 +190,7 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
       <div class="fld"><label for="fPrize">Prize ৳</label><input id="fPrize" type="number" min="0" inputmode="numeric" placeholder="0"><label class="chk"><input type="checkbox" id="fRec" checked> Prize received</label></div>
     </div>
     <div class="row2">
-      <div class="fld"><label for="fResult">Result</label><select id="fResult"><option value="">—</option><option value="qualified">Qualified</option><option value="disqualified">Disqualified</option></select></div>
+      <div class="fld"><label for="fResult">Status</label><select id="fResult"><option value="">—</option><option value="qualified">Qualified</option><option value="disqualified">Disqualified</option><option value="profit">Profit</option><option value="loss">Loss</option></select></div>
       <div class="fld"><label for="fRank">Rank</label><input id="fRank" maxlength="14" placeholder="#7 or sold"></div>
     </div>
     <div class="fld"><label for="fCm">Comment</label><textarea id="fCm" maxlength="300"></textarea></div>
@@ -199,6 +206,7 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
   <div class="acts"><button type="button" class="del" id="tsDel" style="display:none">Delete</button><button type="button" id="tsCancel">Cancel</button><button type="button" class="save" id="tsSave">Save</button></div>
 </div></div>
 <div class="ov" id="ovP"><div class="sheet"><h2 id="pkTitle"></h2><div id="pkBody"></div></div></div>
+<div class="ov" id="ovB"><div class="sheet" style="text-align:center"><img id="bgImg" alt=""><h2 id="bgName"></h2><div id="bgSub"></div><div class="acts"><button type="button" id="bgClose">Close</button><button type="button" class="save" id="bgEdit">Edit</button></div></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -239,29 +247,29 @@ function render(){
   $('tName').textContent=T.name?(T.name+' SCHEDULE').toUpperCase():'NO TEAM — TAP ＋ TEAM';
   const lu=cur().map(e=>e.updated_at||e.created_at||'').sort().pop();
   $('tUpd').textContent='last updated : '+(lu?new Date(lu).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—');
-  const keys=monthKeys(); if(!ym||!keys.includes(ym)) ym=todayStr.slice(0,7);
-  $('months').innerHTML=keys.map(k=>`<button type="button" class="mchip ${k===ym?'on':''}" data-m="${k}">${monthLabel(k)}</button>`).join('');
-  const list=cur().filter(e=>monthOf(e.entry_date)===ym).sort((a,b)=>a.entry_date.localeCompare(b.entry_date)||String(a.entry_time||'').localeCompare(String(b.entry_time||'')));
+  const keys=monthKeys(); if(!ym||(ym!=='all'&&!keys.includes(ym))) ym=todayStr.slice(0,7);
+  $('months').innerHTML=`<button type="button" class="mchip ${ym==='all'?'on':''}" data-m="all">ALL</button>`+keys.map(k=>`<button type="button" class="mchip ${k===ym?'on':''}" data-m="${k}">${monthLabel(k)}</button>`).join('');
+  const list=cur().filter(e=>ym==='all'||monthOf(e.entry_date)===ym).sort((a,b)=>a.entry_date.localeCompare(b.entry_date)||String(a.entry_time||'').localeCompare(String(b.entry_time||'')));
   const cost=list.reduce((s,e)=>s+num(e.fee),0), paid=list.reduce((s,e)=>s+(e.fee_paid?num(e.fee):0),0);
   const prize=list.reduce((s,e)=>s+num(e.prize),0), rec=list.reduce((s,e)=>s+(e.prize_received?num(e.prize):0),0);
   const setV=(id,v,signed)=>{const el=$(id);el.textContent=fmt(v);el.className='v'+(signed?(v<0?' neg':v>0?' pos':''):'');};
   setV('sCost',cost); setV('sPrize',prize); setV('sProfit',prize-cost,true); setV('sBal',rec-paid,true);
 
-  if(!list.length){ $('days').innerHTML='<div class="empty">No tournaments in '+esc(MONTHS[+ym.slice(5)-1])+' yet.<br>Tap <b>＋</b> to add your schedule.</div>'; return; }
+  if(!list.length){ $('days').innerHTML='<div class="empty">'+(ym==='all'?'No tournaments yet.':'No tournaments in '+esc(MONTHS[+ym.slice(5)-1])+' yet.')+'<br>Tap <b>＋</b> to add your schedule.</div>'; return; }
   const byDay={}; list.forEach(e=>(byDay[e.entry_date]=byDay[e.entry_date]||[]).push(e));
-  const H='<tr class="hd"><td>TIME</td><td>TYPE</td><td>MAP</td><td>TOURNAMENT NAME</td><td>FEE</td><td>Q | DIS</td><td>RANK</td><td>PRIZE 🏆</td><td>P/L</td><td>COMMENT</td><td>BANNER</td></tr>';
+  const H='<tr class="hd"><td>TIME</td><td>TYPE</td><td>MAP</td><td>TOURNAMENT NAME</td><td>FEE</td><td>STATUS</td><td>RANK</td><td>PRIZE 🏆</td><td>P/L</td><td>COMMENT</td><td>BANNER</td><td>DEL</td></tr>';
   const body=Object.keys(byDay).sort().map(d=>{
     const dl=dayLabel(d);
-    return `<tr class="dh"><td colspan="11"><div class="dhin" id="d-${d}"><b>${esc(dl.t)}<small>${dl.w}</small></b><button type="button" data-add="${d}" aria-label="Add on this day">＋</button></div></td></tr>`+H+
+    return `<tr class="dh"><td colspan="12"><div class="dhin" id="d-${d}"><b>${esc(dl.t)}<small>${dl.w}</small></b><button type="button" data-add="${d}" aria-label="Add on this day">＋</button></div></td></tr>`+H+
     byDay[d].map(e=>{
       const rk=String(e.rank||'').trim(), sold=/^sold$/i.test(rk), rkTxt=/^#?\d+$/.test(rk)?'#'+rk.replace('#',''):rk;
       const img=safeImg(e.banner_url), q=e.result==='qualified', dq=e.result==='disqualified';
       const pl=num(e.prize)-num(e.fee), hasPl=num(e.prize)||num(e.fee);
       return `<tr class="er" data-id="${e.id}"><td data-f="entry_time">${e.entry_time?esc(timeLabel(e.entry_time)):''}</td><td data-f="type">${esc(e.type||'')}</td><td data-f="maps">${e.maps!=null&&e.maps!==''?num(e.maps):''}</td>`+
       `<td class="c-n" data-f="name">${e.name?esc(e.name):'<span class="ph">＋ tournament name</span>'}</td><td data-f="fee" class="${num(e.fee)&&!e.fee_paid?'r':''}">${num(e.fee)?fmt(num(e.fee)):''}</td>`+
-      `<td data-f="result" class="${q?'g':dq?'r':''}">${q?'qualified':dq?'disqualified':''}</td><td data-f="rank" class="${sold?'r':''}">${esc(rkTxt)}</td>`+
+      `<td data-f="result" class="${RC[e.result]||''}">${esc(e.result||'')}</td><td data-f="rank" class="${sold?'r':''}">${esc(rkTxt)}</td>`+
       `<td data-f="prize" class="pz ${e.prize_received?'':'un'}">${num(e.prize)?fmt(num(e.prize)):''}</td><td class="${hasPl?(pl>=0?'pl-p':'pl-n'):''}">${hasPl?(pl>0?'+':'')+fmt(pl):''}</td>`+
-      `<td class="c-c" data-f="comment">${esc(e.comment||'')}</td><td data-f="banner">${img?`<img src="${esc(img)}" alt="" loading="lazy">`:''}</td></tr>`;}).join('');
+      `<td class="c-c" data-f="comment">${esc(e.comment||'')}</td><td data-f="banner">${img?`<img src="${esc(img)}" alt="" loading="lazy">`:''}</td><td class="tr" data-f="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6"/></svg></td></tr>`;}).join('');
   }).join('');
   $('days').innerHTML='<div class="tw"><table class="sh"><tbody>'+body+'</tbody></table></div>';
   const _n=document.querySelector('.tw'); if(_n)_n.scrollLeft=_sx;
@@ -272,15 +280,17 @@ $('days').addEventListener('click',e=>{
   const add=e.target.closest('[data-add]'); if(add){openPick(null,'newtime',add.dataset.add);return;}
   const td=e.target.closest('td[data-f]'); if(!td)return;
   const en=entries.find(x=>x.id===td.parentNode.dataset.id); if(!en)return;
-  if(td.dataset.f==='banner')openSheet(en); else openPick(en,td.dataset.f);
+  const f=td.dataset.f;
+  if(f==='banner'){ if(safeImg(en.banner_url))openBig(en); else openSheet(en); } else openPick(en,f);
 });
-$('fab').addEventListener('click',()=>openPick(null,'newtime',monthOf(todayStr)===ym?todayStr:ym+'-01'));
+$('fab').addEventListener('click',()=>openPick(null,'newtime',(ym==='all'||monthOf(todayStr)===ym)?todayStr:ym+'-01'));
 
 // ---------- quick picker (tap a cell, like the sheet) ----------
 let pk=null;
 const TIMES=[['15:00','3 PM'],['16:00','4 PM'],['17:00','5 PM'],['18:00','6 PM'],['19:00','7 PM'],['20:00','8 PM'],['21:00','9 PM'],['22:00','10 PM'],['23:00','11 PM'],['00:00','12 AM'],['01:00','1 AM']];
-const TYPES=['scrim','semi','top 6 semi','final','R1','R2','24 slot','CR'].map(x=>[x,x]);
-const PT={entry_time:'Time',type:'Type',maps:'Map',result:'Qualified / Disqualified',rank:'Rank',fee:'Entry fee ৳',prize:'Prize ৳',comment:'Comment',name:'Tournament name',newtime:'Add tournament · pick time'};
+const TYPES=['scrim','semi','top 6 semi','final','Round 1','Round 2','Round 3','24 slot','CR'].map(x=>[x,x]);
+const RC={qualified:'g',disqualified:'r',profit:'b',loss:'o'};
+const PT={del:'Delete this tournament?',entry_time:'Time',type:'Type',maps:'Map',result:'Status',rank:'Rank',fee:'Entry fee ৳',prize:'Prize ৳',comment:'Comment',name:'Tournament name',newtime:'Add tournament · pick time'};
 function openPick(e,f,date){
   if(!tid){openT('new');return;}
   pk={e,f,date}; $('pkTitle').textContent=PT[f];
@@ -288,22 +298,26 @@ function openPick(e,f,date){
   const inp=(cap,t,v,ph)=>`<div class="cap">${cap}</div><div class="pcu"><input id="pkIn" type="${t}" value="${esc(v)}" placeholder="${ph||''}" ${t==='number'?'inputmode="numeric" min="0"':''}><button type="button" class="pok" id="pkOk">OK</button></div>`;
   const chk=(l,on)=>`<label class="chk" style="margin-top:12px"><input type="checkbox" id="pkChk" ${on?'checked':''}> ${l}</label>`;
   const v=e?(e[f]==null?'':String(e[f])):''; let h='';
-  if(f==='newtime') h=`<div class="fld"><label for="pkDate">Date</label><input id="pkDate" type="date" value="${esc(date)}"></div>`+chips(TIMES,'')+inp('Custom time','time','');
+  if(f==='newtime') h=`<div class="cap" style="margin-top:0">Date</div>`+dateSel('pd',date)+`<div class="cap">Time</div>`+chips(TIMES,'')+inp('Custom time','time','');
   else if(f==='entry_time') h=chips(TIMES.concat([['','Clear']]),v.slice(0,5))+inp('Custom time','time',v.slice(0,5));
   else if(f==='type') h=chips(TYPES.concat([['','Clear']]),v)+inp('Custom','text',v,'type name');
   else if(f==='maps') h=chips([1,2,3,4,5,6].map(x=>[x,x]).concat([['','Clear']]),v)+inp('Custom','number',v,'maps');
-  else if(f==='result') h=chips([['qualified','Qualified'],['disqualified','Disqualified'],['','Clear']],v);
+  else if(f==='result') h=chips([['qualified','Qualified'],['disqualified','Disqualified'],['profit','Profit'],['loss','Loss'],['','Clear']],v);
   else if(f==='rank'){const c=v.replace('#',''); h=chips(Array.from({length:12},(_,i)=>[i+1,'#'+(i+1)]).concat([['sold','Sold'],['','Clear']]),c)+inp('Custom rank (like 18)','text',c,'18');}
   else if(f==='fee') h=inp('Amount','number',num(v)?v:'','0')+chk('Fee paid',e.fee_paid);
   else if(f==='prize') h=inp('Amount','number',num(v)?v:'','0')+chk('Prize received',e.prize_received);
   else if(f==='comment') h=`<div class="cap">Note</div><div class="pcu"><textarea id="pkIn" rows="3" maxlength="300">${esc(v)}</textarea><button type="button" class="pok" id="pkOk">OK</button></div>`;
-  else if(f==='name') h=inp('Name (add prize pool like "(10k)")','text',v,'CHT WARZONE S2 (10k)')+'<button type="button" class="pmore" id="pkMore">Banner · date · delete…</button>';
+  else if(f==='name') h=inp('Name (add prize pool like "(10k)")','text',v,'CHT WARZONE S2 (10k)')+'<button type="button" class="pmore" id="pkMore">Banner · date · more…</button><button type="button" class="pdel" id="pkDel">Delete this row</button>';
+  else if(f==='del') h=`<div class="cap" style="margin-top:0;font-size:14px;color:var(--text)">${esc(e.name||'This row')}</div><div class="acts"><button type="button" id="pkNo">Cancel</button><button type="button" id="pkYes" style="background:#e0243c;border-color:#e0243c;color:#fff">Delete</button></div>`;
   $('pkBody').innerHTML=h; $('ovP').classList.add('show');
   if(['name','comment','type','fee','prize'].includes(f)) setTimeout(()=>{const i=$('pkIn');if(i)i.focus();},80);
 }
 function closePick(){ $('ovP').classList.remove('show'); }
 $('ovP').addEventListener('click',e=>{ if(e.target.id==='ovP'){closePick();return;} });
 $('pkBody').addEventListener('click',e=>{
+  if(e.target.closest('#pkDel')){openPick(pk.e,'del');return;}
+  if(e.target.closest('#pkNo')){closePick();return;}
+  if(e.target.closest('#pkYes')){doDel();return;}
   if(e.target.closest('#pkMore')){const en=pk.e;closePick();openSheet(en);return;}
   const c=e.target.closest('.pc'); if(c){pkApply(c.dataset.v,false);return;}
   if(e.target.closest('#pkOk'))pkApply('',true);
@@ -326,12 +340,45 @@ async function pkApply(v,fromIn){
     entries=entries.map(x=>x.id===e.id?r.data:x); closePick(); render();
   }catch(err){ toast('Save failed: '+(err.message||err)); }
 }
+async function doDel(){
+  const e=pk.e;
+  try{
+    const r=await sb.from('user_schedule_entries').delete().eq('id',e.id); if(r.error)throw r.error;
+    dropBanner(e.banner_url); entries=entries.filter(x=>x.id!==e.id); closePick(); render(); toast('Deleted');
+  }catch(err){ toast('Delete failed: '+(err.message||err)); }
+}
+function dateSel(p,v){
+  const [y,m,d]=v.split('-').map(Number), cy=new Date().getFullYear();
+  const o=(a,sel)=>a.map(([val,l])=>`<option value="${val}"${val===sel?' selected':''}>${l}</option>`).join('');
+  const yrs=[]; for(let i=cy-1;i<=cy+2;i++)yrs.push([i,String(i)]); if(y<cy-1||y>cy+2)yrs.push([y,String(y)]);
+  return `<div class="dsel"><select id="${p}D">${o(Array.from({length:31},(_,i)=>[i+1,String(i+1)]),d)}</select><select id="${p}M">${o(MONTHS.map((n,i)=>[i+1,n]),m)}</select><select id="${p}Y">${o(yrs,y)}</select></div>`;
+}
+function getDate(p){
+  const y=+$(p+'Y').value, m=+$(p+'M').value, d=Math.min(+$(p+'D').value,new Date(y,m,0).getDate());
+  return y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+}
+let bigE=null;
+function openBig(e){
+  bigE=e; $('bgImg').src=safeImg(e.banner_url); $('bgName').textContent=e.name||'Tournament';
+  const d=dayLabel(e.entry_date); $('bgSub').textContent=d.t+' · '+d.w+(e.entry_time?' · '+timeLabel(e.entry_time):'');
+  $('ovB').classList.add('show');
+}
+$('bgClose').addEventListener('click',()=>$('ovB').classList.remove('show'));
+$('ovB').addEventListener('click',ev=>{if(ev.target.id==='ovB')$('ovB').classList.remove('show');});
+$('bgEdit').addEventListener('click',()=>{$('ovB').classList.remove('show');openSheet(bigE);});
+// keep sheets above the phone keyboard
+(function(){
+  const vv=window.visualViewport; if(!vv)return;
+  const fit=()=>{const kb=Math.max(0,window.innerHeight-vv.height-vv.offsetTop);document.querySelectorAll('.ov').forEach(o=>{o.style.bottom=kb+'px';});};
+  vv.addEventListener('resize',fit); vv.addEventListener('scroll',fit);
+  document.addEventListener('focusin',e=>{if(e.target.closest&&e.target.closest('.ov'))setTimeout(()=>e.target.scrollIntoView({block:'nearest'}),320);});
+})();
 async function createEntry(time){
-  const date=($('pkDate')&&$('pkDate').value)||pk.date;
+  const date=$('pdD')?getDate('pd'):pk.date;
   try{
     const r=await sb.from('user_schedule_entries').insert({user_id:uid,team_id:tid,entry_date:date,entry_time:time,name:'',fee:0,fee_paid:true,result:'',prize:0,prize_received:true}).select().single();
     if(r.error)throw r.error;
-    entries.push(r.data); ym=monthOf(date); closePick(); render(); openPick(r.data,'name');
+    entries.push(r.data); if(ym!=='all')ym=monthOf(date); closePick(); render(); openPick(r.data,'name');
   }catch(err){ toast('Failed: '+(err.message||err)); }
 }
 
@@ -351,7 +398,7 @@ function openSheet(e,date){
   if(!tid){openT('new');return;}
   editing=e||null;
   $('shTitle').textContent=e?'Edit tournament':'Add tournament';
-  $('fDate').value=e?e.entry_date:(date||todayStr);
+  $('fDateBox').innerHTML=dateSel('fd',e?e.entry_date:(date||todayStr));
   $('fTime').value=e?(e.entry_time||''):'';
   $('fType').value=e?(e.type||''):''; $('fMaps').value=e&&e.maps!=null?e.maps:'';
   $('fName').value=e?e.name:''; $('fFee').value=e&&num(e.fee)?e.fee:''; $('fPrize').value=e&&num(e.prize)?e.prize:'';
@@ -388,9 +435,8 @@ function pathOf(url){const i=url.indexOf('/'+BUCKET+'/');return i<0?'':url.slice
 async function dropBanner(url){ try{ const p=url&&pathOf(url); if(p) await sb.storage.from(BUCKET).remove([p]); }catch(e){} }
 
 $('shSave').addEventListener('click',async()=>{
-  const date=$('fDate').value, name=$('fName').value.trim();
+  const date=getDate('fd'), name=$('fName').value.trim();
   document.querySelectorAll('.fld .bad').forEach(x=>x.classList.remove('bad'));
-  if(!date){$('fDate').classList.add('bad');toast('Pick a date.');return;}
   if(!name){$('fName').classList.add('bad');toast('Write the tournament name.');return;}
   const btn=$('shSave'); btn.disabled=true; btn.textContent='Saving…';
   try{
@@ -418,7 +464,7 @@ $('shSave').addEventListener('click',async()=>{
     if(r.error)throw r.error;
     if(banOld&&banOld!==url) dropBanner(banOld);
     if(editing) entries=entries.map(x=>x.id===editing.id?r.data:x); else entries.push(r.data);
-    ym=monthOf(date);
+    if(ym!=='all')ym=monthOf(date);
     closeSheet(); render(); toast('Saved ✓');
   }catch(e){
     console.error(e);
