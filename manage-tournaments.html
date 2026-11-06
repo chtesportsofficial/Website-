@@ -115,6 +115,21 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 .acts button:disabled{opacity:.6}
 .toast{position:fixed;left:50%;bottom:150px;transform:translateX(-50%) translateY(12px);background:#000c;color:#fff;border:1px solid #fff3;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:700;opacity:0;pointer-events:none;transition:.25s;z-index:80;max-width:90%;text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.sum{grid-template-columns:repeat(4,1fr);gap:6px;padding:0 16px 10px}
+.sum .scard{padding:8px 7px;border-radius:12px;min-width:0}
+.sum .scard .l{font-size:8.5px;letter-spacing:.3px}
+.sum .scard .v{font-size:16px;margin:3px 0 0;overflow:hidden;text-overflow:ellipsis}
+.sum .scard .h{display:none}
+.sh td{min-width:58px}.sh td.pl-p{color:var(--green);font-weight:800}.sh td.pl-n{color:#ff6b6b;font-weight:800}
+.sh .ph{color:#5b6788;font-weight:600}
+.pcs{display:flex;flex-wrap:wrap;gap:8px}
+.pc{padding:11px 15px;border-radius:11px;background:var(--bg);border:1px solid var(--line);color:var(--text);font-size:13.5px;font-weight:800}
+.pc.on{background:#ff9800;border-color:#ff9800;color:#1a1200}
+.cap{font-size:11.5px;font-weight:800;color:var(--dim);margin:14px 0 6px}
+.pcu{display:flex;gap:8px;align-items:flex-start}
+.pcu input,.pcu textarea{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:11px 12px;color:var(--text);font-size:14px;outline:none}
+.pok{border:none;border-radius:11px;padding:12px 20px;background:var(--green);color:#052e1c;font-weight:900;font-size:14px}
+.pmore{width:100%;margin-top:14px;padding:11px;border-radius:11px;background:transparent;border:1px dashed var(--line);color:var(--dim);font-weight:700;font-size:13px}
 </style>
 </head>
 <body>
@@ -131,13 +146,13 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
   <div id="main" style="display:none">
     <div class="teams" id="teams"></div>
     <div class="thead"><div class="tupd" id="tUpd"></div><div class="ttl"><b id="tName"></b><button type="button" id="tEdit" aria-label="Edit team"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button></div></div>
-    <div class="months" id="months"></div>
     <div class="sum">
       <div class="scard"><div class="l">TOTAL COST</div><div class="v" id="sCost">0</div><div class="h">all entry fees</div></div>
       <div class="scard"><div class="l">PRIZEPOOL</div><div class="v" id="sPrize">0</div><div class="h">prize won</div></div>
       <div class="scard"><div class="l">PROFIT</div><div class="v" id="sProfit">0</div><div class="h">prize − cost</div></div>
       <div class="scard"><div class="l">BALANCE</div><div class="v" id="sBal">0</div><div class="h">received − paid</div></div>
     </div>
+    <div class="months" id="months"></div>
     <div id="days"></div>
   </div>
 </div>
@@ -183,6 +198,7 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
   <div class="fld"><label for="tsName">Team name</label><input id="tsName" maxlength="40" placeholder="e.g. Hill Dominators"></div>
   <div class="acts"><button type="button" class="del" id="tsDel" style="display:none">Delete</button><button type="button" id="tsCancel">Cancel</button><button type="button" class="save" id="tsSave">Save</button></div>
 </div></div>
+<div class="ov" id="ovP"><div class="sheet"><h2 id="pkTitle"></h2><div id="pkBody"></div></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -217,9 +233,10 @@ function monthKeys(){
   return [...s].sort().reverse();
 }
 function render(){
+  const _o=document.querySelector('.tw'), _sx=_o?_o.scrollLeft:0;
   const T=teams.find(t=>t.id===tid)||{name:''};
   $('teams').innerHTML=teams.map(t=>`<button type="button" class="tchip ${t.id===tid?'on':''}" data-t="${t.id}">${esc(t.name)}</button>`).join('')+'<button type="button" class="tchip" id="tAdd">＋ Team</button>';
-  $('tName').textContent=(T.name+' SCHEDULE').toUpperCase();
+  $('tName').textContent=T.name?(T.name+' SCHEDULE').toUpperCase():'NO TEAM — TAP ＋ TEAM';
   const lu=cur().map(e=>e.updated_at||e.created_at||'').sort().pop();
   $('tUpd').textContent='last updated : '+(lu?new Date(lu).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—');
   const keys=monthKeys(); if(!ym||!keys.includes(ym)) ym=todayStr.slice(0,7);
@@ -232,27 +249,91 @@ function render(){
 
   if(!list.length){ $('days').innerHTML='<div class="empty">No tournaments in '+esc(MONTHS[+ym.slice(5)-1])+' yet.<br>Tap <b>＋</b> to add your schedule.</div>'; return; }
   const byDay={}; list.forEach(e=>(byDay[e.entry_date]=byDay[e.entry_date]||[]).push(e));
-  const H='<tr class="hd"><td>TIME</td><td>TYPE</td><td>MAP</td><td>TOURNAMENT NAME</td><td>FEE</td><td>Q | DIS</td><td>RANK</td><td>PRIZE 🏆</td><td>COMMENT</td><td>BANNER</td></tr>';
+  const H='<tr class="hd"><td>TIME</td><td>TYPE</td><td>MAP</td><td>TOURNAMENT NAME</td><td>FEE</td><td>Q | DIS</td><td>RANK</td><td>PRIZE 🏆</td><td>P/L</td><td>COMMENT</td><td>BANNER</td></tr>';
   const body=Object.keys(byDay).sort().map(d=>{
     const dl=dayLabel(d);
-    return `<tr class="dh"><td colspan="10"><div class="dhin" id="d-${d}"><b>${esc(dl.t)}<small>${dl.w}</small></b><button type="button" data-add="${d}" aria-label="Add on this day">＋</button></div></td></tr>`+H+
+    return `<tr class="dh"><td colspan="11"><div class="dhin" id="d-${d}"><b>${esc(dl.t)}<small>${dl.w}</small></b><button type="button" data-add="${d}" aria-label="Add on this day">＋</button></div></td></tr>`+H+
     byDay[d].map(e=>{
-      const rk=String(e.rank||'').trim(), sold=/^sold$/i.test(rk), rkTxt=/^\d+$/.test(rk)?'#'+rk:rk;
+      const rk=String(e.rank||'').trim(), sold=/^sold$/i.test(rk), rkTxt=/^#?\d+$/.test(rk)?'#'+rk.replace('#',''):rk;
       const img=safeImg(e.banner_url), q=e.result==='qualified', dq=e.result==='disqualified';
-      return `<tr class="er" data-id="${e.id}"><td>${esc(timeLabel(e.entry_time))}</td><td>${esc(e.type||'')}</td><td>${e.maps!=null&&e.maps!==''?num(e.maps):''}</td>`+
-      `<td class="c-n">${esc(e.name)}</td><td class="${num(e.fee)&&!e.fee_paid?'r':''}">${num(e.fee)?fmt(num(e.fee)):''}</td>`+
-      `<td class="${q?'g':dq?'r':''}">${q?'qualified':dq?'disqualified':''}</td><td class="${sold?'r':''}">${esc(rkTxt)}</td>`+
-      `<td class="pz ${e.prize_received?'':'un'}">${num(e.prize)?fmt(num(e.prize)):''}</td><td class="c-c">${esc(e.comment||'')}</td><td>${img?`<img src="${esc(img)}" alt="" loading="lazy">`:''}</td></tr>`;}).join('');
+      const pl=num(e.prize)-num(e.fee), hasPl=num(e.prize)||num(e.fee);
+      return `<tr class="er" data-id="${e.id}"><td data-f="entry_time">${e.entry_time?esc(timeLabel(e.entry_time)):''}</td><td data-f="type">${esc(e.type||'')}</td><td data-f="maps">${e.maps!=null&&e.maps!==''?num(e.maps):''}</td>`+
+      `<td class="c-n" data-f="name">${e.name?esc(e.name):'<span class="ph">＋ tournament name</span>'}</td><td data-f="fee" class="${num(e.fee)&&!e.fee_paid?'r':''}">${num(e.fee)?fmt(num(e.fee)):''}</td>`+
+      `<td data-f="result" class="${q?'g':dq?'r':''}">${q?'qualified':dq?'disqualified':''}</td><td data-f="rank" class="${sold?'r':''}">${esc(rkTxt)}</td>`+
+      `<td data-f="prize" class="pz ${e.prize_received?'':'un'}">${num(e.prize)?fmt(num(e.prize)):''}</td><td class="${hasPl?(pl>=0?'pl-p':'pl-n'):''}">${hasPl?(pl>0?'+':'')+fmt(pl):''}</td>`+
+      `<td class="c-c" data-f="comment">${esc(e.comment||'')}</td><td data-f="banner">${img?`<img src="${esc(img)}" alt="" loading="lazy">`:''}</td></tr>`;}).join('');
   }).join('');
   $('days').innerHTML='<div class="tw"><table class="sh"><tbody>'+body+'</tbody></table></div>';
+  const _n=document.querySelector('.tw'); if(_n)_n.scrollLeft=_sx;
 }
 
 $('months').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;ym=b.dataset.m;render();});
 $('days').addEventListener('click',e=>{
-  const add=e.target.closest('[data-add]'); if(add){openSheet(null,add.dataset.add);return;}
-  const en=e.target.closest('[data-id]'); if(en){openSheet(entries.find(x=>x.id===en.dataset.id));}
+  const add=e.target.closest('[data-add]'); if(add){openPick(null,'newtime',add.dataset.add);return;}
+  const td=e.target.closest('td[data-f]'); if(!td)return;
+  const en=entries.find(x=>x.id===td.parentNode.dataset.id); if(!en)return;
+  if(td.dataset.f==='banner')openSheet(en); else openPick(en,td.dataset.f);
 });
-$('fab').addEventListener('click',()=>openSheet(null, monthOf(todayStr)===ym?todayStr:ym+'-01'));
+$('fab').addEventListener('click',()=>openPick(null,'newtime',monthOf(todayStr)===ym?todayStr:ym+'-01'));
+
+// ---------- quick picker (tap a cell, like the sheet) ----------
+let pk=null;
+const TIMES=[['15:00','3 PM'],['16:00','4 PM'],['17:00','5 PM'],['18:00','6 PM'],['19:00','7 PM'],['20:00','8 PM'],['21:00','9 PM'],['22:00','10 PM'],['23:00','11 PM'],['00:00','12 AM'],['01:00','1 AM']];
+const TYPES=['scrim','semi','top 6 semi','final','R1','R2','24 slot','CR'].map(x=>[x,x]);
+const PT={entry_time:'Time',type:'Type',maps:'Map',result:'Qualified / Disqualified',rank:'Rank',fee:'Entry fee ৳',prize:'Prize ৳',comment:'Comment',name:'Tournament name',newtime:'Add tournament · pick time'};
+function openPick(e,f,date){
+  if(!tid){openT('new');return;}
+  pk={e,f,date}; $('pkTitle').textContent=PT[f];
+  const chips=(a,c)=>'<div class="pcs">'+a.map(([v,l])=>`<button type="button" class="pc${String(v)===String(c)?' on':''}" data-v="${esc(v)}">${esc(l)}</button>`).join('')+'</div>';
+  const inp=(cap,t,v,ph)=>`<div class="cap">${cap}</div><div class="pcu"><input id="pkIn" type="${t}" value="${esc(v)}" placeholder="${ph||''}" ${t==='number'?'inputmode="numeric" min="0"':''}><button type="button" class="pok" id="pkOk">OK</button></div>`;
+  const chk=(l,on)=>`<label class="chk" style="margin-top:12px"><input type="checkbox" id="pkChk" ${on?'checked':''}> ${l}</label>`;
+  const v=e?(e[f]==null?'':String(e[f])):''; let h='';
+  if(f==='newtime') h=`<div class="fld"><label for="pkDate">Date</label><input id="pkDate" type="date" value="${esc(date)}"></div>`+chips(TIMES,'')+inp('Custom time','time','');
+  else if(f==='entry_time') h=chips(TIMES.concat([['','Clear']]),v.slice(0,5))+inp('Custom time','time',v.slice(0,5));
+  else if(f==='type') h=chips(TYPES.concat([['','Clear']]),v)+inp('Custom','text',v,'type name');
+  else if(f==='maps') h=chips([1,2,3,4,5,6].map(x=>[x,x]).concat([['','Clear']]),v)+inp('Custom','number',v,'maps');
+  else if(f==='result') h=chips([['qualified','Qualified'],['disqualified','Disqualified'],['','Clear']],v);
+  else if(f==='rank'){const c=v.replace('#',''); h=chips(Array.from({length:12},(_,i)=>[i+1,'#'+(i+1)]).concat([['sold','Sold'],['','Clear']]),c)+inp('Custom rank (like 18)','text',c,'18');}
+  else if(f==='fee') h=inp('Amount','number',num(v)?v:'','0')+chk('Fee paid',e.fee_paid);
+  else if(f==='prize') h=inp('Amount','number',num(v)?v:'','0')+chk('Prize received',e.prize_received);
+  else if(f==='comment') h=`<div class="cap">Note</div><div class="pcu"><textarea id="pkIn" rows="3" maxlength="300">${esc(v)}</textarea><button type="button" class="pok" id="pkOk">OK</button></div>`;
+  else if(f==='name') h=inp('Name (add prize pool like "(10k)")','text',v,'CHT WARZONE S2 (10k)')+'<button type="button" class="pmore" id="pkMore">Banner · date · delete…</button>';
+  $('pkBody').innerHTML=h; $('ovP').classList.add('show');
+  if(['name','comment','type','fee','prize'].includes(f)) setTimeout(()=>{const i=$('pkIn');if(i)i.focus();},80);
+}
+function closePick(){ $('ovP').classList.remove('show'); }
+$('ovP').addEventListener('click',e=>{ if(e.target.id==='ovP'){closePick();return;} });
+$('pkBody').addEventListener('click',e=>{
+  if(e.target.closest('#pkMore')){const en=pk.e;closePick();openSheet(en);return;}
+  const c=e.target.closest('.pc'); if(c){pkApply(c.dataset.v,false);return;}
+  if(e.target.closest('#pkOk'))pkApply('',true);
+});
+async function pkApply(v,fromIn){
+  const {e,f}=pk; let val=v; if(fromIn){const i=$('pkIn'); val=i?i.value.trim():'';}
+  if(f==='newtime') return createEntry(val||null);
+  let patch;
+  if(f==='entry_time')patch={entry_time:val||null};
+  else if(f==='type')patch={type:val.slice(0,30)||null};
+  else if(f==='maps')patch={maps:val===''?null:Math.max(0,parseInt(val,10)||0)};
+  else if(f==='result')patch={result:val};
+  else if(f==='rank')patch={rank:String(val).replace(/^#/,'').slice(0,14)||null};
+  else if(f==='fee')patch={fee:Math.max(0,num(val)),fee_paid:$('pkChk').checked};
+  else if(f==='prize')patch={prize:Math.max(0,num(val)),prize_received:$('pkChk').checked};
+  else if(f==='comment')patch={comment:val.slice(0,300)||null};
+  else if(f==='name'){ if(!val){toast('Write the tournament name.');return;} patch={name:val.slice(0,120)}; }
+  try{
+    const r=await sb.from('user_schedule_entries').update(patch).eq('id',e.id).select().single(); if(r.error)throw r.error;
+    entries=entries.map(x=>x.id===e.id?r.data:x); closePick(); render();
+  }catch(err){ toast('Save failed: '+(err.message||err)); }
+}
+async function createEntry(time){
+  const date=($('pkDate')&&$('pkDate').value)||pk.date;
+  try{
+    const r=await sb.from('user_schedule_entries').insert({user_id:uid,team_id:tid,entry_date:date,entry_time:time,name:'',fee:0,fee_paid:true,result:'',prize:0,prize_received:true}).select().single();
+    if(r.error)throw r.error;
+    entries.push(r.data); ym=monthOf(date); closePick(); render(); openPick(r.data,'name');
+  }catch(err){ toast('Failed: '+(err.message||err)); }
+}
 
 // ---------- sheet ----------
 function showBanner(){
@@ -366,7 +447,7 @@ function openT(mode){
   tMode=mode; const t=teams.find(x=>x.id===tid);
   $('tsTitle').textContent=mode==='new'?'New team':'Edit team';
   $('tsName').value=mode==='edit'&&t?t.name:'';
-  $('tsDel').style.display=mode==='edit'&&teams.length>1?'block':'none';
+  $('tsDel').style.display=mode==='edit'?'block':'none';
   $('ovT').classList.add('show'); setTimeout(()=>$('tsName').focus(),60);
 }
 function closeT(){ $('ovT').classList.remove('show'); }
@@ -396,12 +477,12 @@ $('tsSave').addEventListener('click',async()=>{
   finally{ btn.disabled=false; }
 });
 $('tsDel').addEventListener('click',async()=>{
-  const t=teams.find(x=>x.id===tid); if(!t||teams.length<2)return;
+  const t=teams.find(x=>x.id===tid); if(!t)return;
   if(!confirm('Delete "'+t.name+'" and ALL its tournaments?'))return;
   const gone=cur(); const r=await sb.from('user_schedule_teams').delete().eq('id',t.id);
   if(r.error){toast('Failed: '+r.error.message);return;}
   gone.forEach(e=>dropBanner(e.banner_url));
-  entries=entries.filter(e=>e.team_id!==t.id); teams=teams.filter(x=>x.id!==t.id); tid=teams[0].id; ym=null;
+  entries=entries.filter(e=>e.team_id!==t.id); teams=teams.filter(x=>x.id!==t.id); tid=teams.length?teams[0].id:null; ym=null;
   closeT(); render(); toast('Team deleted');
 });
 
