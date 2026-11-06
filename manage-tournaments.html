@@ -150,6 +150,15 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 .sh tr.hd td.hn{white-space:normal;min-width:210px}
 .pc.on{box-shadow:0 0 0 2px rgba(255,152,0,.35)}
 .pok:disabled{opacity:.45}
+.sh td{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.sh td.sel{outline:3px solid #ff9800;outline-offset:-3px;filter:brightness(1.3)}
+#cpBar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(100px + env(safe-area-inset-bottom));width:min(94vw,540px);z-index:9000;display:none;align-items:center;gap:8px;background:#1b2440;border:1px solid #3a4a70;border-radius:16px;padding:10px 10px 10px 14px;box-shadow:0 10px 30px rgba(0,0,0,.55)}
+#cpBar.show{display:flex}
+#cpInfo{flex:1;min-width:0;font-size:12.5px;font-weight:700;color:var(--text);line-height:1.35}
+#cpInfo small{display:block;color:var(--dim);font-weight:600;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#cpBar button{border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:11px;padding:10px 14px;font-weight:850;font-size:13px}
+#cpBar button:disabled{opacity:.4}
+#cpBar #cpPaste:not(:disabled){background:var(--green);border-color:var(--green);color:#052e1c}
 </style>
 </head>
 <body>
@@ -219,6 +228,7 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
   <div class="acts"><button type="button" class="del" id="tsDel" style="display:none">Delete</button><button type="button" id="tsCancel">Cancel</button><button type="button" class="save" id="tsSave">Save</button></div>
 </div></div>
 <div class="ov" id="ovP"><div class="sheet"><h2 id="pkTitle"></h2><div id="pkBody"></div></div></div>
+<div id="cpBar"><div id="cpInfo"></div><button type="button" id="cpCopy">Copy</button><button type="button" id="cpPaste">Paste</button><button type="button" id="cpX" aria-label="Done">✕</button></div>
 <div class="ov" id="ovF"><div class="sheet"><h2>Add to balance</h2>
   <div class="pcu"><input id="fnAmt" type="number" inputmode="numeric" min="0" placeholder="Amount ৳ (e.g. 1000)"></div>
   <div class="pcu" style="margin-top:8px"><input id="fnNote" maxlength="60" placeholder="Note (e.g. Sponsor)"></div>
@@ -294,14 +304,17 @@ function render(){
   }).join('');
   $('days').innerHTML='<div class="tw"><table class="sh"><tbody>'+body+'</tbody></table></div>';
   const _n=document.querySelector('.tw'); if(_n)_n.scrollLeft=_sx;
+  applySel();
 }
 
 $('months').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;ym=b.dataset.m;render();});
 $('days').addEventListener('click',e=>{
   const add=e.target.closest('[data-add]'); if(add){openPick(null,'newtime',add.dataset.add);return;}
   const td=e.target.closest('td[data-f]'); if(!td)return;
+  if(lpFired){lpFired=false;return;}
   const en=entries.find(x=>x.id===td.parentNode.dataset.id); if(!en)return;
   const f=td.dataset.f;
+  if(selMode){ if(f!=='banner'&&f!=='del'&&f!=='entry_time')toggleSel(td); return; }
   if(f==='banner'){ if(safeImg(en.banner_url))openBig(en); else openSheet(en); } else openPick(en,f);
 });
 $('fab').addEventListener('click',()=>openPick(null,'newtime',(ym==='all'||monthOf(todayStr)===ym)?todayStr:ym+'-01'));
@@ -351,7 +364,7 @@ async function pkApply(v,fromIn){
   const {e,f}=pk; let val=v; if(fromIn){const i=$('pkIn'); val=i?i.value.trim():'';}
   let patch;
   if(f==='entry_time')patch={entry_time:val||null};
-  else if(f==='type')patch={type:val.slice(0,30)||null};
+  else if(f==='type'){ patch={type:val.slice(0,30)||null}; if(/^scrim$/i.test(val)&&(e.maps==null||e.maps===''))patch.maps=3; }
   else if(f==='maps')patch={maps:val===''?null:Math.max(0,parseInt(val,10)||0)};
   else if(f==='result')patch={result:val};
   else if(f==='rank')patch={rank:String(val).replace(/^#/,'').slice(0,14)||null};
@@ -423,6 +436,71 @@ async function createEntries(times){
     entries.push(...r.data); if(ym!=='all')ym=monthOf(date); closePick(); render(); toast(rows.length+' row'+(rows.length>1?'s':'')+' added ✓');
   }catch(err){ btn.disabled=false; toast('Failed: '+(err.message||err)); }
 }
+
+// ---------- copy / paste (long-press a cell) ----------
+let selMode=false, sel=new Set(), selF='', clip=null, lpT=null, lpX=0, lpY=0, lpFired=false;
+const lpCancel=()=>{clearTimeout(lpT);lpT=null;};
+function cellVal(e,f){
+  if(f==='entry_time')return {p:{entry_time:e.entry_time},l:e.entry_time?timeLabel(e.entry_time):'(empty)'};
+  if(f==='fee')return {p:{fee:e.fee,fee_paid:e.fee_paid},l:num(e.fee)?String(num(e.fee)):'(empty)'};
+  if(f==='prize')return {p:{prize:e.prize,prize_received:e.prize_received},l:num(e.prize)?String(num(e.prize)):'(empty)'};
+  const v=e[f]; return {p:{[f]:v==null?(f==='name'||f==='result'?'':null):v},l:(v==null||v==='')?'(empty)':String(v)};
+}
+function updateBar(){
+  const n=sel.size;
+  $('cpInfo').innerHTML=(n?n+' selected':'Tap cells to select')+(clip?`<small>Copied: ${esc(clip.label)}</small>`:'<small>Select a cell, then tap Copy</small>');
+  $('cpCopy').disabled=!n;
+  $('cpPaste').disabled=!(clip&&n&&selF===clip.f);
+}
+function applySel(){
+  if(!selMode)return;
+  sel.forEach(id=>{const td=document.querySelector(`tr[data-id="${id}"] td[data-f="${selF}"]`); if(td)td.classList.add('sel');});
+}
+function enterSel(td){
+  const id=td.parentNode.dataset.id; if(!id)return;
+  selMode=true; sel=new Set([id]); selF=td.dataset.f;
+  $('fab').style.display='none'; $('cpBar').classList.add('show'); updateBar(); render();
+}
+function toggleSel(td){
+  const id=td.parentNode.dataset.id, f=td.dataset.f;
+  if(sel.size&&f!==selF){toast('Select cells from the same column.');return;}
+  if(!sel.size)selF=f;
+  if(sel.has(id)){sel.delete(id);td.classList.remove('sel');}else{sel.add(id);td.classList.add('sel');}
+  updateBar();
+}
+function exitSel(){
+  selMode=false; sel=new Set(); selF=''; $('cpBar').classList.remove('show'); $('fab').style.display='block'; render();
+}
+$('days').addEventListener('pointerdown',e=>{
+  lpFired=false; const td=e.target.closest('td[data-f]'); if(!td)return;
+  const f=td.dataset.f; if(f==='banner'||f==='del'||f==='entry_time')return;
+  lpX=e.clientX; lpY=e.clientY; lpCancel();
+  lpT=setTimeout(()=>{lpT=null;lpFired=true;if(navigator.vibrate)navigator.vibrate(15);if(selMode)toggleSel(td);else enterSel(td);},450);
+});
+$('days').addEventListener('pointermove',e=>{ if(lpT&&(Math.abs(e.clientX-lpX)>10||Math.abs(e.clientY-lpY)>10))lpCancel(); });
+['pointerup','pointercancel','pointerleave'].forEach(ev=>$('days').addEventListener(ev,lpCancel));
+$('days').addEventListener('contextmenu',e=>e.preventDefault());
+$('cpX').addEventListener('click',exitSel);
+$('cpCopy').addEventListener('click',()=>{
+  const id=[...sel][0], e=entries.find(x=>x.id===id); if(!e)return;
+  const c=cellVal(e,selF); clip={f:selF,patch:c.p,label:c.l};
+  sel=new Set(); updateBar(); render(); toast('Copied ✓ — now select cells to paste');
+});
+$('cpPaste').addEventListener('click',async()=>{
+  if(!clip||!sel.size||selF!==clip.f)return;
+  const ids=[...sel], btn=$('cpPaste'); btn.disabled=true;
+  try{
+    const res=await Promise.all(ids.map(id=>{
+      const t=entries.find(x=>x.id===id), p={...clip.patch};
+      if(clip.f==='type'&&/^scrim$/i.test(p.type||'')&&t&&(t.maps==null||t.maps===''))p.maps=3;
+      return sb.from('user_schedule_entries').update(p).eq('id',id).select().single();
+    }));
+    const bad=res.find(r=>r.error); if(bad)throw bad.error;
+    res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);});
+    sel=new Set(); updateBar(); render(); toast('Pasted in '+ids.length+' cell'+(ids.length>1?'s':'')+' ✓');
+  }catch(err){ toast('Paste failed: '+(err.message||err)); updateBar(); }
+});
+$('fType').addEventListener('input',()=>{ if(/^scrim$/i.test($('fType').value.trim())&&$('fMaps').value==='')$('fMaps').value=3; });
 
 // ---------- sheet ----------
 function showBanner(){
