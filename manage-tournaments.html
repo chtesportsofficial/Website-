@@ -1,43 +1,95 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CHT ESP ORG — Manage All Tour</title>
 <link rel="stylesheet" href="theme.css">
 <script src="global.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
-  --bg:#0a0d13;--surface:#131826;--surface-2:#171d2d;
-  --line:#232b3d;--green:#22e08a;--text:#eef1f7;--text-dim:#8b93a9;
+  --bg:var(--g-bg,#0a0d13); --surface:var(--g-surface,#131826); --surface-2:var(--g-surface-2,#171d2d);
+  --line:var(--g-border,#232b3d); --text:var(--g-text,#eef1f7); --dim:var(--g-muted,#8b93a9);
+  --green:#22e08a; --red:#ff5a6e; --purple:#7c3aed; --cyan:#21e6c1; --gold:#e9c96a;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{-webkit-text-size-adjust:100%}
 body{background:var(--bg);color:var(--text);font-family:Arial,"Noto Sans Bengali",sans-serif}
-button{font-family:inherit;cursor:pointer}
-.app{width:100%;min-height:100vh;margin:auto;background:
-  radial-gradient(120% 60% at 15% 0%,rgba(255,90,46,.10),transparent 55%),
-  radial-gradient(90% 50% at 100% 10%,rgba(33,230,193,.07),transparent 55%),var(--bg)}
-.topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;padding:14px 16px;background:transparent;backdrop-filter:blur(14px)}
+button{font-family:inherit;cursor:pointer;color:inherit}
+input,select,textarea{font-family:inherit}
+.app{width:100%;max-width:560px;margin:0 auto;min-height:100vh;padding-bottom:110px}
+.topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg)}
 .icon-btn{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--surface);border:1px solid var(--line);color:var(--text);flex-shrink:0}
 .icon-btn svg{width:20px;height:20px}
-.topbar h1{font-size:19px;font-weight:750;letter-spacing:.02em}
-.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:90px 24px;color:var(--text-dim)}
-.empty .badge{width:72px;height:72px;border-radius:22px;background:rgba(34,224,138,.12);border:1px solid rgba(34,224,138,.3);display:flex;align-items:center;justify-content:center;margin-bottom:18px;color:var(--green)}
-.empty .badge svg{width:34px;height:34px}
-.empty h2{font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px}
-.empty p{font-size:13px;line-height:1.6;max-width:300px}
-</style>
-<style>
-/* follow the site's theme (light/dark) the same way support.html does */
-:root{
-  --bg: var(--g-bg);
-  --surface: var(--g-surface);
-  --surface-2: var(--g-surface-2);
-  --line: var(--g-border);
-  --text: var(--g-text);
-  --text-dim: var(--g-muted);
-}
+.topbar h1{font-size:19px;font-weight:750}
+
+.gate{padding:90px 24px;text-align:center;color:var(--dim);font-size:14px;line-height:1.6}
+.gate a,.gate button.lnk{color:var(--green);font-weight:800;text-decoration:none;background:none;border:none;font-size:14px}
+
+.months{display:flex;gap:8px;overflow-x:auto;padding:2px 16px 12px;scrollbar-width:none}
+.months::-webkit-scrollbar{display:none}
+.mchip{flex-shrink:0;padding:8px 16px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--dim);font-size:13px;font-weight:800}
+.mchip.on{background:var(--green);border-color:var(--green);color:#052e1c}
+
+.sum{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 8px}
+.scard{background:linear-gradient(145deg,#1d4fbf,#173f9a);border-radius:16px;padding:12px 14px;color:#fff;border:1px solid rgba(255,255,255,.12)}
+.scard .l{font-size:11px;font-weight:800;letter-spacing:.5px;opacity:.85}
+.scard .v{font-size:26px;font-weight:900;margin-top:4px}
+.scard .v.neg{color:#ffb3bd}.scard .v.pos{color:#9bf5c8}
+.scard .h{font-size:10.5px;opacity:.7;margin-top:2px}
+
+.day{margin:16px 16px 0}
+.dayhead{display:flex;align-items:center;gap:8px;background:linear-gradient(90deg,#6d28d9,#7c3aed);border-radius:12px;padding:8px 8px 8px 14px;color:#fff}
+.dayhead b{flex:1;font-size:14px;font-weight:900}
+.dayhead small{opacity:.75;font-weight:700;font-size:11px;margin-left:6px}
+.dayhead button{width:32px;height:32px;border-radius:10px;border:none;background:rgba(255,255,255,.2);color:#fff;font-size:20px;line-height:1}
+.entry{display:flex;gap:10px;align-items:stretch;margin-top:8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:11px;cursor:pointer;text-align:left;width:100%}
+.entry:active{background:var(--surface-2)}
+.e-time{flex-shrink:0;width:54px;text-align:center;background:rgba(33,230,193,.14);color:var(--cyan);border-radius:10px;padding:8px 2px;font-size:12px;font-weight:900;align-self:flex-start}
+.e-main{flex:1;min-width:0}
+.e-name{font-size:14px;font-weight:800;overflow-wrap:anywhere}
+.e-sub{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;font-size:11px}
+.tag{padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.07);color:var(--dim);font-weight:800;white-space:nowrap}
+.tag.fee{background:rgba(255,90,110,.14);color:var(--red)}
+.tag.fee.unpaid{background:transparent;border:1px dashed var(--red)}
+.tag.prize{background:rgba(34,224,138,.14);color:var(--green)}
+.tag.prize.unrec{background:transparent;border:1px dashed var(--green)}
+.tag.q{background:rgba(34,224,138,.18);color:var(--green)}
+.tag.dq{background:rgba(255,90,110,.18);color:var(--red)}
+.tag.sold{background:var(--red);color:#fff}
+.e-cm{font-size:11.5px;color:var(--dim);margin-top:6px;overflow-wrap:anywhere}
+.e-banner{width:58px;height:58px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid var(--line);align-self:flex-start;background:#0c1320}
+.empty{text-align:center;color:var(--dim);font-size:13.5px;line-height:1.7;padding:46px 26px}
+
+.fab{position:fixed;right:max(18px,calc(50% - 262px));bottom:22px;z-index:45;width:58px;height:58px;border-radius:50%;border:none;background:var(--green);color:#052e1c;font-size:32px;font-weight:700;box-shadow:0 8px 22px rgba(34,224,138,.4)}
+
+/* bottom sheet */
+.ov{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.55);display:none}
+.ov.show{display:block}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;max-height:92vh;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-bottom:none;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+.sheet h2{font-size:17px;font-weight:850;margin-bottom:12px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fld{margin-bottom:11px}
+.fld label{display:block;font-size:11.5px;font-weight:800;color:var(--dim);margin-bottom:5px;letter-spacing:.2px}
+.fld input,.fld select,.fld textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:11px 12px;color:var(--text);font-size:14px;outline:none}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:#3a4a70}
+.fld textarea{resize:vertical;min-height:60px}
+.fld .bad{border-color:var(--red)}
+.chk{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim);margin-top:7px;font-weight:700}
+.chk input{width:18px;height:18px;accent-color:var(--green)}
+.bn{display:flex;align-items:center;gap:10px}
+.bn img{width:64px;height:64px;border-radius:10px;object-fit:cover;border:1px solid var(--line);display:none}
+.bn .btns{display:flex;flex-direction:column;gap:6px}
+.sbtn{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:9px 12px;font-size:12.5px;font-weight:800}
+.sbtn.red{color:var(--red)}
+.acts{display:flex;gap:8px;margin-top:6px}
+.acts button{flex:1;border-radius:12px;padding:13px;font-size:14px;font-weight:850;border:1px solid var(--line);background:var(--bg)}
+.acts .save{background:var(--green);border-color:var(--green);color:#052e1c}
+.acts .del{color:var(--red);flex:0 0 auto;padding:13px 16px}
+.acts button:disabled{opacity:.6}
+.toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%) translateY(12px);background:#000c;color:#fff;border:1px solid #fff3;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:700;opacity:0;pointer-events:none;transition:.25s;z-index:80;max-width:90%;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
@@ -49,14 +101,255 @@ button{font-family:inherit;cursor:pointer}
     <h1>Manage All Tour</h1>
   </div>
 
-  <!-- Placeholder: users will add and manage their own tournaments here later. -->
-  <div class="empty">
-    <div class="badge">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a2 2 0 0 0 2 4"/><path d="M17 6h3a2 2 0 0 1-2 4"/></svg>
+  <div id="gate" class="gate">Loading…</div>
+
+  <div id="main" style="display:none">
+    <div class="months" id="months"></div>
+    <div class="sum">
+      <div class="scard"><div class="l">TOTAL COST</div><div class="v" id="sCost">0</div><div class="h">all entry fees</div></div>
+      <div class="scard"><div class="l">PRIZEPOOL</div><div class="v" id="sPrize">0</div><div class="h">prize won</div></div>
+      <div class="scard"><div class="l">PROFIT</div><div class="v" id="sProfit">0</div><div class="h">prize − cost</div></div>
+      <div class="scard"><div class="l">BALANCE</div><div class="v" id="sBal">0</div><div class="h">received − paid</div></div>
     </div>
-    <h2>Coming soon</h2>
-    <p>Very soon you will be able to create and manage your own tournaments from here.</p>
+    <div id="days"></div>
   </div>
 </div>
+
+<button class="fab" id="fab" type="button" aria-label="Add tournament" style="display:none">＋</button>
+
+<div class="ov" id="ov">
+  <div class="sheet" id="sheet">
+    <h2 id="shTitle">Add tournament</h2>
+    <div class="row2">
+      <div class="fld"><label for="fDate">Date</label><input id="fDate" type="date"></div>
+      <div class="fld"><label for="fTime">Time</label><input id="fTime" type="time"></div>
+    </div>
+    <div class="row2">
+      <div class="fld"><label for="fType">Type</label><input id="fType" list="typeList" placeholder="scrim, final…" maxlength="30"></div>
+      <div class="fld"><label for="fMaps">Maps</label><input id="fMaps" type="number" min="0" inputmode="numeric" placeholder="3"></div>
+    </div>
+    <datalist id="typeList"><option value="scrim"><option value="top 6 semi"><option value="semi"><option value="final"><option value="Round 1"><option value="R1"><option value="24 slot"><option value="CR"></datalist>
+    <div class="fld"><label for="fName">Tournament name (add prize pool like "(10k)")</label><input id="fName" maxlength="120" placeholder="CHT WARZONE S2 (10k)"></div>
+    <div class="fld"><label>Banner (optional)</label>
+      <div class="bn"><img id="fBanImg" alt="">
+        <div class="btns"><button type="button" class="sbtn" id="banPick">Add banner</button><button type="button" class="sbtn red" id="banDel" style="display:none">Remove</button></div>
+        <input type="file" id="banFile" accept="image/png,image/jpeg,image/webp" style="display:none">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="fld"><label for="fFee">Fee ৳</label><input id="fFee" type="number" min="0" inputmode="numeric" placeholder="0"><label class="chk"><input type="checkbox" id="fPaid" checked> Fee paid</label></div>
+      <div class="fld"><label for="fPrize">Prize ৳</label><input id="fPrize" type="number" min="0" inputmode="numeric" placeholder="0"><label class="chk"><input type="checkbox" id="fRec" checked> Prize received</label></div>
+    </div>
+    <div class="row2">
+      <div class="fld"><label for="fResult">Result</label><select id="fResult"><option value="">—</option><option value="qualified">Qualified</option><option value="disqualified">Disqualified</option></select></div>
+      <div class="fld"><label for="fRank">Rank</label><input id="fRank" maxlength="14" placeholder="#7 or sold"></div>
+    </div>
+    <div class="fld"><label for="fCm">Comment</label><textarea id="fCm" maxlength="300"></textarea></div>
+    <div class="acts">
+      <button type="button" class="del" id="shDel" style="display:none">Delete</button>
+      <button type="button" id="shCancel">Cancel</button>
+      <button type="button" class="save" id="shSave">Save</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL='https://myfficbwcbgbxbdqjexv.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+const BUCKET='schedule-banners';
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const WD=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+let sb=null; try{ sb=window.supabaseClient||window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY); }catch(e){}
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num=v=>Number(v)||0;
+const fmt=n=>Math.round(n).toLocaleString('en-US');
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(window._tt);window._tt=setTimeout(()=>t.classList.remove('show'),2800);}
+
+let uid=null, entries=[], ym=null;           // ym = 'YYYY-MM' currently shown
+let editing=null;                            // entry being edited (null = new)
+let banUrl='', banFile=null, banOld='';      // banner state inside the sheet
+const todayStr=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})();
+
+const monthOf=d=>String(d).slice(0,7);
+function monthLabel(k){const [y,m]=k.split('-');return MONTHS[+m-1].slice(0,3).toUpperCase()+' '+y.slice(2);}
+function dayLabel(d){const [y,m,dd]=d.split('-').map(Number);const w=WD[new Date(y,m-1,dd).getDay()];return {t:dd+' '+MONTHS[m-1]+', '+String(y).slice(2),w};}
+function timeLabel(t){if(!t)return '—';const [h,m]=t.split(':').map(Number);const ap=h>=12?'PM':'AM';const hh=h%12||12;return hh+(m?':'+String(m).padStart(2,'0'):'')+' '+ap;}
+function safeImg(u){return typeof u==='string'&&u.startsWith(SUPABASE_URL+'/storage/')?u:'';}
+
+// ---------- render ----------
+function monthKeys(){
+  const s=new Set(entries.map(e=>monthOf(e.entry_date))); s.add(todayStr.slice(0,7));
+  return [...s].sort().reverse();
+}
+function render(){
+  const keys=monthKeys(); if(!ym||!keys.includes(ym)) ym=todayStr.slice(0,7);
+  $('months').innerHTML=keys.map(k=>`<button type="button" class="mchip ${k===ym?'on':''}" data-m="${k}">${monthLabel(k)}</button>`).join('');
+  const list=entries.filter(e=>monthOf(e.entry_date)===ym).sort((a,b)=>a.entry_date.localeCompare(b.entry_date)||String(a.entry_time||'').localeCompare(String(b.entry_time||'')));
+  const cost=list.reduce((s,e)=>s+num(e.fee),0), paid=list.reduce((s,e)=>s+(e.fee_paid?num(e.fee):0),0);
+  const prize=list.reduce((s,e)=>s+num(e.prize),0), rec=list.reduce((s,e)=>s+(e.prize_received?num(e.prize):0),0);
+  const setV=(id,v,signed)=>{const el=$(id);el.textContent=fmt(v);el.className='v'+(signed?(v<0?' neg':v>0?' pos':''):'');};
+  setV('sCost',cost); setV('sPrize',prize); setV('sProfit',prize-cost,true); setV('sBal',rec-paid,true);
+
+  if(!list.length){ $('days').innerHTML='<div class="empty">No tournaments in '+esc(MONTHS[+ym.slice(5)-1])+' yet.<br>Tap <b>＋</b> to add your schedule.</div>'; return; }
+  const byDay={}; list.forEach(e=>(byDay[e.entry_date]=byDay[e.entry_date]||[]).push(e));
+  $('days').innerHTML=Object.keys(byDay).sort().map(d=>{
+    const dl=dayLabel(d);
+    return `<div class="day" id="d-${d}"><div class="dayhead"><b>${esc(dl.t)}<small>${dl.w}</small></b><button type="button" data-add="${d}" aria-label="Add on this day">＋</button></div>`+
+      byDay[d].map(e=>{
+        const rk=String(e.rank||'').trim(); const rkTxt=/^\d+$/.test(rk)?'#'+rk:rk;
+        const img=safeImg(e.banner_url);
+        return `<button type="button" class="entry" data-id="${e.id}">
+          <div class="e-time">${esc(timeLabel(e.entry_time))}</div>
+          <div class="e-main">
+            <div class="e-name">${esc(e.name)}</div>
+            <div class="e-sub">
+              ${e.type?`<span class="tag">${esc(e.type)}</span>`:''}${e.maps?`<span class="tag">${num(e.maps)} map${num(e.maps)===1?'':'s'}</span>`:''}
+              ${num(e.fee)?`<span class="tag fee ${e.fee_paid?'':'unpaid'}">Fee ৳${fmt(num(e.fee))}</span>`:''}
+              ${e.result==='qualified'?'<span class="tag q">Qualified</span>':e.result==='disqualified'?'<span class="tag dq">Disqualified</span>':''}
+              ${rkTxt?`<span class="tag ${/^sold$/i.test(rk)?'sold':''}">${esc(rkTxt)}</span>`:''}
+              ${num(e.prize)?`<span class="tag prize ${e.prize_received?'':'unrec'}">🏆 ৳${fmt(num(e.prize))}</span>`:''}
+            </div>
+            ${e.comment?`<div class="e-cm">${esc(e.comment)}</div>`:''}
+          </div>
+          ${img?`<img class="e-banner" src="${esc(img)}" alt="" loading="lazy">`:''}
+        </button>`;}).join('')+`</div>`;
+  }).join('');
+}
+
+$('months').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;ym=b.dataset.m;render();});
+$('days').addEventListener('click',e=>{
+  const add=e.target.closest('[data-add]'); if(add){openSheet(null,add.dataset.add);return;}
+  const en=e.target.closest('[data-id]'); if(en){openSheet(entries.find(x=>x.id===en.dataset.id));}
+});
+$('fab').addEventListener('click',()=>openSheet(null, monthOf(todayStr)===ym?todayStr:ym+'-01'));
+
+// ---------- sheet ----------
+function showBanner(){
+  const img=$('fBanImg'), has=!!(banFile||banUrl);
+  if(banFile){img.src=URL.createObjectURL(banFile);}else if(banUrl){img.src=banUrl;}
+  img.style.display=has?'block':'none';
+  $('banPick').textContent=has?'Change':'Add banner';
+  $('banDel').style.display=has?'block':'none';
+}
+function closeSheet(fromBack){
+  $('ov').classList.remove('show'); document.body.style.overflow='';
+  if(!fromBack&&window.CHTEO&&CHTEO.closeModal)CHTEO.closeModal();
+}
+function openSheet(e,date){
+  editing=e||null;
+  $('shTitle').textContent=e?'Edit tournament':'Add tournament';
+  $('fDate').value=e?e.entry_date:(date||todayStr);
+  $('fTime').value=e?(e.entry_time||''):'';
+  $('fType').value=e?(e.type||''):''; $('fMaps').value=e&&e.maps!=null?e.maps:'';
+  $('fName').value=e?e.name:''; $('fFee').value=e&&num(e.fee)?e.fee:''; $('fPrize').value=e&&num(e.prize)?e.prize:'';
+  $('fPaid').checked=e?!!e.fee_paid:true; $('fRec').checked=e?!!e.prize_received:true;
+  $('fResult').value=e?(e.result||''):''; $('fRank').value=e?(e.rank||''):''; $('fCm').value=e?(e.comment||''):'';
+  banUrl=e?(safeImg(e.banner_url)):''; banOld=banUrl; banFile=null; $('banFile').value='';
+  showBanner();
+  $('shDel').style.display=e?'block':'none';
+  document.querySelectorAll('.fld .bad').forEach(x=>x.classList.remove('bad'));
+  $('ov').classList.add('show'); document.body.style.overflow='hidden';
+  if(window.CHTEO&&CHTEO.openModal)CHTEO.openModal(()=>closeSheet(true));
+}
+$('shCancel').addEventListener('click',()=>closeSheet());
+$('ov').addEventListener('click',e=>{if(e.target.id==='ov')closeSheet();});
+$('banPick').addEventListener('click',()=>$('banFile').click());
+$('banFile').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(!f)return;banFile=f;showBanner();});
+$('banDel').addEventListener('click',()=>{banFile=null;banUrl='';$('banFile').value='';showBanner();});
+
+// shrink big phone photos before uploading (keeps storage + loading small)
+function compress(file){
+  return new Promise((res,rej)=>{
+    const img=new Image(), u=URL.createObjectURL(file);
+    img.onload=()=>{
+      const max=900, k=Math.min(1,max/Math.max(img.width,img.height));
+      const c=document.createElement('canvas'); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(u);
+      c.toBlob(b=>b?res(b):rej(new Error('Image error')),'image/jpeg',0.82);
+    };
+    img.onerror=()=>rej(new Error('Could not read that image'));
+    img.src=u;
+  });
+}
+function pathOf(url){const i=url.indexOf('/'+BUCKET+'/');return i<0?'':url.slice(i+BUCKET.length+2);}
+async function dropBanner(url){ try{ const p=url&&pathOf(url); if(p) await sb.storage.from(BUCKET).remove([p]); }catch(e){} }
+
+$('shSave').addEventListener('click',async()=>{
+  const date=$('fDate').value, name=$('fName').value.trim();
+  document.querySelectorAll('.fld .bad').forEach(x=>x.classList.remove('bad'));
+  if(!date){$('fDate').classList.add('bad');toast('Pick a date.');return;}
+  if(!name){$('fName').classList.add('bad');toast('Write the tournament name.');return;}
+  const btn=$('shSave'); btn.disabled=true; btn.textContent='Saving…';
+  try{
+    let url=banUrl;
+    if(banFile){
+      const blob=await compress(banFile);
+      const path=uid+'/'+(crypto.randomUUID?crypto.randomUUID():Date.now())+'.jpg';
+      const up=await sb.storage.from(BUCKET).upload(path,blob,{contentType:'image/jpeg',upsert:false});
+      if(up.error)throw up.error;
+      url=sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+    }
+    const row={
+      entry_date:date, entry_time:$('fTime').value||null, type:$('fType').value.trim()||null,
+      maps:$('fMaps').value===''?null:Math.max(0,parseInt($('fMaps').value,10)||0),
+      name, banner_url:url||null,
+      fee:Math.max(0,num($('fFee').value)), fee_paid:$('fPaid').checked,
+      result:$('fResult').value, rank:$('fRank').value.trim()||null,
+      prize:Math.max(0,num($('fPrize').value)), prize_received:$('fRec').checked,
+      comment:$('fCm').value.trim()||null
+    };
+    let r;
+    if(editing) r=await sb.from('user_schedule_entries').update(row).eq('id',editing.id).select().single();
+    else r=await sb.from('user_schedule_entries').insert({...row,user_id:uid}).select().single();
+    if(r.error)throw r.error;
+    if(banOld&&banOld!==url) dropBanner(banOld);
+    if(editing) entries=entries.map(x=>x.id===editing.id?r.data:x); else entries.push(r.data);
+    ym=monthOf(date);
+    closeSheet(); render(); toast('Saved ✓');
+  }catch(e){
+    console.error(e);
+    const m=String(e&&e.message||e);
+    toast(/relation .*user_schedule_entries|schema cache/i.test(m)?'Setup needed: run user_schedule.sql in Supabase.':/bucket|storage|row-level/i.test(m)&&banFile?'Banner upload failed — run user_schedule.sql (storage policies).':'Save failed: '+m);
+  }finally{ btn.disabled=false; btn.textContent='Save'; }
+});
+
+$('shDel').addEventListener('click',async()=>{
+  if(!editing)return;
+  if(!confirm('Delete this tournament from your schedule?'))return;
+  const btn=$('shDel'); btn.disabled=true;
+  try{
+    const r=await sb.from('user_schedule_entries').delete().eq('id',editing.id);
+    if(r.error)throw r.error;
+    dropBanner(editing.banner_url);
+    entries=entries.filter(x=>x.id!==editing.id);
+    closeSheet(); render(); toast('Deleted');
+  }catch(e){ toast('Delete failed: '+(e.message||e)); }
+  finally{ btn.disabled=false; }
+});
+
+// ---------- start ----------
+function gate(html){ $('gate').style.display='block'; $('main').style.display='none'; $('fab').style.display='none'; $('gate').innerHTML=html; }
+(async function init(){
+  if(!sb){ gate('Could not connect. Please try again.'); return; }
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session){ gate('Please log in to manage your tournament schedule.<br><br><a href="chteo_auth.html">Login / Register</a>'); return; }
+    uid=session.user.id;
+    const r=await sb.from('user_schedule_entries').select('*').order('entry_date',{ascending:true}).limit(3000);
+    if(r.error){
+      const m=String(r.error.message||'');
+      gate(/relation .*user_schedule_entries|schema cache/i.test(m)?'This feature is being set up.<br>Please check back soon.':'Could not load your schedule.<br><small>'+esc(m)+'</small>');
+      return;
+    }
+    entries=r.data||[];
+    $('gate').style.display='none'; $('main').style.display='block'; $('fab').style.display='block';
+    render();
+    const t=document.getElementById('d-'+todayStr); if(t) t.scrollIntoView({block:'start'});
+  }catch(e){ console.error(e); gate('Something went wrong. Please try again.'); }
+})();
+</script>
 </body>
 </html>
