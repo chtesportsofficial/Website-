@@ -181,6 +181,21 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 .sh tr.dragging td{opacity:.3}
 #dgGhost{position:fixed;left:12px;right:12px;z-index:9500;pointer-events:none;background:#ff9800;color:#1a1200;border-radius:12px;padding:9px 14px;font-weight:850;font-size:13px;box-shadow:0 10px 28px rgba(0,0,0,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #dgLine{position:fixed;left:0;right:0;height:4px;background:#ff9800;z-index:9400;pointer-events:none;border-radius:2px;box-shadow:0 0 10px #ff9800}
+/* theme-aware (works in light and dark) */
+.sh td{background:var(--bg);color:var(--text);border-color:var(--line)}
+.sh td.clash{background:var(--bg);color:#e0243c}
+.sh .ph{color:var(--dim);opacity:.8}
+.sh td.c-c{color:var(--dim)}
+.sh td.pz{color:#0e9f5a}.sh td.pz.un{color:#d98200}
+.sh td.sel,.sh tr.rsel td{outline:3px solid #ff9800;outline-offset:-3px;filter:none;background-image:linear-gradient(rgba(255,152,0,.22),rgba(255,152,0,.22))}
+.sh td.g,.sh td.r,.sh td.y,.sh td.b,.sh td.o{background-image:none}
+.sh td.sel.g,.sh td.sel.r,.sh td.sel.y{background-image:linear-gradient(rgba(255,255,255,.28),rgba(255,255,255,.28))}
+#cpBar,#rwBar{background:var(--surface);border-color:var(--line);box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.warn{background:rgba(224,36,60,.1);border-color:rgba(224,36,60,.45);color:var(--text)}
+.ban-add{border-color:var(--line)}
+.fnr .pos{color:#0e9f5a}.fnr .neg{color:#e0243c}
+.pdel{border-color:rgba(224,36,60,.5);color:#e0243c}
+.pc.on,.tchip.on{color:#1a1200}
 </style>
 </head>
 <body>
