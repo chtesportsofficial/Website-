@@ -204,10 +204,10 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 .dhin{padding:3px 10px}
 .tw{touch-action:pan-x pan-y}
 .calh{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}.calh b{font-size:14px}
-.calh button{width:36px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:18px;font-weight:800}
-.calw,.calg{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
+.calh button{width:32px;height:28px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:18px;font-weight:800}
+.calw,.calg{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
 .calw span{font-size:10.5px;color:var(--dim);font-weight:800;padding-bottom:2px}
-.cd{height:34px;border-radius:9px;border:none;background:transparent;color:var(--text);font-size:13.5px;font-weight:700}
+.cd{height:28px;border-radius:8px;border:none;background:transparent;color:var(--text);font-size:12.5px;font-weight:700}
 .cd.on{background:#ff9800;color:#1a1200;font-weight:900}.cd.td{box-shadow:inset 0 0 0 1px #ff9800}
 .pq{padding:8px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--line);color:var(--text);font-size:13px;font-weight:800}
 .pq.on{background:#2f66d0;border-color:#2f66d0;color:#fff}
@@ -346,18 +346,18 @@ function render(){
   const byDay={}; list.forEach(e=>(byDay[e.entry_date]=byDay[e.entry_date]||[]).push(e));
   const H='<tr class="hd"><td>TIME</td><td>TYPE</td><td>MAP</td><td class="hn">TOURNAMENT NAME / ORGANIZER</td><td>FEE</td><td>STATUS</td><td>RANK</td><td>PRIZE 🏆</td><td>P/L</td><td>BANNER</td><td>COMMENT</td><td>DEL</td></tr>';
   const body=Object.keys(byDay).sort().map(d=>{
-    const dl=dayLabel(d), cc={}; byDay[d].forEach(x=>{ if(x.entry_time&&x.result!=='sold'&&!/^sold$/i.test(x.rank||''))cc[x.entry_time.slice(0,5)]=(cc[x.entry_time.slice(0,5)]||0)+1; }); const fi={}; { const arr=byDay[d]; for(let i=0;i<arr.length;){ const g=arr[i].fee_group; let j=i+1; if(g){ while(j<arr.length&&arr[j].fee_group===g)j++; } const run=arr.slice(i,j), es=run.reduce((t,x)=>t+num(x.fee),0), ch=run.reduce((t,x)=>t+num(x.fee_charge),0), sum=es+ch, paid=run.every(x=>x.fee_paid), parts=run.map(x=>fmt(num(x.fee))).join('+')+(ch?'+'+fmt(ch):''); fi[arr[i].id]={span:j-i,sum,paid,parts}; for(let k=i+1;k<j;k++)fi[arr[k].id]={skip:true,span:j-i,sum,paid,parts}; i=j; } }
+    const dl=dayLabel(d), cc={}; byDay[d].forEach(x=>{ if(x.entry_time&&x.result!=='sold'&&!/^sold$/i.test(x.rank||''))cc[x.entry_time.slice(0,5)]=(cc[x.entry_time.slice(0,5)]||0)+1; }); const fi={}; { const arr=byDay[d]; for(let i=0;i<arr.length;){ const g=arr[i].fee_group; let j=i+1; if(g){ while(j<arr.length&&arr[j].fee_group===g)j++; } const run=arr.slice(i,j), es=run.reduce((t,x)=>t+num(x.fee),0), ch=run.reduce((t,x)=>t+num(x.fee_charge),0), sum=es+ch, paid=run.every(x=>x.fee_paid), parts=run.map(x=>fmt(num(x.fee))).join('+')+(ch?'+'+fmt(ch):''); const ps=run.reduce((t,x)=>t+num(x.prize),0), pl=ps-sum, hasPl=!!(ps||sum); fi[arr[i].id]={span:j-i,sum,paid,parts,pl,hasPl}; for(let k=i+1;k<j;k++)fi[arr[k].id]={skip:true,span:j-i,sum,paid,parts,pl,hasPl}; i=j; } }
     const clT=Object.keys(cc).filter(k=>cc[k]>1).sort((a,b)=>tkey(a).localeCompare(tkey(b))).map(k=>timeLabel(k));
     return `<tr class="dh" data-d="${d}"><td colspan="12"><div class="dhin" id="d-${d}"><b>${esc(dl.t)}<small>${dl.w}</small></b>${clT.length?`<span class="clb">⚠ ${esc(clT.join(', '))} clash</span>`:''}</div></td></tr>`+H+
     byDay[d].map(e=>{
       const rk=String(e.rank||'').trim(), sold=/^sold$/i.test(rk), rkTxt=/^#?\d+$/.test(rk)?'#'+rk.replace('#',''):rk;
       const img=safeImg(e.banner_url), q=e.result==='qualified', dq=e.result==='disqualified';
-      const fe=fi[e.id], pl=num(e.prize)-num(e.fee), hasPl=num(e.prize)||num(e.fee);
+      const fe=fi[e.id], pl=fe.pl, hasPl=fe.hasPl;
       const cl=e.entry_time&&e.result!=='sold'&&!/^sold$/i.test(e.rank||'')&&cc[e.entry_time.slice(0,5)]>1;
       return `<tr class="er" data-id="${e.id}"><td data-f="entry_time" class="${cl?'clash':''}">${cl?'⚠ ':''}${e.entry_time?esc(timeLabel(e.entry_time)):''}</td><td data-f="type">${esc(e.type||'')}</td><td data-f="maps">${e.maps!=null&&e.maps!==''?num(e.maps):''}</td>`+
       `<td class="c-n" data-f="name">${e.name?esc(e.name):'<span class="ph">＋ name / organized by</span>'}</td>${fe.skip?'':`<td data-f="fee" rowspan="${fe.span}" class="${fe.sum&&!fe.paid?'y':''}">${fe.sum?fmt(fe.sum):''}${fe.span>1?`<small class="fsm">${esc(fe.parts)}</small>`:''}</td>`}`+
       `<td data-f="result" class="${RC[e.result]||''}">${esc(e.result||'')}</td><td data-f="rank" class="${sold?'g':''}">${esc(rkTxt)}</td>`+
-      `<td data-f="prize" class="pz ${e.prize_received?'':'un'}">${num(e.prize)?fmt(num(e.prize)):''}</td><td class="${hasPl?(pl>=0?'pl-p':'pl-n'):''}">${hasPl?(pl>0?'+':'')+fmt(pl):''}</td>`+
+      `<td data-f="prize" class="pz ${e.prize_received?'':'un'}">${num(e.prize)?fmt(num(e.prize)):''}</td>${fe.skip?'':`<td rowspan="${fe.span}" class="${hasPl?(pl>=0?'pl-p':'pl-n'):''}">${hasPl?(pl>0?'+':'')+fmt(pl):''}</td>`}`+
       `<td data-f="banner">${img?`<img src="${esc(img)}" alt="" loading="lazy">`:'<span class="ban-add">＋</span>'}</td><td class="c-c" data-f="comment">${esc(e.comment||'')}</td><td class="tr" data-f="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6"/></svg></td></tr>`;}).join('');
   }).join('');
   $('days').innerHTML='<div class="tw"><table class="sh"><tbody>'+body+'</tbody></table></div>';
@@ -488,9 +488,7 @@ function newTimeHtml(date){
   const q=(k,v,on)=>`<button type="button" class="pq${on?' on':''}" data-ct="${k}" data-v="${v}">${v}</button>`;
   return `<div class="cap" style="margin-top:0">Date</div><div id="pdCal"></div>`+
   `<div class="cap">Select time(s) — tap more than one</div><div class="pcs" id="pkChips">`+TIMES.map(([v,l])=>`<button type="button" class="pc" data-v="${v}">${l}</button>`).join('')+`</div>`+
-  `<div class="cap">Other time</div><div class="pcs">`+[1,2,3,4,5,6,7,8,9,10,11,12].map(h=>q('h',h,false)).join('')+`</div>`+
-  `<div class="pcs" style="margin-top:6px">`+['00','10','15','20','30','40','45','50'].map(x=>q('m',x,x==='00')).join('')+`</div>`+
-  `<div class="pcs" style="margin-top:6px">`+q('a','AM',false)+q('a','PM',true)+`<button type="button" class="pq" id="pkCust" style="margin-left:auto">＋ Add time</button></div>`+
+  `<div class="cap">Custom time</div><div class="pcs" style="flex-wrap:nowrap;align-items:center"><input type="time" id="pkTime" style="flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:10px;color:var(--text);font-size:15px;font-weight:800;padding:9px 10px"><button type="button" class="pq" id="pkCust" style="white-space:nowrap">＋ Add time</button></div>`+
   `<button type="button" class="pok" id="pkGo" style="width:100%;margin-top:16px;padding:14px" disabled>Select time</button>`;
 }
 function calRender(){
@@ -502,11 +500,10 @@ function calRender(){
 function pkCount(){ const n=pkSel.size,b=$('pkGo'); b.disabled=!n; b.textContent=n?'OK · add '+n+' row'+(n>1?'s':''):'Select time'; }
 function pkToggle(btn){ const v=btn.dataset.v; if(pkSel.has(v)){pkSel.delete(v);btn.classList.remove('on');}else{pkSel.add(v);btn.classList.add('on');} pkCount(); }
 function pkCustom(){
-  if(ct.h==null){toast('Pick the hour first.');return;}
-  const H=(ct.h%12)+(ct.a==='PM'?12:0), v=String(H).padStart(2,'0')+':'+ct.m;
+  const v=($('pkTime')||{}).value; if(!v){toast('Pick a time first.');return;}
   let b=[...$('pkChips').children].find(x=>x.dataset.v===v);
   if(!b){ b=document.createElement('button'); b.type='button'; b.className='pc'; b.dataset.v=v; b.textContent=timeLabel(v); $('pkChips').appendChild(b); }
-  if(!pkSel.has(v)){pkSel.add(v);b.classList.add('on');} pkCount();
+  if(!pkSel.has(v)){pkSel.add(v);b.classList.add('on');} pkCount(); $('pkTime').value='';
 }
 async function createEntries(times){
   if(!times.length)return;
