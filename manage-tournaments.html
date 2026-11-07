@@ -212,6 +212,12 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 .pq{padding:8px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--line);color:var(--text);font-size:13px;font-weight:800}
 .pq.on{background:#2f66d0;border-color:#2f66d0;color:#fff}
 .fsm{display:block;font-size:9.5px;font-weight:600;opacity:.75}
+.shr{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}.shr div{flex:1;min-width:0}.shr b{display:block;font-size:13.5px}.shr span{font-size:11px;color:var(--dim)}
+.shr select{background:var(--bg);border:1px solid var(--line);border-radius:9px;color:var(--text);padding:7px;font-weight:800;font-size:12px}.shr button{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--red)}
+.tuc{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.6}.tuc.dim{color:var(--dim)}
+.tuv{display:inline-block;margin-top:12px;padding:10px 14px;border-radius:11px;background:#e0243c;color:#fff;font-weight:850;font-size:13px;text-decoration:none}
+body.ro #fab,body.ro #bgChange,body.ro #bgRemove,body.ro .ban-add,body.ro .bplus{display:none!important}
+.rotag{background:#ffffff26;border-radius:999px;padding:1px 8px;margin-left:6px;font-weight:800}
 </style>
 </head>
 <body>
@@ -221,13 +227,14 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </button>
     <h1>Manage All Tour</h1>
+    <button type="button" class="icon-btn" id="tipBtn" aria-label="Tutorial" style="margin-left:auto;font-size:20px">💡</button>
   </div>
 
   <div id="gate" class="gate">Loading…</div>
 
   <div id="main" style="display:none">
     <div class="teams" id="teams"></div>
-    <div class="thead"><div class="tupd" id="tUpd"></div><div class="ttl"><b id="tName"></b><button type="button" id="tEdit" aria-label="Edit team"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button></div></div>
+    <div class="thead"><div class="tupd" id="tUpd"></div><div class="ttl"><b id="tName"></b><button type="button" id="tShare" aria-label="Share"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4"/></svg></button><button type="button" id="tEdit" aria-label="Edit team"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button></div></div>
     <div class="sum">
       <div class="scard"><div class="l">TOTAL COST</div><div class="v" id="sCost">0</div><div class="h">all entry fees</div></div>
       <div class="scard"><div class="l">PRIZEPOOL</div><div class="v" id="sPrize">0</div><div class="h">prize won</div></div>
@@ -282,7 +289,7 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 </div></div>
 <div class="ov" id="ovP"><div class="sheet"><h2 id="pkTitle"></h2><div id="pkBody"></div></div></div>
 <div id="rwBar"><div id="rwInfo"></div><button type="button" id="rwTime">Time</button><button type="button" id="rwX" aria-label="Done">✕</button></div>
-<input type="file" id="banPick" accept="image/png,image/jpeg,image/webp" style="display:none">
+<input type="file" id="banQuick" accept="image/png,image/jpeg,image/webp" style="display:none">
 <div id="cpBar"><div id="cpInfo"></div><button type="button" id="cpMerge" style="display:none">Merge</button><button type="button" id="cpCopy">Copy</button><button type="button" id="cpPaste">Paste</button><button type="button" id="cpX" aria-label="Done">✕</button></div>
 <div class="ov" id="ovF"><div class="sheet"><h2>Add to balance</h2>
   <div class="pcu"><input id="fnAmt" type="number" inputmode="numeric" min="0" placeholder="Amount ৳ (e.g. 1000)"></div>
@@ -291,6 +298,15 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
   <div class="cap">History</div><div id="fnList"></div>
   <button type="button" class="pmore" id="fnClose">Close</button></div></div>
 <div class="ov" id="ovB"><div class="sheet" style="text-align:center"><img id="bgImg" alt=""><h2 id="bgName"></h2><div id="bgSub"></div><div class="acts"><button type="button" id="bgClose">Close</button><button type="button" id="bgChange">Change</button><button type="button" class="del" id="bgRemove">Remove</button></div></div></div>
+<div class="ov" id="ovS"><div class="sheet"><h2>Share this schedule</h2>
+  <label class="chk" style="margin-top:0"><input type="checkbox" id="shAny"> Anyone with the link can view</label>
+  <div id="shLinkBox" style="display:none"><div class="pcu" style="margin-top:8px"><input id="shLink" readonly><button type="button" class="pok" id="shCopy">Copy</button></div></div>
+  <div class="cap">Give access by UID</div>
+  <div class="pcu"><input id="shUid" type="number" inputmode="numeric" placeholder="UID (e.g. 1042)"><select id="shRole" style="background:var(--bg);border:1px solid var(--line);border-radius:10px;color:var(--text);padding:0 8px;font-weight:800"><option value="view">Viewer</option><option value="edit">Editor</option></select><button type="button" class="pok" id="shAdd">Add</button></div>
+  <div style="font-size:11.5px;color:var(--dim);margin-top:6px">Viewer = can only look. Editor = can add, edit and delete rows. Only you can share, rename or delete the team.</div>
+  <div class="cap">People with access</div><div id="shList"></div>
+  <button type="button" class="pmore" id="shClose">Close</button></div></div>
+<div class="ov" id="ovU"><div class="sheet"><h2>💡 How to use</h2><div id="tuBody"></div><div class="acts" id="tuActs"></div></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -330,10 +346,11 @@ function monthKeys(){
 function render(){
   const _o=document.querySelector('.tw'), _sx=_o?_o.scrollLeft:0;
   const T=teams.find(t=>t.id===tid)||{name:''};
-  $('teams').innerHTML=teams.map(t=>`<button type="button" class="tchip ${t.id===tid?'on':''}" data-t="${t.id}">${esc(t.name)}</button>`).join('')+'<button type="button" class="tchip" id="tAdd">＋ Team</button>';
+  $('teams').innerHTML=teams.map(t=>`<button type="button" class="tchip ${t.id===tid?'on':''}" data-t="${t.id}">${!LINKONLY&&t.user_id!==uid?'👥 ':''}${esc(t.name)}</button>`).join('')+(LINKONLY?'':'<button type="button" class="tchip" id="tAdd">＋ Team</button>');
   $('tName').textContent=T.name?(T.name+' SCHEDULE').toUpperCase():'NO TEAM — TAP ＋ TEAM';
   const lu=cur().map(e=>e.updated_at||e.created_at||'').sort().pop();
   $('tUpd').textContent='last updated : '+(lu?new Date(lu).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—');
+  applyRole();
   const keys=monthKeys(); if(!ym||(ym!=='all'&&!keys.includes(ym))) ym=todayStr.slice(0,7);
   $('months').innerHTML=`<button type="button" class="mchip ${ym==='all'?'on':''}" data-m="all">ALL</button>`+keys.map(k=>`<button type="button" class="mchip ${k===ym?'on':''}" data-m="${k}">${monthLabel(k)}</button>`).join('');
   const list=cur().filter(e=>ym==='all'||monthOf(e.entry_date)===ym).sort((a,b)=>a.entry_date.localeCompare(b.entry_date)||cmpTime(a,b));
@@ -368,11 +385,12 @@ function render(){
 
 $('months').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;ym=b.dataset.m;render();});
 $('days').addEventListener('click',e=>{
-  const add=e.target.closest('[data-add]'); if(add){openPick(null,'newtime',add.dataset.add);return;}
+  const add=e.target.closest('[data-add]'); if(add&&!RO){openPick(null,'newtime',add.dataset.add);return;}
   const td=e.target.closest('td[data-f]'); if(!td)return;
   if(lpFired){lpFired=false;return;}
   const en=entries.find(x=>x.id===td.parentNode.dataset.id); if(!en)return;
   const f=td.dataset.f;
+  if(RO){ if(f==='banner'&&safeImg(en.banner_url))openBig(en); return; }
   if(selMode){ if(f!=='banner'&&f!=='del'&&f!=='entry_time')toggleSel(td); return; }
   if(f==='banner'){ if(safeImg(en.banner_url))openBig(en); else pickBanner(en); return; }
   if(f==='entry_time'){ toggleRow(en); return; }
@@ -562,7 +580,7 @@ async function btnRun(btn,busy,okTxt,fn){
   let ok=false;
   try{ ok=!!(await fn()); }catch(err){
     const m=String((err&&err.message)||err);
-    toast(/prize_group/.test(m)?'Run prize_merge_upgrade.sql in Supabase first.':/fee_group|fee_charge/.test(m)?'Run merge_fee_upgrade.sql in Supabase first.':/user_schedule_funds/.test(m)?'Run funds_upgrade.sql in Supabase first.':/\bpos\b|schema cache/.test(m)?'Run row_move_upgrade.sql in Supabase first.':'Failed: '+m);
+    toast(/sched_|user_schedule_shares|schedule_tutorial|link_view/.test(m)?'Run schedule_extras.sql in Supabase first.':/prize_group/.test(m)?'Run prize_merge_upgrade.sql in Supabase first.':/fee_group|fee_charge/.test(m)?'Run merge_fee_upgrade.sql in Supabase first.':/user_schedule_funds/.test(m)?'Run funds_upgrade.sql in Supabase first.':/\bpos\b|schema cache/.test(m)?'Run row_move_upgrade.sql in Supabase first.':'Failed: '+m);
   }
   if(btn){ if(ok&&okTxt){btn.textContent=okTxt;await sleep(450);} btn.textContent=old; btn.disabled=false; }
   return ok;
@@ -636,10 +654,10 @@ window.addEventListener('pointercancel',()=>dgEnd(false));
 
 // ---------- banner: + adds directly, tap shows big ----------
 let banTarget=null;
-function pickBanner(e){ banTarget=e; $('banPick').value=''; $('banPick').click(); }
+function pickBanner(e){ if(RO)return; banTarget=e; $('banQuick').value=''; $('banQuick').click(); }
 $('bgChange').addEventListener('click',()=>{ if(bigE)pickBanner(bigE); });
-$('banPick').addEventListener('change',async()=>{
-  const f=$('banPick').files[0], e=banTarget; if(!f||!e)return;
+$('banQuick').addEventListener('change',async()=>{
+  const f=$('banQuick').files[0], e=banTarget; if(!f||!e)return;
   if(f.size>10*1024*1024){toast('Image is too big (max 10 MB).');return;}
   toast('Uploading banner…');
   try{
@@ -651,7 +669,7 @@ $('banPick').addEventListener('change',async()=>{
     entries=entries.map(x=>x.id===e.id?r.data:x); render();
     if($('ovB').classList.contains('show'))openBig(r.data);
     toast('Banner added ✓');
-  }catch(err){ toast('Banner failed: '+(err.message||err)); }
+  }catch(err){ toast(/bucket|row-level|policy|not found/i.test(String(err.message))?'Banner failed: run schedule_extras.sql in Supabase.':'Banner failed: '+(err.message||err)); }
 });
 $('bgRemove').addEventListener('click',async()=>{
   const e=bigE; if(!e)return;
@@ -685,6 +703,7 @@ function applySel(){
   sel.forEach(id=>{const td=document.querySelector(`tr[data-id="${id}"] td[data-f="${selF}"]`); if(td)td.classList.add('sel');});
 }
 function enterSel(td){
+  if(RO)return;
   if(rowSel){rowSel=null;$('rwBar').classList.remove('show');}
   const id=td.parentNode.dataset.id; if(!id)return;
   selMode=true; sel=new Set([id]); selF=td.dataset.f;
@@ -912,7 +931,7 @@ function renderFunds(){
   const l=curF().slice().sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
   $('fnList').innerHTML=l.length?l.map(f=>`<div class="fnr"><div><b class="${num(f.amount)>=0?'pos':'neg'}">${num(f.amount)>0?'+':''}${fmt(num(f.amount))}</b><span>${esc(f.note||'')}</span><small>${new Date(f.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</small></div><button type="button" data-fd="${f.id}" aria-label="Remove">✕</button></div>`).join(''):'<div style="color:var(--dim);font-size:13px">Nothing added yet.</div>';
 }
-$('sBalCard').addEventListener('click',()=>{ if(!tid){openT('new');return;} $('fnAmt').value='';$('fnNote').value='';renderFunds();$('ovF').classList.add('show'); });
+$('sBalCard').addEventListener('click',()=>{ if(RO)return; if(!tid){openT('new');return;} $('fnAmt').value='';$('fnNote').value='';renderFunds();$('ovF').classList.add('show'); });
 $('fnClose').addEventListener('click',()=>$('ovF').classList.remove('show'));
 $('ovF').addEventListener('click',e=>{if(e.target.id==='ovF')$('ovF').classList.remove('show');});
 async function addFund(sign){
@@ -931,30 +950,122 @@ $('fnList').addEventListener('click',async e=>{
   funds=funds.filter(f=>f.id!==b.dataset.fd); renderFunds(); render();
 });
 
+// ---------- sharing + roles ----------
+let RO=false, LINKONLY=false, myRoles={}, isAdm=false, tut=null, shareRows=[];
+function roleOfTeam(t){ if(LINKONLY)return 'view'; if(!t||t.user_id===uid)return 'owner'; return myRoles[t.id]||'view'; }
+function applyRole(){
+  const t=teams.find(x=>x.id===tid), role=roleOfTeam(t); RO=role==='view';
+  document.body.classList.toggle('ro',RO);
+  $('tEdit').style.display=role==='owner'?'':'none'; $('tShare').style.display=role==='owner'?'':'none';
+  if(role!=='owner'&&t)$('tUpd').innerHTML=esc($('tUpd').textContent)+'<span class="rotag">'+(role==='edit'?'Editor':'View only')+'</span>';
+}
+const setupMsg=er=>/function|relation|schema cache|does not exist|column|policy/i.test(String(er&&er.message))?'Run schedule_extras.sql in Supabase first.':'Failed: '+(er&&er.message||er);
+const shareLink=()=>location.origin+location.pathname+'?t='+tid;
+function renderShares(){
+  const t=teams.find(x=>x.id===tid); if(!t)return;
+  $('shLink').value=shareLink(); $('shAny').checked=!!t.link_view; $('shLinkBox').style.display=t.link_view?'':'none';
+  $('shList').innerHTML=shareRows.length?shareRows.map(r=>`<div class="shr"><div><b>${esc(r.full_name||'User')}</b><span>UID #${esc(r.user_number||'?')}</span></div><select data-sr="${r.user_id}"><option value="view"${r.role==='view'?' selected':''}>Viewer</option><option value="edit"${r.role==='edit'?' selected':''}>Editor</option></select><button type="button" data-sd="${r.user_id}" aria-label="Remove">✕</button></div>`).join(''):'<div style="color:var(--dim);font-size:13px;padding:6px 0">No one added yet.</div>';
+}
+async function loadShares(){ const r=await sb.rpc('sched_share_list',{p_team:tid}); if(r.error){toast(setupMsg(r.error));shareRows=[];}else shareRows=r.data||[]; renderShares(); }
+$('tShare').addEventListener('click',()=>{ if(!tid)return; $('shUid').value=''; $('ovS').classList.add('show'); renderShares(); loadShares(); });
+$('shClose').addEventListener('click',()=>$('ovS').classList.remove('show'));
+$('ovS').addEventListener('click',e=>{if(e.target.id==='ovS')$('ovS').classList.remove('show');});
+$('shAny').addEventListener('change',async()=>{
+  const t=teams.find(x=>x.id===tid), on=$('shAny').checked;
+  const r=await sb.from('user_schedule_teams').update({link_view:on}).eq('id',tid);
+  if(r.error){ $('shAny').checked=!on; toast(setupMsg(r.error)); return; }
+  t.link_view=on; renderShares();
+});
+$('shCopy').addEventListener('click',async()=>{
+  const v=shareLink(); try{ await navigator.clipboard.writeText(v); toast('Link copied ✓'); }catch(e){ $('shLink').select(); try{document.execCommand('copy');toast('Link copied ✓');}catch(_){toast('Copy the link manually');} }
+});
+$('shAdd').addEventListener('click',async()=>{
+  const n=$('shUid').value.trim(); if(!n){toast('Write a UID.');return;}
+  await btnRun($('shAdd'),'Adding…','Added ✓',async()=>{
+    const f=await sb.rpc('sched_find_user',{p_uid:n}); if(f.error)throw f.error;
+    const u=(f.data||[])[0]; if(!u){toast('No user with that UID.');return false;}
+    if(u.id===uid){toast('That is your own UID.');return false;}
+    const r=await sb.from('user_schedule_shares').upsert({team_id:tid,user_id:u.id,role:$('shRole').value},{onConflict:'team_id,user_id'}); if(r.error)throw r.error;
+    $('shUid').value=''; await loadShares(); return true;
+  });
+});
+$('shList').addEventListener('change',async e=>{
+  const sel=e.target.closest('[data-sr]'); if(!sel)return;
+  const r=await sb.from('user_schedule_shares').update({role:sel.value}).eq('team_id',tid).eq('user_id',sel.dataset.sr);
+  if(r.error)toast(setupMsg(r.error)); else toast('Saved ✓');
+});
+$('shList').addEventListener('click',async e=>{
+  const b=e.target.closest('[data-sd]'); if(!b)return;
+  const r=await sb.from('user_schedule_shares').delete().eq('team_id',tid).eq('user_id',b.dataset.sd);
+  if(r.error){toast(setupMsg(r.error));return;} await loadShares();
+});
+
+// ---------- tutorial (💡) ----------
+function renderTut(edit){
+  const c=(tut&&tut.content)||'', v=(tut&&tut.video_url)||'';
+  if(edit){
+    $('tuBody').innerHTML=`<div class="fld"><label>Tutorial text</label><textarea id="tuTxt" rows="10" maxlength="5000">${esc(c)}</textarea></div><div class="fld"><label>Video link (optional, https)</label><input id="tuVid" value="${esc(v)}" placeholder="https://youtube.com/…"></div>`;
+    $('tuActs').innerHTML='<button type="button" id="tuCancel">Cancel</button><button type="button" class="save" id="tuSave">Save</button>';
+  }else{
+    $('tuBody').innerHTML=(c?`<div class="tuc">${esc(c)}</div>`:'<div class="tuc dim">Tutorial coming soon.</div>')+(/^https:\/\//i.test(v)?`<a class="tuv" href="${esc(v)}" target="_blank" rel="noopener noreferrer">▶ Watch video</a>`:'');
+    $('tuActs').innerHTML=(isAdm?'<button type="button" id="tuEdit">✎ Edit tutorial</button>':'')+'<button type="button" id="tuClose">Close</button>';
+  }
+}
+$('tipBtn').addEventListener('click',async()=>{
+  $('ovU').classList.add('show'); renderTut(false);
+  try{ const r=await sb.from('schedule_tutorial').select('*').eq('id',1).maybeSingle(); tut=r.error?null:r.data; renderTut(false); }catch(e){}
+});
+$('ovU').addEventListener('click',async e=>{
+  if(e.target.id==='ovU'||e.target.id==='tuClose'){ $('ovU').classList.remove('show'); return; }
+  if(e.target.id==='tuEdit'){ renderTut(true); return; }
+  if(e.target.id==='tuCancel'){ renderTut(false); return; }
+  if(e.target.id==='tuSave'){
+    const row={id:1,content:$('tuTxt').value.slice(0,5000),video_url:$('tuVid').value.trim()||null,updated_at:new Date().toISOString()};
+    if(row.video_url&&!/^https:\/\//i.test(row.video_url)){toast('Video link must start with https://');return;}
+    await btnRun($('tuSave'),'Saving…','Saved ✓',async()=>{
+      const r=await sb.from('schedule_tutorial').upsert(row); if(r.error)throw r.error;
+      tut=row; renderTut(false); return true;
+    });
+  }
+});
+
 // ---------- start ----------
 function gate(html){ $('gate').style.display='block'; $('main').style.display='none'; $('fab').style.display='none'; $('gate').innerHTML=html; }
 (async function init(){
   if(!sb){ gate('Could not connect. Please try again.'); return; }
   try{
+    const qT=new URLSearchParams(location.search).get('t');
     const {data:{session}}=await sb.auth.getSession();
-    if(!session){ gate('Please log in to manage your tournament schedule.<br><br><a href="chteo_auth.html">Login / Register</a>'); return; }
-    uid=session.user.id;
-    const r=await sb.from('user_schedule_entries').select('*').order('entry_date',{ascending:true}).limit(3000);
-    if(r.error){
-      const m=String(r.error.message||'');
-      gate(/relation .*user_schedule_entries|schema cache/i.test(m)?'This feature is being set up.<br>Please check back soon.':'Could not load your schedule.<br><small>'+esc(m)+'</small>');
-      return;
+    if(session)uid=session.user.id;
+    let viaLink=false;
+    if(session){
+      const r=await sb.from('user_schedule_entries').select('*').order('entry_date',{ascending:true}).limit(3000);
+      if(r.error){
+        const m=String(r.error.message||'');
+        gate(/relation .*user_schedule_entries|schema cache/i.test(m)?'This feature is being set up.<br>Please check back soon.':'Could not load your schedule.<br><small>'+esc(m)+'</small>');
+        return;
+      }
+      entries=r.data||[];
+      const tr=await sb.from('user_schedule_teams').select('*').order('created_at',{ascending:true});
+      if(tr.error){ gate('This feature is being set up.<br>Please check back soon.'); return; }
+      teams=(tr.data||[]).sort((a,b)=>(b.user_id===uid)-(a.user_id===uid));
+      const fr=await sb.from('user_schedule_funds').select('*').order('created_at',{ascending:true}); funds=fr.error?[]:(fr.data||[]);
+      try{ const sr=await sb.from('user_schedule_shares').select('team_id,role').eq('user_id',uid); (sr.data||[]).forEach(x=>{myRoles[x.team_id]=x.role;}); }catch(e){}
+      try{ const pr=await sb.from('profiles').select('is_admin,is_owner').eq('id',uid).maybeSingle(); isAdm=!!(pr.data&&(pr.data.is_admin||pr.data.is_owner)); }catch(e){}
+      if(qT&&!teams.find(t=>t.id===qT))viaLink=true;
     }
-    entries=r.data||[];
-    const tr=await sb.from('user_schedule_teams').select('*').order('created_at',{ascending:true});
-    if(tr.error){ gate('This feature is being set up.<br>Please check back soon.'); return; }
-    teams=tr.data||[];
-    const fr=await sb.from('user_schedule_funds').select('*').order('created_at',{ascending:true}); funds=fr.error?[]:(fr.data||[]);
-    tid=teams.length?teams[0].id:null;
-    if(tid&&entries.some(e=>!e.team_id)){ await sb.from('user_schedule_entries').update({team_id:tid}).is('team_id',null); entries.forEach(e=>{if(!e.team_id)e.team_id=tid;}); }
+    if(!session&&!qT){ gate('Please log in to manage your tournament schedule.<br><br><a href="chteo_auth.html">Login / Register</a>'); return; }
+    if(!session||viaLink){
+      const lr=await sb.rpc('sched_link_view',{p_team:qT});
+      if(lr.error||!lr.data){ gate(session?'This schedule is private, or the link is wrong.':'This schedule is private.<br><br>Please <a href="chteo_auth.html">log in</a> if you were given access.'); return; }
+      LINKONLY=true; teams=[lr.data.team]; entries=lr.data.entries||[]; funds=lr.data.funds||[]; tid=lr.data.team.id;
+    }else{
+      tid=(qT&&teams.find(t=>t.id===qT))?qT:(teams.length?teams[0].id:null);
+      if(tid&&roleOfTeam(teams.find(t=>t.id===tid))==='owner'&&entries.some(e=>!e.team_id)){ await sb.from('user_schedule_entries').update({team_id:tid}).is('team_id',null); entries.forEach(e=>{if(!e.team_id)e.team_id=tid;}); }
+    }
     $('gate').style.display='none'; $('main').style.display='block'; $('fab').style.display='block';
     render();
-    window.scrollTo(0,0); if(!tid) openT('new');
+    window.scrollTo(0,0); if(!tid&&!LINKONLY) openT('new');
   }catch(e){ console.error(e); gate('Something went wrong. Please try again.'); }
 })();
 </script>
