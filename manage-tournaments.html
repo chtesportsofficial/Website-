@@ -172,6 +172,15 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 #rwInfo{flex:1;min-width:0;font-size:12.5px;font-weight:700;line-height:1.35}#rwInfo small{display:block;color:var(--dim);font-weight:600;font-size:11px}
 #rwBar button{border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:11px;padding:10px 13px;font-weight:850;font-size:13px}
 #rwBar button:disabled{opacity:.5}
+.dhin{padding:4px 10px}.dhin b{font-size:12.5px}.dhin small{font-size:10px}
+.dhin button{width:26px;height:26px;font-size:17px;border-radius:8px}
+.sh tr.hd td{padding:4px 6px;font-size:10.5px}
+.clb{font-size:10.5px;padding:2px 8px}
+.sh td.clash{background:#05070c;color:#ff5470;font-weight:900}
+.sh tr.rsel td:first-child{touch-action:none;cursor:grab}
+.sh tr.dragging td{opacity:.3}
+#dgGhost{position:fixed;left:12px;right:12px;z-index:9500;pointer-events:none;background:#ff9800;color:#1a1200;border-radius:12px;padding:9px 14px;font-weight:850;font-size:13px;box-shadow:0 10px 28px rgba(0,0,0,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#dgLine{position:fixed;left:0;right:0;height:4px;background:#ff9800;z-index:9400;pointer-events:none;border-radius:2px;box-shadow:0 0 10px #ff9800}
 </style>
 </head>
 <body>
@@ -241,7 +250,7 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
   <div class="acts"><button type="button" class="del" id="tsDel" style="display:none">Delete</button><button type="button" id="tsCancel">Cancel</button><button type="button" class="save" id="tsSave">Save</button></div>
 </div></div>
 <div class="ov" id="ovP"><div class="sheet"><h2 id="pkTitle"></h2><div id="pkBody"></div></div></div>
-<div id="rwBar"><div id="rwInfo"></div><button type="button" id="rwTime">Time</button><button type="button" id="rwUp" aria-label="Move up">▲</button><button type="button" id="rwDn" aria-label="Move down">▼</button><button type="button" id="rwX" aria-label="Done">✕</button></div>
+<div id="rwBar"><div id="rwInfo"></div><button type="button" id="rwTime">Time</button><button type="button" id="rwX" aria-label="Done">✕</button></div>
 <input type="file" id="banPick" accept="image/png,image/jpeg,image/webp" style="display:none">
 <div id="cpBar"><div id="cpInfo"></div><button type="button" id="cpCopy">Copy</button><button type="button" id="cpPaste">Paste</button><button type="button" id="cpX" aria-label="Done">✕</button></div>
 <div class="ov" id="ovF"><div class="sheet"><h2>Add to balance</h2>
@@ -304,10 +313,10 @@ function render(){
 
   if(!list.length){ $('days').innerHTML='<div class="empty">'+(ym==='all'?'No tournaments yet.':'No tournaments in '+esc(MONTHS[+ym.slice(5)-1])+' yet.')+'<br>Tap <b>＋</b> to add your schedule.</div>'; return; }
   const byDay={}; list.forEach(e=>(byDay[e.entry_date]=byDay[e.entry_date]||[]).push(e));
-  const H='<tr class="hd"><td>TIME</td><td>TYPE</td><td>MAP</td><td class="hn">TOURNAMENT NAME / ORGANIZER</td><td>FEE</td><td>STATUS</td><td>RANK</td><td>PRIZE 🏆</td><td>P/L</td><td>COMMENT</td><td>BANNER</td><td>DEL</td></tr>';
+  const H='<tr class="hd"><td>TIME</td><td>TYPE</td><td>MAP</td><td class="hn">TOURNAMENT NAME / ORGANIZER</td><td>FEE</td><td>STATUS</td><td>RANK</td><td>PRIZE 🏆</td><td>P/L</td><td>BANNER</td><td>COMMENT</td><td>DEL</td></tr>';
   const body=Object.keys(byDay).sort().map(d=>{
-    const dl=dayLabel(d), cc={}; byDay[d].forEach(x=>{ if(x.entry_time&&x.result!=='sold'&&!/^sold$/i.test(x.rank||''))cc[x.entry_time.slice(0,5)]=(cc[x.entry_time.slice(0,5)]||0)+1; }); const hasCl=Object.values(cc).some(n=>n>1);
-    return `<tr class="dh"><td colspan="12"><div class="dhin" id="d-${d}"><b>${esc(dl.t)}<small>${dl.w}</small></b>${hasCl?'<span class="clb">⚠ clash</span>':''}<button type="button" data-add="${d}" aria-label="Add on this day">＋</button></div></td></tr>`+H+
+    const dl=dayLabel(d), cc={}; byDay[d].forEach(x=>{ if(x.entry_time&&x.result!=='sold'&&!/^sold$/i.test(x.rank||''))cc[x.entry_time.slice(0,5)]=(cc[x.entry_time.slice(0,5)]||0)+1; }); const clT=Object.keys(cc).filter(k=>cc[k]>1).sort((a,b)=>tkey(a).localeCompare(tkey(b))).map(k=>timeLabel(k));
+    return `<tr class="dh" data-d="${d}"><td colspan="12"><div class="dhin" id="d-${d}"><b>${esc(dl.t)}<small>${dl.w}</small></b>${clT.length?`<span class="clb">⚠ ${esc(clT.join(', '))} clash</span>`:''}<button type="button" data-add="${d}" aria-label="Add on this day">＋</button></div></td></tr>`+H+
     byDay[d].map(e=>{
       const rk=String(e.rank||'').trim(), sold=/^sold$/i.test(rk), rkTxt=/^#?\d+$/.test(rk)?'#'+rk.replace('#',''):rk;
       const img=safeImg(e.banner_url), q=e.result==='qualified', dq=e.result==='disqualified';
@@ -317,7 +326,7 @@ function render(){
       `<td class="c-n" data-f="name">${e.name?esc(e.name):'<span class="ph">＋ name / organized by</span>'}</td><td data-f="fee" class="${num(e.fee)&&!e.fee_paid?'y':''}">${num(e.fee)?fmt(num(e.fee)):''}</td>`+
       `<td data-f="result" class="${RC[e.result]||''}">${esc(e.result||'')}</td><td data-f="rank" class="${sold?'g':''}">${esc(rkTxt)}</td>`+
       `<td data-f="prize" class="pz ${e.prize_received?'':'un'}">${num(e.prize)?fmt(num(e.prize)):''}</td><td class="${hasPl?(pl>=0?'pl-p':'pl-n'):''}">${hasPl?(pl>0?'+':'')+fmt(pl):''}</td>`+
-      `<td class="c-c" data-f="comment">${esc(e.comment||'')}</td><td data-f="banner">${img?`<img src="${esc(img)}" alt="" loading="lazy">`:'<span class="ban-add">＋</span>'}</td><td class="tr" data-f="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6"/></svg></td></tr>`;}).join('');
+      `<td data-f="banner">${img?`<img src="${esc(img)}" alt="" loading="lazy">`:'<span class="ban-add">＋</span>'}</td><td class="c-c" data-f="comment">${esc(e.comment||'')}</td><td class="tr" data-f="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6"/></svg></td></tr>`;}).join('');
   }).join('');
   $('days').innerHTML='<div class="tw"><table class="sh"><tbody>'+body+'</tbody></table></div>';
   const _n=document.querySelector('.tw'); if(_n)_n.scrollLeft=_sx;
@@ -356,7 +365,7 @@ function openPick(e,f,date){
   else if(f==='type') h=chips(TYPES.concat([['','Clear']]),v)+inp('Custom','text',v,'type name');
   else if(f==='maps') h=chips([1,2,3,4,5,6].map(x=>[x,x]).concat([['','Clear']]),v)+inp('Custom','number',v,'maps');
   else if(f==='result') h=chips([['qualified','Qualified'],['disqualified','Disqualified'],['profit','Profit'],['loss','Loss'],['sold','Sold'],['','Clear']],v);
-  else if(f==='rank'){const c=v.replace('#',''); h=chips(Array.from({length:12},(_,i)=>[i+1,'#'+(i+1)]).concat([['sold','Sold'],['','Clear']]),c)+inp('Custom rank (like 18)','text',c,'18');}
+  else if(f==='rank'){const c=v.replace('#',''); h=chips(Array.from({length:12},(_,i)=>[i+1,'#'+(i+1)]).concat([['','Clear']]),c)+inp('Custom rank (like 18)','text',c,'18');}
   else if(f==='fee') h=inp('Amount','number',num(v)?v:'','0')+chk('Fee paid',e.fee_paid);
   else if(f==='prize') h=inp('Amount','number',num(v)?v:'','0')+chk('Prize received',e.prize_received);
   else if(f==='comment') h=`<div class="cap">Note</div><div class="pcu"><textarea id="pkIn" rows="3" maxlength="300">${esc(v)}</textarea><button type="button" class="pok" id="pkOk">OK</button></div>`;
@@ -449,10 +458,21 @@ function pkCustom(){
 async function createEntries(times){
   if(!times.length)return;
   const date=$('pdD')?getDate('pd'):pk.date;
-  const rows=times.slice().sort((a,b)=>tkey(a).localeCompare(tkey(b))).map(t=>({user_id:uid,team_id:tid,entry_date:date,entry_time:t,name:'',fee:0,fee_paid:true,result:'',prize:0,prize_received:true}));
+  const ts=times.slice().sort((a,b)=>tkey(a).localeCompare(tkey(b)));
+  const day=cur().filter(x=>x.entry_date===date).sort(cmpTime);
+  const base=ts.map(t=>({user_id:uid,team_id:tid,entry_date:date,entry_time:t,name:'',fee:0,fee_paid:true,result:'',prize:0,prize_received:true}));
+  const upd=[];
+  if(day.some(x=>x.pos!=null)){
+    const list=day.map(x=>({e:x}));
+    base.forEach(row=>{ let at=list.length; for(let i=0;i<list.length;i++){ if(tkey(list[i].e?list[i].e.entry_time:list[i].row.entry_time).localeCompare(tkey(row.entry_time))>0){at=i;break;} } list.splice(at,0,{row}); });
+    list.forEach((it,k)=>{ const pos=(k+1)*10; if(it.row)it.row.pos=pos; else if(it.e.pos==null||+it.e.pos!==pos)upd.push({id:it.e.id,pos}); });
+  }
   const ok=await btnRun($('pkGo'),'Adding…','Added ✓',async()=>{
-    const r=await sb.from('user_schedule_entries').insert(rows).select(); if(r.error)throw r.error;
-    entries.push(...r.data); if(ym!=='all')ym=monthOf(date); return true;
+    const r=await sb.from('user_schedule_entries').insert(base).select(); if(r.error)throw r.error;
+    const res=await Promise.all(upd.map(u=>sb.from('user_schedule_entries').update({pos:u.pos}).eq('id',u.id).select().single()));
+    const bad=res.find(x=>x.error); if(bad)throw bad.error;
+    entries.push(...r.data); res.forEach(x=>{entries=entries.map(y=>y.id===x.data.id?x.data:y);});
+    if(ym!=='all')ym=monthOf(date); return true;
   });
   if(ok){closePick();render();}
 }
@@ -473,7 +493,7 @@ async function btnRun(btn,busy,okTxt,fn){
 
 // ---------- row select + move (tap a Time cell) ----------
 let rowSel=null;
-function rwInfo(){ const e=entries.find(x=>x.id===rowSel); if(!e)return; $('rwInfo').innerHTML='Row selected<small>'+esc((e.entry_time?timeLabel(e.entry_time)+' · ':'')+(e.name||'no name'))+'</small>'; }
+function rwInfo(){ const e=entries.find(x=>x.id===rowSel); if(!e)return; $('rwInfo').innerHTML='Drag the Time cell to move<small>'+esc((e.entry_time?timeLabel(e.entry_time)+' · ':'')+(e.name||'no name'))+'</small>'; }
 function toggleRow(e){
   if(selMode)exitSel();
   if(rowSel===e.id){exitRow();return;}
@@ -482,20 +502,60 @@ function toggleRow(e){
 function exitRow(){ rowSel=null; $('rwBar').classList.remove('show'); $('fab').style.display='block'; render(); }
 $('rwX').addEventListener('click',exitRow);
 $('rwTime').addEventListener('click',()=>{ const e=entries.find(x=>x.id===rowSel); if(e)openPick(e,'entry_time'); });
-async function moveRow(dir){
-  const e=entries.find(x=>x.id===rowSel); if(!e)return;
-  const day=cur().filter(x=>x.entry_date===e.entry_date).sort(cmpTime);
-  const i=day.findIndex(x=>x.id===e.id), j=i+dir;
-  if(j<0||j>=day.length){toast(dir<0?'Already at the top of this day.':'Already at the bottom of this day.');return;}
-  const ids=day.map(x=>x.id); [ids[i],ids[j]]=[ids[j],ids[i]];
-  await btnRun($(dir<0?'rwUp':'rwDn'),'…',null,async()=>{
-    const res=await Promise.all(ids.map((id,k)=>sb.from('user_schedule_entries').update({pos:(k+1)*10}).eq('id',id).select().single()));
-    const bad=res.find(r=>r.error); if(bad)throw bad.error;
-    res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);}); render(); rwInfo(); return true;
+// ---------- drag a selected row anywhere (any day) ----------
+let dg=null, dgTimer=null;
+function dgGaps(){
+  const gaps=[]; let day=null, hdB=0, lastB=0, cnt=0;
+  const flush=()=>{ if(day!==null)gaps.push({date:day,idx:cnt,y:cnt?lastB:hdB}); };
+  document.querySelectorAll('#days tr').forEach(r=>{
+    if(r.classList.contains('dh')){ flush(); day=r.dataset.d; cnt=0; hdB=lastB=0; }
+    else if(r.classList.contains('hd')){ hdB=r.getBoundingClientRect().bottom; }
+    else if(r.classList.contains('er')&&r.dataset.id!==dg.id){ const b=r.getBoundingClientRect(); gaps.push({date:day,idx:cnt,y:b.top}); cnt++; lastB=b.bottom; }
   });
+  flush(); return gaps;
 }
-$('rwUp').addEventListener('click',()=>moveRow(-1));
-$('rwDn').addEventListener('click',()=>moveRow(1));
+function dgUpdate(){
+  const y=dg.lastY;
+  if(y<170)window.scrollBy(0,-16); else if(y>innerHeight-210)window.scrollBy(0,16);
+  $('dgGhost').style.top=(y-20)+'px';
+  let best=null; dgGaps().forEach(g=>{ if(!best||Math.abs(g.y-y)<Math.abs(best.y-y))best=g; });
+  dg.target=best; if(best){ const l=$('dgLine'); l.style.display='block'; l.style.top=(best.y-2)+'px'; }
+}
+function dgStart(){
+  dg.on=true; const row=document.querySelector(`tr[data-id="${dg.id}"]`); if(row)row.classList.add('dragging');
+  const e=entries.find(x=>x.id===dg.id), g=document.createElement('div'); g.id='dgGhost'; g.textContent='⠿  '+(e.entry_time?timeLabel(e.entry_time)+' · ':'')+(e.name||'no name'); document.body.appendChild(g);
+  const l=document.createElement('div'); l.id='dgLine'; l.style.display='none'; document.body.appendChild(l);
+  dgTimer=setInterval(()=>{ if(dg&&dg.on)dgUpdate(); },60);
+  if(navigator.vibrate)navigator.vibrate(12);
+}
+function dgClean(){ clearInterval(dgTimer); ['dgGhost','dgLine'].forEach(i=>{const x=$(i); if(x)x.remove();}); document.querySelectorAll('tr.dragging').forEach(r=>r.classList.remove('dragging')); }
+$('days').addEventListener('pointerdown',e=>{
+  if(!rowSel||!e.target.closest('tr.rsel td[data-f="entry_time"]'))return;
+  dg={id:rowSel,x:e.clientX,y:e.clientY,lastY:e.clientY,on:false,target:null};
+});
+window.addEventListener('pointermove',e=>{
+  if(!dg)return; dg.lastY=e.clientY;
+  if(!dg.on){ if(Math.abs(e.clientY-dg.y)<9&&Math.abs(e.clientX-dg.x)<9)return; dgStart(); }
+  dgUpdate();
+});
+async function dgEnd(commit){
+  if(!dg)return; const d=dg; dg=null; dgClean(); if(!d.on)return; lpFired=true;
+  if(!commit||!d.target)return;
+  const e=entries.find(x=>x.id===d.id); if(!e)return;
+  const date=d.target.date;
+  const others=cur().filter(x=>x.entry_date===date&&x.id!==e.id).sort(cmpTime);
+  const before=cur().filter(x=>x.entry_date===e.entry_date).sort(cmpTime).map(x=>x.id).join();
+  others.splice(d.target.idx,0,e);
+  if(date===e.entry_date&&others.map(x=>x.id).join()===before)return;
+  const ok=await btnRun(null,'','',async()=>{
+    const res=await Promise.all(others.map((x,k)=>{ const pos=(k+1)*10, patch={}; if(x.id===e.id)patch.entry_date=date; if(+x.pos!==pos||x.pos==null)patch.pos=pos; return Object.keys(patch).length?sb.from('user_schedule_entries').update(patch).eq('id',x.id).select().single():Promise.resolve({data:x}); }));
+    const bad=res.find(r=>r.error); if(bad)throw bad.error;
+    res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);}); return true;
+  });
+  if(ok){ render(); rwInfo(); toast('Moved ✓'); }
+}
+window.addEventListener('pointerup',()=>dgEnd(true));
+window.addEventListener('pointercancel',()=>dgEnd(false));
 
 // ---------- banner: + adds directly, tap shows big ----------
 let banTarget=null;
