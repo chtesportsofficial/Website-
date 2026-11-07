@@ -346,7 +346,7 @@ function render(){
   const byDay={}; list.forEach(e=>(byDay[e.entry_date]=byDay[e.entry_date]||[]).push(e));
   const H='<tr class="hd"><td>TIME</td><td>TYPE</td><td>MAP</td><td class="hn">TOURNAMENT NAME / ORGANIZER</td><td>FEE</td><td>STATUS</td><td>RANK</td><td>PRIZE 🏆</td><td>P/L</td><td>BANNER</td><td>COMMENT</td><td>DEL</td></tr>';
   const body=Object.keys(byDay).sort().map(d=>{
-    const dl=dayLabel(d), cc={}; byDay[d].forEach(x=>{ if(x.entry_time&&x.result!=='sold'&&!/^sold$/i.test(x.rank||''))cc[x.entry_time.slice(0,5)]=(cc[x.entry_time.slice(0,5)]||0)+1; }); const fi={}; { const arr=byDay[d]; for(let i=0;i<arr.length;){ const g=arr[i].fee_group; let j=i+1; if(g){ while(j<arr.length&&arr[j].fee_group===g)j++; } const run=arr.slice(i,j), es=run.reduce((t,x)=>t+num(x.fee),0), ch=run.reduce((t,x)=>t+num(x.fee_charge),0), sum=es+ch, paid=run.every(x=>x.fee_paid), parts=run.map(x=>fmt(num(x.fee))).join('+')+(ch?'+'+fmt(ch):''); const ps=run.reduce((t,x)=>t+num(x.prize),0), pl=ps-sum, hasPl=!!(ps||sum); fi[arr[i].id]={span:j-i,sum,paid,parts,pl,hasPl}; for(let k=i+1;k<j;k++)fi[arr[k].id]={skip:true,span:j-i,sum,paid,parts,pl,hasPl}; i=j; } }
+    const dl=dayLabel(d), cc={}; byDay[d].forEach(x=>{ if(x.entry_time&&x.result!=='sold'&&!/^sold$/i.test(x.rank||''))cc[x.entry_time.slice(0,5)]=(cc[x.entry_time.slice(0,5)]||0)+1; }); const fi={}; { const arr=byDay[d]; for(let i=0;i<arr.length;){ const g=arr[i].fee_group; let j=i+1; if(g){ while(j<arr.length&&arr[j].fee_group===g)j++; } const run=arr.slice(i,j), es=run.reduce((t,x)=>t+num(x.fee),0), ch=run.reduce((t,x)=>t+num(x.fee_charge),0), sum=es+ch, paid=run.every(x=>x.fee_paid), parts=run.map(x=>num(x.fee)).filter(Boolean).map(fmt).join('+')+(ch?'+'+fmt(ch):''); const ps=run.reduce((t,x)=>t+num(x.prize),0), pl=ps-sum, hasPl=!!(ps||sum); fi[arr[i].id]={span:j-i,sum,paid,parts,pl,hasPl}; for(let k=i+1;k<j;k++)fi[arr[k].id]={skip:true,span:j-i,sum,paid,parts,pl,hasPl}; i=j; } }
     const clT=Object.keys(cc).filter(k=>cc[k]>1).sort((a,b)=>tkey(a).localeCompare(tkey(b))).map(k=>timeLabel(k));
     return `<tr class="dh" data-d="${d}"><td colspan="12"><div class="dhin" id="d-${d}"><b>${esc(dl.t)}<small>${dl.w}</small></b>${clT.length?`<span class="clb">⚠ ${esc(clT.join(', '))} clash</span>`:''}</div></td></tr>`+H+
     byDay[d].map(e=>{
@@ -402,7 +402,7 @@ function openPick(e,f,date){
     const rs=runOf(e);
     if(rs.length>1){
       const es=rs.reduce((t,x)=>t+num(x.fee),0), ch=rs.reduce((t,x)=>t+num(x.fee_charge),0);
-      h=`<div class="cap" style="margin-top:0;font-size:13px;color:var(--text)">Entry fees: ${rs.map(x=>fmt(num(x.fee))).join(' + ')} = ${fmt(es)}</div><div class="cap">Charge fee</div>`+chips([[0,'0'],[5,'5'],[10,'10']],ch)+inp('Other amount','number',[0,5,10].includes(ch)?'':ch,'')+chk('Paid',rs.every(x=>x.fee_paid))+`<div class="cap" style="font-size:12px">Total ${fmt(es+ch)} · to change an entry fee, unmerge first.</div>`;
+      h=`<div class="cap" style="margin-top:0">Entry fee (total for ${rs.length} entries)</div><div class="pcu"><input id="pkEntry" type="number" inputmode="numeric" min="0" value="${es||''}" placeholder="70"></div><div class="cap">Charge fee</div><div class="pcs" id="pkChg">`+[0,5,10].map(x=>`<button type="button" class="pc${x===ch?' on':''}" data-cv="${x}">${x}</button>`).join('')+`</div><div class="pcu" style="margin-top:8px"><input id="pkIn" type="number" inputmode="numeric" min="0" value="${[0,5,10].includes(ch)?'':ch}" placeholder="Other charge"></div>`+chk('Paid',rs.every(x=>x.fee_paid))+`<div class="cap" id="pkTot" style="font-size:13px;color:var(--text)">Total ${fmt(es+ch)}</div><button type="button" class="pok" id="pkOk" style="width:100%;margin-top:8px;padding:13px">OK</button>`;
     } else h=inp('Amount','number',num(e.fee)?e.fee:'','0')+chk('Fee paid',e.fee_paid);
   }
   else if(f==='prize') h=inp('Amount','number',num(v)?v:'','0')+chk('Prize received',e.prize_received);
@@ -410,7 +410,7 @@ function openPick(e,f,date){
   else if(f==='name') h=inp('Name / Organizer (add prize pool like "(10k)")','text',v,'CHT WARZONE S2 (10k)')+'<button type="button" class="pdel" id="pkDel">Delete this row</button>';
   else if(f==='del') h=`<div class="cap" style="margin-top:0;font-size:14px;color:var(--text)">${esc(e.name||'This row')}</div><div class="acts"><button type="button" id="pkNo">Cancel</button><button type="button" id="pkYes" style="background:#e0243c;border-color:#e0243c;color:#fff">Delete</button></div>`;
   $('pkBody').innerHTML=h; $('ovP').classList.add('show'); if(f==='newtime')calRender();
-  if(['name','comment','type','fee','prize'].includes(f)) setTimeout(()=>{const i=$('pkIn');if(i)i.focus();},80);
+  if(['name','comment','type','fee','prize'].includes(f)) setTimeout(()=>{const i=$('pkEntry')||$('pkIn');if(i)i.focus();},80);
 }
 function closePick(){ $('ovP').classList.remove('show'); }
 $('ovP').addEventListener('click',e=>{ if(e.target.id==='ovP'){closePick();return;} });
@@ -426,9 +426,13 @@ $('pkBody').addEventListener('click',e=>{
   const cq=e.target.closest('[data-ct]'); if(cq){ const k=cq.dataset.ct; ct[k]=k==='h'?+cq.dataset.v:cq.dataset.v; document.querySelectorAll('[data-ct="'+k+'"]').forEach(x=>x.classList.toggle('on',x===cq)); return; }
   if(e.target.closest('#pkGo')){createEntries([...pkSel]);return;}
   if(e.target.closest('#pkCust')){pkCustom();return;}
+  const cv=e.target.closest('[data-cv]'); if(cv){ document.querySelectorAll('#pkChg .pc').forEach(x=>x.classList.toggle('on',x===cv)); $('pkIn').value=''; pkTotal(); return; }
   const c=e.target.closest('.pc'); if(c){ if(pk.f==='newtime')pkToggle(c); else pkApply(c.dataset.v,false); return; }
   if(e.target.closest('#pkOk'))pkApply('',true);
 });
+function pkChargeVal(){ const o=$('pkIn'), on=document.querySelector('#pkChg .pc.on'); return o&&o.value!==''?Math.max(0,num(o.value)):(on?num(on.dataset.cv):0); }
+function pkTotal(){ const t=$('pkTot'); if(t&&$('pkEntry'))t.textContent='Total '+fmt(num($('pkEntry').value)+pkChargeVal()); }
+$('pkBody').addEventListener('input',e=>{ if(e.target.id==='pkIn'&&pk&&pk.f==='fee'&&$('pkEntry')){ document.querySelectorAll('#pkChg .pc').forEach(x=>x.classList.remove('on')); } if(e.target.id==='pkEntry'||e.target.id==='pkIn')pkTotal(); });
 async function pkApply(v,fromIn){
   const {e,f}=pk; let val=v; if(fromIn){const i=$('pkIn'); val=i?i.value.trim():'';}
   let patch;
@@ -437,13 +441,13 @@ async function pkApply(v,fromIn){
   else if(f==='maps')patch={maps:val===''?null:Math.max(0,parseInt(val,10)||0)};
   else if(f==='result')patch={result:val};
   else if(f==='rank')patch={rank:String(val).replace(/^#/,'').slice(0,14)||null};
-  else if(f==='fee')patch={fee:Math.max(0,num(val)),fee_paid:$('pkChk').checked};
+  else if(f==='fee'){ if($('pkEntry'))patch={entry:Math.max(0,num($('pkEntry').value)),charge:pkChargeVal(),fee_paid:$('pkChk').checked}; else patch={fee:Math.max(0,num(val)),fee_paid:$('pkChk').checked}; }
   else if(f==='prize')patch={prize:Math.max(0,num(val)),prize_received:$('pkChk').checked};
   else if(f==='comment')patch={comment:val.slice(0,300)||null};
   else if(f==='name'){ if(!val){toast('Write the tournament name.');return;} patch={name:val.slice(0,120)}; }
   const ok=await btnRun(fromIn?$('pkOk'):null,'Saving…','Saved ✓',async()=>{
     const merged=f==='fee'&&e.fee_group, rs=merged?runOf(e):[e];
-    const res=await Promise.all(rs.map((x,k)=>upd(x.id,merged?(k?{fee_charge:0,fee_paid:patch.fee_paid}:{fee_charge:patch.fee,fee_paid:patch.fee_paid}):patch)));
+    const res=await Promise.all(rs.map((x,k)=>upd(x.id,merged?(k?{fee:0,fee_charge:0,fee_paid:patch.fee_paid}:{fee:patch.entry,fee_charge:patch.charge,fee_paid:patch.fee_paid}):patch)));
     res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);}); return true;
   });
   if(ok){closePick();render();if(rowSel)rwInfo();}
