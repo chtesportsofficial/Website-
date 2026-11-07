@@ -159,6 +159,19 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 #cpBar button{border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:11px;padding:10px 14px;font-weight:850;font-size:13px}
 #cpBar button:disabled{opacity:.4}
 #cpBar #cpPaste:not(:disabled){background:var(--green);border-color:var(--green);color:#052e1c}
+.dsel select{padding:7px 6px;font-size:13px;border-radius:9px}
+.sh tr.hd td.hn{white-space:nowrap;min-width:250px}
+.sh td.c-n{text-align:center}
+.sh td.y{background:#ffd400;color:#2b2200;font-weight:800}
+.sh td.clash{background:repeating-linear-gradient(45deg,#e0243c,#e0243c 7px,#8f1226 7px,#8f1226 14px);color:#fff;font-weight:900}
+.clb{background:#e0243c;color:#fff;border-radius:8px;padding:3px 8px;font-size:11px;font-weight:900}
+.ban-add{display:inline-flex;width:34px;height:34px;border-radius:10px;border:1px dashed #3a4a70;align-items:center;justify-content:center;color:var(--dim);font-size:18px}
+.sh tr.rsel td{outline:2px solid #ff9800;outline-offset:-2px;filter:brightness(1.25)}
+#rwBar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(100px + env(safe-area-inset-bottom));width:min(94vw,540px);z-index:9000;display:none;align-items:center;gap:8px;background:#1b2440;border:1px solid #3a4a70;border-radius:16px;padding:10px 10px 10px 14px;box-shadow:0 10px 30px rgba(0,0,0,.55)}
+#rwBar.show{display:flex}
+#rwInfo{flex:1;min-width:0;font-size:12.5px;font-weight:700;line-height:1.35}#rwInfo small{display:block;color:var(--dim);font-weight:600;font-size:11px}
+#rwBar button{border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:11px;padding:10px 13px;font-weight:850;font-size:13px}
+#rwBar button:disabled{opacity:.5}
 </style>
 </head>
 <body>
@@ -200,7 +213,7 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
       <div class="fld"><label for="fMaps">Maps</label><input id="fMaps" type="number" min="0" inputmode="numeric" placeholder="3"></div>
     </div>
     <datalist id="typeList"><option value="scrim"><option value="top 6 semi"><option value="semi"><option value="final"><option value="Round 1"><option value="R1"><option value="24 slot"><option value="CR"></datalist>
-    <div class="fld"><label for="fName">Tournament name / Organized by (add prize pool like "(10k)")</label><input id="fName" maxlength="120" placeholder="CHT WARZONE S2 (10k)"></div>
+    <div class="fld"><label for="fName">Tournament name / Organizer (add prize pool like "(10k)")</label><input id="fName" maxlength="120" placeholder="CHT WARZONE S2 (10k)"></div>
     <div class="fld"><label>Banner (optional)</label>
       <div class="bn"><img id="fBanImg" alt="">
         <div class="btns"><button type="button" class="sbtn" id="banPick">Add banner</button><button type="button" class="sbtn red" id="banDel" style="display:none">Remove</button></div>
@@ -228,6 +241,8 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
   <div class="acts"><button type="button" class="del" id="tsDel" style="display:none">Delete</button><button type="button" id="tsCancel">Cancel</button><button type="button" class="save" id="tsSave">Save</button></div>
 </div></div>
 <div class="ov" id="ovP"><div class="sheet"><h2 id="pkTitle"></h2><div id="pkBody"></div></div></div>
+<div id="rwBar"><div id="rwInfo"></div><button type="button" id="rwTime">Time</button><button type="button" id="rwUp" aria-label="Move up">▲</button><button type="button" id="rwDn" aria-label="Move down">▼</button><button type="button" id="rwX" aria-label="Done">✕</button></div>
+<input type="file" id="banPick" accept="image/png,image/jpeg,image/webp" style="display:none">
 <div id="cpBar"><div id="cpInfo"></div><button type="button" id="cpCopy">Copy</button><button type="button" id="cpPaste">Paste</button><button type="button" id="cpX" aria-label="Done">✕</button></div>
 <div class="ov" id="ovF"><div class="sheet"><h2>Add to balance</h2>
   <div class="pcu"><input id="fnAmt" type="number" inputmode="numeric" min="0" placeholder="Amount ৳ (e.g. 1000)"></div>
@@ -235,7 +250,7 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
   <div class="acts" style="margin-top:10px"><button type="button" id="fnSub">− Deduct</button><button type="button" class="save" id="fnAdd">＋ Add</button></div>
   <div class="cap">History</div><div id="fnList"></div>
   <button type="button" class="pmore" id="fnClose">Close</button></div></div>
-<div class="ov" id="ovB"><div class="sheet" style="text-align:center"><img id="bgImg" alt=""><h2 id="bgName"></h2><div id="bgSub"></div><div class="acts"><button type="button" id="bgClose">Close</button><button type="button" class="save" id="bgEdit">Edit</button></div></div></div>
+<div class="ov" id="ovB"><div class="sheet" style="text-align:center"><img id="bgImg" alt=""><h2 id="bgName"></h2><div id="bgSub"></div><div class="acts"><button type="button" id="bgClose">Close</button><button type="button" id="bgChange">Change</button><button type="button" class="del" id="bgRemove">Remove</button></div></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -266,6 +281,7 @@ function timeLabel(t){if(!t)return '—';const [h,m]=t.split(':').map(Number);co
 function safeImg(u){return typeof u==='string'&&u.startsWith(SUPABASE_URL+'/storage/')?u:'';}
 
 // ---------- render ----------
+function cmpTime(a,b){ const pa=a.pos,pb=b.pos; if(pa!=null&&pb!=null&&+pa!==+pb)return +pa-+pb; if(pa!=null&&pb==null)return -1; if(pa==null&&pb!=null)return 1; return tkey(a.entry_time).localeCompare(tkey(b.entry_time))||String(a.created_at).localeCompare(String(b.created_at)); }
 function tkey(t){ if(!t)return ''; const h=+t.slice(0,2); return String(h<6?h+24:h).padStart(2,'0')+t.slice(2,5); }
 function monthKeys(){
   const s=new Set(cur().map(e=>monthOf(e.entry_date))); s.add(todayStr.slice(0,7));
@@ -280,7 +296,7 @@ function render(){
   $('tUpd').textContent='last updated : '+(lu?new Date(lu).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—');
   const keys=monthKeys(); if(!ym||(ym!=='all'&&!keys.includes(ym))) ym=todayStr.slice(0,7);
   $('months').innerHTML=`<button type="button" class="mchip ${ym==='all'?'on':''}" data-m="all">ALL</button>`+keys.map(k=>`<button type="button" class="mchip ${k===ym?'on':''}" data-m="${k}">${monthLabel(k)}</button>`).join('');
-  const list=cur().filter(e=>ym==='all'||monthOf(e.entry_date)===ym).sort((a,b)=>a.entry_date.localeCompare(b.entry_date)||tkey(a.entry_time).localeCompare(tkey(b.entry_time)));
+  const list=cur().filter(e=>ym==='all'||monthOf(e.entry_date)===ym).sort((a,b)=>a.entry_date.localeCompare(b.entry_date)||cmpTime(a,b));
   const cost=cur().reduce((s,e)=>s+num(e.fee),0), paid=cur().reduce((s,e)=>s+(e.fee_paid?num(e.fee):0),0);
   const prize=cur().reduce((s,e)=>s+num(e.prize),0), rec=cur().reduce((s,e)=>s+(e.prize_received?num(e.prize):0),0);
   const setV=(id,v,signed)=>{const el=$(id);el.textContent=fmt(v);el.className='v'+(signed?(v<0?' neg':v>0?' pos':''):'');};
@@ -288,19 +304,20 @@ function render(){
 
   if(!list.length){ $('days').innerHTML='<div class="empty">'+(ym==='all'?'No tournaments yet.':'No tournaments in '+esc(MONTHS[+ym.slice(5)-1])+' yet.')+'<br>Tap <b>＋</b> to add your schedule.</div>'; return; }
   const byDay={}; list.forEach(e=>(byDay[e.entry_date]=byDay[e.entry_date]||[]).push(e));
-  const H='<tr class="hd"><td>TIME</td><td>TYPE</td><td>MAP</td><td class="hn">TOURNAMENT NAME / ORGANIZED BY</td><td>FEE</td><td>STATUS</td><td>RANK</td><td>PRIZE 🏆</td><td>P/L</td><td>COMMENT</td><td>BANNER</td><td>DEL</td></tr>';
+  const H='<tr class="hd"><td>TIME</td><td>TYPE</td><td>MAP</td><td class="hn">TOURNAMENT NAME / ORGANIZER</td><td>FEE</td><td>STATUS</td><td>RANK</td><td>PRIZE 🏆</td><td>P/L</td><td>COMMENT</td><td>BANNER</td><td>DEL</td></tr>';
   const body=Object.keys(byDay).sort().map(d=>{
-    const dl=dayLabel(d);
-    return `<tr class="dh"><td colspan="12"><div class="dhin" id="d-${d}"><b>${esc(dl.t)}<small>${dl.w}</small></b><button type="button" data-add="${d}" aria-label="Add on this day">＋</button></div></td></tr>`+H+
+    const dl=dayLabel(d), cc={}; byDay[d].forEach(x=>{ if(x.entry_time&&x.result!=='sold'&&!/^sold$/i.test(x.rank||''))cc[x.entry_time.slice(0,5)]=(cc[x.entry_time.slice(0,5)]||0)+1; }); const hasCl=Object.values(cc).some(n=>n>1);
+    return `<tr class="dh"><td colspan="12"><div class="dhin" id="d-${d}"><b>${esc(dl.t)}<small>${dl.w}</small></b>${hasCl?'<span class="clb">⚠ clash</span>':''}<button type="button" data-add="${d}" aria-label="Add on this day">＋</button></div></td></tr>`+H+
     byDay[d].map(e=>{
       const rk=String(e.rank||'').trim(), sold=/^sold$/i.test(rk), rkTxt=/^#?\d+$/.test(rk)?'#'+rk.replace('#',''):rk;
       const img=safeImg(e.banner_url), q=e.result==='qualified', dq=e.result==='disqualified';
       const pl=num(e.prize)-num(e.fee), hasPl=num(e.prize)||num(e.fee);
-      return `<tr class="er" data-id="${e.id}"><td data-f="entry_time">${e.entry_time?esc(timeLabel(e.entry_time)):''}</td><td data-f="type">${esc(e.type||'')}</td><td data-f="maps">${e.maps!=null&&e.maps!==''?num(e.maps):''}</td>`+
-      `<td class="c-n" data-f="name">${e.name?esc(e.name):'<span class="ph">＋ name / organized by</span>'}</td><td data-f="fee" class="${num(e.fee)&&!e.fee_paid?'r':''}">${num(e.fee)?fmt(num(e.fee)):''}</td>`+
-      `<td data-f="result" class="${RC[e.result]||''}">${esc(e.result||'')}</td><td data-f="rank" class="${sold?'r':''}">${esc(rkTxt)}</td>`+
+      const cl=e.entry_time&&e.result!=='sold'&&!/^sold$/i.test(e.rank||'')&&cc[e.entry_time.slice(0,5)]>1;
+      return `<tr class="er" data-id="${e.id}"><td data-f="entry_time" class="${cl?'clash':''}">${cl?'⚠ ':''}${e.entry_time?esc(timeLabel(e.entry_time)):''}</td><td data-f="type">${esc(e.type||'')}</td><td data-f="maps">${e.maps!=null&&e.maps!==''?num(e.maps):''}</td>`+
+      `<td class="c-n" data-f="name">${e.name?esc(e.name):'<span class="ph">＋ name / organized by</span>'}</td><td data-f="fee" class="${num(e.fee)&&!e.fee_paid?'y':''}">${num(e.fee)?fmt(num(e.fee)):''}</td>`+
+      `<td data-f="result" class="${RC[e.result]||''}">${esc(e.result||'')}</td><td data-f="rank" class="${sold?'g':''}">${esc(rkTxt)}</td>`+
       `<td data-f="prize" class="pz ${e.prize_received?'':'un'}">${num(e.prize)?fmt(num(e.prize)):''}</td><td class="${hasPl?(pl>=0?'pl-p':'pl-n'):''}">${hasPl?(pl>0?'+':'')+fmt(pl):''}</td>`+
-      `<td class="c-c" data-f="comment">${esc(e.comment||'')}</td><td data-f="banner">${img?`<img src="${esc(img)}" alt="" loading="lazy">`:''}</td><td class="tr" data-f="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6"/></svg></td></tr>`;}).join('');
+      `<td class="c-c" data-f="comment">${esc(e.comment||'')}</td><td data-f="banner">${img?`<img src="${esc(img)}" alt="" loading="lazy">`:'<span class="ban-add">＋</span>'}</td><td class="tr" data-f="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6"/></svg></td></tr>`;}).join('');
   }).join('');
   $('days').innerHTML='<div class="tw"><table class="sh"><tbody>'+body+'</tbody></table></div>';
   const _n=document.querySelector('.tw'); if(_n)_n.scrollLeft=_sx;
@@ -315,7 +332,9 @@ $('days').addEventListener('click',e=>{
   const en=entries.find(x=>x.id===td.parentNode.dataset.id); if(!en)return;
   const f=td.dataset.f;
   if(selMode){ if(f!=='banner'&&f!=='del'&&f!=='entry_time')toggleSel(td); return; }
-  if(f==='banner'){ if(safeImg(en.banner_url))openBig(en); else openSheet(en); } else openPick(en,f);
+  if(f==='banner'){ if(safeImg(en.banner_url))openBig(en); else pickBanner(en); return; }
+  if(f==='entry_time'){ toggleRow(en); return; }
+  openPick(en,f);
 });
 $('fab').addEventListener('click',()=>openPick(null,'newtime',(ym==='all'||monthOf(todayStr)===ym)?todayStr:ym+'-01'));
 
@@ -323,8 +342,8 @@ $('fab').addEventListener('click',()=>openPick(null,'newtime',(ym==='all'||month
 let pk=null;
 const TIMES=[['15:00','3 PM'],['16:00','4 PM'],['17:00','5 PM'],['18:00','6 PM'],['19:00','7 PM'],['20:00','8 PM'],['21:00','9 PM'],['22:00','10 PM'],['23:00','11 PM'],['00:00','12 AM'],['01:00','1 AM']];
 const TYPES=['scrim','semi','top 6 semi','final','Round 1','Round 2','Round 3','24 slot','CR'].map(x=>[x,x]);
-const RC={qualified:'g',disqualified:'r',profit:'b',loss:'o'};
-const PT={del:'Delete this tournament?',entry_time:'Time',type:'Type',maps:'Map',result:'Status',rank:'Rank',fee:'Entry fee ৳',prize:'Prize ৳',comment:'Comment',name:'Tournament name / Organized by',newtime:'Add tournament · pick time'};
+const RC={qualified:'g',disqualified:'r',profit:'g',loss:'r',sold:'g'};
+const PT={del:'Delete this tournament?',entry_time:'Time',type:'Type',maps:'Map',result:'Status',rank:'Rank',fee:'Entry fee ৳',prize:'Prize ৳',comment:'Comment',name:'Tournament name / Organizer',newtime:'Add tournament · pick time'};
 function openPick(e,f,date){
   if(!tid){openT('new');return;}
   pk={e,f,date}; $('pkTitle').textContent=PT[f];
@@ -336,12 +355,12 @@ function openPick(e,f,date){
   else if(f==='entry_time') h=chips(TIMES.concat([['','Clear']]),v.slice(0,5))+inp('Custom time','time',v.slice(0,5));
   else if(f==='type') h=chips(TYPES.concat([['','Clear']]),v)+inp('Custom','text',v,'type name');
   else if(f==='maps') h=chips([1,2,3,4,5,6].map(x=>[x,x]).concat([['','Clear']]),v)+inp('Custom','number',v,'maps');
-  else if(f==='result') h=chips([['qualified','Qualified'],['disqualified','Disqualified'],['profit','Profit'],['loss','Loss'],['','Clear']],v);
+  else if(f==='result') h=chips([['qualified','Qualified'],['disqualified','Disqualified'],['profit','Profit'],['loss','Loss'],['sold','Sold'],['','Clear']],v);
   else if(f==='rank'){const c=v.replace('#',''); h=chips(Array.from({length:12},(_,i)=>[i+1,'#'+(i+1)]).concat([['sold','Sold'],['','Clear']]),c)+inp('Custom rank (like 18)','text',c,'18');}
   else if(f==='fee') h=inp('Amount','number',num(v)?v:'','0')+chk('Fee paid',e.fee_paid);
   else if(f==='prize') h=inp('Amount','number',num(v)?v:'','0')+chk('Prize received',e.prize_received);
   else if(f==='comment') h=`<div class="cap">Note</div><div class="pcu"><textarea id="pkIn" rows="3" maxlength="300">${esc(v)}</textarea><button type="button" class="pok" id="pkOk">OK</button></div>`;
-  else if(f==='name') h=inp('Name / Organized by (add prize pool like "(10k)")','text',v,'CHT WARZONE S2 (10k)')+'<button type="button" class="pmore" id="pkMore">Banner · date · more…</button><button type="button" class="pdel" id="pkDel">Delete this row</button>';
+  else if(f==='name') h=inp('Name / Organizer (add prize pool like "(10k)")','text',v,'CHT WARZONE S2 (10k)')+'<button type="button" class="pdel" id="pkDel">Delete this row</button>';
   else if(f==='del') h=`<div class="cap" style="margin-top:0;font-size:14px;color:var(--text)">${esc(e.name||'This row')}</div><div class="acts"><button type="button" id="pkNo">Cancel</button><button type="button" id="pkYes" style="background:#e0243c;border-color:#e0243c;color:#fff">Delete</button></div>`;
   $('pkBody').innerHTML=h; $('ovP').classList.add('show');
   if(['name','comment','type','fee','prize'].includes(f)) setTimeout(()=>{const i=$('pkIn');if(i)i.focus();},80);
@@ -350,10 +369,10 @@ function closePick(){ $('ovP').classList.remove('show'); }
 $('ovP').addEventListener('click',e=>{ if(e.target.id==='ovP'){closePick();return;} });
 $('pkBody').addEventListener('click',e=>{
   if(e.target.closest('#ctNo')){closePick();return;}
-  if(e.target.closest('#ctYes')){doDelTeam();return;}
+  if(e.target.closest('#ctYes')){doDelTeam(e.target.closest('#ctYes'));return;}
   if(e.target.closest('#pkDel')){openPick(pk.e,'del');return;}
   if(e.target.closest('#pkNo')){closePick();return;}
-  if(e.target.closest('#pkYes')){doDel();return;}
+  if(e.target.closest('#pkYes')){doDel(e.target.closest('#pkYes'));return;}
   if(e.target.closest('#pkMore')){const en=pk.e;closePick();openSheet(en);return;}
   if(e.target.closest('#pkGo')){createEntries([...pkSel]);return;}
   if(e.target.closest('#pkCust')){pkCustom();return;}
@@ -372,17 +391,19 @@ async function pkApply(v,fromIn){
   else if(f==='prize')patch={prize:Math.max(0,num(val)),prize_received:$('pkChk').checked};
   else if(f==='comment')patch={comment:val.slice(0,300)||null};
   else if(f==='name'){ if(!val){toast('Write the tournament name.');return;} patch={name:val.slice(0,120)}; }
-  try{
+  const ok=await btnRun(fromIn?$('pkOk'):null,'Saving…','Saved ✓',async()=>{
     const r=await sb.from('user_schedule_entries').update(patch).eq('id',e.id).select().single(); if(r.error)throw r.error;
-    entries=entries.map(x=>x.id===e.id?r.data:x); closePick(); render();
-  }catch(err){ toast('Save failed: '+(err.message||err)); }
+    entries=entries.map(x=>x.id===e.id?r.data:x); return true;
+  });
+  if(ok){closePick();render();if(rowSel)rwInfo();}
 }
-async function doDel(){
+async function doDel(btn){
   const e=pk.e;
-  try{
+  const ok=await btnRun(btn,'Deleting…','Deleted ✓',async()=>{
     const r=await sb.from('user_schedule_entries').delete().eq('id',e.id); if(r.error)throw r.error;
-    dropBanner(e.banner_url); entries=entries.filter(x=>x.id!==e.id); closePick(); render(); toast('Deleted');
-  }catch(err){ toast('Delete failed: '+(err.message||err)); }
+    dropBanner(e.banner_url); entries=entries.filter(x=>x.id!==e.id); if(rowSel===e.id){rowSel=null;$('rwBar').classList.remove('show');$('fab').style.display='block';} return true;
+  });
+  if(ok){closePick();render();}
 }
 function dateSel(p,v){
   const [y,m,d]=v.split('-').map(Number), cy=new Date().getFullYear();
@@ -402,7 +423,6 @@ function openBig(e){
 }
 $('bgClose').addEventListener('click',()=>$('ovB').classList.remove('show'));
 $('ovB').addEventListener('click',ev=>{if(ev.target.id==='ovB')$('ovB').classList.remove('show');});
-$('bgEdit').addEventListener('click',()=>{$('ovB').classList.remove('show');openSheet(bigE);});
 // keep sheets above the phone keyboard
 (function(){
   const vv=window.visualViewport; if(!vv)return;
@@ -430,12 +450,80 @@ async function createEntries(times){
   if(!times.length)return;
   const date=$('pdD')?getDate('pd'):pk.date;
   const rows=times.slice().sort((a,b)=>tkey(a).localeCompare(tkey(b))).map(t=>({user_id:uid,team_id:tid,entry_date:date,entry_time:t,name:'',fee:0,fee_paid:true,result:'',prize:0,prize_received:true}));
-  const btn=$('pkGo'); btn.disabled=true;
-  try{
+  const ok=await btnRun($('pkGo'),'Adding…','Added ✓',async()=>{
     const r=await sb.from('user_schedule_entries').insert(rows).select(); if(r.error)throw r.error;
-    entries.push(...r.data); if(ym!=='all')ym=monthOf(date); closePick(); render(); toast(rows.length+' row'+(rows.length>1?'s':'')+' added ✓');
-  }catch(err){ btn.disabled=false; toast('Failed: '+(err.message||err)); }
+    entries.push(...r.data); if(ym!=='all')ym=monthOf(date); return true;
+  });
+  if(ok){closePick();render();}
 }
+
+// ---------- button states ----------
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function btnRun(btn,busy,okTxt,fn){
+  const old=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent=busy;}
+  let ok=false;
+  try{ ok=!!(await fn()); }catch(err){
+    const m=String((err&&err.message)||err);
+    toast(/user_schedule_funds/.test(m)?'Run funds_upgrade.sql in Supabase first.':/\bpos\b|schema cache/.test(m)?'Run row_move_upgrade.sql in Supabase first.':'Failed: '+m);
+  }
+  if(btn){ if(ok&&okTxt){btn.textContent=okTxt;await sleep(450);} btn.textContent=old; btn.disabled=false; }
+  return ok;
+}
+
+// ---------- row select + move (tap a Time cell) ----------
+let rowSel=null;
+function rwInfo(){ const e=entries.find(x=>x.id===rowSel); if(!e)return; $('rwInfo').innerHTML='Row selected<small>'+esc((e.entry_time?timeLabel(e.entry_time)+' · ':'')+(e.name||'no name'))+'</small>'; }
+function toggleRow(e){
+  if(selMode)exitSel();
+  if(rowSel===e.id){exitRow();return;}
+  rowSel=e.id; $('fab').style.display='none'; $('rwBar').classList.add('show'); rwInfo(); render();
+}
+function exitRow(){ rowSel=null; $('rwBar').classList.remove('show'); $('fab').style.display='block'; render(); }
+$('rwX').addEventListener('click',exitRow);
+$('rwTime').addEventListener('click',()=>{ const e=entries.find(x=>x.id===rowSel); if(e)openPick(e,'entry_time'); });
+async function moveRow(dir){
+  const e=entries.find(x=>x.id===rowSel); if(!e)return;
+  const day=cur().filter(x=>x.entry_date===e.entry_date).sort(cmpTime);
+  const i=day.findIndex(x=>x.id===e.id), j=i+dir;
+  if(j<0||j>=day.length){toast(dir<0?'Already at the top of this day.':'Already at the bottom of this day.');return;}
+  const ids=day.map(x=>x.id); [ids[i],ids[j]]=[ids[j],ids[i]];
+  await btnRun($(dir<0?'rwUp':'rwDn'),'…',null,async()=>{
+    const res=await Promise.all(ids.map((id,k)=>sb.from('user_schedule_entries').update({pos:(k+1)*10}).eq('id',id).select().single()));
+    const bad=res.find(r=>r.error); if(bad)throw bad.error;
+    res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);}); render(); rwInfo(); return true;
+  });
+}
+$('rwUp').addEventListener('click',()=>moveRow(-1));
+$('rwDn').addEventListener('click',()=>moveRow(1));
+
+// ---------- banner: + adds directly, tap shows big ----------
+let banTarget=null;
+function pickBanner(e){ banTarget=e; $('banPick').value=''; $('banPick').click(); }
+$('bgChange').addEventListener('click',()=>{ if(bigE)pickBanner(bigE); });
+$('banPick').addEventListener('change',async()=>{
+  const f=$('banPick').files[0], e=banTarget; if(!f||!e)return;
+  if(f.size>10*1024*1024){toast('Image is too big (max 10 MB).');return;}
+  toast('Uploading banner…');
+  try{
+    const blob=await compress(f), path=uid+'/'+(crypto.randomUUID?crypto.randomUUID():Date.now())+'.jpg';
+    const up=await sb.storage.from(BUCKET).upload(path,blob,{contentType:'image/jpeg',upsert:false}); if(up.error)throw up.error;
+    const url=sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+    const r=await sb.from('user_schedule_entries').update({banner_url:url}).eq('id',e.id).select().single(); if(r.error)throw r.error;
+    if(e.banner_url)dropBanner(e.banner_url);
+    entries=entries.map(x=>x.id===e.id?r.data:x); render();
+    if($('ovB').classList.contains('show'))openBig(r.data);
+    toast('Banner added ✓');
+  }catch(err){ toast('Banner failed: '+(err.message||err)); }
+});
+$('bgRemove').addEventListener('click',async()=>{
+  const e=bigE; if(!e)return;
+  const ok=await btnRun($('bgRemove'),'Removing…','Removed ✓',async()=>{
+    const r=await sb.from('user_schedule_entries').update({banner_url:null}).eq('id',e.id).select().single(); if(r.error)throw r.error;
+    dropBanner(e.banner_url); entries=entries.map(x=>x.id===e.id?r.data:x); return true;
+  });
+  if(ok){ $('ovB').classList.remove('show'); render(); }
+});
 
 // ---------- copy / paste (long-press a cell) ----------
 let selMode=false, sel=new Set(), selF='', clip=null, lpT=null, lpX=0, lpY=0, lpFired=false;
@@ -453,10 +541,12 @@ function updateBar(){
   $('cpPaste').disabled=!(clip&&n&&selF===clip.f);
 }
 function applySel(){
+  if(rowSel){const tr=document.querySelector(`tr[data-id="${rowSel}"]`); if(tr)tr.classList.add('rsel');}
   if(!selMode)return;
   sel.forEach(id=>{const td=document.querySelector(`tr[data-id="${id}"] td[data-f="${selF}"]`); if(td)td.classList.add('sel');});
 }
 function enterSel(td){
+  if(rowSel){rowSel=null;$('rwBar').classList.remove('show');}
   const id=td.parentNode.dataset.id; if(!id)return;
   selMode=true; sel=new Set([id]); selF=td.dataset.f;
   $('fab').style.display='none'; $('cpBar').classList.add('show'); updateBar(); render();
@@ -488,17 +578,17 @@ $('cpCopy').addEventListener('click',()=>{
 });
 $('cpPaste').addEventListener('click',async()=>{
   if(!clip||!sel.size||selF!==clip.f)return;
-  const ids=[...sel], btn=$('cpPaste'); btn.disabled=true;
-  try{
+  const ids=[...sel];
+  const ok=await btnRun($('cpPaste'),'Pasting…','Pasted ✓',async()=>{
     const res=await Promise.all(ids.map(id=>{
       const t=entries.find(x=>x.id===id), p={...clip.patch};
       if(clip.f==='type'&&/^scrim$/i.test(p.type||'')&&t&&(t.maps==null||t.maps===''))p.maps=3;
       return sb.from('user_schedule_entries').update(p).eq('id',id).select().single();
     }));
     const bad=res.find(r=>r.error); if(bad)throw bad.error;
-    res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);});
-    sel=new Set(); updateBar(); render(); toast('Pasted in '+ids.length+' cell'+(ids.length>1?'s':'')+' ✓');
-  }catch(err){ toast('Paste failed: '+(err.message||err)); updateBar(); }
+    res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);}); return true;
+  });
+  if(ok)exitSel();
 });
 $('fType').addEventListener('input',()=>{ if(/^scrim$/i.test($('fType').value.trim())&&$('fMaps').value==='')$('fMaps').value=3; });
 
@@ -628,8 +718,7 @@ $('tsSave').addEventListener('click',async()=>{
   const name=$('tsName').value.trim().slice(0,40);
   if(!name){$('tsName').classList.add('bad');toast('Write the team name.');return;}
   $('tsName').classList.remove('bad');
-  const btn=$('tsSave'); btn.disabled=true;
-  try{
+  const ok=await btnRun($('tsSave'),'Saving…','Saved ✓',async()=>{
     if(tMode==='new'){
       const r=await sb.from('user_schedule_teams').insert({name,user_id:uid}).select().single(); if(r.error)throw r.error;
       teams.push(r.data); const hadNone=!tid; tid=r.data.id;
@@ -638,9 +727,9 @@ $('tsSave').addEventListener('click',async()=>{
       const t=teams.find(x=>x.id===tid);
       const r=await sb.from('user_schedule_teams').update({name}).eq('id',t.id); if(r.error)throw r.error; t.name=name;
     }
-    closeT(); render(); toast('Saved ✓');
-  }catch(e){ toast('Failed: '+(e.message||e)); }
-  finally{ btn.disabled=false; }
+    return true;
+  });
+  if(ok){closeT();render();}
 });
 $('tsDel').addEventListener('click',()=>{
   const t=teams.find(x=>x.id===tid); if(!t)return;
@@ -649,13 +738,15 @@ $('tsDel').addEventListener('click',()=>{
   $('pkBody').innerHTML=`<div class="warn"><b>${esc(t.name)}</b><br>${n} tournament${n===1?'':'s'}, all banners and balance history will be permanently deleted. This cannot be undone.</div><div class="acts"><button type="button" id="ctNo">Keep team</button><button type="button" id="ctYes" style="background:#e0243c;border-color:#e0243c;color:#fff">Delete team</button></div>`;
   $('ovP').classList.add('show');
 });
-async function doDelTeam(){
+async function doDelTeam(btn){
   const t=teams.find(x=>x.id===tid); if(!t)return;
-  const gone=cur(); const r=await sb.from('user_schedule_teams').delete().eq('id',t.id);
-  if(r.error){toast('Failed: '+r.error.message);return;}
-  gone.forEach(e=>dropBanner(e.banner_url));
-  entries=entries.filter(e=>e.team_id!==t.id); funds=funds.filter(f=>f.team_id!==t.id); teams=teams.filter(x=>x.id!==t.id);
-  tid=teams.length?teams[0].id:null; ym=null; closePick(); render(); toast('Team deleted');
+  const ok=await btnRun(btn,'Deleting…','Deleted ✓',async()=>{
+    const gone=cur(); const r=await sb.from('user_schedule_teams').delete().eq('id',t.id); if(r.error)throw r.error;
+    gone.forEach(e=>dropBanner(e.banner_url));
+    entries=entries.filter(e=>e.team_id!==t.id); funds=funds.filter(f=>f.team_id!==t.id); teams=teams.filter(x=>x.id!==t.id);
+    return true;
+  });
+  if(ok){ tid=teams.length?teams[0].id:null; ym=null; rowSel=null; $('rwBar').classList.remove('show'); $('fab').style.display='block'; closePick(); render(); }
 }
 
 // ---------- balance (sponsor money etc.) ----------
@@ -668,11 +759,11 @@ $('fnClose').addEventListener('click',()=>$('ovF').classList.remove('show'));
 $('ovF').addEventListener('click',e=>{if(e.target.id==='ovF')$('ovF').classList.remove('show');});
 async function addFund(sign){
   const a=Math.max(0,num($('fnAmt').value)); if(!a){toast('Write an amount.');return;}
-  try{
+  await btnRun($(sign>0?'fnAdd':'fnSub'),sign>0?'Adding…':'Deducting…',sign>0?'Added ✓':'Done ✓',async()=>{
     const r=await sb.from('user_schedule_funds').insert({user_id:uid,team_id:tid,amount:sign*a,note:$('fnNote').value.trim().slice(0,60)||null}).select().single();
     if(r.error)throw r.error;
-    funds.push(r.data); $('fnAmt').value='';$('fnNote').value=''; renderFunds(); render(); toast('Balance updated ✓');
-  }catch(e){ toast(/relation|schema cache/i.test(String(e.message||e))?'Run funds_upgrade.sql in Supabase first.':'Failed: '+(e.message||e)); }
+    funds.push(r.data); $('fnAmt').value='';$('fnNote').value=''; renderFunds(); render(); return true;
+  });
 }
 $('fnAdd').addEventListener('click',()=>addFund(1));
 $('fnSub').addEventListener('click',()=>addFund(-1));
