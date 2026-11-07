@@ -423,7 +423,7 @@ async function pkApply(v,fromIn){
   else if(f==='comment')patch={comment:val.slice(0,300)||null};
   else if(f==='name'){ if(!val){toast('Write the tournament name.');return;} patch={name:val.slice(0,120)}; }
   const ok=await btnRun(fromIn?$('pkOk'):null,'Saving…','Saved ✓',async()=>{
-    const r=await sb.from('user_schedule_entries').update(patch).eq('id',e.id).select().single(); if(r.error)throw r.error;
+    const r=await upd(e.id,patch); if(r.error)throw r.error;
     entries=entries.map(x=>x.id===e.id?r.data:x); return true;
   });
   if(ok){closePick();render();if(rowSel)rwInfo();}
@@ -483,15 +483,15 @@ async function createEntries(times){
   const ts=times.slice().sort((a,b)=>tkey(a).localeCompare(tkey(b)));
   const day=cur().filter(x=>x.entry_date===date).sort(cmpTime);
   const base=ts.map(t=>({user_id:uid,team_id:tid,entry_date:date,entry_time:t,name:'',fee:0,fee_paid:true,result:'',prize:0,prize_received:true}));
-  const upd=[];
+  const posUpd=[];
   if(day.some(x=>x.pos!=null)){
     const list=day.map(x=>({e:x}));
     base.forEach(row=>{ let at=list.length; for(let i=0;i<list.length;i++){ if(tkey(list[i].e?list[i].e.entry_time:list[i].row.entry_time).localeCompare(tkey(row.entry_time))>0){at=i;break;} } list.splice(at,0,{row}); });
-    list.forEach((it,k)=>{ const pos=(k+1)*10; if(it.row)it.row.pos=pos; else if(it.e.pos==null||+it.e.pos!==pos)upd.push({id:it.e.id,pos}); });
+    list.forEach((it,k)=>{ const pos=(k+1)*10; if(it.row)it.row.pos=pos; else if(it.e.pos==null||+it.e.pos!==pos)posUpd.push({id:it.e.id,pos}); });
   }
   const ok=await btnRun($('pkGo'),'Adding…','Added ✓',async()=>{
     const r=await sb.from('user_schedule_entries').insert(base).select(); if(r.error)throw r.error;
-    const res=await Promise.all(upd.map(u=>sb.from('user_schedule_entries').update({pos:u.pos}).eq('id',u.id).select().single()));
+    const res=await Promise.all(posUpd.map(u=>upd(u.id,{pos:u.pos})));
     const bad=res.find(x=>x.error); if(bad)throw bad.error;
     entries.push(...r.data); res.forEach(x=>{entries=entries.map(y=>y.id===x.data.id?x.data:y);});
     if(ym!=='all')ym=monthOf(date); return true;
@@ -499,6 +499,16 @@ async function createEntries(times){
   if(ok){closePick();render();}
 }
 
+// one safe way to save a row: tells you clearly if the row could not be saved
+async function upd(id,patch){
+  const r=await sb.from('user_schedule_entries').update(patch).eq('id',id).select();
+  if(r.error)throw r.error;
+  if(!r.data||!r.data.length){
+    try{ const f=await sb.from('user_schedule_entries').select('*'); if(!f.error&&f.data){ entries=f.data; render(); } }catch(e){}
+    throw new Error('This row was out of date, so I refreshed the list. Please try again.');
+  }
+  return {data:r.data[0],error:null};
+}
 // ---------- button states ----------
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function btnRun(btn,busy,okTxt,fn){
@@ -570,7 +580,7 @@ async function dgEnd(commit){
   others.splice(d.target.idx,0,e);
   if(date===e.entry_date&&others.map(x=>x.id).join()===before)return;
   const ok=await btnRun(null,'','',async()=>{
-    const res=await Promise.all(others.map((x,k)=>{ const pos=(k+1)*10, patch={}; if(x.id===e.id)patch.entry_date=date; if(+x.pos!==pos||x.pos==null)patch.pos=pos; return Object.keys(patch).length?sb.from('user_schedule_entries').update(patch).eq('id',x.id).select().single():Promise.resolve({data:x}); }));
+    const res=await Promise.all(others.map((x,k)=>{ const pos=(k+1)*10, patch={}; if(x.id===e.id)patch.entry_date=date; if(+x.pos!==pos||x.pos==null)patch.pos=pos; return Object.keys(patch).length?upd(x.id,patch):Promise.resolve({data:x}); }));
     const bad=res.find(r=>r.error); if(bad)throw bad.error;
     res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);}); return true;
   });
@@ -591,7 +601,7 @@ $('banPick').addEventListener('change',async()=>{
     const blob=await compress(f), path=uid+'/'+(crypto.randomUUID?crypto.randomUUID():Date.now())+'.jpg';
     const up=await sb.storage.from(BUCKET).upload(path,blob,{contentType:'image/jpeg',upsert:false}); if(up.error)throw up.error;
     const url=sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
-    const r=await sb.from('user_schedule_entries').update({banner_url:url}).eq('id',e.id).select().single(); if(r.error)throw r.error;
+    const r=await upd(e.id,{banner_url:url}); if(r.error)throw r.error;
     if(e.banner_url)dropBanner(e.banner_url);
     entries=entries.map(x=>x.id===e.id?r.data:x); render();
     if($('ovB').classList.contains('show'))openBig(r.data);
@@ -601,7 +611,7 @@ $('banPick').addEventListener('change',async()=>{
 $('bgRemove').addEventListener('click',async()=>{
   const e=bigE; if(!e)return;
   const ok=await btnRun($('bgRemove'),'Removing…','Removed ✓',async()=>{
-    const r=await sb.from('user_schedule_entries').update({banner_url:null}).eq('id',e.id).select().single(); if(r.error)throw r.error;
+    const r=await upd(e.id,{banner_url:null}); if(r.error)throw r.error;
     dropBanner(e.banner_url); entries=entries.map(x=>x.id===e.id?r.data:x); return true;
   });
   if(ok){ $('ovB').classList.remove('show'); render(); }
@@ -665,7 +675,7 @@ $('cpPaste').addEventListener('click',async()=>{
     const res=await Promise.all(ids.map(id=>{
       const t=entries.find(x=>x.id===id), p={...clip.patch};
       if(clip.f==='type'&&/^scrim$/i.test(p.type||'')&&t&&(t.maps==null||t.maps===''))p.maps=3;
-      return sb.from('user_schedule_entries').update(p).eq('id',id).select().single();
+      return upd(id,p);
     }));
     const bad=res.find(r=>r.error); if(bad)throw bad.error;
     res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);}); return true;
@@ -751,7 +761,7 @@ $('shSave').addEventListener('click',async()=>{
       comment:$('fCm').value.trim()||null
     };
     let r;
-    if(editing) r=await sb.from('user_schedule_entries').update(row).eq('id',editing.id).select().single();
+    if(editing) r=await upd(editing.id,row);
     else r=await sb.from('user_schedule_entries').insert({...row,user_id:uid,team_id:tid}).select().single();
     if(r.error)throw r.error;
     if(banOld&&banOld!==url) dropBanner(banOld);
