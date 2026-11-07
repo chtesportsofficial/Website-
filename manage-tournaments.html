@@ -196,6 +196,13 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 .fnr .pos{color:#0e9f5a}.fnr .neg{color:#e0243c}
 .pdel{border-color:rgba(224,36,60,.5);color:#e0243c}
 .pc.on,.tchip.on{color:#1a1200}
+.sh td{padding:4px 8px}
+.sh tr.hd td{padding:3px 6px}
+.sh td img{width:28px;height:28px;border-radius:6px}
+.ban-add{width:24px;height:24px;font-size:15px;border-radius:7px}
+.sh td.tr svg{width:16px;height:16px}
+.dhin{padding:3px 10px}
+.tw{touch-action:pan-x pan-y}
 </style>
 </head>
 <body>
@@ -331,7 +338,7 @@ function render(){
   const H='<tr class="hd"><td>TIME</td><td>TYPE</td><td>MAP</td><td class="hn">TOURNAMENT NAME / ORGANIZER</td><td>FEE</td><td>STATUS</td><td>RANK</td><td>PRIZE 🏆</td><td>P/L</td><td>BANNER</td><td>COMMENT</td><td>DEL</td></tr>';
   const body=Object.keys(byDay).sort().map(d=>{
     const dl=dayLabel(d), cc={}; byDay[d].forEach(x=>{ if(x.entry_time&&x.result!=='sold'&&!/^sold$/i.test(x.rank||''))cc[x.entry_time.slice(0,5)]=(cc[x.entry_time.slice(0,5)]||0)+1; }); const clT=Object.keys(cc).filter(k=>cc[k]>1).sort((a,b)=>tkey(a).localeCompare(tkey(b))).map(k=>timeLabel(k));
-    return `<tr class="dh" data-d="${d}"><td colspan="12"><div class="dhin" id="d-${d}"><b>${esc(dl.t)}<small>${dl.w}</small></b>${clT.length?`<span class="clb">⚠ ${esc(clT.join(', '))} clash</span>`:''}<button type="button" data-add="${d}" aria-label="Add on this day">＋</button></div></td></tr>`+H+
+    return `<tr class="dh" data-d="${d}"><td colspan="12"><div class="dhin" id="d-${d}"><b>${esc(dl.t)}<small>${dl.w}</small></b>${clT.length?`<span class="clb">⚠ ${esc(clT.join(', '))} clash</span>`:''}</div></td></tr>`+H+
     byDay[d].map(e=>{
       const rk=String(e.rank||'').trim(), sold=/^sold$/i.test(rk), rkTxt=/^#?\d+$/.test(rk)?'#'+rk.replace('#',''):rk;
       const img=safeImg(e.banner_url), q=e.result==='qualified', dq=e.result==='disqualified';
@@ -380,7 +387,7 @@ function openPick(e,f,date){
   else if(f==='type') h=chips(TYPES.concat([['','Clear']]),v)+inp('Custom','text',v,'type name');
   else if(f==='maps') h=chips([1,2,3,4,5,6].map(x=>[x,x]).concat([['','Clear']]),v)+inp('Custom','number',v,'maps');
   else if(f==='result') h=chips([['qualified','Qualified'],['disqualified','Disqualified'],['profit','Profit'],['loss','Loss'],['sold','Sold'],['','Clear']],v);
-  else if(f==='rank'){const c=v.replace('#',''); h=chips(Array.from({length:12},(_,i)=>[i+1,'#'+(i+1)]).concat([['','Clear']]),c)+inp('Custom rank (like 18)','text',c,'18');}
+  else if(f==='rank'){const c=v.replace('#',''); h=chips(Array.from({length:12},(_,i)=>[i+1,'#'+(i+1)]).concat([['','Clear']]),c)+inp('Custom rank','text',c,'');}
   else if(f==='fee') h=inp('Amount','number',num(v)?v:'','0')+chk('Fee paid',e.fee_paid);
   else if(f==='prize') h=inp('Amount','number',num(v)?v:'','0')+chk('Prize received',e.prize_received);
   else if(f==='comment') h=`<div class="cap">Note</div><div class="pcu"><textarea id="pkIn" rows="3" maxlength="300">${esc(v)}</textarea><button type="button" class="pok" id="pkOk">OK</button></div>`;
@@ -871,7 +878,7 @@ function gate(html){ $('gate').style.display='block'; $('main').style.display='n
     if(tid&&entries.some(e=>!e.team_id)){ await sb.from('user_schedule_entries').update({team_id:tid}).is('team_id',null); entries.forEach(e=>{if(!e.team_id)e.team_id=tid;}); }
     $('gate').style.display='none'; $('main').style.display='block'; $('fab').style.display='block';
     render();
-    if(!tid) openT('new'); else { const t=document.getElementById('d-'+todayStr); if(t) t.scrollIntoView({block:'start'}); }
+    window.scrollTo(0,0); if(!tid) openT('new');
   }catch(e){ console.error(e); gate('Something went wrong. Please try again.'); }
 })();
 </script>
