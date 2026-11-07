@@ -203,6 +203,15 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 .sh td.tr svg{width:16px;height:16px}
 .dhin{padding:3px 10px}
 .tw{touch-action:pan-x pan-y}
+.calh{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}.calh b{font-size:14px}
+.calh button{width:36px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:18px;font-weight:800}
+.calw,.calg{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
+.calw span{font-size:10.5px;color:var(--dim);font-weight:800;padding-bottom:2px}
+.cd{height:34px;border-radius:9px;border:none;background:transparent;color:var(--text);font-size:13.5px;font-weight:700}
+.cd.on{background:#ff9800;color:#1a1200;font-weight:900}.cd.td{box-shadow:inset 0 0 0 1px #ff9800}
+.pq{padding:8px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--line);color:var(--text);font-size:13px;font-weight:800}
+.pq.on{background:#2f66d0;border-color:#2f66d0;color:#fff}
+.fsm{display:block;font-size:9.5px;font-weight:600;opacity:.75}
 </style>
 </head>
 <body>
@@ -274,7 +283,7 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 <div class="ov" id="ovP"><div class="sheet"><h2 id="pkTitle"></h2><div id="pkBody"></div></div></div>
 <div id="rwBar"><div id="rwInfo"></div><button type="button" id="rwTime">Time</button><button type="button" id="rwX" aria-label="Done">✕</button></div>
 <input type="file" id="banPick" accept="image/png,image/jpeg,image/webp" style="display:none">
-<div id="cpBar"><div id="cpInfo"></div><button type="button" id="cpCopy">Copy</button><button type="button" id="cpPaste">Paste</button><button type="button" id="cpX" aria-label="Done">✕</button></div>
+<div id="cpBar"><div id="cpInfo"></div><button type="button" id="cpMerge" style="display:none">Merge</button><button type="button" id="cpCopy">Copy</button><button type="button" id="cpPaste">Paste</button><button type="button" id="cpX" aria-label="Done">✕</button></div>
 <div class="ov" id="ovF"><div class="sheet"><h2>Add to balance</h2>
   <div class="pcu"><input id="fnAmt" type="number" inputmode="numeric" min="0" placeholder="Amount ৳ (e.g. 1000)"></div>
   <div class="pcu" style="margin-top:8px"><input id="fnNote" maxlength="60" placeholder="Note (e.g. Sponsor)"></div>
@@ -328,7 +337,7 @@ function render(){
   const keys=monthKeys(); if(!ym||(ym!=='all'&&!keys.includes(ym))) ym=todayStr.slice(0,7);
   $('months').innerHTML=`<button type="button" class="mchip ${ym==='all'?'on':''}" data-m="all">ALL</button>`+keys.map(k=>`<button type="button" class="mchip ${k===ym?'on':''}" data-m="${k}">${monthLabel(k)}</button>`).join('');
   const list=cur().filter(e=>ym==='all'||monthOf(e.entry_date)===ym).sort((a,b)=>a.entry_date.localeCompare(b.entry_date)||cmpTime(a,b));
-  const cost=cur().reduce((s,e)=>s+num(e.fee),0), paid=cur().reduce((s,e)=>s+(e.fee_paid?num(e.fee):0),0);
+  const cost=cur().reduce((s,e)=>s+num(e.fee)+num(e.fee_charge),0), paid=cur().reduce((s,e)=>s+(e.fee_paid?num(e.fee)+num(e.fee_charge):0),0);
   const prize=cur().reduce((s,e)=>s+num(e.prize),0), rec=cur().reduce((s,e)=>s+(e.prize_received?num(e.prize):0),0);
   const setV=(id,v,signed)=>{const el=$(id);el.textContent=fmt(v);el.className='v'+(signed?(v<0?' neg':v>0?' pos':''):'');};
   setV('sCost',cost); setV('sPrize',prize); setV('sProfit',prize-cost,true); setV('sBal',rec-paid+curF().reduce((x,f)=>x+num(f.amount),0),true);
@@ -337,15 +346,16 @@ function render(){
   const byDay={}; list.forEach(e=>(byDay[e.entry_date]=byDay[e.entry_date]||[]).push(e));
   const H='<tr class="hd"><td>TIME</td><td>TYPE</td><td>MAP</td><td class="hn">TOURNAMENT NAME / ORGANIZER</td><td>FEE</td><td>STATUS</td><td>RANK</td><td>PRIZE 🏆</td><td>P/L</td><td>BANNER</td><td>COMMENT</td><td>DEL</td></tr>';
   const body=Object.keys(byDay).sort().map(d=>{
-    const dl=dayLabel(d), cc={}; byDay[d].forEach(x=>{ if(x.entry_time&&x.result!=='sold'&&!/^sold$/i.test(x.rank||''))cc[x.entry_time.slice(0,5)]=(cc[x.entry_time.slice(0,5)]||0)+1; }); const clT=Object.keys(cc).filter(k=>cc[k]>1).sort((a,b)=>tkey(a).localeCompare(tkey(b))).map(k=>timeLabel(k));
+    const dl=dayLabel(d), cc={}; byDay[d].forEach(x=>{ if(x.entry_time&&x.result!=='sold'&&!/^sold$/i.test(x.rank||''))cc[x.entry_time.slice(0,5)]=(cc[x.entry_time.slice(0,5)]||0)+1; }); const fi={}; { const arr=byDay[d]; for(let i=0;i<arr.length;){ const g=arr[i].fee_group; let j=i+1; if(g){ while(j<arr.length&&arr[j].fee_group===g)j++; } const run=arr.slice(i,j), es=run.reduce((t,x)=>t+num(x.fee),0), ch=run.reduce((t,x)=>t+num(x.fee_charge),0), sum=es+ch, paid=run.every(x=>x.fee_paid), parts=run.map(x=>fmt(num(x.fee))).join('+')+(ch?'+'+fmt(ch):''); fi[arr[i].id]={span:j-i,sum,paid,parts}; for(let k=i+1;k<j;k++)fi[arr[k].id]={skip:true,span:j-i,sum,paid,parts}; i=j; } }
+    const clT=Object.keys(cc).filter(k=>cc[k]>1).sort((a,b)=>tkey(a).localeCompare(tkey(b))).map(k=>timeLabel(k));
     return `<tr class="dh" data-d="${d}"><td colspan="12"><div class="dhin" id="d-${d}"><b>${esc(dl.t)}<small>${dl.w}</small></b>${clT.length?`<span class="clb">⚠ ${esc(clT.join(', '))} clash</span>`:''}</div></td></tr>`+H+
     byDay[d].map(e=>{
       const rk=String(e.rank||'').trim(), sold=/^sold$/i.test(rk), rkTxt=/^#?\d+$/.test(rk)?'#'+rk.replace('#',''):rk;
       const img=safeImg(e.banner_url), q=e.result==='qualified', dq=e.result==='disqualified';
-      const pl=num(e.prize)-num(e.fee), hasPl=num(e.prize)||num(e.fee);
+      const fe=fi[e.id], pl=num(e.prize)-num(e.fee), hasPl=num(e.prize)||num(e.fee);
       const cl=e.entry_time&&e.result!=='sold'&&!/^sold$/i.test(e.rank||'')&&cc[e.entry_time.slice(0,5)]>1;
       return `<tr class="er" data-id="${e.id}"><td data-f="entry_time" class="${cl?'clash':''}">${cl?'⚠ ':''}${e.entry_time?esc(timeLabel(e.entry_time)):''}</td><td data-f="type">${esc(e.type||'')}</td><td data-f="maps">${e.maps!=null&&e.maps!==''?num(e.maps):''}</td>`+
-      `<td class="c-n" data-f="name">${e.name?esc(e.name):'<span class="ph">＋ name / organized by</span>'}</td><td data-f="fee" class="${num(e.fee)&&!e.fee_paid?'y':''}">${num(e.fee)?fmt(num(e.fee)):''}</td>`+
+      `<td class="c-n" data-f="name">${e.name?esc(e.name):'<span class="ph">＋ name / organized by</span>'}</td>${fe.skip?'':`<td data-f="fee" rowspan="${fe.span}" class="${fe.sum&&!fe.paid?'y':''}">${fe.sum?fmt(fe.sum):''}${fe.span>1?`<small class="fsm">${esc(fe.parts)}</small>`:''}</td>`}`+
       `<td data-f="result" class="${RC[e.result]||''}">${esc(e.result||'')}</td><td data-f="rank" class="${sold?'g':''}">${esc(rkTxt)}</td>`+
       `<td data-f="prize" class="pz ${e.prize_received?'':'un'}">${num(e.prize)?fmt(num(e.prize)):''}</td><td class="${hasPl?(pl>=0?'pl-p':'pl-n'):''}">${hasPl?(pl>0?'+':'')+fmt(pl):''}</td>`+
       `<td data-f="banner">${img?`<img src="${esc(img)}" alt="" loading="lazy">`:'<span class="ban-add">＋</span>'}</td><td class="c-c" data-f="comment">${esc(e.comment||'')}</td><td class="tr" data-f="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6"/></svg></td></tr>`;}).join('');
@@ -388,12 +398,18 @@ function openPick(e,f,date){
   else if(f==='maps') h=chips([1,2,3,4,5,6].map(x=>[x,x]).concat([['','Clear']]),v)+inp('Custom','number',v,'maps');
   else if(f==='result') h=chips([['qualified','Qualified'],['disqualified','Disqualified'],['profit','Profit'],['loss','Loss'],['sold','Sold'],['','Clear']],v);
   else if(f==='rank'){const c=v.replace('#',''); h=chips(Array.from({length:12},(_,i)=>[i+1,'#'+(i+1)]).concat([['','Clear']]),c)+inp('Custom rank','text',c,'');}
-  else if(f==='fee') h=inp('Amount','number',num(v)?v:'','0')+chk('Fee paid',e.fee_paid);
+  else if(f==='fee'){
+    const rs=runOf(e);
+    if(rs.length>1){
+      const es=rs.reduce((t,x)=>t+num(x.fee),0), ch=rs.reduce((t,x)=>t+num(x.fee_charge),0);
+      h=`<div class="cap" style="margin-top:0;font-size:13px;color:var(--text)">Entry fees: ${rs.map(x=>fmt(num(x.fee))).join(' + ')} = ${fmt(es)}</div><div class="cap">Charge fee</div>`+chips([[0,'0'],[5,'5'],[10,'10']],ch)+inp('Other amount','number',[0,5,10].includes(ch)?'':ch,'')+chk('Paid',rs.every(x=>x.fee_paid))+`<div class="cap" style="font-size:12px">Total ${fmt(es+ch)} · to change an entry fee, unmerge first.</div>`;
+    } else h=inp('Amount','number',num(e.fee)?e.fee:'','0')+chk('Fee paid',e.fee_paid);
+  }
   else if(f==='prize') h=inp('Amount','number',num(v)?v:'','0')+chk('Prize received',e.prize_received);
   else if(f==='comment') h=`<div class="cap">Note</div><div class="pcu"><textarea id="pkIn" rows="3" maxlength="300">${esc(v)}</textarea><button type="button" class="pok" id="pkOk">OK</button></div>`;
   else if(f==='name') h=inp('Name / Organizer (add prize pool like "(10k)")','text',v,'CHT WARZONE S2 (10k)')+'<button type="button" class="pdel" id="pkDel">Delete this row</button>';
   else if(f==='del') h=`<div class="cap" style="margin-top:0;font-size:14px;color:var(--text)">${esc(e.name||'This row')}</div><div class="acts"><button type="button" id="pkNo">Cancel</button><button type="button" id="pkYes" style="background:#e0243c;border-color:#e0243c;color:#fff">Delete</button></div>`;
-  $('pkBody').innerHTML=h; $('ovP').classList.add('show');
+  $('pkBody').innerHTML=h; $('ovP').classList.add('show'); if(f==='newtime')calRender();
   if(['name','comment','type','fee','prize'].includes(f)) setTimeout(()=>{const i=$('pkIn');if(i)i.focus();},80);
 }
 function closePick(){ $('ovP').classList.remove('show'); }
@@ -405,6 +421,9 @@ $('pkBody').addEventListener('click',e=>{
   if(e.target.closest('#pkNo')){closePick();return;}
   if(e.target.closest('#pkYes')){doDel(e.target.closest('#pkYes'));return;}
   if(e.target.closest('#pkMore')){const en=pk.e;closePick();openSheet(en);return;}
+  const cd=e.target.closest('[data-cd]'); if(cd){cal.sel=cd.dataset.cd;calRender();return;}
+  const cm=e.target.closest('[data-cm]'); if(cm){cal.m+=+cm.dataset.cm; if(cal.m<1){cal.m=12;cal.y--;} if(cal.m>12){cal.m=1;cal.y++;} calRender();return;}
+  const cq=e.target.closest('[data-ct]'); if(cq){ const k=cq.dataset.ct; ct[k]=k==='h'?+cq.dataset.v:cq.dataset.v; document.querySelectorAll('[data-ct="'+k+'"]').forEach(x=>x.classList.toggle('on',x===cq)); return; }
   if(e.target.closest('#pkGo')){createEntries([...pkSel]);return;}
   if(e.target.closest('#pkCust')){pkCustom();return;}
   const c=e.target.closest('.pc'); if(c){ if(pk.f==='newtime')pkToggle(c); else pkApply(c.dataset.v,false); return; }
@@ -423,8 +442,9 @@ async function pkApply(v,fromIn){
   else if(f==='comment')patch={comment:val.slice(0,300)||null};
   else if(f==='name'){ if(!val){toast('Write the tournament name.');return;} patch={name:val.slice(0,120)}; }
   const ok=await btnRun(fromIn?$('pkOk'):null,'Saving…','Saved ✓',async()=>{
-    const r=await upd(e.id,patch); if(r.error)throw r.error;
-    entries=entries.map(x=>x.id===e.id?r.data:x); return true;
+    const merged=f==='fee'&&e.fee_group, rs=merged?runOf(e):[e];
+    const res=await Promise.all(rs.map((x,k)=>upd(x.id,merged?(k?{fee_charge:0,fee_paid:patch.fee_paid}:{fee_charge:patch.fee,fee_paid:patch.fee_paid}):patch)));
+    res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);}); return true;
   });
   if(ok){closePick();render();if(rowSel)rwInfo();}
 }
@@ -462,24 +482,35 @@ $('ovB').addEventListener('click',ev=>{if(ev.target.id==='ovB')$('ovB').classLis
   document.addEventListener('focusin',e=>{if(e.target.closest&&e.target.closest('.ov'))setTimeout(()=>e.target.scrollIntoView({block:'nearest'}),320);});
 })();
 let pkSel=new Set();
+let cal={y:0,m:0,sel:''}, ct={h:null,m:'00',a:'PM'};
 function newTimeHtml(date){
-  pkSel=new Set();
-  return `<div class="cap" style="margin-top:0">Date</div>`+dateSel('pd',date)+
+  pkSel=new Set(); const [y,m]=date.split('-').map(Number); cal={y,m,sel:date}; ct={h:null,m:'00',a:'PM'};
+  const q=(k,v,on)=>`<button type="button" class="pq${on?' on':''}" data-ct="${k}" data-v="${v}">${v}</button>`;
+  return `<div class="cap" style="margin-top:0">Date</div><div id="pdCal"></div>`+
   `<div class="cap">Select time(s) — tap more than one</div><div class="pcs" id="pkChips">`+TIMES.map(([v,l])=>`<button type="button" class="pc" data-v="${v}">${l}</button>`).join('')+`</div>`+
-  `<div class="cap">Custom time</div><div class="pcu"><input id="pkIn" type="time"><button type="button" class="pc" id="pkCust" style="padding:11px 20px">＋</button></div>`+
+  `<div class="cap">Other time</div><div class="pcs">`+[1,2,3,4,5,6,7,8,9,10,11,12].map(h=>q('h',h,false)).join('')+`</div>`+
+  `<div class="pcs" style="margin-top:6px">`+['00','10','15','20','30','40','45','50'].map(x=>q('m',x,x==='00')).join('')+`</div>`+
+  `<div class="pcs" style="margin-top:6px">`+q('a','AM',false)+q('a','PM',true)+`<button type="button" class="pq" id="pkCust" style="margin-left:auto">＋ Add time</button></div>`+
   `<button type="button" class="pok" id="pkGo" style="width:100%;margin-top:16px;padding:14px" disabled>Select time</button>`;
+}
+function calRender(){
+  const {y,m}=cal, first=new Date(y,m-1,1).getDay(), dim=new Date(y,m,0).getDate(); let g='';
+  for(let i=0;i<first;i++)g+='<span></span>';
+  for(let d=1;d<=dim;d++){ const iso=y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0'); g+=`<button type="button" class="cd${iso===cal.sel?' on':''}${iso===todayStr?' td':''}" data-cd="${iso}">${d}</button>`; }
+  $('pdCal').innerHTML=`<div class="calh"><button type="button" data-cm="-1">‹</button><b>${MONTHS[m-1]} ${y}</b><button type="button" data-cm="1">›</button></div><div class="calw">${['S','M','T','W','T','F','S'].map(x=>`<span>${x}</span>`).join('')}</div><div class="calg">${g}</div>`;
 }
 function pkCount(){ const n=pkSel.size,b=$('pkGo'); b.disabled=!n; b.textContent=n?'OK · add '+n+' row'+(n>1?'s':''):'Select time'; }
 function pkToggle(btn){ const v=btn.dataset.v; if(pkSel.has(v)){pkSel.delete(v);btn.classList.remove('on');}else{pkSel.add(v);btn.classList.add('on');} pkCount(); }
 function pkCustom(){
-  const i=$('pkIn'), v=(i.value||'').slice(0,5); if(!v){toast('Pick a time first.');return;}
+  if(ct.h==null){toast('Pick the hour first.');return;}
+  const H=(ct.h%12)+(ct.a==='PM'?12:0), v=String(H).padStart(2,'0')+':'+ct.m;
   let b=[...$('pkChips').children].find(x=>x.dataset.v===v);
   if(!b){ b=document.createElement('button'); b.type='button'; b.className='pc'; b.dataset.v=v; b.textContent=timeLabel(v); $('pkChips').appendChild(b); }
-  if(!pkSel.has(v)){pkSel.add(v);b.classList.add('on');} i.value=''; pkCount();
+  if(!pkSel.has(v)){pkSel.add(v);b.classList.add('on');} pkCount();
 }
 async function createEntries(times){
   if(!times.length)return;
-  const date=$('pdD')?getDate('pd'):pk.date;
+  const date=cal.sel||pk.date;
   const ts=times.slice().sort((a,b)=>tkey(a).localeCompare(tkey(b)));
   const day=cur().filter(x=>x.entry_date===date).sort(cmpTime);
   const base=ts.map(t=>({user_id:uid,team_id:tid,entry_date:date,entry_time:t,name:'',fee:0,fee_paid:true,result:'',prize:0,prize_received:true}));
@@ -499,6 +530,12 @@ async function createEntries(times){
   if(ok){closePick();render();}
 }
 
+function runOf(e){
+  if(!e.fee_group)return [e];
+  const day=cur().filter(x=>x.entry_date===e.entry_date).sort(cmpTime); let a=day.findIndex(x=>x.id===e.id),b=a;
+  while(a>0&&day[a-1].fee_group===e.fee_group)a--; while(b<day.length-1&&day[b+1].fee_group===e.fee_group)b++;
+  return day.slice(a,b+1);
+}
 // one safe way to save a row: tells you clearly if the row could not be saved
 async function upd(id,patch){
   const r=await sb.from('user_schedule_entries').update(patch).eq('id',id).select();
@@ -517,7 +554,7 @@ async function btnRun(btn,busy,okTxt,fn){
   let ok=false;
   try{ ok=!!(await fn()); }catch(err){
     const m=String((err&&err.message)||err);
-    toast(/user_schedule_funds/.test(m)?'Run funds_upgrade.sql in Supabase first.':/\bpos\b|schema cache/.test(m)?'Run row_move_upgrade.sql in Supabase first.':'Failed: '+m);
+    toast(/fee_group|fee_charge/.test(m)?'Run merge_fee_upgrade.sql in Supabase first.':/user_schedule_funds/.test(m)?'Run funds_upgrade.sql in Supabase first.':/\bpos\b|schema cache/.test(m)?'Run row_move_upgrade.sql in Supabase first.':'Failed: '+m);
   }
   if(btn){ if(ok&&okTxt){btn.textContent=okTxt;await sleep(450);} btn.textContent=old; btn.disabled=false; }
   return ok;
@@ -631,6 +668,8 @@ function updateBar(){
   $('cpInfo').innerHTML=(n?n+' selected':'Tap cells to select')+(clip?`<small>Copied: ${esc(clip.label)}</small>`:'<small>Select a cell, then tap Copy</small>');
   $('cpCopy').disabled=!n;
   $('cpPaste').disabled=!(clip&&n&&selF===clip.f);
+  const rs=[...sel].map(id=>entries.find(x=>x.id===id)).filter(Boolean), anyM=rs.some(r=>r.fee_group), mb=$('cpMerge');
+  mb.style.display=(selF==='fee'&&(anyM||n>=2))?'':'none'; mb.textContent=anyM?'Unmerge':'Merge';
 }
 function applySel(){
   if(rowSel){const tr=document.querySelector(`tr[data-id="${rowSel}"]`); if(tr)tr.classList.add('rsel');}
@@ -681,6 +720,25 @@ $('cpPaste').addEventListener('click',async()=>{
     res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);}); return true;
   });
   if(ok)exitSel();
+});
+$('cpMerge').addEventListener('click',async()=>{
+  const rows=[...sel].map(id=>entries.find(x=>x.id===id)).filter(Boolean); if(!rows.length)return;
+  if(rows.some(r=>r.fee_group)){
+    const ok=await btnRun($('cpMerge'),'Working…','Done ✓',async()=>{
+      const ids=new Set(); rows.forEach(r=>runOf(r).forEach(x=>ids.add(x.id)));
+      const res=await Promise.all([...ids].map(id=>upd(id,{fee_group:null,fee_charge:0}))); res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);}); return true;
+    });
+    if(ok)exitSel(); return;
+  }
+  const date=rows[0].entry_date; if(rows.some(r=>r.entry_date!==date)){toast('Pick rows from the same day.');return;}
+  const day=cur().filter(x=>x.entry_date===date).sort(cmpTime), idx=rows.map(r=>day.findIndex(x=>x.id===r.id)).sort((a,b)=>a-b);
+  if(idx[idx.length-1]-idx[0]!==idx.length-1){toast('Pick rows that are next to each other.');return;}
+  const ord=idx.map(i=>day[i]), g=crypto.randomUUID?crypto.randomUUID():String(Date.now()), total=ord.reduce((t,x)=>t+num(x.fee),0), paid=ord.every(x=>x.fee_paid);
+  const ok=await btnRun($('cpMerge'),'Merging…','Merged ✓',async()=>{
+    const res=await Promise.all(ord.map((x,k)=>upd(x.id,{fee_group:g,fee_charge:k?0:5,fee_paid:paid})));
+    res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);}); return true;
+  });
+  if(ok){ exitSel(); toast('Charge fee 5 added — tap the merged cell to change it'); }
 });
 $('fType').addEventListener('input',()=>{ if(/^scrim$/i.test($('fType').value.trim())&&$('fMaps').value==='')$('fMaps').value=3; });
 
