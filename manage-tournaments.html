@@ -347,17 +347,18 @@ function render(){
   const H='<tr class="hd"><td>TIME</td><td>TYPE</td><td>MAP</td><td class="hn">TOURNAMENT NAME / ORGANIZER</td><td>FEE</td><td>STATUS</td><td>RANK</td><td>PRIZE 🏆</td><td>P/L</td><td>BANNER</td><td>COMMENT</td><td>DEL</td></tr>';
   const body=Object.keys(byDay).sort().map(d=>{
     const dl=dayLabel(d), cc={}; byDay[d].forEach(x=>{ if(x.entry_time&&x.result!=='sold'&&!/^sold$/i.test(x.rank||''))cc[x.entry_time.slice(0,5)]=(cc[x.entry_time.slice(0,5)]||0)+1; }); const fi={}; { const arr=byDay[d]; for(let i=0;i<arr.length;){ const g=arr[i].fee_group; let j=i+1; if(g){ while(j<arr.length&&arr[j].fee_group===g)j++; } const run=arr.slice(i,j), es=run.reduce((t,x)=>t+num(x.fee),0), ch=run.reduce((t,x)=>t+num(x.fee_charge),0), sum=es+ch, paid=run.every(x=>x.fee_paid), parts=run.map(x=>num(x.fee)).filter(Boolean).map(fmt).join('+')+(ch?'+'+fmt(ch):''); const ps=run.reduce((t,x)=>t+num(x.prize),0), pl=ps-sum, hasPl=!!(ps||sum); fi[arr[i].id]={span:j-i,sum,paid,parts,pl,hasPl}; for(let k=i+1;k<j;k++)fi[arr[k].id]={skip:true,span:j-i,sum,paid,parts,pl,hasPl}; i=j; } }
+    const pi={}; { const arr=byDay[d]; for(let i=0;i<arr.length;){ const g=arr[i].prize_group; let j=i+1; if(g){ while(j<arr.length&&arr[j].prize_group===g)j++; } const run=arr.slice(i,j), sum=run.reduce((t,x)=>t+num(x.prize),0), rec=run.every(x=>x.prize_received), parts=run.length>1&&new Set(run.map(x=>num(x.prize))).size>1?run.map(x=>fmt(num(x.prize))).join('+'):''; pi[arr[i].id]={span:j-i,sum,rec,parts}; for(let k=i+1;k<j;k++)pi[arr[k].id]={skip:true}; i=j; } }
     const clT=Object.keys(cc).filter(k=>cc[k]>1).sort((a,b)=>tkey(a).localeCompare(tkey(b))).map(k=>timeLabel(k));
     return `<tr class="dh" data-d="${d}"><td colspan="12"><div class="dhin" id="d-${d}"><b>${esc(dl.t)}<small>${dl.w}</small></b>${clT.length?`<span class="clb">⚠ ${esc(clT.join(', '))} clash</span>`:''}</div></td></tr>`+H+
     byDay[d].map(e=>{
       const rk=String(e.rank||'').trim(), sold=/^sold$/i.test(rk), rkTxt=/^#?\d+$/.test(rk)?'#'+rk.replace('#',''):rk;
       const img=safeImg(e.banner_url), q=e.result==='qualified', dq=e.result==='disqualified';
-      const fe=fi[e.id], pl=fe.pl, hasPl=fe.hasPl;
+      const pe=pi[e.id], fe=fi[e.id], pl=num(e.prize)-num(e.fee), hasPl=!!(num(e.prize)||num(e.fee));
       const cl=e.entry_time&&e.result!=='sold'&&!/^sold$/i.test(e.rank||'')&&cc[e.entry_time.slice(0,5)]>1;
       return `<tr class="er" data-id="${e.id}"><td data-f="entry_time" class="${cl?'clash':''}">${cl?'⚠ ':''}${e.entry_time?esc(timeLabel(e.entry_time)):''}</td><td data-f="type">${esc(e.type||'')}</td><td data-f="maps">${e.maps!=null&&e.maps!==''?num(e.maps):''}</td>`+
       `<td class="c-n" data-f="name">${e.name?esc(e.name):'<span class="ph">＋ name / organized by</span>'}</td>${fe.skip?'':`<td data-f="fee" rowspan="${fe.span}" class="${fe.sum&&!fe.paid?'y':''}">${fe.sum?fmt(fe.sum):''}${fe.span>1?`<small class="fsm">${esc(fe.parts)}</small>`:''}</td>`}`+
       `<td data-f="result" class="${RC[e.result]||''}">${esc(e.result||'')}</td><td data-f="rank" class="${sold?'g':''}">${esc(rkTxt)}</td>`+
-      `<td data-f="prize" class="pz ${e.prize_received?'':'un'}">${num(e.prize)?fmt(num(e.prize)):''}</td>${fe.skip?'':`<td rowspan="${fe.span}" class="${hasPl?(pl>=0?'pl-p':'pl-n'):''}">${hasPl?(pl>0?'+':'')+fmt(pl):''}</td>`}`+
+      `${pe.skip?'':`<td data-f="prize" rowspan="${pe.span}" class="pz ${pe.rec?'':'un'}">${pe.sum?fmt(pe.sum):''}${pe.parts?`<small class="fsm">${esc(pe.parts)}</small>`:''}</td>`}<td class="${hasPl?(pl>=0?'pl-p':'pl-n'):''}">${hasPl?(pl>0?'+':'')+fmt(pl):''}</td>`+
       `<td data-f="banner">${img?`<img src="${esc(img)}" alt="" loading="lazy">`:'<span class="ban-add">＋</span>'}</td><td class="c-c" data-f="comment">${esc(e.comment||'')}</td><td class="tr" data-f="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6"/></svg></td></tr>`;}).join('');
   }).join('');
   $('days').innerHTML='<div class="tw"><table class="sh"><tbody>'+body+'</tbody></table></div>';
@@ -405,7 +406,7 @@ function openPick(e,f,date){
       h=`<div class="cap" style="margin-top:0">Entry fee (total for ${rs.length} entries)</div><div class="pcu"><input id="pkEntry" type="number" inputmode="numeric" min="0" value="${es||''}" placeholder="70"></div><div class="cap">Charge fee</div><div class="pcs" id="pkChg">`+[0,5,10].map(x=>`<button type="button" class="pc${x===ch?' on':''}" data-cv="${x}">${x}</button>`).join('')+`</div><div class="pcu" style="margin-top:8px"><input id="pkIn" type="number" inputmode="numeric" min="0" value="${[0,5,10].includes(ch)?'':ch}" placeholder="Other charge"></div>`+chk('Paid',rs.every(x=>x.fee_paid))+`<div class="cap" id="pkTot" style="font-size:13px;color:var(--text)">Total ${fmt(es+ch)}</div><button type="button" class="pok" id="pkOk" style="width:100%;margin-top:8px;padding:13px">OK</button>`;
     } else h=inp('Amount','number',num(e.fee)?e.fee:'','0')+chk('Fee paid',e.fee_paid);
   }
-  else if(f==='prize') h=inp('Amount','number',num(v)?v:'','0')+chk('Prize received',e.prize_received);
+  else if(f==='prize'){ const rp=runOfP(e); if(rp.length>1){ const ps=rp.reduce((t,x)=>t+num(x.prize),0); h=inp('Prize total ('+rp.length+' rows, split equally)','number',ps||'','0')+chk('Prize received',rp.every(x=>x.prize_received)); } else h=inp('Amount','number',num(v)?v:'','0')+chk('Prize received',e.prize_received); }
   else if(f==='comment') h=`<div class="cap">Note</div><div class="pcu"><textarea id="pkIn" rows="3" maxlength="300">${esc(v)}</textarea><button type="button" class="pok" id="pkOk">OK</button></div>`;
   else if(f==='name') h=inp('Name / Organizer (add prize pool like "(10k)")','text',v,'CHT WARZONE S2 (10k)')+'<button type="button" class="pdel" id="pkDel">Delete this row</button>';
   else if(f==='del') h=`<div class="cap" style="margin-top:0;font-size:14px;color:var(--text)">${esc(e.name||'This row')}</div><div class="acts"><button type="button" id="pkNo">Cancel</button><button type="button" id="pkYes" style="background:#e0243c;border-color:#e0243c;color:#fff">Delete</button></div>`;
@@ -446,8 +447,8 @@ async function pkApply(v,fromIn){
   else if(f==='comment')patch={comment:val.slice(0,300)||null};
   else if(f==='name'){ if(!val){toast('Write the tournament name.');return;} patch={name:val.slice(0,120)}; }
   const ok=await btnRun(fromIn?$('pkOk'):null,'Saving…','Saved ✓',async()=>{
-    const merged=f==='fee'&&e.fee_group, rs=merged?runOf(e):[e];
-    const res=await Promise.all(rs.map((x,k)=>upd(x.id,merged?(k?{fee:0,fee_charge:0,fee_paid:patch.fee_paid}:{fee:patch.entry,fee_charge:patch.charge,fee_paid:patch.fee_paid}):patch)));
+    const merged=f==='fee'&&e.fee_group, mp=f==='prize'&&e.prize_group, rs=merged?runOf(e):(mp?runOfP(e):[e]);
+    const res=await Promise.all(rs.map((x,k)=>upd(x.id,merged?(()=>{ const n=rs.length, same=patch.entry===rs.reduce((t,y)=>t+num(y.fee),0), base=Math.floor(patch.entry/n), o={fee_charge:k?0:patch.charge,fee_paid:patch.fee_paid}; if(!same)o.fee=k?base:patch.entry-base*(n-1); return o; })():mp?(()=>{ const n=rs.length, same=patch.prize===rs.reduce((t,y)=>t+num(y.prize),0), base=Math.floor(patch.prize/n), o={prize_received:patch.prize_received}; if(!same)o.prize=k?base:patch.prize-base*(n-1); return o; })():patch)));
     res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);}); return true;
   });
   if(ok){closePick();render();if(rowSel)rwInfo();}
@@ -537,6 +538,12 @@ function runOf(e){
   while(a>0&&day[a-1].fee_group===e.fee_group)a--; while(b<day.length-1&&day[b+1].fee_group===e.fee_group)b++;
   return day.slice(a,b+1);
 }
+function runOfP(e){
+  if(!e.prize_group)return [e];
+  const day=cur().filter(x=>x.entry_date===e.entry_date).sort(cmpTime); let a=day.findIndex(x=>x.id===e.id),b=a;
+  while(a>0&&day[a-1].prize_group===e.prize_group)a--; while(b<day.length-1&&day[b+1].prize_group===e.prize_group)b++;
+  return day.slice(a,b+1);
+}
 // one safe way to save a row: tells you clearly if the row could not be saved
 async function upd(id,patch){
   const r=await sb.from('user_schedule_entries').update(patch).eq('id',id).select();
@@ -555,7 +562,7 @@ async function btnRun(btn,busy,okTxt,fn){
   let ok=false;
   try{ ok=!!(await fn()); }catch(err){
     const m=String((err&&err.message)||err);
-    toast(/fee_group|fee_charge/.test(m)?'Run merge_fee_upgrade.sql in Supabase first.':/user_schedule_funds/.test(m)?'Run funds_upgrade.sql in Supabase first.':/\bpos\b|schema cache/.test(m)?'Run row_move_upgrade.sql in Supabase first.':'Failed: '+m);
+    toast(/prize_group/.test(m)?'Run prize_merge_upgrade.sql in Supabase first.':/fee_group|fee_charge/.test(m)?'Run merge_fee_upgrade.sql in Supabase first.':/user_schedule_funds/.test(m)?'Run funds_upgrade.sql in Supabase first.':/\bpos\b|schema cache/.test(m)?'Run row_move_upgrade.sql in Supabase first.':'Failed: '+m);
   }
   if(btn){ if(ok&&okTxt){btn.textContent=okTxt;await sleep(450);} btn.textContent=old; btn.disabled=false; }
   return ok;
@@ -669,8 +676,8 @@ function updateBar(){
   $('cpInfo').innerHTML=(n?n+' selected':'Tap cells to select')+(clip?`<small>Copied: ${esc(clip.label)}</small>`:'<small>Select a cell, then tap Copy</small>');
   $('cpCopy').disabled=!n;
   $('cpPaste').disabled=!(clip&&n&&selF===clip.f);
-  const rs=[...sel].map(id=>entries.find(x=>x.id===id)).filter(Boolean), anyM=rs.some(r=>r.fee_group), mb=$('cpMerge');
-  mb.style.display=(selF==='fee'&&(anyM||n>=2))?'':'none'; mb.textContent=anyM?'Unmerge':'Merge';
+  const rs=[...sel].map(id=>entries.find(x=>x.id===id)).filter(Boolean), anyM=rs.some(r=>r[selF==='prize'?'prize_group':'fee_group']), mb=$('cpMerge');
+  mb.style.display=((selF==='fee'||selF==='prize')&&(anyM||n>=2))?'':'none'; mb.textContent=anyM?'Unmerge':'Merge';
 }
 function applySel(){
   if(rowSel){const tr=document.querySelector(`tr[data-id="${rowSel}"]`); if(tr)tr.classList.add('rsel');}
@@ -723,23 +730,23 @@ $('cpPaste').addEventListener('click',async()=>{
   if(ok)exitSel();
 });
 $('cpMerge').addEventListener('click',async()=>{
-  const rows=[...sel].map(id=>entries.find(x=>x.id===id)).filter(Boolean); if(!rows.length)return;
-  if(rows.some(r=>r.fee_group)){
+  const rows=[...sel].map(id=>entries.find(x=>x.id===id)).filter(Boolean); if(!rows.length)return; const PZ=selF==='prize', G=PZ?'prize_group':'fee_group', RO=PZ?runOfP:runOf;
+  if(rows.some(r=>r[G])){
     const ok=await btnRun($('cpMerge'),'Working…','Done ✓',async()=>{
-      const ids=new Set(); rows.forEach(r=>runOf(r).forEach(x=>ids.add(x.id)));
-      const res=await Promise.all([...ids].map(id=>upd(id,{fee_group:null,fee_charge:0}))); res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);}); return true;
+      const ids=new Set(); rows.forEach(r=>RO(r).forEach(x=>ids.add(x.id)));
+      const res=await Promise.all([...ids].map(id=>upd(id,PZ?{prize_group:null}:{fee_group:null,fee_charge:0}))); res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);}); return true;
     });
     if(ok)exitSel(); return;
   }
   const date=rows[0].entry_date; if(rows.some(r=>r.entry_date!==date)){toast('Pick rows from the same day.');return;}
   const day=cur().filter(x=>x.entry_date===date).sort(cmpTime), idx=rows.map(r=>day.findIndex(x=>x.id===r.id)).sort((a,b)=>a-b);
   if(idx[idx.length-1]-idx[0]!==idx.length-1){toast('Pick rows that are next to each other.');return;}
-  const ord=idx.map(i=>day[i]), g=crypto.randomUUID?crypto.randomUUID():String(Date.now()), total=ord.reduce((t,x)=>t+num(x.fee),0), paid=ord.every(x=>x.fee_paid);
+  const ord=idx.map(i=>day[i]), g=crypto.randomUUID?crypto.randomUUID():String(Date.now()), total=ord.reduce((t,x)=>t+num(x.fee),0), paid=ord.every(x=>x.fee_paid), allRec=ord.every(x=>x.prize_received);
   const ok=await btnRun($('cpMerge'),'Merging…','Merged ✓',async()=>{
-    const res=await Promise.all(ord.map((x,k)=>upd(x.id,{fee_group:g,fee_charge:k?0:5,fee_paid:paid})));
+    const res=await Promise.all(ord.map((x,k)=>upd(x.id,PZ?{prize_group:g,prize_received:allRec}:{fee_group:g,fee_charge:k?0:5,fee_paid:paid})));
     res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);}); return true;
   });
-  if(ok){ exitSel(); toast('Charge fee 5 added — tap the merged cell to change it'); }
+  if(ok){ exitSel(); toast(PZ?'Prize merged — tap the merged cell to set the total':'Charge fee 5 added — tap the merged cell to change it'); }
 });
 $('fType').addEventListener('input',()=>{ if(/^scrim$/i.test($('fType').value.trim())&&$('fMaps').value==='')$('fMaps').value=3; });
 
