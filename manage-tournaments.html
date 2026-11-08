@@ -212,7 +212,7 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 .pq{padding:8px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--line);color:var(--text);font-size:13px;font-weight:800}
 .pq.on{background:#2f66d0;border-color:#2f66d0;color:#fff}
 .fsm{display:block;font-size:9.5px;font-weight:600;opacity:.75}
-.shr{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}.shr div{flex:1;min-width:0}.shr b{display:block;font-size:13.5px}.shr span{font-size:11px;color:var(--dim)}
+.shr{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}.shr>div:first-child{flex:1;min-width:0}.shr b{display:block;font-size:13.5px}.shr span{font-size:11px;color:var(--dim)}
 .shr select{background:var(--bg);border:1px solid var(--line);border-radius:9px;color:var(--text);padding:7px;font-weight:800;font-size:12px}.shr button{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--red)}
 .tuc{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.6}.tuc.dim{color:var(--dim)}
 .tuv{display:inline-block;margin-top:12px;padding:10px 14px;border-radius:11px;background:#e0243c;color:#fff;font-weight:850;font-size:13px;text-decoration:none}
@@ -225,6 +225,14 @@ body.ro #fab,body.ro #bgChange,body.ro #bgRemove,body.ro .ban-add,body.ro .bplus
 .shtab{padding:12px 8px;border-radius:13px;border:1px solid var(--line);background:var(--bg);font-weight:850;font-size:13px;text-align:center;line-height:1.3}
 .shtab small{display:block;font-weight:600;font-size:10.5px;color:var(--dim);margin-top:2px}
 .shtab.on{border-color:var(--green);background:rgba(34,224,138,.12)}
+.seg{flex:1;display:flex;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;border:none;border-radius:9px;background:transparent;color:var(--dim);font-weight:850;font-size:13.5px;padding:0 6px;height:38px}
+.seg button.on{background:var(--green);color:#052e1c}
+.shrow{display:flex;gap:8px;margin-top:10px}.shrow .pok{height:46px;padding:0 24px}
+.shr .seg{flex:0 0 auto;width:auto}.shr .seg button{flex:0 0 auto;min-width:58px}.shr .seg button{height:30px;font-size:11.5px;padding:0 9px}
+.tuh{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:12px}.tuh span{width:54px;height:54px;border-radius:50%;background:rgba(233,201,106,.16);display:flex;align-items:center;justify-content:center;font-size:28px}.tuh h2{margin:0}
+.tuc{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:14px;max-height:46vh;overflow-y:auto}
+#tuActs{margin-top:14px}#ovU .tuv{display:block;text-align:center;margin-top:12px;padding:13px}
 .rotag{background:#ffffff26;border-radius:999px;padding:1px 8px;margin-left:6px;font-weight:800}
 </style>
 </head>
@@ -306,19 +314,19 @@ body.ro #fab,body.ro #bgChange,body.ro #bgRemove,body.ro .ban-add,body.ro .bplus
   <div class="cap">History</div><div id="fnList"></div>
   <button type="button" class="pmore" id="fnClose">Close</button></div></div>
 <div class="ov" id="ovB"><div class="sheet" style="text-align:center"><img id="bgImg" alt=""><h2 id="bgName"></h2><div id="bgSub"></div><div class="acts"><button type="button" id="bgClose">Close</button><button type="button" id="bgChange">Change</button><button type="button" class="del" id="bgRemove">Remove</button></div></div></div>
-<div class="ov ovc" id="ovS"><div class="sheet"><h2>Share this schedule</h2>
+<div class="ov" id="ovS"><div class="sheet"><h2>Share this schedule</h2>
   <div class="shtabs"><button type="button" class="shtab on" data-st="link">🔗 Anyone with link<small>view only</small></button><button type="button" class="shtab" data-st="uid">👤 Specific people<small>by UID · view or edit</small></button></div>
   <div id="shPaneLink">
-    <label class="chk" style="margin-top:0"><input type="checkbox" id="shAny"> Link sharing is ON</label>
-    <div id="shLinkBox" style="display:none"><div class="pcu" style="margin-top:8px"><input id="shLink" readonly><button type="button" class="pok" id="shCopy">Copy</button></div><div style="font-size:11.5px;color:var(--dim);margin-top:6px">Anyone who opens this link can look at the schedule. They cannot change anything.</div></div>
+    <div id="shLinkOff"><button type="button" class="pok" id="shGet" style="width:100%;padding:14px;font-size:15px">🔗 Get link</button></div>
+    <div id="shLinkOn" style="display:none"><div class="pcu"><input id="shLink" readonly><button type="button" class="pok" id="shCopy">Copy</button></div><button type="button" class="pmore" id="shOff" style="margin-top:10px">Turn off link</button></div>
   </div>
   <div id="shPaneUid" style="display:none">
-    <div class="pcu"><input id="shUid" type="number" inputmode="numeric" placeholder="UID (e.g. 1042)"><select id="shRole" style="background:var(--bg);border:1px solid var(--line);border-radius:10px;color:var(--text);padding:0 8px;font-weight:800;height:44px"><option value="view">Viewer</option><option value="edit">Editor</option></select><button type="button" class="pok" id="shAdd">Add</button></div>
-    <div style="font-size:11.5px;color:var(--dim);margin-top:6px">Viewer = can only look. Editor = can add, edit and delete rows.</div>
+    <div class="pcu"><input id="shUid" type="number" inputmode="numeric" placeholder="UID (e.g. 1042)" style="height:46px"></div>
+    <div class="shrow"><div class="seg" id="shRoleSeg"><button type="button" class="on" data-r="view">Viewer</button><button type="button" data-r="edit">Editor</button></div><button type="button" class="pok" id="shAdd">Add</button></div>
     <div class="cap">People with access</div><div id="shList"></div>
   </div>
   <button type="button" class="pmore" id="shClose">Close</button></div></div>
-<div class="ov" id="ovU"><div class="sheet"><h2>💡 How to use</h2><div id="tuBody"></div><div class="acts" id="tuActs"></div></div></div>
+<div class="ov ovc" id="ovU"><div class="sheet"><div class="tuh"><span>💡</span><h2>How to use</h2></div><div id="tuBody"></div><div class="acts" id="tuActs"></div></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -988,20 +996,21 @@ const setupMsg=er=>/function|relation|schema cache|does not exist|column|policy/
 const shareLink=()=>location.origin+location.pathname+'?t='+tid;
 function renderShares(){
   const t=teams.find(x=>x.id===tid); if(!t)return;
-  $('shLink').value=shareLink(); $('shAny').checked=!!t.link_view; $('shLinkBox').style.display=t.link_view?'':'none';
-  $('shList').innerHTML=shareRows.length?shareRows.map(r=>`<div class="shr"><div><b>${esc(r.full_name||'User')}</b><span>UID #${esc(r.user_number||'?')}</span></div><select data-sr="${r.user_id}"><option value="view"${r.role==='view'?' selected':''}>Viewer</option><option value="edit"${r.role==='edit'?' selected':''}>Editor</option></select><button type="button" data-sd="${r.user_id}" aria-label="Remove">✕</button></div>`).join(''):'<div style="color:var(--dim);font-size:13px;padding:6px 0">No one added yet.</div>';
+  $('shLink').value=shareLink(); $('shLinkOff').style.display=t.link_view?'none':''; $('shLinkOn').style.display=t.link_view?'':'none';
+  $('shList').innerHTML=shareRows.length?shareRows.map(r=>`<div class="shr"><div><b>${esc(r.full_name||'User')}</b><span>UID #${esc(r.user_number||'?')}</span></div><div class="seg"><button type="button" data-rv="view" data-ru="${r.user_id}" class="${r.role==='view'?'on':''}">Viewer</button><button type="button" data-rv="edit" data-ru="${r.user_id}" class="${r.role==='edit'?'on':''}">Editor</button></div><button type="button" data-sd="${r.user_id}" aria-label="Remove">✕</button></div>`).join(''):'<div style="color:var(--dim);font-size:13px;padding:6px 0">No one added yet.</div>';
 }
 async function loadShares(){ const r=await sb.rpc('sched_share_list',{p_team:tid}); if(r.error){toast(setupMsg(r.error));shareRows=[];}else shareRows=r.data||[]; renderShares(); }
 $('tShare').addEventListener('click',()=>{ if(!tid)return; $('shUid').value=''; $('ovS').classList.add('show'); renderShares(); loadShares(); });
 document.querySelectorAll('.shtab').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('.shtab').forEach(x=>x.classList.toggle('on',x===b)); $('shPaneLink').style.display=b.dataset.st==='link'?'':'none'; $('shPaneUid').style.display=b.dataset.st==='uid'?'':'none'; }));
 $('shClose').addEventListener('click',()=>$('ovS').classList.remove('show'));
 $('ovS').addEventListener('click',e=>{if(e.target.id==='ovS')$('ovS').classList.remove('show');});
-$('shAny').addEventListener('change',async()=>{
-  const t=teams.find(x=>x.id===tid), on=$('shAny').checked;
-  const r=await sb.from('user_schedule_teams').update({link_view:on}).eq('id',tid);
-  if(r.error){ $('shAny').checked=!on; toast(setupMsg(r.error)); return; }
-  t.link_view=on; renderShares();
-});
+async function setLink(on){
+  const t=teams.find(x=>x.id===tid); const r=await sb.from('user_schedule_teams').update({link_view:on}).eq('id',tid);
+  if(r.error){ toast(setupMsg(r.error)); return false; } t.link_view=on; renderShares(); return true;
+}
+$('shGet').addEventListener('click',async()=>{ if(await setLink(true)){ try{ await navigator.clipboard.writeText(shareLink()); toast('Link copied ✓'); }catch(e){} } });
+$('shOff').addEventListener('click',()=>setLink(false));
+$('shRoleSeg').addEventListener('click',e=>{ const b=e.target.closest('[data-r]'); if(!b)return; $('shRoleSeg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); });
 $('shCopy').addEventListener('click',async()=>{
   const v=shareLink(); try{ await navigator.clipboard.writeText(v); toast('Link copied ✓'); }catch(e){ $('shLink').select(); try{document.execCommand('copy');toast('Link copied ✓');}catch(_){toast('Copy the link manually');} }
 });
@@ -1011,14 +1020,14 @@ $('shAdd').addEventListener('click',async()=>{
     const f=await sb.rpc('sched_find_user',{p_uid:n}); if(f.error)throw f.error;
     const u=(f.data||[])[0]; if(!u){toast('No user with that UID.');return false;}
     if(u.id===uid){toast('That is your own UID.');return false;}
-    const r=await sb.from('user_schedule_shares').upsert({team_id:tid,user_id:u.id,role:$('shRole').value},{onConflict:'team_id,user_id'}); if(r.error)throw r.error;
+    const r=await sb.from('user_schedule_shares').upsert({team_id:tid,user_id:u.id,role:($('shRoleSeg').querySelector('.on')||{dataset:{r:'view'}}).dataset.r},{onConflict:'team_id,user_id'}); if(r.error)throw r.error;
     $('shUid').value=''; await loadShares(); return true;
   });
 });
-$('shList').addEventListener('change',async e=>{
-  const sel=e.target.closest('[data-sr]'); if(!sel)return;
-  const r=await sb.from('user_schedule_shares').update({role:sel.value}).eq('team_id',tid).eq('user_id',sel.dataset.sr);
-  if(r.error)toast(setupMsg(r.error)); else toast('Saved ✓');
+$('shList').addEventListener('click',async e=>{
+  const rb=e.target.closest('[data-rv]'); if(!rb)return;
+  const r=await sb.from('user_schedule_shares').update({role:rb.dataset.rv}).eq('team_id',tid).eq('user_id',rb.dataset.ru);
+  if(r.error){toast(setupMsg(r.error));return;} const row=shareRows.find(x=>x.user_id===rb.dataset.ru); if(row)row.role=rb.dataset.rv; renderShares(); toast('Saved ✓');
 });
 $('shList').addEventListener('click',async e=>{
   const b=e.target.closest('[data-sd]'); if(!b)return;
