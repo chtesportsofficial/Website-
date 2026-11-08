@@ -242,6 +242,7 @@ select.dd{appearance:none;-webkit-appearance:none;height:46px;min-width:108px;pa
 #rcBar button{border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:11px;padding:10px 13px;font-weight:850;font-size:13px}
 #rcBar #rcDate{background:var(--green);border-color:var(--green);color:#052e1c}
 body.hasclip #fab{display:none!important}
+html.lock,body.lock{overflow:hidden!important;overscroll-behavior:none}.ov{overscroll-behavior:contain}
 .rotag{background:#ffffff26;border-radius:999px;padding:1px 8px;margin-left:6px;font-weight:800}
 #rwBar{gap:6px}#rwBar button{padding:10px 11px}
 #rwBar #rwDel{color:#e0243c;border-color:rgba(224,36,60,.45)}
@@ -334,7 +335,7 @@ body.ro #rwDel{display:none}
   <div class="acts" style="margin-top:10px"><button type="button" id="fnSub">− Deduct</button><button type="button" class="save" id="fnAdd">＋ Add</button></div>
   <div class="cap">History</div><div id="fnList"></div>
   <button type="button" class="pmore" id="fnClose">Close</button></div></div>
-<div class="ov" id="ovB"><div class="sheet" style="text-align:center"><img id="bgImg" alt=""><h2 id="bgName"></h2><div id="bgSub"></div><div class="acts"><button type="button" id="bgClose">Close</button><button type="button" id="bgChange">Change</button><button type="button" class="del" id="bgRemove">Remove</button></div></div></div>
+<div class="ov" id="ovB"><div class="sheet" style="text-align:center"><img id="bgImg" alt=""><h2 id="bgName"></h2><div id="bgSub"></div><div class="acts"><button type="button" id="bgChange">Change</button><button type="button" class="del" id="bgRemove">Remove</button><button type="button" id="bgClose">Close</button></div></div></div>
 <div class="ov" id="ovS"><div class="sheet"><h2>Share this schedule</h2>
   <div class="shtabs"><button type="button" class="shtab on" data-st="link">🔗 Anyone with link<small>view only</small></button><button type="button" class="shtab" data-st="uid">👤 Specific people<small>by UID · view or edit</small></button></div>
   <div id="shPaneLink">
@@ -406,7 +407,7 @@ function render(){
     const dl=dayLabel(d), cc={}; byDay[d].forEach(x=>{ if(x.entry_time&&x.result!=='sold'&&!/^sold$/i.test(x.rank||''))cc[x.entry_time.slice(0,5)]=(cc[x.entry_time.slice(0,5)]||0)+1; }); const fi={}; { const arr=byDay[d]; for(let i=0;i<arr.length;){ const g=arr[i].fee_group; let j=i+1; if(g){ while(j<arr.length&&arr[j].fee_group===g)j++; } const run=arr.slice(i,j), es=run.reduce((t,x)=>t+num(x.fee),0), ch=run.reduce((t,x)=>t+num(x.fee_charge),0), sum=es+ch, paid=run.every(x=>x.fee_paid), parts=run.map(x=>num(x.fee)).filter(Boolean).map(fmt).join('+')+(ch?'+'+fmt(ch):''); const ps=run.reduce((t,x)=>t+num(x.prize),0), pl=ps-sum, hasPl=!!(ps||sum); fi[arr[i].id]={span:j-i,sum,paid,parts,pl,hasPl}; for(let k=i+1;k<j;k++)fi[arr[k].id]={skip:true,span:j-i,sum,paid,parts,pl,hasPl}; i=j; } }
     const pi={}; { const arr=byDay[d]; for(let i=0;i<arr.length;){ const g=arr[i].prize_group; let j=i+1; if(g){ while(j<arr.length&&arr[j].prize_group===g)j++; } const run=arr.slice(i,j), sum=run.reduce((t,x)=>t+num(x.prize),0), rec=run.every(x=>x.prize_received), parts=''; pi[arr[i].id]={span:j-i,sum,rec,parts}; for(let k=i+1;k<j;k++)pi[arr[k].id]={skip:true}; i=j; } }
     const plc={}; { const arr=byDay[d], ends=(k)=>{const r=[],st=[];for(let i=0;i<arr.length;){let j=i+1;const g=arr[i][k];if(g)while(j<arr.length&&arr[j][k]===g)j++;for(let q=i;q<j;q++){r[q]=j;st[q]=i;}i=j;}return {r,st};}, F=ends('fee_group'), P=ends('prize_group');
-      for(let i=0;i<arr.length;){ if(F.r[i]>i+1&&F.st[i]===i&&P.st[i]===i&&P.r[i]===F.r[i]){ const run=arr.slice(i,F.r[i]), ps=run.reduce((t,x)=>t+num(x.prize),0), fs=run.reduce((t,x)=>t+num(x.fee)+num(x.fee_charge),0); plc[arr[i].id]={span:run.length,pl:ps-fs,has:!!(ps||fs)}; for(let q=i+1;q<F.r[i];q++)plc[arr[q].id]={skip:true}; i=F.r[i]; } else i++; } }
+      for(let i=0;i<arr.length;){ let end=i+1; for(let q=i;q<end;q++)end=Math.max(end,F.r[q],P.r[q]); if(end>i+1){ const run=arr.slice(i,end), ps=run.reduce((t,x)=>t+num(x.prize),0), fs=run.reduce((t,x)=>t+num(x.fee)+num(x.fee_charge),0); plc[arr[i].id]={span:run.length,pl:ps-fs,has:!!(ps||fs)}; for(let q=i+1;q<end;q++)plc[arr[q].id]={skip:true}; } i=end; } }
     const clT=Object.keys(cc).filter(k=>cc[k]>1).sort((a,b)=>tkey(a).localeCompare(tkey(b))).map(k=>timeLabel(k));
     return `<tr class="dh" data-d="${d}"><td colspan="12"><div class="dhin" id="d-${d}"><b>${esc(dl.t)}<small>${dl.w}</small></b>${clipRows&&!RO?`<button type="button" class="dhp" data-paste="${d}">📋 Paste</button>`:''}${clT.length?`<span class="clb">⚠ ${esc(clT.join(', '))} clash</span>`:''}</div></td></tr>`+H+
     byDay[d].map(e=>{
@@ -1051,6 +1052,12 @@ $('fnList').addEventListener('click',async e=>{
   funds=funds.filter(f=>f.id!==b.dataset.fd); renderFunds(); render();
 });
 
+// lock the page behind any open popup
+(function(){
+  const upd=()=>{ const on=!!document.querySelector('.ov.show'); document.body.classList.toggle('lock',on); document.documentElement.classList.toggle('lock',on); };
+  new MutationObserver(upd).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']}); upd();
+  document.addEventListener('touchmove',e=>{ if(document.body.classList.contains('lock')&&!e.target.closest('.sheet,#ddMenu'))e.preventDefault(); },{passive:false});
+})();
 // cursor goes to the END of the value when you tap an input
 (function(){
   const toEnd=el=>{ if(!el||!/^(INPUT|TEXTAREA)$/.test(el.tagName)||el.readOnly||/checkbox|radio|file|time|date/.test(el.type))return; setTimeout(()=>{ try{ const v=el.value; el.value=''; el.value=v; if(el.setSelectionRange&&el.type!=='number')el.setSelectionRange(v.length,v.length); }catch(e){} },0); };
