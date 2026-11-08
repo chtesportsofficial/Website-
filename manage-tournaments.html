@@ -233,6 +233,15 @@ body.ro #fab,body.ro #bgChange,body.ro #bgRemove,body.ro .ban-add,body.ro .bplus
 .tuh{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:12px}.tuh span{width:54px;height:54px;border-radius:50%;background:rgba(233,201,106,.16);display:flex;align-items:center;justify-content:center;font-size:28px}.tuh h2{margin:0}
 .tuc{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:14px;max-height:46vh;overflow-y:auto}
 #tuActs{margin-top:14px}#ovU .tuv{display:block;text-align:center;margin-top:12px;padding:13px}
+select.dd{appearance:none;-webkit-appearance:none;height:46px;min-width:108px;padding:0 30px 0 12px;border-radius:12px;border:1px solid var(--line);color:var(--text);font-weight:850;font-size:13.5px;background:var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%238b93a9' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 11px center}
+.shline{display:flex;gap:8px;align-items:center}.shline input{flex:1;min-width:0;height:46px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:0 12px;color:var(--text);font-size:14px;outline:none}.shline .pok{height:46px;padding:0 18px;flex:0 0 auto}
+.shr select.dd{height:38px;min-width:96px;font-size:12.5px}
+.dhin{display:flex;align-items:center;gap:8px}.dhp{margin-left:4px;border:none;border-radius:8px;background:rgba(255,255,255,.22);color:#fff;font-weight:850;font-size:11.5px;padding:5px 10px}
+#rcBar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(100px + env(safe-area-inset-bottom));width:min(94vw,540px);z-index:9000;display:none;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px 10px 10px 14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+#rcBar.show{display:flex}#rcInfo{flex:1;min-width:0;font-size:12.5px;font-weight:700;line-height:1.35}#rcInfo small{display:block;color:var(--dim);font-weight:600;font-size:11px}
+#rcBar button{border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:11px;padding:10px 13px;font-weight:850;font-size:13px}
+#rcBar #rcDate{background:var(--green);border-color:var(--green);color:#052e1c}
+body.hasclip #fab{display:none!important}
 .rotag{background:#ffffff26;border-radius:999px;padding:1px 8px;margin-left:6px;font-weight:800}
 </style>
 </head>
@@ -304,7 +313,9 @@ body.ro #fab,body.ro #bgChange,body.ro #bgRemove,body.ro .ban-add,body.ro .bplus
   <div class="acts"><button type="button" class="del" id="tsDel" style="display:none">Delete</button><button type="button" id="tsCancel">Cancel</button><button type="button" class="save" id="tsSave">Save</button></div>
 </div></div>
 <div class="ov" id="ovP"><div class="sheet"><h2 id="pkTitle"></h2><div id="pkBody"></div></div></div>
-<div id="rwBar"><div id="rwInfo"></div><button type="button" id="rwDone">✓ Done</button><button type="button" id="rwTime">Time</button><button type="button" id="rwX" aria-label="Done">✕</button></div>
+<div id="rcBar"><div id="rcInfo"></div><button type="button" id="rcDate">📅 Paste to date</button><button type="button" id="rcX" aria-label="Cancel">✕</button></div>
+<input type="date" id="rcDateIn" style="position:fixed;left:-9999px;bottom:140px;opacity:0">
+<div id="rwBar"><div id="rwInfo"></div><button type="button" id="rwCopy">⎘ Copy</button><button type="button" id="rwDone">✓ Done</button><button type="button" id="rwTime">Time</button><button type="button" id="rwX" aria-label="Done">✕</button></div>
 <input type="file" id="banQuick" accept="image/png,image/jpeg,image/webp" style="display:none">
 <div id="cpBar"><div id="cpInfo"></div><button type="button" id="cpMerge" style="display:none">Merge</button><button type="button" id="cpCopy">Copy</button><button type="button" id="cpPaste">Paste</button><button type="button" id="cpX" aria-label="Done">✕</button></div>
 <div class="ov" id="ovF"><div class="sheet"><h2>Add to balance</h2>
@@ -321,8 +332,7 @@ body.ro #fab,body.ro #bgChange,body.ro #bgRemove,body.ro .ban-add,body.ro .bplus
     <div id="shLinkOn" style="display:none"><div class="pcu"><input id="shLink" readonly><button type="button" class="pok" id="shCopy">Copy</button></div><button type="button" class="pmore" id="shOff" style="margin-top:10px">Turn off link</button></div>
   </div>
   <div id="shPaneUid" style="display:none">
-    <div class="pcu"><input id="shUid" type="number" inputmode="numeric" placeholder="UID (e.g. 1042)" style="height:46px"></div>
-    <div class="shrow"><div class="seg" id="shRoleSeg"><button type="button" class="on" data-r="view">Viewer</button><button type="button" data-r="edit">Editor</button></div><button type="button" class="pok" id="shAdd">Add</button></div>
+    <div class="shline"><input id="shUid" type="number" inputmode="numeric" placeholder="UID"><select id="shRole" class="dd"><option value="view">Viewer</option><option value="edit">Editor</option></select><button type="button" class="pok" id="shAdd">Add</button></div>
     <div class="cap">People with access</div><div id="shList"></div>
   </div>
   <button type="button" class="pmore" id="shClose">Close</button></div></div>
@@ -370,7 +380,7 @@ function render(){
   $('tName').textContent=T.name?(T.name+' SCHEDULE').toUpperCase():'NO TEAM — TAP ＋ TEAM';
   const lu=cur().map(e=>e.updated_at||e.created_at||'').sort().pop();
   $('tUpd').textContent='last updated : '+(lu?new Date(lu).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—');
-  applyRole();
+  applyRole(); if(!rowSel)rowExtra.clear();
   const keys=monthKeys(); if(!ym||(ym!=='all'&&!keys.includes(ym))) ym=todayStr.slice(0,7);
   $('months').innerHTML=`<button type="button" class="mchip ${ym==='all'?'on':''}" data-m="all">ALL</button>`+keys.map(k=>`<button type="button" class="mchip ${k===ym?'on':''}" data-m="${k}">${monthLabel(k)}</button>`).join('');
   const list=cur().filter(e=>ym==='all'||monthOf(e.entry_date)===ym).sort((a,b)=>a.entry_date.localeCompare(b.entry_date)||cmpTime(a,b));
@@ -388,7 +398,7 @@ function render(){
     const plc={}; { const arr=byDay[d], ends=(k)=>{const r=[],st=[];for(let i=0;i<arr.length;){let j=i+1;const g=arr[i][k];if(g)while(j<arr.length&&arr[j][k]===g)j++;for(let q=i;q<j;q++){r[q]=j;st[q]=i;}i=j;}return {r,st};}, F=ends('fee_group'), P=ends('prize_group');
       for(let i=0;i<arr.length;){ if(F.r[i]>i+1&&F.st[i]===i&&P.st[i]===i&&P.r[i]===F.r[i]){ const run=arr.slice(i,F.r[i]), ps=run.reduce((t,x)=>t+num(x.prize),0), fs=run.reduce((t,x)=>t+num(x.fee)+num(x.fee_charge),0); plc[arr[i].id]={span:run.length,pl:ps-fs,has:!!(ps||fs)}; for(let q=i+1;q<F.r[i];q++)plc[arr[q].id]={skip:true}; i=F.r[i]; } else i++; } }
     const clT=Object.keys(cc).filter(k=>cc[k]>1).sort((a,b)=>tkey(a).localeCompare(tkey(b))).map(k=>timeLabel(k));
-    return `<tr class="dh" data-d="${d}"><td colspan="12"><div class="dhin" id="d-${d}"><b>${esc(dl.t)}<small>${dl.w}</small></b>${clT.length?`<span class="clb">⚠ ${esc(clT.join(', '))} clash</span>`:''}</div></td></tr>`+H+
+    return `<tr class="dh" data-d="${d}"><td colspan="12"><div class="dhin" id="d-${d}"><b>${esc(dl.t)}<small>${dl.w}</small></b>${clipRows&&!RO?`<button type="button" class="dhp" data-paste="${d}">📋 Paste</button>`:''}${clT.length?`<span class="clb">⚠ ${esc(clT.join(', '))} clash</span>`:''}</div></td></tr>`+H+
     byDay[d].map(e=>{
       const rk=String(e.rank||'').trim(), sold=/^sold$/i.test(rk), rkTxt=/^#?\d+$/.test(rk)?'#'+rk.replace('#',''):rk;
       const img=safeImg(e.banner_url), q=e.result==='qualified', dq=e.result==='disqualified';
@@ -402,11 +412,12 @@ function render(){
   }).join('');
   $('days').innerHTML='<div class="tw"><table class="sh"><tbody>'+body+'</tbody></table></div>';
   const _n=document.querySelector('.tw'); if(_n)_n.scrollLeft=_sx;
-  applySel();
+  applySel(); rcShow();
 }
 
 $('months').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;ym=b.dataset.m;render();});
 $('days').addEventListener('click',e=>{
+  const pb=e.target.closest('[data-paste]'); if(pb){pasteRows(pb.dataset.paste);return;}
   const add=e.target.closest('[data-add]'); if(add&&!RO){openPick(null,'newtime',add.dataset.add);return;}
   const td=e.target.closest('td[data-f]'); if(!td)return;
   if(lpFired){lpFired=false;return;}
@@ -609,20 +620,56 @@ async function btnRun(btn,busy,okTxt,fn){
 }
 
 // ---------- row select + move (tap a Time cell) ----------
-let rowSel=null;
-function rwInfo(){ const e=entries.find(x=>x.id===rowSel); if(!e)return; $('rwDone').textContent=e.done?'↺ Undo done':'✓ Done'; $('rwInfo').innerHTML='Drag the Time cell to move<small>'+esc((e.entry_time?timeLabel(e.entry_time)+' · ':'')+(e.name||'no name'))+'</small>'; }
+let rowSel=null, rowExtra=new Set(), clipRows=null;
+function selRows(){ return [rowSel,...rowExtra].map(id=>entries.find(x=>x.id===id)).filter(Boolean); }
+function rwInfo(){
+  const e=entries.find(x=>x.id===rowSel); if(!e)return; const n=1+rowExtra.size;
+  $('rwDone').textContent=selRows().every(x=>x.done)?'↺ Undo':'✓ Done';
+  $('rwTime').style.display=n>1?'none':'';
+  $('rwInfo').innerHTML=n>1?n+' rows selected<small>Tap more Time cells to add / remove</small>':'Drag the Time cell to move<small>'+esc((e.entry_time?timeLabel(e.entry_time)+' · ':'')+(e.name||'no name'))+' · tap another Time to add</small>';
+}
 function toggleRow(e){
   if(selMode)exitSel();
-  if(rowSel===e.id){exitRow();return;}
-  rowSel=e.id; $('fab').style.display='none'; $('rwBar').classList.add('show'); rwInfo(); render();
+  if(rowSel&&rowSel!==e.id){ if(rowExtra.has(e.id))rowExtra.delete(e.id); else rowExtra.add(e.id); rwInfo(); render(); return; }
+  if(rowSel===e.id){ if(rowExtra.size){ rowSel=[...rowExtra][0]; rowExtra.delete(rowSel); rwInfo(); render(); return; } exitRow(); return; }
+  rowSel=e.id; rowExtra=new Set(); $('fab').style.display='none'; $('rwBar').classList.add('show'); rcShow(); rwInfo(); render();
 }
-function exitRow(){ rowSel=null; $('rwBar').classList.remove('show'); $('fab').style.display='block'; render(); }
+function exitRow(){ rowSel=null; rowExtra=new Set(); $('rwBar').classList.remove('show'); $('fab').style.display='block'; render(); }
 $('rwX').addEventListener('click',exitRow);
 $('rwDone').addEventListener('click',async()=>{
-  const e=entries.find(x=>x.id===rowSel); if(!e)return;
-  const ok=await btnRun($('rwDone'),'Saving…','',async()=>{ const r=await upd(e.id,{done:!e.done}); if(r.error)throw r.error; entries=entries.map(x=>x.id===e.id?r.data:x); return true; });
+  const rs=selRows(); if(!rs.length)return; const val=!rs.every(x=>x.done);
+  const ok=await btnRun($('rwDone'),'Saving…','',async()=>{ for(const e of rs){ const r=await upd(e.id,{done:val}); entries=entries.map(x=>x.id===e.id?r.data:x); } return true; });
   if(ok){ render(); rwInfo(); }
 });
+// ---- copy whole rows, paste on any date
+$('rwCopy').addEventListener('click',()=>{
+  const rs=selRows().sort((a,b)=>a.entry_date.localeCompare(b.entry_date)||cmpTime(a,b)); if(!rs.length)return;
+  clipRows=rs.map(e=>({entry_time:e.entry_time,type:e.type,maps:e.maps,name:e.name,fee:e.fee,fee_charge:e.fee_charge,fee_group:e.fee_group}));
+  exitRow(); toast(clipRows.length+' row'+(clipRows.length>1?'s':'')+' copied ✓');
+});
+function rcShow(){
+  const on=!!clipRows&&!rowSel&&!selMode&&!RO;
+  $('rcBar').classList.toggle('show',on); document.body.classList.toggle('hasclip',on);
+  if(on)$('rcInfo').innerHTML=clipRows.length+' row'+(clipRows.length>1?'s':'')+' copied<small>Tap 📋 Paste on a date, or pick a date</small>';
+}
+$('rcX').addEventListener('click',()=>{ clipRows=null; render(); });
+$('rcDate').addEventListener('click',()=>{ const i=$('rcDateIn'); i.value=''; try{ i.showPicker?i.showPicker():i.click(); }catch(e){ i.click(); } });
+$('rcDateIn').addEventListener('change',e=>{ if(e.target.value)pasteRows(e.target.value); });
+async function pasteRows(date){
+  if(!clipRows||!date||RO)return;
+  const day=cur().filter(x=>x.entry_date===date).sort(cmpTime), hasPos=day.some(x=>x.pos!=null), maxPos=day.reduce((m,x)=>Math.max(m,x.pos!=null?+x.pos:0),0), gmap={};
+  const rows=clipRows.map((c,i)=>{
+    const o={user_id:uid,team_id:tid,entry_date:date,entry_time:c.entry_time||null,type:c.type||null,maps:c.maps==null?null:c.maps,name:c.name||'',fee:num(c.fee),fee_paid:true,result:'',prize:0,prize_received:true};
+    if(c.fee_group){ gmap[c.fee_group]=gmap[c.fee_group]||(crypto.randomUUID?crypto.randomUUID():null); if(gmap[c.fee_group]){o.fee_group=gmap[c.fee_group]; o.fee_charge=num(c.fee_charge);} }
+    if(hasPos)o.pos=maxPos+10*(i+1);
+    return o;
+  });
+  const ok=await btnRun(null,'','',async()=>{
+    const r=await sb.from('user_schedule_entries').insert(rows).select(); if(r.error)throw r.error;
+    entries.push(...r.data); if(ym!=='all')ym=monthOf(date); return true;
+  });
+  if(ok){ toast(rows.length+' row'+(rows.length>1?'s':'')+' pasted on '+dayLabel(date).t+' ✓'); render(); const t=document.getElementById('d-'+date); if(t)t.scrollIntoView({block:'center'}); }
+}
 $('rwTime').addEventListener('click',()=>{ const e=entries.find(x=>x.id===rowSel); if(e)openPick(e,'entry_time'); });
 // ---------- drag a selected row anywhere (any day) ----------
 let dg=null, dgTimer=null;
@@ -652,7 +699,7 @@ function dgStart(){
 }
 function dgClean(){ clearInterval(dgTimer); ['dgGhost','dgLine'].forEach(i=>{const x=$(i); if(x)x.remove();}); document.querySelectorAll('tr.dragging').forEach(r=>r.classList.remove('dragging')); }
 $('days').addEventListener('pointerdown',e=>{
-  if(!rowSel||!e.target.closest('tr.rsel td[data-f="entry_time"]'))return;
+  const trr=e.target.closest('tr.rsel'); if(!rowSel||rowExtra.size||!trr||trr.dataset.id!==rowSel||!e.target.closest('td[data-f="entry_time"]'))return;
   dg={id:rowSel,x:e.clientX,y:e.clientY,lastY:e.clientY,on:false,target:null};
 });
 window.addEventListener('pointermove',e=>{
@@ -725,13 +772,13 @@ function updateBar(){
   mb.style.display=((selF==='fee'||selF==='prize')&&(anyM||n>=2))?'':'none'; mb.textContent=anyM?'Unmerge':'Merge';
 }
 function applySel(){
-  if(rowSel){const tr=document.querySelector(`tr[data-id="${rowSel}"]`); if(tr)tr.classList.add('rsel');}
+  [rowSel,...rowExtra].forEach(id=>{ if(!id)return; const tr=document.querySelector(`tr[data-id="${id}"]`); if(tr)tr.classList.add('rsel'); });
   if(!selMode)return;
   sel.forEach(id=>{const td=document.querySelector(`tr[data-id="${id}"] td[data-f="${selF}"]`); if(td)td.classList.add('sel');});
 }
 function enterSel(td){
   if(RO)return;
-  if(rowSel){rowSel=null;$('rwBar').classList.remove('show');}
+  if(rowSel){rowSel=null;rowExtra=new Set();$('rwBar').classList.remove('show');}
   const id=td.parentNode.dataset.id; if(!id)return;
   selMode=true; sel=new Set([id]); selF=td.dataset.f;
   $('fab').style.display='none'; $('cpBar').classList.add('show'); updateBar(); render();
@@ -997,7 +1044,7 @@ const shareLink=()=>location.origin+location.pathname+'?t='+tid;
 function renderShares(){
   const t=teams.find(x=>x.id===tid); if(!t)return;
   $('shLink').value=shareLink(); $('shLinkOff').style.display=t.link_view?'none':''; $('shLinkOn').style.display=t.link_view?'':'none';
-  $('shList').innerHTML=shareRows.length?shareRows.map(r=>`<div class="shr"><div><b>${esc(r.full_name||'User')}</b><span>UID #${esc(r.user_number||'?')}</span></div><div class="seg"><button type="button" data-rv="view" data-ru="${r.user_id}" class="${r.role==='view'?'on':''}">Viewer</button><button type="button" data-rv="edit" data-ru="${r.user_id}" class="${r.role==='edit'?'on':''}">Editor</button></div><button type="button" data-sd="${r.user_id}" aria-label="Remove">✕</button></div>`).join(''):'<div style="color:var(--dim);font-size:13px;padding:6px 0">No one added yet.</div>';
+  $('shList').innerHTML=shareRows.length?shareRows.map(r=>`<div class="shr"><div><b>${esc(r.full_name||'User')}</b><span>UID #${esc(r.user_number||'?')}</span></div><select class="dd" data-rs="${r.user_id}"><option value="view"${r.role==='view'?' selected':''}>Viewer</option><option value="edit"${r.role==='edit'?' selected':''}>Editor</option></select><button type="button" data-sd="${r.user_id}" aria-label="Remove">✕</button></div>`).join(''):'<div style="color:var(--dim);font-size:13px;padding:6px 0">No one added yet.</div>';
 }
 async function loadShares(){ const r=await sb.rpc('sched_share_list',{p_team:tid}); if(r.error){toast(setupMsg(r.error));shareRows=[];}else shareRows=r.data||[]; renderShares(); }
 $('tShare').addEventListener('click',()=>{ if(!tid)return; $('shUid').value=''; $('ovS').classList.add('show'); renderShares(); loadShares(); });
@@ -1010,7 +1057,6 @@ async function setLink(on){
 }
 $('shGet').addEventListener('click',async()=>{ if(await setLink(true)){ try{ await navigator.clipboard.writeText(shareLink()); toast('Link copied ✓'); }catch(e){} } });
 $('shOff').addEventListener('click',()=>setLink(false));
-$('shRoleSeg').addEventListener('click',e=>{ const b=e.target.closest('[data-r]'); if(!b)return; $('shRoleSeg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); });
 $('shCopy').addEventListener('click',async()=>{
   const v=shareLink(); try{ await navigator.clipboard.writeText(v); toast('Link copied ✓'); }catch(e){ $('shLink').select(); try{document.execCommand('copy');toast('Link copied ✓');}catch(_){toast('Copy the link manually');} }
 });
@@ -1020,14 +1066,14 @@ $('shAdd').addEventListener('click',async()=>{
     const f=await sb.rpc('sched_find_user',{p_uid:n}); if(f.error)throw f.error;
     const u=(f.data||[])[0]; if(!u){toast('No user with that UID.');return false;}
     if(u.id===uid){toast('That is your own UID.');return false;}
-    const r=await sb.from('user_schedule_shares').upsert({team_id:tid,user_id:u.id,role:($('shRoleSeg').querySelector('.on')||{dataset:{r:'view'}}).dataset.r},{onConflict:'team_id,user_id'}); if(r.error)throw r.error;
+    const r=await sb.from('user_schedule_shares').upsert({team_id:tid,user_id:u.id,role:$('shRole').value},{onConflict:'team_id,user_id'}); if(r.error)throw r.error;
     $('shUid').value=''; await loadShares(); return true;
   });
 });
-$('shList').addEventListener('click',async e=>{
-  const rb=e.target.closest('[data-rv]'); if(!rb)return;
-  const r=await sb.from('user_schedule_shares').update({role:rb.dataset.rv}).eq('team_id',tid).eq('user_id',rb.dataset.ru);
-  if(r.error){toast(setupMsg(r.error));return;} const row=shareRows.find(x=>x.user_id===rb.dataset.ru); if(row)row.role=rb.dataset.rv; renderShares(); toast('Saved ✓');
+$('shList').addEventListener('change',async e=>{
+  const sl=e.target.closest('[data-rs]'); if(!sl)return;
+  const r=await sb.from('user_schedule_shares').update({role:sl.value}).eq('team_id',tid).eq('user_id',sl.dataset.rs);
+  if(r.error){toast(setupMsg(r.error));return;} const row=shareRows.find(x=>x.user_id===sl.dataset.rs); if(row)row.role=sl.value; toast('Saved ✓');
 });
 $('shList').addEventListener('click',async e=>{
   const b=e.target.closest('[data-sd]'); if(!b)return;
