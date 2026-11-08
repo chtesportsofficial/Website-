@@ -217,6 +217,14 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 .tuc{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.6}.tuc.dim{color:var(--dim)}
 .tuv{display:inline-block;margin-top:12px;padding:10px 14px;border-radius:11px;background:#e0243c;color:#fff;font-weight:850;font-size:13px;text-decoration:none}
 body.ro #fab,body.ro #bgChange,body.ro #bgRemove,body.ro .ban-add,body.ro .bplus{display:none!important}
+.sh tr.dn td{opacity:.5}.sh tr.dn td:first-child{opacity:1;color:#12c458}
+.bplus{top:auto!important;bottom:7px;width:auto!important;padding:0 8px;border-radius:999px!important;font-size:13px!important;letter-spacing:2px}
+.ovc{display:none;align-items:center;justify-content:center;padding:16px}.ovc.show{display:flex}
+.ovc .sheet{position:relative;border-radius:20px;border:1px solid var(--line);max-width:440px;width:100%;margin:0;padding:18px 16px}
+.shtabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:2px 0 12px}
+.shtab{padding:12px 8px;border-radius:13px;border:1px solid var(--line);background:var(--bg);font-weight:850;font-size:13px;text-align:center;line-height:1.3}
+.shtab small{display:block;font-weight:600;font-size:10.5px;color:var(--dim);margin-top:2px}
+.shtab.on{border-color:var(--green);background:rgba(34,224,138,.12)}
 .rotag{background:#ffffff26;border-radius:999px;padding:1px 8px;margin-left:6px;font-weight:800}
 </style>
 </head>
@@ -234,12 +242,12 @@ body.ro #fab,body.ro #bgChange,body.ro #bgRemove,body.ro .ban-add,body.ro .bplus
 
   <div id="main" style="display:none">
     <div class="teams" id="teams"></div>
-    <div class="thead"><div class="tupd" id="tUpd"></div><div class="ttl"><b id="tName"></b><button type="button" id="tShare" aria-label="Share"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4"/></svg></button><button type="button" id="tEdit" aria-label="Edit team"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button></div></div>
+    <div class="thead"><div class="tupd" id="tUpd"></div><div class="ttl"><b id="tName"></b><button type="button" id="tEdit" aria-label="Edit team"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button><button type="button" id="tShare" aria-label="Share"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4"/></svg></button></div></div>
     <div class="sum">
       <div class="scard"><div class="l">TOTAL COST</div><div class="v" id="sCost">0</div><div class="h">all entry fees</div></div>
       <div class="scard"><div class="l">PRIZEPOOL</div><div class="v" id="sPrize">0</div><div class="h">prize won</div></div>
       <div class="scard"><div class="l">PROFIT</div><div class="v" id="sProfit">0</div><div class="h">prize − cost</div></div>
-      <div class="scard" id="sBalCard" style="position:relative;cursor:pointer"><span class="bplus">＋</span><div class="l">BALANCE</div><div class="v" id="sBal">0</div><div class="h">received − paid</div></div>
+      <div class="scard" id="sBalCard" style="position:relative;cursor:pointer"><span class="bplus">＋ −</span><div class="l">BALANCE</div><div class="v" id="sBal">0</div><div class="h">&nbsp;</div></div>
     </div>
     <div class="months" id="months"></div>
     <div id="days"></div>
@@ -288,7 +296,7 @@ body.ro #fab,body.ro #bgChange,body.ro #bgRemove,body.ro .ban-add,body.ro .bplus
   <div class="acts"><button type="button" class="del" id="tsDel" style="display:none">Delete</button><button type="button" id="tsCancel">Cancel</button><button type="button" class="save" id="tsSave">Save</button></div>
 </div></div>
 <div class="ov" id="ovP"><div class="sheet"><h2 id="pkTitle"></h2><div id="pkBody"></div></div></div>
-<div id="rwBar"><div id="rwInfo"></div><button type="button" id="rwTime">Time</button><button type="button" id="rwX" aria-label="Done">✕</button></div>
+<div id="rwBar"><div id="rwInfo"></div><button type="button" id="rwDone">✓ Done</button><button type="button" id="rwTime">Time</button><button type="button" id="rwX" aria-label="Done">✕</button></div>
 <input type="file" id="banQuick" accept="image/png,image/jpeg,image/webp" style="display:none">
 <div id="cpBar"><div id="cpInfo"></div><button type="button" id="cpMerge" style="display:none">Merge</button><button type="button" id="cpCopy">Copy</button><button type="button" id="cpPaste">Paste</button><button type="button" id="cpX" aria-label="Done">✕</button></div>
 <div class="ov" id="ovF"><div class="sheet"><h2>Add to balance</h2>
@@ -298,13 +306,17 @@ body.ro #fab,body.ro #bgChange,body.ro #bgRemove,body.ro .ban-add,body.ro .bplus
   <div class="cap">History</div><div id="fnList"></div>
   <button type="button" class="pmore" id="fnClose">Close</button></div></div>
 <div class="ov" id="ovB"><div class="sheet" style="text-align:center"><img id="bgImg" alt=""><h2 id="bgName"></h2><div id="bgSub"></div><div class="acts"><button type="button" id="bgClose">Close</button><button type="button" id="bgChange">Change</button><button type="button" class="del" id="bgRemove">Remove</button></div></div></div>
-<div class="ov" id="ovS"><div class="sheet"><h2>Share this schedule</h2>
-  <label class="chk" style="margin-top:0"><input type="checkbox" id="shAny"> Anyone with the link can view</label>
-  <div id="shLinkBox" style="display:none"><div class="pcu" style="margin-top:8px"><input id="shLink" readonly><button type="button" class="pok" id="shCopy">Copy</button></div></div>
-  <div class="cap">Give access by UID</div>
-  <div class="pcu"><input id="shUid" type="number" inputmode="numeric" placeholder="UID (e.g. 1042)"><select id="shRole" style="background:var(--bg);border:1px solid var(--line);border-radius:10px;color:var(--text);padding:0 8px;font-weight:800"><option value="view">Viewer</option><option value="edit">Editor</option></select><button type="button" class="pok" id="shAdd">Add</button></div>
-  <div style="font-size:11.5px;color:var(--dim);margin-top:6px">Viewer = can only look. Editor = can add, edit and delete rows. Only you can share, rename or delete the team.</div>
-  <div class="cap">People with access</div><div id="shList"></div>
+<div class="ov ovc" id="ovS"><div class="sheet"><h2>Share this schedule</h2>
+  <div class="shtabs"><button type="button" class="shtab on" data-st="link">🔗 Anyone with link<small>view only</small></button><button type="button" class="shtab" data-st="uid">👤 Specific people<small>by UID · view or edit</small></button></div>
+  <div id="shPaneLink">
+    <label class="chk" style="margin-top:0"><input type="checkbox" id="shAny"> Link sharing is ON</label>
+    <div id="shLinkBox" style="display:none"><div class="pcu" style="margin-top:8px"><input id="shLink" readonly><button type="button" class="pok" id="shCopy">Copy</button></div><div style="font-size:11.5px;color:var(--dim);margin-top:6px">Anyone who opens this link can look at the schedule. They cannot change anything.</div></div>
+  </div>
+  <div id="shPaneUid" style="display:none">
+    <div class="pcu"><input id="shUid" type="number" inputmode="numeric" placeholder="UID (e.g. 1042)"><select id="shRole" style="background:var(--bg);border:1px solid var(--line);border-radius:10px;color:var(--text);padding:0 8px;font-weight:800;height:44px"><option value="view">Viewer</option><option value="edit">Editor</option></select><button type="button" class="pok" id="shAdd">Add</button></div>
+    <div style="font-size:11.5px;color:var(--dim);margin-top:6px">Viewer = can only look. Editor = can add, edit and delete rows.</div>
+    <div class="cap">People with access</div><div id="shList"></div>
+  </div>
   <button type="button" class="pmore" id="shClose">Close</button></div></div>
 <div class="ov" id="ovU"><div class="sheet"><h2>💡 How to use</h2><div id="tuBody"></div><div class="acts" id="tuActs"></div></div></div>
 <div class="toast" id="toast"></div>
@@ -364,18 +376,20 @@ function render(){
   const H='<tr class="hd"><td>TIME</td><td>TYPE</td><td>MAP</td><td class="hn">TOURNAMENT NAME / ORGANIZER</td><td>FEE</td><td>STATUS</td><td>RANK</td><td>PRIZE 🏆</td><td>P/L</td><td>BANNER</td><td>COMMENT</td><td>DEL</td></tr>';
   const body=Object.keys(byDay).sort().map(d=>{
     const dl=dayLabel(d), cc={}; byDay[d].forEach(x=>{ if(x.entry_time&&x.result!=='sold'&&!/^sold$/i.test(x.rank||''))cc[x.entry_time.slice(0,5)]=(cc[x.entry_time.slice(0,5)]||0)+1; }); const fi={}; { const arr=byDay[d]; for(let i=0;i<arr.length;){ const g=arr[i].fee_group; let j=i+1; if(g){ while(j<arr.length&&arr[j].fee_group===g)j++; } const run=arr.slice(i,j), es=run.reduce((t,x)=>t+num(x.fee),0), ch=run.reduce((t,x)=>t+num(x.fee_charge),0), sum=es+ch, paid=run.every(x=>x.fee_paid), parts=run.map(x=>num(x.fee)).filter(Boolean).map(fmt).join('+')+(ch?'+'+fmt(ch):''); const ps=run.reduce((t,x)=>t+num(x.prize),0), pl=ps-sum, hasPl=!!(ps||sum); fi[arr[i].id]={span:j-i,sum,paid,parts,pl,hasPl}; for(let k=i+1;k<j;k++)fi[arr[k].id]={skip:true,span:j-i,sum,paid,parts,pl,hasPl}; i=j; } }
-    const pi={}; { const arr=byDay[d]; for(let i=0;i<arr.length;){ const g=arr[i].prize_group; let j=i+1; if(g){ while(j<arr.length&&arr[j].prize_group===g)j++; } const run=arr.slice(i,j), sum=run.reduce((t,x)=>t+num(x.prize),0), rec=run.every(x=>x.prize_received), parts=run.length>1&&new Set(run.map(x=>num(x.prize))).size>1?run.map(x=>fmt(num(x.prize))).join('+'):''; pi[arr[i].id]={span:j-i,sum,rec,parts}; for(let k=i+1;k<j;k++)pi[arr[k].id]={skip:true}; i=j; } }
+    const pi={}; { const arr=byDay[d]; for(let i=0;i<arr.length;){ const g=arr[i].prize_group; let j=i+1; if(g){ while(j<arr.length&&arr[j].prize_group===g)j++; } const run=arr.slice(i,j), sum=run.reduce((t,x)=>t+num(x.prize),0), rec=run.every(x=>x.prize_received), parts=''; pi[arr[i].id]={span:j-i,sum,rec,parts}; for(let k=i+1;k<j;k++)pi[arr[k].id]={skip:true}; i=j; } }
+    const plc={}; { const arr=byDay[d], ends=(k)=>{const r=[],st=[];for(let i=0;i<arr.length;){let j=i+1;const g=arr[i][k];if(g)while(j<arr.length&&arr[j][k]===g)j++;for(let q=i;q<j;q++){r[q]=j;st[q]=i;}i=j;}return {r,st};}, F=ends('fee_group'), P=ends('prize_group');
+      for(let i=0;i<arr.length;){ if(F.r[i]>i+1&&F.st[i]===i&&P.st[i]===i&&P.r[i]===F.r[i]){ const run=arr.slice(i,F.r[i]), ps=run.reduce((t,x)=>t+num(x.prize),0), fs=run.reduce((t,x)=>t+num(x.fee)+num(x.fee_charge),0); plc[arr[i].id]={span:run.length,pl:ps-fs,has:!!(ps||fs)}; for(let q=i+1;q<F.r[i];q++)plc[arr[q].id]={skip:true}; i=F.r[i]; } else i++; } }
     const clT=Object.keys(cc).filter(k=>cc[k]>1).sort((a,b)=>tkey(a).localeCompare(tkey(b))).map(k=>timeLabel(k));
     return `<tr class="dh" data-d="${d}"><td colspan="12"><div class="dhin" id="d-${d}"><b>${esc(dl.t)}<small>${dl.w}</small></b>${clT.length?`<span class="clb">⚠ ${esc(clT.join(', '))} clash</span>`:''}</div></td></tr>`+H+
     byDay[d].map(e=>{
       const rk=String(e.rank||'').trim(), sold=/^sold$/i.test(rk), rkTxt=/^#?\d+$/.test(rk)?'#'+rk.replace('#',''):rk;
       const img=safeImg(e.banner_url), q=e.result==='qualified', dq=e.result==='disqualified';
-      const pe=pi[e.id], fe=fi[e.id], pl=num(e.prize)-num(e.fee), hasPl=!!(num(e.prize)||num(e.fee));
+      const pe=pi[e.id], fe=fi[e.id], pc=plc[e.id], pl=pc?pc.pl:num(e.prize)-num(e.fee), hasPl=pc?pc.has:!!(num(e.prize)||num(e.fee));
       const cl=e.entry_time&&e.result!=='sold'&&!/^sold$/i.test(e.rank||'')&&cc[e.entry_time.slice(0,5)]>1;
-      return `<tr class="er" data-id="${e.id}"><td data-f="entry_time" class="${cl?'clash':''}">${cl?'⚠ ':''}${e.entry_time?esc(timeLabel(e.entry_time)):''}</td><td data-f="type">${esc(e.type||'')}</td><td data-f="maps">${e.maps!=null&&e.maps!==''?num(e.maps):''}</td>`+
+      return `<tr class="er${e.done?' dn':''}" data-id="${e.id}"><td data-f="entry_time" class="${cl?'clash':''}">${e.done?'✓ ':''}${cl?'⚠ ':''}${e.entry_time?esc(timeLabel(e.entry_time)):''}</td><td data-f="type">${esc(e.type||'')}</td><td data-f="maps">${e.maps!=null&&e.maps!==''?num(e.maps):''}</td>`+
       `<td class="c-n" data-f="name">${e.name?esc(e.name):'<span class="ph">＋ name / organized by</span>'}</td>${fe.skip?'':`<td data-f="fee" rowspan="${fe.span}" class="${fe.sum&&!fe.paid?'y':''}">${fe.sum?fmt(fe.sum):''}${fe.span>1?`<small class="fsm">${esc(fe.parts)}</small>`:''}</td>`}`+
       `<td data-f="result" class="${RC[e.result]||''}">${esc(e.result||'')}</td><td data-f="rank" class="${sold?'g':''}">${esc(rkTxt)}</td>`+
-      `${pe.skip?'':`<td data-f="prize" rowspan="${pe.span}" class="pz ${pe.rec?'':'un'}">${pe.sum?fmt(pe.sum):''}${pe.parts?`<small class="fsm">${esc(pe.parts)}</small>`:''}</td>`}<td class="${hasPl?(pl>=0?'pl-p':'pl-n'):''}">${hasPl?(pl>0?'+':'')+fmt(pl):''}</td>`+
+      `${pe.skip?'':`<td data-f="prize" rowspan="${pe.span}" class="pz ${pe.rec?'':'un'}">${pe.sum?fmt(pe.sum):''}${pe.parts?`<small class="fsm">${esc(pe.parts)}</small>`:''}</td>`}${pc&&pc.skip?'':`<td${pc?` rowspan="${pc.span}"`:''} class="${hasPl?(pl>=0?'pl-p':'pl-n'):''}">${hasPl?(pl>0?'+':'')+fmt(pl):''}</td>`}`+
       `<td data-f="banner">${img?`<img src="${esc(img)}" alt="" loading="lazy">`:'<span class="ban-add">＋</span>'}</td><td class="c-c" data-f="comment">${esc(e.comment||'')}</td><td class="tr" data-f="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6"/></svg></td></tr>`;}).join('');
   }).join('');
   $('days').innerHTML='<div class="tw"><table class="sh"><tbody>'+body+'</tbody></table></div>';
@@ -580,7 +594,7 @@ async function btnRun(btn,busy,okTxt,fn){
   let ok=false;
   try{ ok=!!(await fn()); }catch(err){
     const m=String((err&&err.message)||err);
-    toast(/sched_|user_schedule_shares|schedule_tutorial|link_view/.test(m)?'Run schedule_extras.sql in Supabase first.':/prize_group/.test(m)?'Run prize_merge_upgrade.sql in Supabase first.':/fee_group|fee_charge/.test(m)?'Run merge_fee_upgrade.sql in Supabase first.':/user_schedule_funds/.test(m)?'Run funds_upgrade.sql in Supabase first.':/\bpos\b|schema cache/.test(m)?'Run row_move_upgrade.sql in Supabase first.':'Failed: '+m);
+    toast(/'done'|"done"/.test(m)?'Run schedule_extras.sql in Supabase first.':/sched_|user_schedule_shares|schedule_tutorial|link_view/.test(m)?'Run schedule_extras.sql in Supabase first.':/prize_group/.test(m)?'Run prize_merge_upgrade.sql in Supabase first.':/fee_group|fee_charge/.test(m)?'Run merge_fee_upgrade.sql in Supabase first.':/user_schedule_funds/.test(m)?'Run funds_upgrade.sql in Supabase first.':/\bpos\b|schema cache/.test(m)?'Run row_move_upgrade.sql in Supabase first.':'Failed: '+m);
   }
   if(btn){ if(ok&&okTxt){btn.textContent=okTxt;await sleep(450);} btn.textContent=old; btn.disabled=false; }
   return ok;
@@ -588,7 +602,7 @@ async function btnRun(btn,busy,okTxt,fn){
 
 // ---------- row select + move (tap a Time cell) ----------
 let rowSel=null;
-function rwInfo(){ const e=entries.find(x=>x.id===rowSel); if(!e)return; $('rwInfo').innerHTML='Drag the Time cell to move<small>'+esc((e.entry_time?timeLabel(e.entry_time)+' · ':'')+(e.name||'no name'))+'</small>'; }
+function rwInfo(){ const e=entries.find(x=>x.id===rowSel); if(!e)return; $('rwDone').textContent=e.done?'↺ Undo done':'✓ Done'; $('rwInfo').innerHTML='Drag the Time cell to move<small>'+esc((e.entry_time?timeLabel(e.entry_time)+' · ':'')+(e.name||'no name'))+'</small>'; }
 function toggleRow(e){
   if(selMode)exitSel();
   if(rowSel===e.id){exitRow();return;}
@@ -596,6 +610,11 @@ function toggleRow(e){
 }
 function exitRow(){ rowSel=null; $('rwBar').classList.remove('show'); $('fab').style.display='block'; render(); }
 $('rwX').addEventListener('click',exitRow);
+$('rwDone').addEventListener('click',async()=>{
+  const e=entries.find(x=>x.id===rowSel); if(!e)return;
+  const ok=await btnRun($('rwDone'),'Saving…','',async()=>{ const r=await upd(e.id,{done:!e.done}); if(r.error)throw r.error; entries=entries.map(x=>x.id===e.id?r.data:x); return true; });
+  if(ok){ render(); rwInfo(); }
+});
 $('rwTime').addEventListener('click',()=>{ const e=entries.find(x=>x.id===rowSel); if(e)openPick(e,'entry_time'); });
 // ---------- drag a selected row anywhere (any day) ----------
 let dg=null, dgTimer=null;
@@ -950,6 +969,12 @@ $('fnList').addEventListener('click',async e=>{
   funds=funds.filter(f=>f.id!==b.dataset.fd); renderFunds(); render();
 });
 
+// cursor goes to the END of the value when you tap an input
+(function(){
+  const toEnd=el=>{ if(!el||!/^(INPUT|TEXTAREA)$/.test(el.tagName)||el.readOnly||/checkbox|radio|file|time|date/.test(el.type))return; setTimeout(()=>{ try{ const v=el.value; el.value=''; el.value=v; if(el.setSelectionRange&&el.type!=='number')el.setSelectionRange(v.length,v.length); }catch(e){} },0); };
+  document.addEventListener('focusin',e=>toEnd(e.target));
+  document.addEventListener('click',e=>{ if(e.target===document.activeElement)toEnd(e.target); });
+})();
 // ---------- sharing + roles ----------
 let RO=false, LINKONLY=false, myRoles={}, isAdm=false, tut=null, shareRows=[];
 function roleOfTeam(t){ if(LINKONLY)return 'view'; if(!t||t.user_id===uid)return 'owner'; return myRoles[t.id]||'view'; }
@@ -968,6 +993,7 @@ function renderShares(){
 }
 async function loadShares(){ const r=await sb.rpc('sched_share_list',{p_team:tid}); if(r.error){toast(setupMsg(r.error));shareRows=[];}else shareRows=r.data||[]; renderShares(); }
 $('tShare').addEventListener('click',()=>{ if(!tid)return; $('shUid').value=''; $('ovS').classList.add('show'); renderShares(); loadShares(); });
+document.querySelectorAll('.shtab').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('.shtab').forEach(x=>x.classList.toggle('on',x===b)); $('shPaneLink').style.display=b.dataset.st==='link'?'':'none'; $('shPaneUid').style.display=b.dataset.st==='uid'?'':'none'; }));
 $('shClose').addEventListener('click',()=>$('ovS').classList.remove('show'));
 $('ovS').addEventListener('click',e=>{if(e.target.id==='ovS')$('ovS').classList.remove('show');});
 $('shAny').addEventListener('change',async()=>{
