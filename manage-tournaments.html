@@ -83,7 +83,7 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 .sh td.c-c{text-align:left;min-width:150px;white-space:normal;color:var(--dim)}
 .sh td.g{background:#12c458;color:#04210f;font-weight:800}
 .sh td.r{background:#e0243c;color:#fff;font-weight:800}
-.sh td.pz{color:var(--green);font-weight:800}.sh td.pz.un{color:#ffb020}
+.sh td.pz{color:var(--green);font-weight:800}.sh td.pz.y{color:#2b2200}
 .sh td img{width:38px;height:38px;border-radius:7px;object-fit:cover;display:block;margin:0 auto}
 .empty{text-align:center;color:var(--dim);font-size:13.5px;line-height:1.7;padding:46px 26px}
 
@@ -158,6 +158,7 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 #cpInfo small{display:block;color:var(--dim);font-weight:600;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #cpBar button{border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:11px;padding:10px 14px;font-weight:850;font-size:13px}
 #cpBar button:disabled{opacity:.4}
+#cpBar{gap:6px}#cpBar button{padding:10px 11px}#cpBar #cpClear{color:#e0243c;border-color:rgba(224,36,60,.45)}
 #cpBar #cpPaste:not(:disabled){background:var(--green);border-color:var(--green);color:#052e1c}
 .dsel select{padding:7px 6px;font-size:13px;border-radius:9px}
 .sh tr.hd td.hn{white-space:nowrap;min-width:250px}
@@ -186,7 +187,7 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 .sh td.clash{background:var(--bg);color:#e0243c}
 .sh .ph{color:var(--dim);opacity:.8}
 .sh td.c-c{color:var(--dim)}
-.sh td.pz{color:#0e9f5a}.sh td.pz.un{color:#d98200}
+.sh td.pz{color:#0e9f5a}.sh td.pz.y{color:#2b2200}
 .sh td.sel,.sh tr.rsel td{outline:3px solid #ff9800;outline-offset:-3px;filter:none;background-image:linear-gradient(rgba(255,152,0,.22),rgba(255,152,0,.22))}
 .sh td.g,.sh td.r,.sh td.y,.sh td.b,.sh td.o{background-image:none}
 .sh td.sel.g,.sh td.sel.r,.sh td.sel.y{background-image:linear-gradient(rgba(255,255,255,.28),rgba(255,255,255,.28))}
@@ -328,7 +329,7 @@ body.ro #rwDel{display:none}
 <input type="date" id="rcDateIn" style="position:fixed;left:-9999px;bottom:140px;opacity:0">
 <div id="rwBar"><div id="rwInfo"></div><button type="button" id="rwCopy">⎘ Copy</button><button type="button" id="rwDone">✓ Done</button><button type="button" id="rwTime">Time</button><button type="button" id="rwDel" aria-label="Delete rows">🗑</button><button type="button" id="rwX" aria-label="Done">✕</button></div>
 <input type="file" id="banQuick" accept="image/png,image/jpeg,image/webp" style="display:none">
-<div id="cpBar"><div id="cpInfo"></div><button type="button" id="cpMerge" style="display:none">Merge</button><button type="button" id="cpCopy">Copy</button><button type="button" id="cpPaste">Paste</button><button type="button" id="cpX" aria-label="Done">✕</button></div>
+<div id="cpBar"><div id="cpInfo"></div><button type="button" id="cpMerge" style="display:none">Merge</button><button type="button" id="cpClear" aria-label="Clear values">🗑</button><button type="button" id="cpCopy">Copy</button><button type="button" id="cpPaste">Paste</button><button type="button" id="cpX" aria-label="Done">✕</button></div>
 <div class="ov" id="ovF"><div class="sheet"><h2>Add to balance</h2>
   <div class="pcu"><input id="fnAmt" type="number" inputmode="numeric" min="0" placeholder="Amount ৳ (e.g. 1000)"></div>
   <div class="pcu" style="margin-top:8px"><input id="fnNote" maxlength="60" placeholder="Note (e.g. Sponsor)"></div>
@@ -418,7 +419,7 @@ function render(){
       return `<tr class="er${e.done?' dn':''}" data-id="${e.id}"><td data-f="entry_time" class="${cl?'clash':''}">${e.done?'✓ ':''}${cl?'⚠ ':''}${e.entry_time?esc(timeLabel(e.entry_time)):''}</td><td data-f="type">${esc(e.type||'')}</td><td data-f="maps">${e.maps!=null&&e.maps!==''?num(e.maps):''}</td>`+
       `<td class="c-n" data-f="name">${e.name?esc(e.name):'<span class="ph">＋ name / organized by</span>'}</td>${fe.skip?'':`<td data-f="fee" rowspan="${fe.span}" class="${fe.sum&&!fe.paid?'y':''}">${fe.sum?fmt(fe.sum):''}${fe.span>1?`<small class="fsm">${esc(fe.parts)}</small>`:''}</td>`}`+
       `<td data-f="result" class="${RC[e.result]||''}">${esc(e.result||'')}</td><td data-f="rank" class="${sold?'g':''}">${esc(rkTxt)}</td>`+
-      `${pe.skip?'':`<td data-f="prize" rowspan="${pe.span}" class="pz ${pe.rec?'':'un'}">${pe.sum?fmt(pe.sum):''}${pe.parts?`<small class="fsm">${esc(pe.parts)}</small>`:''}</td>`}${pc&&pc.skip?'':`<td${pc?` rowspan="${pc.span}"`:''} class="${hasPl?(pl>=0?'pl-p':'pl-n'):''}">${hasPl?(pl>0?'+':'')+fmt(pl):''}</td>`}`+
+      `${pe.skip?'':`<td data-f="prize" rowspan="${pe.span}" class="pz ${pe.rec?'':'y'}">${pe.sum?fmt(pe.sum):''}${pe.parts?`<small class="fsm">${esc(pe.parts)}</small>`:''}</td>`}${pc&&pc.skip?'':`<td${pc?` rowspan="${pc.span}"`:''} class="${hasPl?(pl>=0?'pl-p':'pl-n'):''}">${hasPl?(pl>0?'+':'')+fmt(pl):''}</td>`}`+
       `<td data-f="banner">${img?`<img src="${esc(img)}" alt="" loading="lazy">`:'<span class="ban-add">＋</span>'}</td><td class="c-c" data-f="comment">${esc(e.comment||'')}</td><td class="tr" data-f="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6"/></svg></td></tr>`;}).join('');
   }).join('');
   $('days').innerHTML='<div class="tw"><table class="sh"><tbody>'+body+'</tbody></table></div>';
@@ -785,37 +786,39 @@ $('bgRemove').addEventListener('click',async()=>{
 // ---------- copy / paste (long-press a cell) ----------
 let selMode=false, sel=new Set(), selF='', clip=null, lpT=null, lpX=0, lpY=0, lpFired=false;
 const lpCancel=()=>{clearTimeout(lpT);lpT=null;};
+const FLD_LABEL={name:'name',type:'type',maps:'maps',fee:'fee',result:'status',rank:'rank',prize:'prize',comment:'comment'};
 function cellVal(e,f){
   if(f==='entry_time')return {p:{entry_time:e.entry_time},l:e.entry_time?timeLabel(e.entry_time):'(empty)'};
   if(f==='fee')return {p:{fee:e.fee,fee_paid:e.fee_paid},l:num(e.fee)?String(num(e.fee)):'(empty)'};
   if(f==='prize')return {p:{prize:e.prize,prize_received:e.prize_received},l:num(e.prize)?String(num(e.prize)):'(empty)'};
   const v=e[f]; return {p:{[f]:v==null?(f==='name'||f==='result'?'':null):v},l:(v==null||v==='')?'(empty)':String(v)};
 }
+// selection = any cells, any columns.  key = "rowId|field"
+const skey=(id,f)=>id+'|'+f;
+function selCells(){ return [...sel].map(k=>{const i=k.indexOf('|'); const id=k.slice(0,i), f=k.slice(i+1); return {id,f,e:entries.find(x=>x.id===id)};}).filter(c=>c.e); }
 function updateBar(){
-  const n=sel.size;
-  $('cpInfo').innerHTML=(n?n+' selected':'Tap cells to select')+(clip?`<small>Copied: ${esc(clip.label)}</small>`:'<small>Select a cell, then tap Copy</small>');
-  $('cpCopy').disabled=!n;
-  $('cpPaste').disabled=!(clip&&n&&selF===clip.f);
-  const rs=[...sel].map(id=>entries.find(x=>x.id===id)).filter(Boolean), anyM=rs.some(r=>r[selF==='prize'?'prize_group':'fee_group']), mb=$('cpMerge');
+  const cs=selCells(), n=cs.length, fs=new Set(cs.map(c=>c.f)); selF=fs.size===1?[...fs][0]:'';
+  $('cpInfo').innerHTML=(n?n+' selected':'Tap cells to select')+(clip?`<small>Copied: ${esc(clip.label)}</small>`:'<small>Select cells, then tap Copy</small>');
+  $('cpCopy').disabled=!n; $('cpClear').disabled=!n;
+  $('cpPaste').disabled=!(clip&&n&&(!clip.simple||cs.some(c=>c.f===clip.f)));
+  const anyM=cs.some(c=>c.e[selF==='prize'?'prize_group':'fee_group']), mb=$('cpMerge');
   mb.style.display=((selF==='fee'||selF==='prize')&&(anyM||n>=2))?'':'none'; mb.textContent=anyM?'Unmerge':'Merge';
 }
 function applySel(){
   [rowSel,...rowExtra].forEach(id=>{ if(!id)return; const tr=document.querySelector(`tr[data-id="${id}"]`); if(tr)tr.classList.add('rsel'); });
   if(!selMode)return;
-  sel.forEach(id=>{const td=document.querySelector(`tr[data-id="${id}"] td[data-f="${selF}"]`); if(td)td.classList.add('sel');});
+  sel.forEach(k=>{const i=k.indexOf('|'); const td=document.querySelector(`tr[data-id="${k.slice(0,i)}"] td[data-f="${k.slice(i+1)}"]`); if(td)td.classList.add('sel');});
 }
 function enterSel(td){
   if(RO)return;
   if(rowSel){rowSel=null;rowExtra=new Set();$('rwBar').classList.remove('show');}
   const id=td.parentNode.dataset.id; if(!id)return;
-  selMode=true; sel=new Set([id]); selF=td.dataset.f;
+  selMode=true; sel=new Set([skey(id,td.dataset.f)]);
   $('fab').style.display='none'; $('cpBar').classList.add('show'); updateBar(); render();
 }
 function toggleSel(td){
-  const id=td.parentNode.dataset.id, f=td.dataset.f;
-  if(sel.size&&f!==selF){toast('Select cells from the same column.');return;}
-  if(!sel.size)selF=f;
-  if(sel.has(id)){sel.delete(id);td.classList.remove('sel');}else{sel.add(id);td.classList.add('sel');}
+  const k=skey(td.parentNode.dataset.id,td.dataset.f);
+  if(sel.has(k)){sel.delete(k);td.classList.remove('sel');}else{sel.add(k);td.classList.add('sel');}
   updateBar();
 }
 function exitSel(){
@@ -831,27 +834,90 @@ $('days').addEventListener('pointermove',e=>{ if(lpT&&(Math.abs(e.clientX-lpX)>1
 ['pointerup','pointercancel','pointerleave'].forEach(ev=>$('days').addEventListener(ev,lpCancel));
 $('days').addEventListener('contextmenu',e=>e.preventDefault());
 $('cpX').addEventListener('click',exitSel);
+
+// a merged cell stands for all the rows it covers
+function expandCells(cs){
+  const items=[], seen=new Set();
+  cs.forEach(c=>{
+    let rows=[c.e];
+    if(c.f==='fee'&&c.e.fee_group)rows=runOf(c.e); else if(c.f==='prize'&&c.e.prize_group)rows=runOfP(c.e);
+    rows.forEach(r=>{ const k=skey(r.id,c.f); if(!seen.has(k)){seen.add(k);items.push({row:r,f:c.f});} });
+  });
+  return items;
+}
+function patchFor(it){
+  const r=it.row, o={...cellVal(r,it.f).p};
+  if(it.f==='fee'){ o.fee_charge=num(r.fee_charge); o.__g=r.fee_group||null; }
+  if(it.f==='prize'){ o.__g=r.prize_group||null; }
+  return o;
+}
 $('cpCopy').addEventListener('click',()=>{
-  const id=[...sel][0], e=entries.find(x=>x.id===id); if(!e)return;
-  const c=cellVal(e,selF); clip={f:selF,patch:c.p,label:c.l};
-  sel=new Set(); updateBar(); render(); toast('Copied ✓ — now select cells to paste');
+  const cs=selCells(); if(!cs.length)return;
+  const items=expandCells(cs);
+  if(items.length===1){ const c=cellVal(items[0].row,items[0].f); clip={simple:true,f:items[0].f,patch:c.p,label:c.l}; }
+  else{
+    const dates=new Set(items.map(it=>it.row.entry_date)); if(dates.size>1){toast('Copy cells from one day at a time.');return;}
+    const day=cur().filter(x=>x.entry_date===items[0].row.entry_date).sort(cmpTime);
+    const idx=items.map(it=>day.findIndex(x=>x.id===it.row.id)), min=Math.min(...idx);
+    clip={simple:false,items:items.map((it,k)=>({dr:idx[k]-min,f:it.f,patch:patchFor(it)}))};
+    const nr=Math.max(...idx)-min+1, nf=new Set(items.map(it=>it.f)).size;
+    clip.label=nr+' row'+(nr>1?'s':'')+' × '+nf+' column'+(nf>1?'s':'');
+  }
+  sel=new Set(); updateBar(); render(); toast('Copied ✓ — now select where to paste');
 });
 $('cpPaste').addEventListener('click',async()=>{
-  if(!clip||!sel.size||selF!==clip.f)return;
-  const ids=[...sel];
+  const cs=selCells(); if(!clip||!cs.length)return;
+  const patches={};   // rowId -> patch
+  const add=(id,p)=>{ patches[id]=Object.assign(patches[id]||{},p); };
+  if(clip.simple){
+    expandCells(cs.filter(c=>c.f===clip.f)).forEach(it=>{
+      const p={...clip.patch};
+      if(clip.f==='type'&&/^scrim$/i.test(p.type||'')&&(it.row.maps==null||it.row.maps===''))p.maps=3;
+      add(it.row.id,p);
+    });
+    if(!Object.keys(patches).length)return;
+  }else{
+    // block: starts at the top-most selected row
+    const rowsSel=cs.map(c=>c.e).sort((a,b)=>a.entry_date.localeCompare(b.entry_date)||cmpTime(a,b)), first=rowsSel[0];
+    const day=cur().filter(x=>x.entry_date===first.entry_date).sort(cmpTime), start=day.findIndex(x=>x.id===first.id);
+    const gmap={};
+    for(const it of clip.items){
+      const tr=day[start+it.dr]; if(!tr){toast('Not enough rows below. Add rows first or pick a higher row.');return;}
+      const p={...it.patch}, g=p.__g; delete p.__g;
+      if(it.f==='fee'){ if(g){gmap['f'+g]=gmap['f'+g]||(crypto.randomUUID?crypto.randomUUID():String(Date.now())+g); p.fee_group=gmap['f'+g];} else if(tr.fee_group){p.fee_group=null;} else delete p.fee_charge; if(!g&&tr.fee_group)p.fee_charge=0; }
+      if(it.f==='prize'){ if(g){gmap['p'+g]=gmap['p'+g]||(crypto.randomUUID?crypto.randomUUID():String(Date.now())+g); p.prize_group=gmap['p'+g];} else if(tr.prize_group){p.prize_group=null;} }
+      if(it.f==='type'&&/^scrim$/i.test(p.type||'')&&(tr.maps==null||tr.maps===''))p.maps=3;
+      add(tr.id,p);
+    }
+  }
+  const ids=Object.keys(patches);
   const ok=await btnRun($('cpPaste'),'Pasting…','Pasted ✓',async()=>{
-    const res=await Promise.all(ids.map(id=>{
-      const t=entries.find(x=>x.id===id), p={...clip.patch};
-      if(clip.f==='type'&&/^scrim$/i.test(p.type||'')&&t&&(t.maps==null||t.maps===''))p.maps=3;
-      return upd(id,p);
-    }));
-    const bad=res.find(r=>r.error); if(bad)throw bad.error;
+    const res=await Promise.all(ids.map(id=>upd(id,patches[id])));
     res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);}); return true;
   });
   if(ok)exitSel();
 });
+// clear (delete) the values of the selected cells
+$('cpClear').addEventListener('click',async()=>{
+  const cs=selCells(); if(!cs.length)return;
+  if(!confirm('Clear '+cs.length+' selected cell'+(cs.length>1?'s':'')+'?'))return;
+  const patches={}, add=(id,p)=>{ patches[id]=Object.assign(patches[id]||{},p); };
+  expandCells(cs).forEach(it=>{
+    const r=it.row, f=it.f;
+    if(f==='fee'){ add(r.id,r.fee_group?{fee:0,fee_group:null,fee_charge:0}:{fee:0}); }
+    else if(f==='prize'){ add(r.id,r.prize_group?{prize:0,prize_group:null}:{prize:0}); }
+    else if(f==='name'||f==='result')add(r.id,{[f]:''});
+    else add(r.id,{[f]:null});
+  });
+  const ids=Object.keys(patches);
+  const ok=await btnRun($('cpClear'),'…','',async()=>{
+    const res=await Promise.all(ids.map(id=>upd(id,patches[id])));
+    res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);}); return true;
+  });
+  if(ok){ exitSel(); toast('Cleared ✓'); }
+});
 $('cpMerge').addEventListener('click',async()=>{
-  const rows=[...sel].map(id=>entries.find(x=>x.id===id)).filter(Boolean); if(!rows.length)return; const PZ=selF==='prize', G=PZ?'prize_group':'fee_group', RO=PZ?runOfP:runOf;
+  const rows=selCells().map(c=>c.e); if(!rows.length)return; const PZ=selF==='prize', G=PZ?'prize_group':'fee_group', RO=PZ?runOfP:runOf;
   if(rows.some(r=>r[G])){
     const ok=await btnRun($('cpMerge'),'Working…','Done ✓',async()=>{
       const ids=new Set(); rows.forEach(r=>RO(r).forEach(x=>ids.add(x.id)));
@@ -862,7 +928,7 @@ $('cpMerge').addEventListener('click',async()=>{
   const date=rows[0].entry_date; if(rows.some(r=>r.entry_date!==date)){toast('Pick rows from the same day.');return;}
   const day=cur().filter(x=>x.entry_date===date).sort(cmpTime), idx=rows.map(r=>day.findIndex(x=>x.id===r.id)).sort((a,b)=>a-b);
   if(idx[idx.length-1]-idx[0]!==idx.length-1){toast('Pick rows that are next to each other.');return;}
-  const ord=idx.map(i=>day[i]), g=crypto.randomUUID?crypto.randomUUID():String(Date.now()), total=ord.reduce((t,x)=>t+num(x.fee),0), paid=ord.every(x=>x.fee_paid), allRec=ord.every(x=>x.prize_received);
+  const ord=idx.map(i=>day[i]), g=crypto.randomUUID?crypto.randomUUID():String(Date.now()), paid=ord.every(x=>x.fee_paid), allRec=ord.every(x=>x.prize_received);
   const ok=await btnRun($('cpMerge'),'Merging…','Merged ✓',async()=>{
     const res=await Promise.all(ord.map((x,k)=>upd(x.id,PZ?{prize_group:g,prize_received:allRec}:{fee_group:g,fee_charge:k?0:5,fee_paid:paid})));
     res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);}); return true;
