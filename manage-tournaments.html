@@ -490,7 +490,7 @@ $('pkBody').addEventListener('click',e=>{
   const cd=e.target.closest('[data-cd]'); if(cd){cal.sel=cd.dataset.cd;calRender();return;}
   const cm=e.target.closest('[data-cm]'); if(cm){cal.m+=+cm.dataset.cm; if(cal.m<1){cal.m=12;cal.y--;} if(cal.m>12){cal.m=1;cal.y++;} calRender();return;}
   const cq=e.target.closest('[data-ct]'); if(cq){ const k=cq.dataset.ct; ct[k]=k==='h'?+cq.dataset.v:cq.dataset.v; document.querySelectorAll('[data-ct="'+k+'"]').forEach(x=>x.classList.toggle('on',x===cq)); return; }
-  if(e.target.closest('#pkGo')){createEntries([...pkSel]);return;}
+  if(e.target.closest('#pkGo')){createEntries(pkSel.size?[...pkSel]:[null]);return;}
   if(e.target.closest('#pkCust')){pkCustom();return;}
   const cv=e.target.closest('[data-cv]'); if(cv){ document.querySelectorAll('#pkChg .pc').forEach(x=>x.classList.toggle('on',x===cv)); $('pkIn').value=''; pkTotal(); return; }
   const c=e.target.closest('.pc'); if(c){ if(pk.f==='newtime')pkToggle(c); else pkApply(c.dataset.v,false); return; }
@@ -559,7 +559,7 @@ function newTimeHtml(date){
   return `<div class="cap" style="margin-top:0">Date</div><div id="pdCal"></div>`+
   `<div class="cap">Select time(s) — tap more than one</div><div class="pcs" id="pkChips">`+TIMES.map(([v,l])=>`<button type="button" class="pc" data-v="${v}">${l}</button>`).join('')+`</div>`+
   `<div class="cap">Custom time</div><div class="pcs" style="flex-wrap:nowrap;align-items:center"><input type="time" id="pkTime" style="flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:10px;color:var(--text);font-size:15px;font-weight:800;padding:9px 10px"><button type="button" class="pq" id="pkCust" style="white-space:nowrap">＋ Add time</button></div>`+
-  `<button type="button" class="pok" id="pkGo" style="width:100%;margin-top:16px;padding:14px" disabled>Select time</button>`;
+  `<button type="button" class="pok" id="pkGo" style="width:100%;margin-top:16px;padding:14px">Add row (no time)</button>`;
 }
 function calRender(){
   const {y,m}=cal, first=new Date(y,m-1,1).getDay(), dim=new Date(y,m,0).getDate(); let g='';
@@ -567,7 +567,7 @@ function calRender(){
   for(let d=1;d<=dim;d++){ const iso=y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0'); g+=`<button type="button" class="cd${iso===cal.sel?' on':''}${iso===todayStr?' td':''}" data-cd="${iso}">${d}</button>`; }
   $('pdCal').innerHTML=`<div class="calh"><button type="button" data-cm="-1">‹</button><b>${MONTHS[m-1]} ${y}</b><button type="button" data-cm="1">›</button></div><div class="calw">${['S','M','T','W','T','F','S'].map(x=>`<span>${x}</span>`).join('')}</div><div class="calg">${g}</div>`;
 }
-function pkCount(){ const n=pkSel.size,b=$('pkGo'); b.disabled=!n; b.textContent=n?'OK · add '+n+' row'+(n>1?'s':''):'Select time'; }
+function pkCount(){ const n=pkSel.size,b=$('pkGo'); b.disabled=false; b.textContent=n?'OK · add '+n+' row'+(n>1?'s':''):'Add row (no time)'; }
 function pkToggle(btn){ const v=btn.dataset.v; if(pkSel.has(v)){pkSel.delete(v);btn.classList.remove('on');}else{pkSel.add(v);btn.classList.add('on');} pkCount(); }
 function pkCustom(){
   const v=($('pkTime')||{}).value; if(!v){toast('Pick a time first.');return;}
@@ -688,8 +688,9 @@ async function pasteRows(date){
   if(!clipRows||!date||RO)return;
   const day=cur().filter(x=>x.entry_date===date).sort(cmpTime), hasPos=day.some(x=>x.pos!=null), maxPos=day.reduce((m,x)=>Math.max(m,x.pos!=null?+x.pos:0),0), gmap={};
   const rows=clipRows.map((c,i)=>{
-    const o={user_id:uid,team_id:tid,entry_date:date,entry_time:c.entry_time||null,type:c.type||null,maps:c.maps==null?null:c.maps,name:c.name||'',fee:num(c.fee),fee_paid:true,result:'',prize:0,prize_received:true};
-    if(c.fee_group){ gmap[c.fee_group]=gmap[c.fee_group]||(crypto.randomUUID?crypto.randomUUID():null); if(gmap[c.fee_group]){o.fee_group=gmap[c.fee_group]; o.fee_charge=num(c.fee_charge);} }
+    const keepFee=/^(scrim|cr)$/i.test(String(c.type||'').trim());
+    const o={user_id:uid,team_id:tid,entry_date:date,entry_time:c.entry_time||null,type:c.type||null,maps:c.maps==null?null:c.maps,name:c.name||'',fee:keepFee?num(c.fee):0,fee_paid:true,result:'',prize:0,prize_received:true};
+    if(keepFee&&c.fee_group){ gmap[c.fee_group]=gmap[c.fee_group]||(crypto.randomUUID?crypto.randomUUID():null); if(gmap[c.fee_group]){o.fee_group=gmap[c.fee_group]; o.fee_charge=num(c.fee_charge);} }
     if(hasPos)o.pos=maxPos+10*(i+1);
     return o;
   });
@@ -1114,6 +1115,8 @@ $('fnAdd').addEventListener('click',()=>addFund(1));
 $('fnSub').addEventListener('click',()=>addFund(-1));
 $('fnList').addEventListener('click',async e=>{
   const b=e.target.closest('[data-fd]'); if(!b)return;
+  const f0=funds.find(f=>f.id===b.dataset.fd);
+  if(!confirm('Delete this entry'+(f0?' ('+(num(f0.amount)>0?'+':'')+fmt(num(f0.amount))+(f0.note?' · '+f0.note:'')+')':'')+' from the history?'))return;
   const r=await sb.from('user_schedule_funds').delete().eq('id',b.dataset.fd); if(r.error){toast('Failed: '+r.error.message);return;}
   funds=funds.filter(f=>f.id!==b.dataset.fd); renderFunds(); render();
 });
