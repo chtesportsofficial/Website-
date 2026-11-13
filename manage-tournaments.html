@@ -357,8 +357,18 @@ body.ro #rwDel{display:none}
   </div>
   <button type="button" class="pmore" id="shClose">Close</button></div></div>
 <div class="ov ovc" id="ovU"><div class="sheet"><div class="tuh"><span>💡</span><h2>How to use</h2></div><div id="tuBody"></div><div class="acts" id="tuActs"></div></div></div>
-<div class="ov ovc" id="ovCol" style="z-index:20000"><div class="sheet" style="max-width:340px;text-align:center"><h2 style="margin-bottom:10px">🎨 Cell color</h2><div id="colSw" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;justify-items:center"></div><div style="display:flex;gap:8px;align-items:center;margin-top:14px"><input type="color" id="colCustom" value="#ffd400" style="width:54px;height:44px;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:2px"><button type="button" id="colCustomGo" style="flex:1;padding:12px;border-radius:11px;font-weight:850;background:var(--green);border:1px solid var(--green);color:#052e1c">Use this color</button></div><div class="acts" style="margin-top:14px"><button type="button" id="colNone">Remove color</button><button type="button" id="colNo">Cancel</button></div></div></div>
-<style>#fnSub{background:#e0243c!important;border-color:#e0243c!important;color:#fff!important}.csw{width:38px;height:38px;border-radius:50%;border:2px solid var(--line);padding:0}.csw.on{outline:3px solid var(--text);outline-offset:2px}</style>
+<div class="ov ovc" id="ovCol" style="z-index:20000"><div class="sheet" style="max-width:340px"><h2 style="margin-bottom:12px;text-align:center">🎨 Cell color</h2><div id="colSw" class="cgrid"></div><div id="colMore" style="display:none"><div class="cap" style="margin:12px 0 8px">All colors</div><div id="colAll" class="cgrid cdense"></div><div style="display:flex;gap:8px;align-items:center;margin-top:12px"><input type="color" id="colCustom" value="#ffd400" style="width:46px;height:42px;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:2px"><button type="button" id="colCustomGo" class="cuse">Use custom color</button></div></div><div class="acts" style="margin-top:14px"><button type="button" id="colNo">Close</button></div></div></div>
+<style>#fnSub{background:#e0243c!important;border-color:#e0243c!important;color:#fff!important}
+.cgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;justify-items:center}
+.cgrid.cdense{grid-template-columns:repeat(8,1fr);gap:7px}
+.csw{width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.18);padding:0;position:relative;font-size:18px;color:#fff;line-height:1}
+.cdense .csw{width:30px;height:30px;border-radius:9px}
+.csw.on{outline:3px solid var(--text);outline-offset:2px}
+.csw.none{background:repeating-conic-gradient(#8b93a7 0 25%,#fff 0 50%) 50%/12px 12px!important;color:#e0243c;font-weight:900}
+.csw.rb{background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red)!important}
+.cuse{flex:1;padding:11px;border-radius:11px;font-weight:850;background:var(--green);border:1px solid var(--green);color:#052e1c}
+.sum .scard .bplus{top:5px!important;bottom:auto!important;right:5px!important;font-size:11px!important;padding:0 6px!important;height:16px;line-height:16px}
+.sum .scard .v{padding-top:1px}</style>
 <div class="ov ovc" id="ovCf" style="z-index:20000"><div class="sheet" style="max-width:340px;text-align:center"><div style="font-size:34px;margin-bottom:4px">🗑️</div><h2 id="cfTitle" style="margin-bottom:6px">Are you sure?</h2><div id="cfMsg" style="color:var(--dim);font-size:13.5px;line-height:1.5;overflow-wrap:anywhere"></div><div class="acts" style="margin-top:16px"><button type="button" id="cfNo">Cancel</button><button type="button" id="cfYes" style="background:#e0243c;border-color:#e0243c;color:#fff">Delete</button></div></div></div>
 <div class="toast" id="toast"></div>
 
@@ -390,7 +400,7 @@ function timeLabel(t){if(!t)return '—';const [h,m]=t.split(':').map(Number);co
 function safeImg(u){return typeof u==='string'&&u.startsWith(SUPABASE_URL+'/storage/')?u:'';}
 
 // ---------- render ----------
-function cmpTime(a,b){ const pa=a.pos,pb=b.pos; if(pa!=null&&pb!=null&&+pa!==+pb)return +pa-+pb; if(pa!=null&&pb==null)return -1; if(pa==null&&pb!=null)return 1; return tkey(a.entry_time).localeCompare(tkey(b.entry_time))||String(a.created_at).localeCompare(String(b.created_at)); }
+function cmpTime(a,b){ const pa=a.pos,pb=b.pos; if(pa!=null&&pb!=null&&+pa!==+pb)return +pa-+pb; if(pa!=null&&pb==null)return -1; if(pa==null&&pb!=null)return 1; const tk=t=>t?tkey(t):'99:99'; return tk(a.entry_time).localeCompare(tk(b.entry_time))||String(a.created_at).localeCompare(String(b.created_at)); }
 function tkey(t){ if(!t)return ''; const h=+t.slice(0,2); return String(h<6?h+24:h).padStart(2,'0')+t.slice(2,5); }
 function monthKeys(){
   const s=new Set(cur().map(e=>monthOf(e.entry_date))); s.add(todayStr.slice(0,7));
@@ -684,7 +694,7 @@ async function doDelRows(btn){
 // ---- copy whole rows, paste on any date
 $('rwCopy').addEventListener('click',()=>{
   const rs=selRows().sort((a,b)=>a.entry_date.localeCompare(b.entry_date)||cmpTime(a,b)); if(!rs.length)return;
-  clipRows=rs.map(e=>({entry_time:e.entry_time,type:e.type,maps:e.maps,name:e.name,fee:e.fee,fee_charge:e.fee_charge,fee_group:e.fee_group}));
+  clipRows=rs.map(e=>({entry_time:e.entry_time,type:e.type,maps:e.maps,name:e.name,fee:e.fee,fee_charge:e.fee_charge,fee_group:e.fee_group,banner_url:e.banner_url||null}));
   exitRow(); toast(clipRows.length+' row'+(clipRows.length>1?'s':'')+' copied ✓');
 });
 function rcShow(){
@@ -701,7 +711,7 @@ $('rwPaste').addEventListener('click',async()=>{
   const gmap={}, upds=[], ins=[];
   clipRows.forEach((c,i)=>{
     const tr=day[start+i], keepFee=/^(scrim|cr)$/i.test(String(c.type||'').trim());
-    const p={entry_time:c.entry_time||null,type:c.type||null,maps:c.maps==null?null:c.maps,name:c.name||''};
+    const p={entry_time:c.entry_time||null,type:c.type||null,maps:c.maps==null?null:c.maps,name:c.name||'',banner_url:c.banner_url||null};
     let g=null; if(keepFee&&c.fee_group){ gmap[c.fee_group]=gmap[c.fee_group]||(crypto.randomUUID?crypto.randomUUID():null); g=gmap[c.fee_group]; }
     if(tr){
       if(keepFee){ p.fee=num(c.fee); p.fee_paid=true; if(g){p.fee_group=g;p.fee_charge=num(c.fee_charge);} else if(tr.fee_group){p.fee_group=null;p.fee_charge=0;} }
@@ -727,7 +737,7 @@ async function pasteRows(date){
   const day=cur().filter(x=>x.entry_date===date).sort(cmpTime), hasPos=day.some(x=>x.pos!=null), maxPos=day.reduce((m,x)=>Math.max(m,x.pos!=null?+x.pos:0),0), gmap={};
   const rows=clipRows.map((c,i)=>{
     const keepFee=/^(scrim|cr)$/i.test(String(c.type||'').trim());
-    const o={user_id:uid,team_id:tid,entry_date:date,entry_time:c.entry_time||null,type:c.type||null,maps:c.maps==null?null:c.maps,name:c.name||'',fee:keepFee?num(c.fee):0,fee_paid:true,result:'',prize:0,prize_received:true};
+    const o={user_id:uid,team_id:tid,entry_date:date,entry_time:c.entry_time||null,type:c.type||null,maps:c.maps==null?null:c.maps,name:c.name||'',banner_url:c.banner_url||null,fee:keepFee?num(c.fee):0,fee_paid:true,result:'',prize:0,prize_received:true};
     if(keepFee&&c.fee_group){ gmap[c.fee_group]=gmap[c.fee_group]||(crypto.randomUUID?crypto.randomUUID():null); if(gmap[c.fee_group]){o.fee_group=gmap[c.fee_group]; o.fee_charge=num(c.fee_charge);} }
     if(hasPos)o.pos=maxPos+10*(i+1);
     return o;
@@ -876,11 +886,15 @@ $('cpX').addEventListener('click',exitSel);
 // ---- personal cell colours (reminders) ----
 const HEXRE=/^#[0-9a-f]{6}$/i;
 function cst(e,f){ const c=e&&e.cell_colors&&e.cell_colors[f]; if(!c||!HEXRE.test(c))return ''; const r=parseInt(c.slice(1,3),16),g=parseInt(c.slice(3,5),16),b=parseInt(c.slice(5,7),16); const dark=(0.299*r+0.587*g+0.114*b)<150; return ` style="background:${c}!important;color:${dark?'#fff':'#111'}!important"`; }
-const COLORS=['#ffd400','#ff9f1a','#ff5c5c','#ff7ab8','#b388ff','#4da3ff','#2ee6c5','#3ddc84','#c7f464','#9aa5b1','#ffffff','#111111'];
+const COLORS=['#ffd400','#ff9f1a','#ff5c5c','#3ddc84'];
+function hsl2hex(h,sl,l){ sl/=100;l/=100; const k=n=>(n+h/30)%12, a=sl*Math.min(l,1-l), f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1))); return '#'+[f(0),f(8),f(4)].map(x=>Math.round(x*255).toString(16).padStart(2,'0')).join(''); }
+const ALLC=(()=>{ const o=['#ffffff','#c9ced8','#8b93a7','#4b5263','#222733','#000000','#7a4a24','#ffd6a5']; [0,25,45,60,90,140,170,200,225,260,290,325].forEach(h=>[82,68,55,42].forEach(l=>o.push(hsl2hex(h,95,l)))); return o.slice(0,56); })();
 let colPick=null;
+function swHtml(list,cur){ return list.map(c=>`<button type="button" class="csw${c===cur?' on':''}" data-c="${c}" style="background:${c}" aria-label="${c}"></button>`).join(''); }
 function openColor(){
   const _cs=selCells(); if(!_cs.length)return; const _cur=new Set(_cs.map(c=>(c.e.cell_colors||{})[c.f]||'')); colPick=(_cur.size===1&&[..._cur][0])||null;
-  $('colSw').innerHTML=COLORS.map(c=>`<button type="button" class="csw${c===colPick?' on':''}" data-c="${c}" style="background:${c}" aria-label="${c}"></button>`).join('');
+  $('colSw').innerHTML='<button type="button" class="csw none" data-c="" aria-label="No color">✕</button>'+swHtml(COLORS,colPick)+'<button type="button" class="csw rb" id="colRb" aria-label="More colors"></button>';
+  $('colAll').innerHTML=swHtml(ALLC,colPick); $('colMore').style.display='none';
   $('colCustom').value=HEXRE.test(colPick||'')?colPick:'#ffd400';
   $('ovCol').classList.add('show'); document.body.classList.add('lock');
 }
@@ -899,9 +913,9 @@ async function applyColor(hex){
   }
 }
 $('cpColor').addEventListener('click',openColor);
-$('colSw').addEventListener('click',e=>{ const b=e.target.closest('.csw'); if(b){ colPick=b.dataset.c; applyColor(colPick); } });
-$('colCustomGo').addEventListener('click',()=>{ colPick=$('colCustom').value; applyColor(colPick); });
-$('colNone').addEventListener('click',()=>applyColor(null));
+const _swClick=e=>{ if(e.target.id==='colRb'||e.target.closest('#colRb')){ const m=$('colMore'); m.style.display=m.style.display==='none'?'':'none'; return; } const b=e.target.closest('.csw'); if(b)applyColor(b.dataset.c||null); };
+$('colSw').addEventListener('click',_swClick); $('colAll').addEventListener('click',_swClick);
+$('colCustomGo').addEventListener('click',()=>applyColor($('colCustom').value));
 $('colNo').addEventListener('click',closeColor);
 $('ovCol').addEventListener('click',e=>{ if(e.target.id==='ovCol')closeColor(); });
 
