@@ -364,6 +364,7 @@ body.ro #rwDel{display:none}
 .csw{width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.18);padding:0;position:relative;font-size:18px;color:#fff;line-height:1}
 .cdense .csw{width:30px;height:30px;border-radius:9px}
 .csw.on{outline:3px solid var(--text);outline-offset:2px}
+.csw{touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .csw.none{background:repeating-conic-gradient(#8b93a7 0 25%,#fff 0 50%) 50%/12px 12px!important;color:#e0243c;font-weight:900}
 .csw.rb{background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red)!important}
 .cuse{flex:1;padding:11px;border-radius:11px;font-weight:850;background:var(--green);border:1px solid var(--green);color:#052e1c}
@@ -441,7 +442,7 @@ function render(){
       `<td class="c-n" data-f="name"${cst(e,'name')}>${e.name?esc(e.name):'<span class="ph">＋ name / organized by</span>'}</td>${fe.skip?'':`<td data-f="fee" rowspan="${fe.span}" class="${fe.sum&&!fe.paid?'y':''}"${cst(e,'fee')}>${fe.sum?fmt(fe.sum):''}${fe.span>1?`<small class="fsm">${esc(fe.parts)}</small>`:''}</td>`}`+
       `<td data-f="result" class="${RC[e.result]||''}"${cst(e,'result')}>${esc(e.result||'')}</td><td data-f="rank" class="${sold?'g':''}"${cst(e,'rank')}>${esc(rkTxt)}</td>`+
       `${pe.skip?'':`<td data-f="prize" rowspan="${pe.span}" class="pz ${(pe.rec&&!pe.rem)?'':'y'}"${cst(e,'prize')}>${pe.sum?fmt(pe.sum):''}${pe.parts?`<small class="fsm">${esc(pe.parts)}</small>`:''}</td>`}${pc&&pc.skip?'':`<td${pc?` rowspan="${pc.span}"`:''} class="${hasPl?(pl>=0?'pl-p':'pl-n'):''}">${hasPl?(pl>0?'+':'')+fmt(pl):''}</td>`}`+
-      `<td data-f="banner">${img?`<img src="${esc(img)}" alt="" loading="lazy">`:'<span class="ban-add">＋</span>'}</td><td class="c-c" data-f="comment"${cst(e,'comment')}>${esc(e.comment||'')}</td><td class="tr" data-f="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6"/></svg></td></tr>`;}).join('');
+      `<td data-f="banner"${cst(e,'banner')}>${img?`<img src="${esc(img)}" alt="" loading="lazy">`:'<span class="ban-add">＋</span>'}</td><td class="c-c" data-f="comment"${cst(e,'comment')}>${esc(e.comment||'')}</td><td class="tr" data-f="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6"/></svg></td></tr>`;}).join('');
   }).join('');
   $('days').innerHTML='<div class="tw"><table class="sh"><tbody>'+body+'</tbody></table></div>';
   const _n=document.querySelector('.tw'); if(_n)_n.scrollLeft=_sx;
@@ -457,7 +458,7 @@ $('days').addEventListener('click',e=>{
   const en=entries.find(x=>x.id===td.parentNode.dataset.id); if(!en)return;
   const f=td.dataset.f;
   if(RO){ if(f==='banner'&&safeImg(en.banner_url))openBig(en); return; }
-  if(selMode){ if(f!=='banner'&&f!=='del'&&f!=='entry_time')toggleSel(td); return; }
+  if(selMode){ if(f!=='del'&&f!=='entry_time')toggleSel(td); return; }
   if(f==='banner'){ if(safeImg(en.banner_url))openBig(en); else pickBanner(en); return; }
   if(f==='entry_time'){ toggleRow(en); return; }
   openPick(en,f);
@@ -603,9 +604,13 @@ async function createEntries(times){
   const day=cur().filter(x=>x.entry_date===date).sort(cmpTime);
   const base=ts.map(t=>({user_id:uid,team_id:tid,entry_date:date,entry_time:t,name:'',fee:0,fee_paid:true,result:'',prize:0,prize_received:true}));
   const posUpd=[];
-  if(day.some(x=>x.pos!=null)){
+  if(day.some(x=>x.pos!=null||x.fee_group||x.prize_group)){
     const list=day.map(x=>({e:x}));
-    base.forEach(row=>{ let at=list.length; for(let i=0;i<list.length;i++){ if(tkey(list[i].e?list[i].e.entry_time:list[i].row.entry_time).localeCompare(tkey(row.entry_time))>0){at=i;break;} } list.splice(at,0,{row}); });
+    const gx=it=>it.e||it.row;
+    base.forEach(row=>{ let at=list.length; for(let i=0;i<list.length;i++){ if(tkey(list[i].e?list[i].e.entry_time:list[i].row.entry_time).localeCompare(tkey(row.entry_time))>0){at=i;break;} }
+      // never drop a new row inside a merged (fee/prize) group - put it right after the group
+      while(at>0&&at<list.length){ const a=gx(list[at-1]), b=gx(list[at]); if((a.fee_group&&a.fee_group===b.fee_group)||(a.prize_group&&a.prize_group===b.prize_group))at++; else break; }
+      list.splice(at,0,{row}); });
     list.forEach((it,k)=>{ const pos=(k+1)*10; if(it.row)it.row.pos=pos; else if(it.e.pos==null||+it.e.pos!==pos)posUpd.push({id:it.e.id,pos}); });
   }
   const ok=await btnRun($('pkGo'),'Adding…','Added ✓',async()=>{
@@ -840,6 +845,7 @@ function cellVal(e,f){
   if(f==='entry_time')return {p:{entry_time:e.entry_time},l:e.entry_time?timeLabel(e.entry_time):'(empty)'};
   if(f==='fee')return {p:{fee:e.fee,fee_paid:e.fee_paid},l:num(e.fee)?String(num(e.fee)):'(empty)'};
   if(f==='prize')return {p:{prize:e.prize,prize_received:e.prize_received},l:num(e.prize)?String(num(e.prize)):'(empty)'};
+  if(f==='banner')return {p:{banner_url:e.banner_url||null},l:safeImg(e.banner_url)?'banner':'(empty)'};
   const v=e[f]; return {p:{[f]:v==null?(f==='name'||f==='result'?'':null):v},l:(v==null||v==='')?'(empty)':String(v)};
 }
 // selection = any cells, any columns.  key = "rowId|field"
@@ -875,7 +881,7 @@ function exitSel(){
 }
 $('days').addEventListener('pointerdown',e=>{
   lpFired=false; const td=e.target.closest('td[data-f]'); if(!td)return;
-  const f=td.dataset.f; if(f==='banner'||f==='del'||f==='entry_time')return;
+  const f=td.dataset.f; if(f==='del'||f==='entry_time')return;
   lpX=e.clientX; lpY=e.clientY; lpCancel();
   lpT=setTimeout(()=>{lpT=null;lpFired=true;if(navigator.vibrate)navigator.vibrate(15);if(selMode)toggleSel(td);else enterSel(td);},450);
 });
@@ -890,16 +896,21 @@ const COLORS=['#ffd400','#ff9f1a','#ff5c5c','#3ddc84'];
 function hsl2hex(h,sl,l){ sl/=100;l/=100; const k=n=>(n+h/30)%12, a=sl*Math.min(l,1-l), f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1))); return '#'+[f(0),f(8),f(4)].map(x=>Math.round(x*255).toString(16).padStart(2,'0')).join(''); }
 const ALLC=(()=>{ const o=['#ffffff','#c9ced8','#8b93a7','#4b5263','#222733','#000000','#7a4a24','#ffd6a5']; [0,25,45,60,90,140,170,200,225,260,290,325].forEach(h=>[82,68,55,42].forEach(l=>o.push(hsl2hex(h,95,l)))); return o.slice(0,56); })();
 let colPick=null;
+let CUSTOMC=(()=>{ try{ const a=JSON.parse(localStorage.getItem('mt_custom_colors')||'[]'); return Array.isArray(a)?a.filter(c=>HEXRE.test(c)).slice(0,9):[]; }catch(e){ return []; } })();
+function saveCustomC(){ try{ localStorage.setItem('mt_custom_colors',JSON.stringify(CUSTOMC)); }catch(e){} }
+function addCustomC(hex){ if(!hex||!HEXRE.test(hex))return; hex=hex.toLowerCase(); if(COLORS.some(c=>c.toLowerCase()===hex))return; CUSTOMC=[hex,...CUSTOMC.filter(c=>c!==hex)].slice(0,9); saveCustomC(); }
+function drawColSw(){ $('colSw').innerHTML='<button type="button" class="csw none" data-c="" aria-label="No color">✕</button>'+swHtml(COLORS,colPick)+swHtml(CUSTOMC,colPick).replace(/class="csw/g,'class="csw cust')+'<button type="button" class="csw rb" id="colRb" aria-label="More colors"></button>'; }
 function swHtml(list,cur){ return list.map(c=>`<button type="button" class="csw${c===cur?' on':''}" data-c="${c}" style="background:${c}" aria-label="${c}"></button>`).join(''); }
 function openColor(){
   const _cs=selCells(); if(!_cs.length)return; const _cur=new Set(_cs.map(c=>(c.e.cell_colors||{})[c.f]||'')); colPick=(_cur.size===1&&[..._cur][0])||null;
-  $('colSw').innerHTML='<button type="button" class="csw none" data-c="" aria-label="No color">✕</button>'+swHtml(COLORS,colPick)+'<button type="button" class="csw rb" id="colRb" aria-label="More colors"></button>';
+  drawColSw();
   $('colAll').innerHTML=swHtml(ALLC,colPick); $('colMore').style.display='none';
   $('colCustom').value=HEXRE.test(colPick||'')?colPick:'#ffd400';
   $('ovCol').classList.add('show'); document.body.classList.add('lock');
 }
 function closeColor(){ $('ovCol').classList.remove('show'); document.body.classList.remove('lock'); }
-async function applyColor(hex){
+async function applyColor(hex,fromMore){
+  if(hex&&fromMore)addCustomC(hex);
   const items=expandCells(selCells()); if(!items.length)return;
   const byRow=new Map(); items.forEach(it=>{ if(!byRow.has(it.row.id))byRow.set(it.row.id,{row:it.row,fs:[]}); byRow.get(it.row.id).fs.push(it.f); });
   try{
@@ -913,9 +924,14 @@ async function applyColor(hex){
   }
 }
 $('cpColor').addEventListener('click',openColor);
-const _swClick=e=>{ if(e.target.id==='colRb'||e.target.closest('#colRb')){ const m=$('colMore'); m.style.display=m.style.display==='none'?'':'none'; return; } const b=e.target.closest('.csw'); if(b)applyColor(b.dataset.c||null); };
+const _swClick=e=>{ if(e.target.id==='colRb'||e.target.closest('#colRb')){ const m=$('colMore'); m.style.display=m.style.display==='none'?'':'none'; return; } const b=e.target.closest('.csw'); if(b){ if(_lpDone){_lpDone=false;return;} applyColor(b.dataset.c||null,!!b.closest('#colAll')); } };
+// long-press a custom colour to remove it from the palette
+let _lpT=null,_lpDone=false;
+$('colSw').addEventListener('pointerdown',e=>{ const b=e.target.closest('.csw.cust'); if(!b)return; _lpDone=false; clearTimeout(_lpT); _lpT=setTimeout(()=>{ _lpDone=true; CUSTOMC=CUSTOMC.filter(c=>c!==b.dataset.c); saveCustomC(); drawColSw(); toast('Color removed from palette'); },600); });
+['pointerup','pointerleave','pointercancel','scroll'].forEach(ev=>$('colSw').addEventListener(ev,()=>clearTimeout(_lpT)));
+$('colSw').addEventListener('contextmenu',e=>{ if(e.target.closest('.csw.cust'))e.preventDefault(); });
 $('colSw').addEventListener('click',_swClick); $('colAll').addEventListener('click',_swClick);
-$('colCustomGo').addEventListener('click',()=>applyColor($('colCustom').value));
+$('colCustomGo').addEventListener('click',()=>applyColor($('colCustom').value,true));
 $('colNo').addEventListener('click',closeColor);
 $('ovCol').addEventListener('click',e=>{ if(e.target.id==='ovCol')closeColor(); });
 
@@ -977,8 +993,9 @@ $('cpPaste').addEventListener('click',async()=>{
   }
   const ids=Object.keys(patches);
   const ok=await btnRun($('cpPaste'),'Pasting…','Pasted ✓',async()=>{
+    const olds=ids.map(id=>{ const x=entries.find(y=>y.id===id); return (patches[id].banner_url!==undefined&&x&&x.banner_url&&x.banner_url!==patches[id].banner_url)?x.banner_url:null; }).filter(Boolean);
     const res=await Promise.all(ids.map(id=>upd(id,patches[id])));
-    res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);}); return true;
+    res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);}); olds.forEach(u=>dropBanner(u)); return true;
   });
   if(ok)exitSel();
 });
@@ -991,13 +1008,15 @@ $('cpClear').addEventListener('click',async()=>{
     const r=it.row, f=it.f;
     if(f==='fee'){ add(r.id,r.fee_group?{fee:0,fee_group:null,fee_charge:0}:{fee:0}); }
     else if(f==='prize'){ add(r.id,r.prize_group?{prize:0,prize_group:null}:{prize:0}); }
+    else if(f==='banner'){ add(r.id,{banner_url:null}); }
     else if(f==='name'||f==='result')add(r.id,{[f]:''});
     else add(r.id,{[f]:null});
   });
   const ids=Object.keys(patches);
   const ok=await btnRun($('cpClear'),'…','',async()=>{
+    const olds=ids.map(id=>{ const x=entries.find(y=>y.id===id); return (patches[id].banner_url===null&&x&&x.banner_url)?x.banner_url:null; }).filter(Boolean);
     const res=await Promise.all(ids.map(id=>upd(id,patches[id])));
-    res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);}); return true;
+    res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);}); olds.forEach(u=>dropBanner(u)); return true;
   });
   if(ok){ exitSel(); toast('Cleared ✓'); }
 });
@@ -1072,7 +1091,7 @@ function compress(file){
   });
 }
 function pathOf(url){const i=url.indexOf('/'+BUCKET+'/');return i<0?'':url.slice(i+BUCKET.length+2);}
-async function dropBanner(url){ try{ const p=url&&pathOf(url); if(p) await sb.storage.from(BUCKET).remove([p]); }catch(e){} }
+async function dropBanner(url){ if(url){ await new Promise(r=>setTimeout(r,600)); if(entries.some(x=>x.banner_url===url))return; } try{ const p=url&&pathOf(url); if(p) await sb.storage.from(BUCKET).remove([p]); }catch(e){} }
 
 $('shSave').addEventListener('click',async()=>{
   const date=getDate('fd'), name=$('fName').value.trim();
