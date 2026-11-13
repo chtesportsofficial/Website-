@@ -244,6 +244,14 @@ select.dd{appearance:none;-webkit-appearance:none;height:46px;min-width:108px;pa
 #rcBar #rcDate{background:var(--green);border-color:var(--green);color:#052e1c}
 body.hasclip #fab{display:none!important}
 html.lock,body.lock{overflow:hidden!important;overscroll-behavior:none}.ov{overscroll-behavior:contain}
+/* bottom action bars: info on top, equal buttons below */
+#cpBar,#rwBar,#rcBar{flex-wrap:wrap;padding:10px 12px;gap:8px}
+#cpInfo,#rwInfo,#rcInfo{flex:1 1 100%;min-width:0;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;font-weight:800}
+#cpInfo small,#rwInfo small,#rcInfo small{display:inline;margin-left:8px;font-size:11.5px;font-weight:600;color:var(--dim);white-space:nowrap}
+#cpBar button,#rwBar button,#rcBar button{flex:1 1 0;min-width:0;white-space:nowrap;padding:11px 4px;font-size:12.5px;text-align:center}
+#cpX,#rwX,#rcX,#rwDel,#cpClear{flex:0 0 44px!important}
+#rwPaste{flex:1.5 1 0!important}#rwBar button,#cpBar button{font-size:12px!important}
+.toast{z-index:20001!important}
 .rotag{background:#ffffff26;border-radius:999px;padding:1px 8px;margin-left:6px;font-weight:800}
 #rwBar{gap:6px}#rwBar button{padding:10px 11px}
 #rwBar #rwDel{color:#e0243c;border-color:rgba(224,36,60,.45)}
@@ -329,7 +337,7 @@ body.ro #rwDel{display:none}
 <input type="date" id="rcDateIn" style="position:fixed;left:-9999px;bottom:140px;opacity:0">
 <div id="rwBar"><div id="rwInfo"></div><button type="button" id="rwPaste" style="display:none;background:var(--green);border-color:var(--green);color:#052e1c">📋 Paste</button><button type="button" id="rwCopy">⎘ Copy</button><button type="button" id="rwDone">✓ Done</button><button type="button" id="rwTime">Time</button><button type="button" id="rwDel" aria-label="Delete rows">🗑</button><button type="button" id="rwX" aria-label="Done">✕</button></div>
 <input type="file" id="banQuick" accept="image/png,image/jpeg,image/webp" style="display:none">
-<div id="cpBar"><div id="cpInfo"></div><button type="button" id="cpMerge" style="display:none">Merge</button><button type="button" id="cpClear" aria-label="Clear values">🗑</button><button type="button" id="cpCopy">Copy</button><button type="button" id="cpPaste">Paste</button><button type="button" id="cpX" aria-label="Done">✕</button></div>
+<div id="cpBar"><div id="cpInfo"></div><button type="button" id="cpMerge" style="display:none">Merge</button><button type="button" id="cpClear" aria-label="Clear values">🗑</button><button type="button" id="cpColor" aria-label="Color">🎨</button><button type="button" id="cpCopy">Copy</button><button type="button" id="cpPaste">Paste</button><button type="button" id="cpX" aria-label="Done">✕</button></div>
 <div class="ov" id="ovF"><div class="sheet"><h2>Add to balance</h2>
   <div class="pcu"><input id="fnAmt" type="number" inputmode="numeric" min="0" placeholder="Amount ৳ (e.g. 1000)"></div>
   <div class="pcu" style="margin-top:8px"><input id="fnNote" maxlength="60" placeholder="Note (e.g. Sponsor)"></div>
@@ -349,7 +357,9 @@ body.ro #rwDel{display:none}
   </div>
   <button type="button" class="pmore" id="shClose">Close</button></div></div>
 <div class="ov ovc" id="ovU"><div class="sheet"><div class="tuh"><span>💡</span><h2>How to use</h2></div><div id="tuBody"></div><div class="acts" id="tuActs"></div></div></div>
-<div class="ov ovc" id="ovCf" style="z-index:200"><div class="sheet" style="max-width:340px;text-align:center"><div style="font-size:34px;margin-bottom:4px">🗑️</div><h2 id="cfTitle" style="margin-bottom:6px">Are you sure?</h2><div id="cfMsg" style="color:var(--dim);font-size:13.5px;line-height:1.5;overflow-wrap:anywhere"></div><div class="acts" style="margin-top:16px"><button type="button" id="cfNo">Cancel</button><button type="button" id="cfYes" style="background:#e0243c;border-color:#e0243c;color:#fff">Delete</button></div></div></div>
+<div class="ov ovc" id="ovCol" style="z-index:20000"><div class="sheet" style="max-width:340px;text-align:center"><h2 style="margin-bottom:10px">🎨 Cell color</h2><div id="colSw" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;justify-items:center"></div><div style="display:flex;gap:8px;align-items:center;margin-top:14px"><input type="color" id="colCustom" value="#ffd400" style="width:54px;height:44px;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:2px"><button type="button" id="colCustomGo" style="flex:1;padding:12px;border-radius:11px;font-weight:850">Use this color</button></div><div class="acts" style="margin-top:14px"><button type="button" id="colNone">Remove color</button><button type="button" id="colNo">Cancel</button></div></div></div>
+<style>.csw{width:38px;height:38px;border-radius:50%;border:2px solid var(--line);padding:0}.csw.on{outline:3px solid var(--text);outline-offset:2px}</style>
+<div class="ov ovc" id="ovCf" style="z-index:20000"><div class="sheet" style="max-width:340px;text-align:center"><div style="font-size:34px;margin-bottom:4px">🗑️</div><h2 id="cfTitle" style="margin-bottom:6px">Are you sure?</h2><div id="cfMsg" style="color:var(--dim);font-size:13.5px;line-height:1.5;overflow-wrap:anywhere"></div><div class="acts" style="margin-top:16px"><button type="button" id="cfNo">Cancel</button><button type="button" id="cfYes" style="background:#e0243c;border-color:#e0243c;color:#fff">Delete</button></div></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -407,7 +417,7 @@ function render(){
   const H='<tr class="hd"><td>TIME</td><td>TYPE</td><td>MAP</td><td class="hn">TOURNAMENT NAME / ORGANIZER</td><td>FEE</td><td>STATUS</td><td>RANK</td><td>PRIZE 🏆</td><td>P/L</td><td>BANNER</td><td>COMMENT</td><td>DEL</td></tr>';
   const body=Object.keys(byDay).sort().map(d=>{
     const dl=dayLabel(d), cc={}; byDay[d].forEach(x=>{ if(x.entry_time&&x.result!=='sold'&&!/^sold$/i.test(x.rank||''))cc[x.entry_time.slice(0,5)]=(cc[x.entry_time.slice(0,5)]||0)+1; }); const fi={}; { const arr=byDay[d]; for(let i=0;i<arr.length;){ const g=arr[i].fee_group; let j=i+1; if(g){ while(j<arr.length&&arr[j].fee_group===g)j++; } const run=arr.slice(i,j), es=run.reduce((t,x)=>t+num(x.fee),0), ch=run.reduce((t,x)=>t+num(x.fee_charge),0), sum=es+ch, paid=run.every(x=>x.fee_paid), parts=run.map(x=>num(x.fee)).filter(Boolean).map(fmt).join('+')+(ch?'+'+fmt(ch):''); const ps=run.reduce((t,x)=>t+num(x.prize),0), pl=ps-sum, hasPl=!!(ps||sum); fi[arr[i].id]={span:j-i,sum,paid,parts,pl,hasPl}; for(let k=i+1;k<j;k++)fi[arr[k].id]={skip:true,span:j-i,sum,paid,parts,pl,hasPl}; i=j; } }
-    const pi={}; { const arr=byDay[d]; for(let i=0;i<arr.length;){ const g=arr[i].prize_group; let j=i+1; if(g){ while(j<arr.length&&arr[j].prize_group===g)j++; } const run=arr.slice(i,j), sum=run.reduce((t,x)=>t+num(x.prize),0), rec=run.every(x=>x.prize_received), parts=''; pi[arr[i].id]={span:j-i,sum,rec,parts}; for(let k=i+1;k<j;k++)pi[arr[k].id]={skip:true}; i=j; } }
+    const pi={}; { const arr=byDay[d]; for(let i=0;i<arr.length;){ const g=arr[i].prize_group; let j=i+1; if(g){ while(j<arr.length&&arr[j].prize_group===g)j++; } const run=arr.slice(i,j), sum=run.reduce((t,x)=>t+num(x.prize),0), rec=run.every(x=>x.prize_received), rem=run.some(x=>x.result==='profit')&&!sum, parts=''; pi[arr[i].id]={span:j-i,sum,rec,rem,parts}; for(let k=i+1;k<j;k++)pi[arr[k].id]={skip:true}; i=j; } }
     const plc={}; { const arr=byDay[d], ends=(k)=>{const r=[],st=[];for(let i=0;i<arr.length;){let j=i+1;const g=arr[i][k];if(g)while(j<arr.length&&arr[j][k]===g)j++;for(let q=i;q<j;q++){r[q]=j;st[q]=i;}i=j;}return {r,st};}, F=ends('fee_group'), P=ends('prize_group');
       for(let i=0;i<arr.length;){ let end=i+1; for(let q=i;q<end;q++)end=Math.max(end,F.r[q],P.r[q]); if(end>i+1){ const run=arr.slice(i,end), ps=run.reduce((t,x)=>t+num(x.prize),0), fs=run.reduce((t,x)=>t+num(x.fee)+num(x.fee_charge),0); plc[arr[i].id]={span:run.length,pl:ps-fs,has:!!(ps||fs)}; for(let q=i+1;q<end;q++)plc[arr[q].id]={skip:true}; } i=end; } }
     const clT=Object.keys(cc).filter(k=>cc[k]>1).sort((a,b)=>tkey(a).localeCompare(tkey(b))).map(k=>timeLabel(k));
@@ -417,11 +427,11 @@ function render(){
       const img=safeImg(e.banner_url), q=e.result==='qualified', dq=e.result==='disqualified';
       const pe=pi[e.id], fe=fi[e.id], pc=plc[e.id], pl=pc?pc.pl:num(e.prize)-num(e.fee), hasPl=pc?pc.has:!!(num(e.prize)||num(e.fee));
       const cl=e.entry_time&&e.result!=='sold'&&!/^sold$/i.test(e.rank||'')&&cc[e.entry_time.slice(0,5)]>1;
-      return `<tr class="er${e.done?' dn':''}" data-id="${e.id}"><td data-f="entry_time" class="${cl?'clash':''}">${e.done?'✓ ':''}${cl?'⚠ ':''}${e.entry_time?esc(timeLabel(e.entry_time)):''}</td><td data-f="type">${esc(e.type||'')}</td><td data-f="maps">${e.maps!=null&&e.maps!==''?num(e.maps):''}</td>`+
-      `<td class="c-n" data-f="name">${e.name?esc(e.name):'<span class="ph">＋ name / organized by</span>'}</td>${fe.skip?'':`<td data-f="fee" rowspan="${fe.span}" class="${fe.sum&&!fe.paid?'y':''}">${fe.sum?fmt(fe.sum):''}${fe.span>1?`<small class="fsm">${esc(fe.parts)}</small>`:''}</td>`}`+
-      `<td data-f="result" class="${RC[e.result]||''}">${esc(e.result||'')}</td><td data-f="rank" class="${sold?'g':''}">${esc(rkTxt)}</td>`+
-      `${pe.skip?'':`<td data-f="prize" rowspan="${pe.span}" class="pz ${pe.rec?'':'y'}">${pe.sum?fmt(pe.sum):''}${pe.parts?`<small class="fsm">${esc(pe.parts)}</small>`:''}</td>`}${pc&&pc.skip?'':`<td${pc?` rowspan="${pc.span}"`:''} class="${hasPl?(pl>=0?'pl-p':'pl-n'):''}">${hasPl?(pl>0?'+':'')+fmt(pl):''}</td>`}`+
-      `<td data-f="banner">${img?`<img src="${esc(img)}" alt="" loading="lazy">`:'<span class="ban-add">＋</span>'}</td><td class="c-c" data-f="comment">${esc(e.comment||'')}</td><td class="tr" data-f="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6"/></svg></td></tr>`;}).join('');
+      return `<tr class="er${e.done?' dn':''}" data-id="${e.id}"><td data-f="entry_time" class="${cl?'clash':''}"${cst(e,'entry_time')}>${e.done?'✓ ':''}${cl?'⚠ ':''}${e.entry_time?esc(timeLabel(e.entry_time)):''}</td><td data-f="type"${cst(e,'type')}>${esc(e.type||'')}</td><td data-f="maps"${cst(e,'maps')}>${e.maps!=null&&e.maps!==''?num(e.maps):''}</td>`+
+      `<td class="c-n" data-f="name"${cst(e,'name')}>${e.name?esc(e.name):'<span class="ph">＋ name / organized by</span>'}</td>${fe.skip?'':`<td data-f="fee" rowspan="${fe.span}" class="${fe.sum&&!fe.paid?'y':''}"${cst(e,'fee')}>${fe.sum?fmt(fe.sum):''}${fe.span>1?`<small class="fsm">${esc(fe.parts)}</small>`:''}</td>`}`+
+      `<td data-f="result" class="${RC[e.result]||''}"${cst(e,'result')}>${esc(e.result||'')}</td><td data-f="rank" class="${sold?'g':''}"${cst(e,'rank')}>${esc(rkTxt)}</td>`+
+      `${pe.skip?'':`<td data-f="prize" rowspan="${pe.span}" class="pz ${(pe.rec&&!pe.rem)?'':'y'}"${cst(e,'prize')}>${pe.sum?fmt(pe.sum):''}${pe.parts?`<small class="fsm">${esc(pe.parts)}</small>`:''}</td>`}${pc&&pc.skip?'':`<td${pc?` rowspan="${pc.span}"`:''} class="${hasPl?(pl>=0?'pl-p':'pl-n'):''}">${hasPl?(pl>0?'+':'')+fmt(pl):''}</td>`}`+
+      `<td data-f="banner">${img?`<img src="${esc(img)}" alt="" loading="lazy">`:'<span class="ban-add">＋</span>'}</td><td class="c-c" data-f="comment"${cst(e,'comment')}>${esc(e.comment||'')}</td><td class="tr" data-f="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6"/></svg></td></tr>`;}).join('');
   }).join('');
   $('days').innerHTML='<div class="tw"><table class="sh"><tbody>'+body+'</tbody></table></div>';
   const _n=document.querySelector('.tw'); if(_n)_n.scrollLeft=_sx;
@@ -513,7 +523,7 @@ async function pkApply(v,fromIn){
   else if(f==='comment')patch={comment:val.slice(0,300)||null};
   else if(f==='name'){ if(!val){toast('Write the tournament name.');return;} patch={name:val.slice(0,120)}; }
   const ok=await btnRun(fromIn?$('pkOk'):null,'Saving…','Saved ✓',async()=>{
-    const merged=f==='fee'&&e.fee_group, mp=f==='prize'&&e.prize_group, rs=merged?runOf(e):(mp?runOfP(e):[e]);
+    const merged=f==='fee'&&e.fee_group&&patch.entry!==undefined, mp=f==='prize'&&e.prize_group, rs=merged?runOf(e):(mp?runOfP(e):[e]);
     const res=await Promise.all(rs.map((x,k)=>upd(x.id,merged?(()=>{ const n=rs.length, same=patch.entry===rs.reduce((t,y)=>t+num(y.fee),0), base=Math.floor(patch.entry/n), o={fee_charge:k?0:patch.charge,fee_paid:patch.fee_paid}; if(!same)o.fee=k?base:patch.entry-base*(n-1); return o; })():mp?(()=>{ const n=rs.length, same=patch.prize===rs.reduce((t,y)=>t+num(y.prize),0), base=Math.floor(patch.prize/n), o={prize_received:patch.prize_received}; if(!same)o.prize=k?base:patch.prize-base*(n-1); return o; })():patch)));
     res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);}); return true;
   });
@@ -828,7 +838,7 @@ function selCells(){ return [...sel].map(k=>{const i=k.indexOf('|'); const id=k.
 function updateBar(){
   const cs=selCells(), n=cs.length, fs=new Set(cs.map(c=>c.f)); selF=fs.size===1?[...fs][0]:'';
   $('cpInfo').innerHTML=(n?n+' selected':'Tap cells to select')+(clip?`<small>Copied: ${esc(clip.label)}</small>`:'<small>Select cells, then tap Copy</small>');
-  $('cpCopy').disabled=!n; $('cpClear').disabled=!n;
+  $('cpCopy').disabled=!n; $('cpColor').disabled=!n; $('cpClear').disabled=!n;
   $('cpPaste').disabled=!(clip&&n&&(!clip.simple||cs.some(c=>c.f===clip.f)));
   const anyM=cs.some(c=>c.e[selF==='prize'?'prize_group':'fee_group']), mb=$('cpMerge');
   mb.style.display=((selF==='fee'||selF==='prize')&&(anyM||n>=2))?'':'none'; mb.textContent=anyM?'Unmerge':'Merge';
@@ -863,6 +873,38 @@ $('days').addEventListener('pointermove',e=>{ if(lpT&&(Math.abs(e.clientX-lpX)>1
 ['pointerup','pointercancel','pointerleave'].forEach(ev=>$('days').addEventListener(ev,lpCancel));
 $('days').addEventListener('contextmenu',e=>e.preventDefault());
 $('cpX').addEventListener('click',exitSel);
+// ---- personal cell colours (reminders) ----
+const HEXRE=/^#[0-9a-f]{6}$/i;
+function cst(e,f){ const c=e&&e.cell_colors&&e.cell_colors[f]; if(!c||!HEXRE.test(c))return ''; const r=parseInt(c.slice(1,3),16),g=parseInt(c.slice(3,5),16),b=parseInt(c.slice(5,7),16); const dark=(0.299*r+0.587*g+0.114*b)<150; return ` style="background:${c}!important;color:${dark?'#fff':'#111'}!important"`; }
+const COLORS=['#ffd400','#ff9f1a','#ff5c5c','#ff7ab8','#b388ff','#4da3ff','#2ee6c5','#3ddc84','#c7f464','#9aa5b1','#ffffff','#111111'];
+let colPick=COLORS[0];
+function openColor(){
+  if(!selCells().length)return;
+  $('colSw').innerHTML=COLORS.map(c=>`<button type="button" class="csw${c===colPick?' on':''}" data-c="${c}" style="background:${c}" aria-label="${c}"></button>`).join('');
+  $('colCustom').value=HEXRE.test(colPick)?colPick:'#ffd400';
+  $('ovCol').classList.add('show'); document.body.classList.add('lock');
+}
+function closeColor(){ $('ovCol').classList.remove('show'); document.body.classList.remove('lock'); }
+async function applyColor(hex){
+  const items=expandCells(selCells()); if(!items.length)return;
+  const byRow=new Map(); items.forEach(it=>{ if(!byRow.has(it.row.id))byRow.set(it.row.id,{row:it.row,fs:[]}); byRow.get(it.row.id).fs.push(it.f); });
+  try{
+    for(const {row,fs} of byRow.values()){
+      const cc={...(row.cell_colors||{})}; fs.forEach(f=>{ if(hex)cc[f]=hex; else delete cc[f]; });
+      const r=await upd(row.id,{cell_colors:cc}); entries=entries.map(x=>x.id===row.id?r.data:x);
+    }
+    closeColor(); exitSel(); toast(hex?'Color applied ✓':'Color removed ✓');
+  }catch(err){
+    const m=String(err&&err.message||err); toast(/cell_colors/.test(m)?'Run the updated schedule_extras.sql in Supabase first (cell_colors column missing).':'Could not save color: '+m);
+  }
+}
+$('cpColor').addEventListener('click',openColor);
+$('colSw').addEventListener('click',e=>{ const b=e.target.closest('.csw'); if(b){ colPick=b.dataset.c; applyColor(colPick); } });
+$('colCustomGo').addEventListener('click',()=>{ colPick=$('colCustom').value; applyColor(colPick); });
+$('colNone').addEventListener('click',()=>applyColor(null));
+$('colNo').addEventListener('click',closeColor);
+$('ovCol').addEventListener('click',e=>{ if(e.target.id==='ovCol')closeColor(); });
+
 
 // a merged cell stands for all the rows it covers
 function expandCells(cs){
