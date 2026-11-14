@@ -297,7 +297,7 @@ body.ro #rwDel{display:none}
   <div class="sheet" id="sheet">
     <h2 id="shTitle">Add tournament</h2>
     <div class="row2">
-      <div class="fld"><label>Date</label><div id="fDateBox"></div></div>
+      <div class="fld"><label>Date</label><div id="fDateBox"></div><label class="chk"><input type="checkbox" id="fTba"> Date not announced yet</label></div>
       <div class="fld"><label for="fTime">Time</label><input id="fTime" type="time"></div>
     </div>
     <div class="row2">
@@ -395,9 +395,10 @@ let editing=null;                            // entry being edited (null = new)
 let banUrl='', banFile=null, banOld='';      // banner state inside the sheet
 const todayStr=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})();
 
+const TBA='2099-12-31';   // placeholder date for tournaments whose date is not announced yet
 const monthOf=d=>String(d).slice(0,7);
 function monthLabel(k){const [y,m]=k.split('-');return MONTHS[+m-1].slice(0,3).toUpperCase()+' '+y.slice(2);}
-function dayLabel(d){const [y,m,dd]=d.split('-').map(Number);const w=WD[new Date(y,m-1,dd).getDay()];return {t:dd+' '+MONTHS[m-1]+', '+String(y).slice(2),w};}
+function dayLabel(d){if(d===TBA)return {t:'📅 Date not announced',w:'TBA'};const [y,m,dd]=d.split('-').map(Number);const w=WD[new Date(y,m-1,dd).getDay()];return {t:dd+' '+MONTHS[m-1]+', '+String(y).slice(2),w};}
 function timeLabel(t){if(!t)return '—';const [h,m]=t.split(':').map(Number);const ap=h>=12?'PM':'AM';const hh=h%12||12;return hh+(m?':'+String(m).padStart(2,'0'):'')+' '+ap;}
 function safeImg(u){return typeof u==='string'&&u.startsWith(SUPABASE_URL+'/storage/')?u:'';}
 
@@ -405,7 +406,7 @@ function safeImg(u){return typeof u==='string'&&u.startsWith(SUPABASE_URL+'/stor
 function cmpTime(a,b){ const pa=a.pos,pb=b.pos; if(pa!=null&&pb!=null&&+pa!==+pb)return +pa-+pb; if(pa!=null&&pb==null)return -1; if(pa==null&&pb!=null)return 1; const tk=t=>t?tkey(t):'99:99'; return tk(a.entry_time).localeCompare(tk(b.entry_time))||String(a.created_at).localeCompare(String(b.created_at)); }
 function tkey(t){ if(!t)return ''; const h=+t.slice(0,2); return String(h<6?h+24:h).padStart(2,'0')+t.slice(2,5); }
 function monthKeys(){
-  const s=new Set(cur().map(e=>monthOf(e.entry_date))); s.add(todayStr.slice(0,7));
+  const s=new Set(cur().filter(e=>e.entry_date!==TBA).map(e=>monthOf(e.entry_date))); s.add(todayStr.slice(0,7));
   return [...s].sort().reverse();
 }
 function render(){
@@ -418,7 +419,7 @@ function render(){
   applyRole(); if(!rowSel)rowExtra.clear();
   const keys=monthKeys(); if(!ym||(ym!=='all'&&!keys.includes(ym))) ym=todayStr.slice(0,7);
   $('months').innerHTML=`<button type="button" class="mchip ${ym==='all'?'on':''}" data-m="all">ALL</button>`+keys.map(k=>`<button type="button" class="mchip ${k===ym?'on':''}" data-m="${k}">${monthLabel(k)}</button>`).join('');
-  const list=cur().filter(e=>ym==='all'||monthOf(e.entry_date)===ym).sort((a,b)=>a.entry_date.localeCompare(b.entry_date)||cmpTime(a,b));
+  const list=cur().filter(e=>ym==='all'||e.entry_date===TBA||monthOf(e.entry_date)===ym).sort((a,b)=>a.entry_date.localeCompare(b.entry_date)||cmpTime(a,b));
   const cost=cur().reduce((s,e)=>s+num(e.fee)+num(e.fee_charge),0), paid=cur().reduce((s,e)=>s+(e.fee_paid?num(e.fee)+num(e.fee_charge):0),0);
   const prize=cur().reduce((s,e)=>s+num(e.prize),0), rec=cur().reduce((s,e)=>s+(e.prize_received?num(e.prize):0),0);
   const setV=(id,v,signed)=>{const el=$(id);el.textContent=fmt(v);el.className='v'+(signed?(v<0?' neg':v>0?' pos':''):'');};
@@ -511,6 +512,7 @@ $('pkBody').addEventListener('click',e=>{
   if(e.target.closest('#pkYes')){doDel(e.target.closest('#pkYes'));return;}
   if(e.target.closest('#pkMore')){const en=pk.e;closePick();openSheet(en);return;}
   const cd=e.target.closest('[data-cd]'); if(cd){cal.sel=cd.dataset.cd;calRender();return;}
+  if(e.target.closest('#pdTba')){ cal.sel=cal.sel===TBA?todayStr:TBA; calRender(); return; }
   const cm=e.target.closest('[data-cm]'); if(cm){cal.m+=+cm.dataset.cm; if(cal.m<1){cal.m=12;cal.y--;} if(cal.m>12){cal.m=1;cal.y++;} calRender();return;}
   const cq=e.target.closest('[data-ct]'); if(cq){ const k=cq.dataset.ct; ct[k]=k==='h'?+cq.dataset.v:cq.dataset.v; document.querySelectorAll('[data-ct="'+k+'"]').forEach(x=>x.classList.toggle('on',x===cq)); return; }
   if(e.target.closest('#pkGo')){createEntries(pkSel.size?[...pkSel]:[null]);return;}
@@ -577,14 +579,15 @@ $('ovB').addEventListener('click',ev=>{if(ev.target.id==='ovB')$('ovB').classLis
 let pkSel=new Set();
 let cal={y:0,m:0,sel:''}, ct={h:null,m:'00',a:'PM'};
 function newTimeHtml(date){
-  pkSel=new Set(); const [y,m]=date.split('-').map(Number); cal={y,m,sel:date}; ct={h:null,m:'00',a:'PM'};
+  pkSel=new Set(); const [y,m]=(date===TBA?todayStr:date).split('-').map(Number); cal={y,m,sel:date}; ct={h:null,m:'00',a:'PM'};
   const q=(k,v,on)=>`<button type="button" class="pq${on?' on':''}" data-ct="${k}" data-v="${v}">${v}</button>`;
-  return `<div class="cap" style="margin-top:0">Date</div><div id="pdCal"></div>`+
+  return `<div class="cap" style="margin-top:0">Date</div><div id="pdCal"></div><button type="button" class="pq" id="pdTba" style="width:100%;margin-top:10px"></button>`+
   `<div class="cap">Select time(s) — tap more than one</div><div class="pcs" id="pkChips">`+TIMES.map(([v,l])=>`<button type="button" class="pc" data-v="${v}">${l}</button>`).join('')+`</div>`+
   `<div class="cap">Custom time</div><div class="pcs" style="flex-wrap:nowrap;align-items:center"><input type="time" id="pkTime" style="flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:10px;color:var(--text);font-size:15px;font-weight:800;padding:9px 10px"><button type="button" class="pq" id="pkCust" style="white-space:nowrap">＋ Add time</button></div>`+
   `<button type="button" class="pok" id="pkGo" style="width:100%;margin-top:16px;padding:14px">Add row (no time)</button>`;
 }
 function calRender(){
+  { const tb=$('pdTba'); if(tb){ const on=cal.sel===TBA; tb.classList.toggle('on',on); tb.textContent=on?'✓ Date not announced yet':'📅 Date not announced yet'; } }
   const {y,m}=cal, first=new Date(y,m-1,1).getDay(), dim=new Date(y,m,0).getDate(); let g='';
   for(let i=0;i<first;i++)g+='<span></span>';
   for(let d=1;d<=dim;d++){ const iso=y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0'); g+=`<button type="button" class="cd${iso===cal.sel?' on':''}${iso===todayStr?' td':''}" data-cd="${iso}">${d}</button>`; }
@@ -619,7 +622,7 @@ async function createEntries(times){
     const res=await Promise.all(posUpd.map(u=>upd(u.id,{pos:u.pos})));
     const bad=res.find(x=>x.error); if(bad)throw bad.error;
     entries.push(...r.data); res.forEach(x=>{entries=entries.map(y=>y.id===x.data.id?x.data:y);});
-    if(ym!=='all')ym=monthOf(date); return true;
+    if(ym!=='all'&&date!==TBA)ym=monthOf(date); return true;
   });
   if(ok){closePick();render();}
 }
@@ -734,7 +737,7 @@ $('rwPaste').addEventListener('click',async()=>{
     if(ins.length){ const r=await sb.from('user_schedule_entries').insert(ins).select(); if(r.error)throw r.error; entries.push(...r.data); }
     return true;
   });
-  if(ok){ exitRow(); toast('Pasted ✓'); }
+  if(ok){ clipRows=null; exitRow(); toast('Pasted ✓'); }
 });
 $('rcX').addEventListener('click',()=>{ clipRows=null; render(); });
 $('rcDate').addEventListener('click',()=>{ const i=$('rcDateIn'); i.value=''; try{ i.showPicker?i.showPicker():i.click(); }catch(e){ i.click(); } });
@@ -751,9 +754,9 @@ async function pasteRows(date){
   });
   const ok=await btnRun(null,'','',async()=>{
     const r=await sb.from('user_schedule_entries').insert(rows).select(); if(r.error)throw r.error;
-    entries.push(...r.data); if(ym!=='all')ym=monthOf(date); return true;
+    entries.push(...r.data); if(ym!=='all'&&date!==TBA)ym=monthOf(date); return true;
   });
-  if(ok){ toast(rows.length+' row'+(rows.length>1?'s':'')+' pasted on '+dayLabel(date).t+' ✓'); render(); const t=document.getElementById('d-'+date); if(t)t.scrollIntoView({block:'center'}); }
+  if(ok){ clipRows=null; toast(rows.length+' row'+(rows.length>1?'s':'')+' pasted on '+dayLabel(date).t+' ✓'); render(); const t=document.getElementById('d-'+date); if(t)t.scrollIntoView({block:'center'}); }
 }
 $('rwTime').addEventListener('click',()=>{ const e=entries.find(x=>x.id===rowSel); if(e)openPick(e,'entry_time'); });
 // ---------- drag a selected row anywhere (any day) ----------
@@ -1059,7 +1062,7 @@ function openSheet(e,date){
   if(!tid){openT('new');return;}
   editing=e||null;
   $('shTitle').textContent=e?'Edit tournament':'Add tournament';
-  $('fDateBox').innerHTML=dateSel('fd',e?e.entry_date:(date||todayStr));
+  { const dv=e?e.entry_date:(date||todayStr), isT=dv===TBA; $('fDateBox').innerHTML=dateSel('fd',isT?todayStr:dv); $('fTba').checked=isT; $('fDateBox').style.display=isT?'none':''; }
   $('fTime').value=e?(e.entry_time||''):'';
   $('fType').value=e?(e.type||''):''; $('fMaps').value=e&&e.maps!=null?e.maps:'';
   $('fName').value=e?e.name:''; $('fFee').value=e&&num(e.fee)?e.fee:''; $('fPrize').value=e&&num(e.prize)?e.prize:'';
@@ -1095,8 +1098,9 @@ function compress(file){
 function pathOf(url){const i=url.indexOf('/'+BUCKET+'/');return i<0?'':url.slice(i+BUCKET.length+2);}
 async function dropBanner(url){ if(url){ await new Promise(r=>setTimeout(r,600)); if(entries.some(x=>x.banner_url===url))return; } try{ const p=url&&pathOf(url); if(p) await sb.storage.from(BUCKET).remove([p]); }catch(e){} }
 
+$('fTba').addEventListener('change',e=>{ $('fDateBox').style.display=e.target.checked?'none':''; });
 $('shSave').addEventListener('click',async()=>{
-  const date=getDate('fd'), name=$('fName').value.trim();
+  const date=$('fTba').checked?TBA:getDate('fd'), name=$('fName').value.trim();
   document.querySelectorAll('.fld .bad').forEach(x=>x.classList.remove('bad'));
   if(!name){$('fName').classList.add('bad');toast('Write the tournament name.');return;}
   const btn=$('shSave'); btn.disabled=true; btn.textContent='Saving…';
@@ -1125,7 +1129,7 @@ $('shSave').addEventListener('click',async()=>{
     if(r.error)throw r.error;
     if(banOld&&banOld!==url) dropBanner(banOld);
     if(editing) entries=entries.map(x=>x.id===editing.id?r.data:x); else entries.push(r.data);
-    if(ym!=='all')ym=monthOf(date);
+    if(ym!=='all'&&date!==TBA)ym=monthOf(date);
     closeSheet(); render(); toast('Saved ✓');
   }catch(e){
     console.error(e);
