@@ -472,7 +472,7 @@ let pk=null;
 const TIMES=[['15:00','3 PM'],['16:00','4 PM'],['17:00','5 PM'],['18:00','6 PM'],['19:00','7 PM'],['20:00','8 PM'],['21:00','9 PM'],['22:00','10 PM'],['23:00','11 PM'],['00:00','12 AM'],['01:00','1 AM']];
 const TYPES=['scrim','semi','top 6 semi','final','Round 1','Round 2','Round 3','24 slot','CR'].map(x=>[x,x]);
 const RC={qualified:'g',disqualified:'r',profit:'g',loss:'r',sold:'g'};
-const PT={del:'Delete this tournament?',entry_time:'Time',type:'Type',maps:'Map',result:'Status',rank:'Rank',fee:'Entry fee ৳',prize:'Prize ৳',comment:'Comment',name:'Tournament name / Organizer',newtime:'Add tournament · pick time'};
+const PT={pastedate:'Paste to date',del:'Delete this tournament?',entry_time:'Time',type:'Type',maps:'Map',result:'Status',rank:'Rank',fee:'Entry fee ৳',prize:'Prize ৳',comment:'Comment',name:'Tournament name / Organizer',newtime:'Add tournament · pick time'};
 function openPick(e,f,date){
   if(!tid){openT('new');return;}
   pk={e,f,date}; $('pkTitle').textContent=PT[f];
@@ -481,6 +481,7 @@ function openPick(e,f,date){
   const chk=(l,on)=>`<label class="chk" style="margin-top:12px"><input type="checkbox" id="pkChk" ${on?'checked':''}> ${l}</label>`;
   const v=e?(e[f]==null?'':String(e[f])):''; let h='';
   if(f==='newtime') h=newTimeHtml(date);
+  else if(f==='pastedate') h=pasteDateHtml(date);
   else if(f==='entry_time') h=chips(TIMES.concat([['','Clear']]),v.slice(0,5))+inp('Custom time','time',v.slice(0,5));
   else if(f==='type') h=chips(TYPES.concat([['','Clear']]),v)+inp('Custom','text',v,'type name');
   else if(f==='maps') h=chips([1,2,3,4,5,6].map(x=>[x,x]).concat([['','Clear']]),v)+inp('Custom','number',v,'maps');
@@ -497,7 +498,7 @@ function openPick(e,f,date){
   else if(f==='comment') h=`<div class="cap">Note</div><div class="pcu"><textarea id="pkIn" rows="3" maxlength="300">${esc(v)}</textarea><button type="button" class="pok" id="pkOk">OK</button></div>`;
   else if(f==='name') h=inp('Name / Organizer (add prize pool like "(10k)")','text',v,'CHT WARZONE S2 (10k)')+'<button type="button" class="pdel" id="pkDel">Delete this row</button>';
   else if(f==='del') h=`<div class="cap" style="margin-top:0;font-size:14px;color:var(--text)">${esc(e.name||'This row')}</div><div class="acts"><button type="button" id="pkNo">Cancel</button><button type="button" id="pkYes" style="background:#e0243c;border-color:#e0243c;color:#fff">Delete</button></div>`;
-  $('pkBody').innerHTML=h; $('ovP').classList.add('show'); if(f==='newtime')calRender();
+  $('pkBody').innerHTML=h; $('ovP').classList.add('show'); if(f==='newtime'||f==='pastedate')calRender();
   if(['name','comment','type','fee','prize'].includes(f)) setTimeout(()=>{const i=$('pkEntry')||$('pkIn');if(i)i.focus();},80);
 }
 function closePick(){ $('ovP').classList.remove('show'); }
@@ -512,6 +513,7 @@ $('pkBody').addEventListener('click',e=>{
   if(e.target.closest('#pkYes')){doDel(e.target.closest('#pkYes'));return;}
   if(e.target.closest('#pkMore')){const en=pk.e;closePick();openSheet(en);return;}
   const cd=e.target.closest('[data-cd]'); if(cd){cal.sel=cd.dataset.cd;calRender();return;}
+  if(e.target.closest('#pkPasteGo')){ const d=cal.sel||todayStr; closePick(); pasteRows(d); return; }
   if(e.target.closest('#pdTba')){ cal.sel=cal.sel===TBA?todayStr:TBA; calRender(); return; }
   const cm=e.target.closest('[data-cm]'); if(cm){cal.m+=+cm.dataset.cm; if(cal.m<1){cal.m=12;cal.y--;} if(cal.m>12){cal.m=1;cal.y++;} calRender();return;}
   const cq=e.target.closest('[data-ct]'); if(cq){ const k=cq.dataset.ct; ct[k]=k==='h'?+cq.dataset.v:cq.dataset.v; document.querySelectorAll('[data-ct="'+k+'"]').forEach(x=>x.classList.toggle('on',x===cq)); return; }
@@ -585,6 +587,10 @@ function newTimeHtml(date){
   `<div class="cap">Select time(s) — tap more than one</div><div class="pcs" id="pkChips">`+TIMES.map(([v,l])=>`<button type="button" class="pc" data-v="${v}">${l}</button>`).join('')+`</div>`+
   `<div class="cap">Custom time</div><div class="pcs" style="flex-wrap:nowrap;align-items:center"><input type="time" id="pkTime" style="flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:10px;color:var(--text);font-size:15px;font-weight:800;padding:9px 10px"><button type="button" class="pq" id="pkCust" style="white-space:nowrap">＋ Add time</button></div>`+
   `<button type="button" class="pok" id="pkGo" style="width:100%;margin-top:16px;padding:14px">Add row (no time)</button>`;
+}
+function pasteDateHtml(date){
+  pkSel=new Set(); const [y,m]=(date===TBA?todayStr:date).split('-').map(Number); cal={y,m,sel:date};
+  return `<div class="cap" style="margin-top:0">Date</div><div id="pdCal"></div><button type="button" class="pq" id="pdTba" style="width:100%;margin-top:10px"></button><button type="button" class="pok" id="pkPasteGo" style="width:100%;margin-top:16px;padding:14px">📋 Paste here</button>`;
 }
 function calRender(){
   { const tb=$('pdTba'); if(tb){ const on=cal.sel===TBA; tb.classList.toggle('on',on); tb.textContent=on?'✓ Date not announced yet':'📅 Date not announced yet'; } }
@@ -740,7 +746,7 @@ $('rwPaste').addEventListener('click',async()=>{
   if(ok){ clipRows=null; exitRow(); toast('Pasted ✓'); }
 });
 $('rcX').addEventListener('click',()=>{ clipRows=null; render(); });
-$('rcDate').addEventListener('click',()=>{ const i=$('rcDateIn'); i.value=''; try{ i.showPicker?i.showPicker():i.click(); }catch(e){ i.click(); } });
+$('rcDate').addEventListener('click',()=>openPick(null,'pastedate',(ym==='all'||monthOf(todayStr)===ym)?todayStr:ym+'-01'));
 $('rcDateIn').addEventListener('change',e=>{ if(e.target.value)pasteRows(e.target.value); });
 async function pasteRows(date){
   if(!clipRows||!date||RO)return;
