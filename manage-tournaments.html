@@ -335,7 +335,8 @@ body.ro #rwDel{display:none}
 <div class="ov" id="ovP"><div class="sheet"><h2 id="pkTitle"></h2><div id="pkBody"></div></div></div>
 <div id="rcBar"><div id="rcInfo"></div><button type="button" id="rcDate">📅 Paste to date</button><button type="button" id="rcX" aria-label="Cancel">✕</button></div>
 <input type="date" id="rcDateIn" style="position:fixed;left:-9999px;bottom:140px;opacity:0">
-<div id="rwBar"><div id="rwInfo"></div><button type="button" id="rwPaste" style="display:none;background:var(--green);border-color:var(--green);color:#052e1c">📋 Paste</button><button type="button" id="rwCopy">⎘ Copy</button><button type="button" id="rwDone">✓ Done</button><button type="button" id="rwTime">Time</button><button type="button" id="rwDel" aria-label="Delete rows">🗑</button><button type="button" id="rwX" aria-label="Done">✕</button></div>
+<div id="rwBar"><div id="rwInfo"></div><button type="button" id="rwDel" aria-label="Delete rows">🗑</button><button type="button" id="rwTime">Time</button><button type="button" id="rwPaste" style="display:none;background:var(--green);border-color:var(--green);color:#052e1c">📋 Paste</button><button type="button" id="rwCopy">⎘ Copy</button><button type="button" id="rwDone">✓ Done</button><button type="button" id="rwX" aria-label="Done">✕</button></div>
+
 <input type="file" id="banQuick" accept="image/png,image/jpeg,image/webp" style="display:none">
 <div id="cpBar"><div id="cpInfo"></div><button type="button" id="cpMerge" style="display:none">Merge</button><button type="button" id="cpClear" aria-label="Clear values">🗑</button><button type="button" id="cpColor" aria-label="Color">🎨</button><button type="button" id="cpCopy">Copy</button><button type="button" id="cpPaste">Paste</button><button type="button" id="cpX" aria-label="Done">✕</button></div>
 <div class="ov" id="ovF"><div class="sheet"><h2>Add to balance</h2>
@@ -664,7 +665,8 @@ let rowSel=null, rowExtra=new Set(), clipRows=null;
 function selRows(){ return [rowSel,...rowExtra].map(id=>entries.find(x=>x.id===id)).filter(Boolean); }
 function rwInfo(){
   const e=entries.find(x=>x.id===rowSel); if(!e)return; const n=1+rowExtra.size;
-  $('rwDone').textContent=selRows().every(x=>x.done)?'↺ Undo':'✓ Done';
+  $('rwDone').style.display='none';
+  $('rwCopy').style.display=selRows().every(x=>!(x.name||'').trim())?'none':'';   // nothing to copy from an empty row
   $('rwTime').style.display=n>1?'none':''; $('rwPaste').style.display=clipRows&&!RO?'':'none';
   $('rwInfo').innerHTML=n>1?n+' rows selected<small>Tap more Time cells to add / remove</small>':'Drag the Time cell to move<small>'+esc((e.entry_time?timeLabel(e.entry_time)+' · ':'')+(e.name||'no name'))+' · tap another Time to add</small>';
 }
