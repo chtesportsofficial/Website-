@@ -127,6 +127,7 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 .pc.on{background:#ff9800;border-color:#ff9800;color:#1a1200}
 .cap{font-size:11.5px;font-weight:800;color:var(--dim);margin:14px 0 6px}
 .pcu{display:flex;gap:8px;align-items:flex-start}
+.rksel{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 4px;color:var(--text);font-size:15px;font-weight:800;outline:none}
 .pksel{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:12px;color:var(--text);font-size:15px;font-weight:800;outline:none}
 .pcu input,.pcu textarea{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:11px 12px;color:var(--text);font-size:14px;outline:none}
 .pok{border:none;border-radius:11px;padding:12px 20px;background:var(--green);color:#052e1c;font-weight:900;font-size:14px}
@@ -464,6 +465,7 @@ $('days').addEventListener('click',e=>{
   if(selMode){ if(f!=='del'&&f!=='entry_time')toggleSel(td); return; }
   if(f==='banner'){ if(safeImg(en.banner_url))openBig(en); else pickBanner(en); return; }
   if(f==='entry_time'){ toggleRow(en); return; }
+  if(f==='rank'){ inlineRank(td,en); return; }
   openPick(en,f);
 });
 $('fab').addEventListener('click',()=>openPick(null,'newtime',(ym==='all'||monthOf(todayStr)===ym)?todayStr:ym+'-01'));
@@ -474,6 +476,26 @@ const TIMES=[['15:00','3 PM'],['16:00','4 PM'],['17:00','5 PM'],['18:00','6 PM']
 const TYPES=['scrim','semi','top 6 semi','final','Round 1','Round 2','Round 3','24 slot','CR'].map(x=>[x,x]);
 const RC={qualified:'g',disqualified:'r',profit:'g',loss:'r',sold:'g'};
 const PT={pastedate:'Paste to date',del:'Delete this tournament?',entry_time:'Time',type:'Type',maps:'Map',result:'Status',rank:'Rank',fee:'Entry fee ৳',prize:'Prize ৳',comment:'Comment',name:'Tournament name / Organizer',newtime:'Add tournament · pick time'};
+// rank: the dropdown opens right inside the tapped cell
+function inlineRank(td,en){
+  if(td.querySelector('select'))return;
+  const c=String(en.rank||'').replace('#','').trim();
+  const sel=document.createElement('select'); sel.className='rksel';
+  sel.innerHTML='<option value="">Rank…</option>'+Array.from({length:12},(_,i)=>`<option value="${i+1}"${String(i+1)===c?' selected':''}>#${i+1}</option>`).join('')+'<option value="__custom">Custom…</option><option value="__clear">Clear</option>';
+  td.textContent=''; td.appendChild(sel);
+  const off=ev=>{ if(ev.target!==sel){ document.removeEventListener('click',off,true); render(); } };
+  setTimeout(()=>document.addEventListener('click',off,true),0);
+  sel.addEventListener('change',async()=>{
+    document.removeEventListener('click',off,true);
+    const v=sel.value;
+    if(v==='__custom'){ render(); openPick(en,'rank'); return; }
+    try{
+      const r=await upd(en.id,{rank:(v===''||v==='__clear')?null:v});
+      entries=entries.map(x=>x.id===r.data.id?r.data:x); render(); toast('Saved ✓');
+    }catch(er){ toast('Failed: '+(er&&er.message||er)); render(); }
+  });
+  sel.focus(); try{ sel.showPicker&&sel.showPicker(); }catch(e){}
+}
 function openPick(e,f,date){
   if(!tid){openT('new');return;}
   pk={e,f,date}; $('pkTitle').textContent=PT[f];
