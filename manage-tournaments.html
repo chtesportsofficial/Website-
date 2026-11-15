@@ -287,6 +287,8 @@ body.ro #rwDel{display:none}
 .ddb{height:46px;min-width:108px;padding:0 30px 0 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-weight:850;font-size:13.5px;text-align:left;position:relative}
 .ddb::after{content:'';position:absolute;right:13px;top:50%;width:7px;height:7px;border-right:2px solid var(--dim);border-bottom:2px solid var(--dim);transform:translateY(-70%) rotate(45deg);transition:.15s}
 .ddb.open{border-color:#ff9800}.ddb.open::after{transform:translateY(-30%) rotate(-135deg)}
+.shr .own{width:auto;height:38px;padding:0 10px;font-size:11.5px;font-weight:800;color:var(--text)}
+.shr .own.sure{background:#e0243c;border-color:#e0243c;color:#fff}
 .shr .ddb{width:auto;height:38px;min-width:96px;padding:0 28px 0 12px;font-size:12.5px;color:var(--text);border-radius:10px}
 .ddm{position:fixed;z-index:10050;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.35);padding:4px}
 .ddm button{display:flex;justify-content:space-between;align-items:center;width:100%;padding:12px;border:none;background:none;color:var(--text);font-weight:800;font-size:14px;border-radius:9px;text-align:left}
@@ -299,8 +301,9 @@ body.ro #rwDel{display:none}
     <button type="button" class="icon-btn" onclick="history.back()" aria-label="Back">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </button>
-    <h1>Manage All Tour</h1>
-    <button type="button" class="icon-btn" id="tipBtn" aria-label="Tutorial" style="margin-left:auto;font-size:20px">💡</button>
+    <h1 style="margin-right:auto">Manage All Tour</h1>
+    <button type="button" class="icon-btn" id="undoBtn" aria-label="Undo" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
+    <button type="button" class="icon-btn" id="tipBtn" aria-label="Tutorial" style="font-size:20px">💡</button>
   </div>
 
   <div id="gate" class="gate">Loading…</div>
@@ -618,7 +621,7 @@ async function pkApply(v,fromIn){
 async function doDel(btn){
   const e=pk.e;
   const ok=await btnRun(btn,'Deleting…','Deleted ✓',async()=>{
-    const r=await sb.from('user_schedule_entries').delete().eq('id',e.id); if(r.error)throw r.error;
+    await delRows([e]);
     dropBanner(e.banner_url); entries=entries.filter(x=>x.id!==e.id); if(rowSel===e.id){rowSel=null;$('rwBar').classList.remove('show');$('fab').style.display='block';} return true;
   });
   if(ok){closePick();render();}
@@ -697,7 +700,7 @@ async function createEntries(times){
     list.forEach((it,k)=>{ const pos=(k+1)*10; if(it.row)it.row.pos=pos; else if(it.e.pos==null||+it.e.pos!==pos)posUpd.push({id:it.e.id,pos}); });
   }
   const ok=await btnRun($('pkGo'),'Adding…','Added ✓',async()=>{
-    const r=await sb.from('user_schedule_entries').insert(base).select(); if(r.error)throw r.error;
+    const r=await insRows(base);
     const res=await Promise.all(posUpd.map(u=>upd(u.id,{pos:u.pos})));
     const bad=res.find(x=>x.error); if(bad)throw bad.error;
     entries.push(...r.data); res.forEach(x=>{entries=entries.map(y=>y.id===x.data.id?x.data:y);});
@@ -718,10 +721,33 @@ function runOfP(e){
   while(a>0&&day[a-1].prize_group===e.prize_group)a--; while(b<day.length-1&&day[b+1].prize_group===e.prize_group)b++;
   return day.slice(a,b+1);
 }
+// ---------- undo (last actions, grouped) ----------
+const UE='user_schedule_entries';
+let undoStack=[], undoing=false, undoGrp=null, undoTimer=null;
+function undoRec(op){ if(undoing)return; if(!undoGrp){ undoGrp=[]; undoStack.push(undoGrp); if(undoStack.length>25)undoStack.shift(); } undoGrp.push(op); clearTimeout(undoTimer); undoTimer=setTimeout(()=>{undoGrp=null;},700); undoBtnSync(); }
+function undoBtnSync(){ const b=document.getElementById('undoBtn'); if(b)b.style.display=(undoStack.length&&!RO)?'':'none'; }
+async function insRows(rows){ const r=await sb.from(UE).insert(rows).select(); if(r.error)throw r.error; (r.data||[]).length&&undoRec({t:'i',ids:r.data.map(x=>x.id)}); return r; }
+async function insOne(row){ const r=await sb.from(UE).insert(row).select().single(); if(r.error)throw r.error; if(r.data)undoRec({t:'i',ids:[r.data.id]}); return r; }
+async function delRows(rows){ const ids=rows.map(x=>x.id), snap=rows.map(x=>({...x})); const r=await sb.from(UE).delete().in('id',ids); if(r.error)throw r.error; undoRec({t:'d',rows:snap}); return r; }
+async function doUndo(){
+  const g=undoStack.pop(); undoGrp=null; undoBtnSync(); if(!g)return;
+  undoing=true;
+  try{
+    for(const op of g.slice().reverse()){
+      if(op.t==='u'){ const r=await upd(op.id,op.old); entries=entries.map(x=>x.id===r.data.id?r.data:x); }
+      else if(op.t==='i'){ const r=await sb.from(UE).delete().in('id',op.ids); if(r.error)throw r.error; entries=entries.filter(x=>!op.ids.includes(x.id)); }
+      else if(op.t==='d'){ const r=await sb.from(UE).insert(op.rows).select(); if(r.error)throw r.error; entries.push(...r.data); }
+    }
+    render(); toast('Undone ✓');
+  }catch(er){ toast('Undo failed: '+(er&&er.message||er)); }
+  undoing=false; undoBtnSync();
+}
 // one safe way to save a row: tells you clearly if the row could not be saved
 async function upd(id,patch){
+  const before=entries.find(x=>x.id===id), old={}; if(before)Object.keys(patch).forEach(k=>{ old[k]=before[k]===undefined?null:before[k]; });
   const r=await sb.from('user_schedule_entries').update(patch).eq('id',id).select();
   if(r.error)throw r.error;
+  if(before)undoRec({t:'u',id,old});
   if(!r.data||!r.data.length){
     try{ const f=await sb.from('user_schedule_entries').select('*'); if(!f.error&&f.data){ entries=f.data; render(); } }catch(e){}
     throw new Error('This row was out of date, so I refreshed the list. Please try again.');
@@ -775,7 +801,7 @@ $('rwDel').addEventListener('click',()=>{
 async function doDelRows(btn){
   const rs=selRows(); if(!rs.length)return;
   const ok=await btnRun(btn,'Deleting…','Deleted ✓',async()=>{
-    const ids=rs.map(x=>x.id), r=await sb.from('user_schedule_entries').delete().in('id',ids); if(r.error)throw r.error;
+    const ids=rs.map(x=>x.id); await delRows(rs);
     rs.forEach(x=>dropBanner(x.banner_url)); entries=entries.filter(x=>!ids.includes(x.id)); return true;
   });
   if(ok){ closePick(); exitRow(); toast(rs.length+' row'+(rs.length>1?'s':'')+' deleted'); }
@@ -813,7 +839,7 @@ $('rwPaste').addEventListener('click',async()=>{
   const ok=await btnRun($('rwPaste'),'Pasting…','Pasted ✓',async()=>{
     const res=await Promise.all(upds.map(([id,p])=>upd(id,p))); const bad=res.find(r=>r.error); if(bad)throw bad.error;
     res.forEach(r=>{entries=entries.map(x=>x.id===r.data.id?r.data:x);});
-    if(ins.length){ const r=await sb.from('user_schedule_entries').insert(ins).select(); if(r.error)throw r.error; entries.push(...r.data); }
+    if(ins.length){ const r=await insRows(ins); entries.push(...r.data); }
     return true;
   });
   if(ok){ clipRows=null; exitRow(); toast('Pasted ✓'); }
@@ -832,7 +858,7 @@ async function pasteRows(date,newTime){
     return o;
   });
   const ok=await btnRun(null,'','',async()=>{
-    const r=await sb.from('user_schedule_entries').insert(rows).select(); if(r.error)throw r.error;
+    const r=await insRows(rows);
     entries.push(...r.data); if(ym!=='all'&&date!==TBA)ym=monthOf(date); return true;
   });
   if(ok){ clipRows=null; toast(rows.length+' row'+(rows.length>1?'s':'')+' pasted on '+dayLabel(date).t+' ✓'); render(); const t=document.getElementById('d-'+date); if(t)t.scrollIntoView({block:'center'}); }
@@ -1175,7 +1201,7 @@ function compress(file){
   });
 }
 function pathOf(url){const i=url.indexOf('/'+BUCKET+'/');return i<0?'':url.slice(i+BUCKET.length+2);}
-async function dropBanner(url){ if(url){ await new Promise(r=>setTimeout(r,600)); if(entries.some(x=>x.banner_url===url))return; } try{ const p=url&&pathOf(url); if(p) await sb.storage.from(BUCKET).remove([p]); }catch(e){} }
+async function dropBanner(url){ if(url){ await new Promise(r=>setTimeout(r,600)); if(entries.some(x=>x.banner_url===url))return; if(undoStack.some(g=>g.some(o=>(o.t==='d'&&o.rows.some(r=>r.banner_url===url))||(o.t==='u'&&o.old&&o.old.banner_url===url))))return; } try{ const p=url&&pathOf(url); if(p) await sb.storage.from(BUCKET).remove([p]); }catch(e){} }
 
 $('fTba').addEventListener('change',e=>{ $('fDateBox').style.display=e.target.checked?'none':''; $('fTimeBox').style.visibility=e.target.checked?'hidden':''; });
 $('shSave').addEventListener('click',async()=>{
@@ -1204,7 +1230,7 @@ $('shSave').addEventListener('click',async()=>{
     };
     let r;
     if(editing) r=await upd(editing.id,row);
-    else r=await sb.from('user_schedule_entries').insert({...row,user_id:uid,team_id:tid}).select().single();
+    else r=await insOne({...row,user_id:uid,team_id:tid});
     if(r.error)throw r.error;
     if(banOld&&banOld!==url) dropBanner(banOld);
     if(editing) entries=entries.map(x=>x.id===editing.id?r.data:x); else entries.push(r.data);
@@ -1222,8 +1248,7 @@ $('shDel').addEventListener('click',async()=>{
   if(!await askConfirm('This row will be removed from your schedule.','Delete this tournament?','Delete'))return;
   const btn=$('shDel'); btn.disabled=true;
   try{
-    const r=await sb.from('user_schedule_entries').delete().eq('id',editing.id);
-    if(r.error)throw r.error;
+    await delRows([editing]);
     dropBanner(editing.banner_url);
     entries=entries.filter(x=>x.id!==editing.id);
     closeSheet(); render(); toast('Deleted');
@@ -1337,6 +1362,7 @@ let RO=false, LINKONLY=false, myRoles={}, isAdm=false, tut=null, shareRows=[];
 function roleOfTeam(t){ if(LINKONLY)return 'view'; if(!t||t.user_id===uid)return 'owner'; return myRoles[t.id]||'view'; }
 function applyRole(){
   const t=teams.find(x=>x.id===tid), role=roleOfTeam(t); RO=role==='view';
+  if(window._undoTid!==tid){ window._undoTid=tid; undoStack=[]; undoGrp=null; } undoBtnSync();
   document.body.classList.toggle('ro',RO);
   $('tEdit').style.display=role==='owner'?'':'none'; $('tShare').style.display=role==='owner'?'':'none';
   if(role!=='owner'&&t)$('tUpd').innerHTML=esc($('tUpd').textContent)+'<span class="rotag">'+(role==='edit'?'Editor':'View only')+'</span>';
@@ -1346,7 +1372,7 @@ const shareLink=()=>location.origin+location.pathname+'?t='+tid;
 function renderShares(){
   const t=teams.find(x=>x.id===tid); if(!t)return;
   $('shLink').value=shareLink(); $('shLinkOff').style.display=t.link_view?'none':''; $('shLinkOn').style.display=t.link_view?'':'none';
-  $('shList').innerHTML=shareRows.length?shareRows.map(r=>`<div class="shr"><div><b>${esc(r.full_name||'User')}</b><span>UID #${esc(r.user_number||'?')}</span></div><button type="button" class="ddb" data-rs="${r.user_id}" data-val="${r.role}">${r.role==='edit'?'Editor':'Viewer'}</button><button type="button" data-sd="${r.user_id}" aria-label="Remove">✕</button></div>`).join(''):'<div style="color:var(--dim);font-size:13px;padding:6px 0">No one added yet.</div>';
+  $('shList').innerHTML=shareRows.length?shareRows.map(r=>`<div class="shr"><div><b>${esc(r.full_name||'User')}</b><span>UID #${esc(r.user_number||'?')}</span></div><button type="button" class="ddb" data-rs="${r.user_id}" data-val="${r.role}">${r.role==='edit'?'Editor':'Viewer'}</button><button type="button" class="own" data-own="${r.user_id}">Make owner</button><button type="button" data-sd="${r.user_id}" aria-label="Remove">✕</button></div>`).join(''):'<div style="color:var(--dim);font-size:13px;padding:6px 0">No one added yet.</div>';
 }
 async function loadShares(){ const r=await sb.rpc('sched_share_list',{p_team:tid}); if(r.error){toast(setupMsg(r.error));shareRows=[];}else shareRows=r.data||[]; renderShares(); }
 $('tShare').addEventListener('click',()=>{ if(!tid)return; $('shUid').value=''; $('ovS').classList.add('show'); renderShares(); loadShares(); });
@@ -1399,6 +1425,16 @@ $('shList').addEventListener('click',async e=>{
     });
     return;
   }
+  const ow=e.target.closest('[data-own]');
+  if(ow){
+    if(!ow.classList.contains('sure')){ ow.classList.add('sure'); ow.textContent='Sure?'; setTimeout(()=>{ if(ow.isConnected&&ow.classList.contains('sure')){ ow.classList.remove('sure'); ow.textContent='Make owner'; } },4000); return; }
+    ow.disabled=true; ow.textContent='…';
+    const r=await sb.rpc('sched_transfer_owner',{p_team:String(tid),p_new:String(ow.dataset.own)});
+    if(r.error){ ow.disabled=false; ow.classList.remove('sure'); ow.textContent='Make owner'; toast(/function|schema cache|does not exist/i.test(String(r.error.message))?'Run transfer_owner.sql in Supabase first.':'Failed: '+r.error.message); return; }
+    const t=teams.find(x=>x.id===tid); if(t)t.user_id=ow.dataset.own; myRoles[tid]='edit';
+    $('ovS').classList.remove('show'); applyRole(); render(); toast('Ownership transferred ✓');
+    return;
+  }
   const b=e.target.closest('[data-sd]'); if(!b)return;
   const r=await sb.from('user_schedule_shares').delete().eq('team_id',tid).eq('user_id',b.dataset.sd);
   if(r.error){toast(setupMsg(r.error));return;} await loadShares();
@@ -1433,6 +1469,7 @@ $('ovU').addEventListener('click',async e=>{
   }
 });
 
+$('undoBtn').addEventListener('click',doUndo);
 // ---------- keep the list fresh when the app is re-opened / brought back ----------
 let _rfBusy=false, _rfAt=0;
 async function softRefresh(force){
