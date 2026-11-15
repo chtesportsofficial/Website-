@@ -137,6 +137,8 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 .rkfoot{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
 .rkfoot button{height:38px;border-radius:10px;background:transparent;border:1px solid var(--line);color:var(--text);font-size:14px;font-weight:700}
 .rkfoot button.clr{color:#ff6b6b;border-color:#5a2a35}
+/* tall: one option per row, scrolls inside */
+.rkgrid.tall{max-height:226px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:2px}
 td.rk-active{outline:2px solid var(--green);outline-offset:-2px}
 .rksel{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 4px;color:var(--text);font-size:15px;font-weight:800;outline:none}
 .pksel{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:12px;color:var(--text);font-size:15px;font-weight:800;outline:none}
@@ -496,12 +498,13 @@ function inlinePop(td,en,f){
   closeRk();
   const CFG={
     rank:{opts:Array.from({length:12},(_,i)=>[String(i+1),'#'+(i+1)]),cols:4,W:224,cur:String(en.rank||'').replace('#','').trim()},
-    maps:{opts:[1,2,3,4,5,6].map(x=>[String(x),String(x)]),cols:3,W:200,cur:en.maps==null?'':String(en.maps)},
+    maps:{opts:[1,2,3,4,5,6,7,8,9,10].map(x=>[String(x),String(x)]),cols:1,W:150,tall:true,cur:en.maps==null?'':String(en.maps)},
     type:{opts:TYPES.map(([v,l])=>[v,l]),cols:2,W:250,cur:String(en.type||'')}
   }, cf=CFG[f], c=cf.cur;
   const m=document.createElement('div'); m.className='rkmenu';
-  m.innerHTML='<div class="rkarrow"></div><div class="rkgrid" style="grid-template-columns:repeat('+cf.cols+',1fr)">'+cf.opts.map(([v,l])=>`<button type="button" data-v="${esc(v)}"${v===c?' class="on"':''}>${esc(l)}</button>`).join('')+'</div><div class="rkfoot"><button type="button" data-v="__custom">Custom</button><button type="button" data-v="__clear" class="clr">Clear</button></div>';
+  m.innerHTML='<div class="rkarrow"></div><div class="rkgrid'+(cf.tall?' tall':'')+'" style="grid-template-columns:repeat('+cf.cols+',1fr)">'+cf.opts.map(([v,l])=>`<button type="button" data-v="${esc(v)}"${v===c?' class="on"':''}>${esc(l)}</button>`).join('')+'</div><div class="rkfoot"><button type="button" data-v="__custom">Custom</button><button type="button" data-v="__clear" class="clr">Clear</button></div>';
   document.body.appendChild(m); rkMenu=m; rkTd=td; td.classList.add('rk-active');
+  const gd=m.querySelector('.rkgrid.tall'), on=gd&&gd.querySelector('.on'); if(on)gd.scrollTop=Math.max(0,on.offsetTop-gd.offsetTop-60);
   const r=td.getBoundingClientRect(), W=cf.W, mh=m.offsetHeight, vw=window.innerWidth, vh=window.innerHeight;
   const left=Math.max(8,Math.min(r.left+r.width/2-W/2,vw-W-8));
   const down=(vh-r.bottom)>=mh+14||(r.top<mh+14);
