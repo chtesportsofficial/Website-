@@ -127,6 +127,7 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 .pc.on{background:#ff9800;border-color:#ff9800;color:#1a1200}
 .cap{font-size:11.5px;font-weight:800;color:var(--dim);margin:14px 0 6px}
 .pcu{display:flex;gap:8px;align-items:flex-start}
+.pksel{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:12px;color:var(--text);font-size:15px;font-weight:800;outline:none}
 .pcu input,.pcu textarea{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:11px 12px;color:var(--text);font-size:14px;outline:none}
 .pok{border:none;border-radius:11px;padding:12px 20px;background:var(--green);color:#052e1c;font-weight:900;font-size:14px}
 .pmore{width:100%;margin-top:14px;padding:11px;border-radius:11px;background:transparent;border:1px dashed var(--line);color:var(--dim);font-weight:700;font-size:13px}
@@ -298,7 +299,7 @@ body.ro #rwDel{display:none}
     <h2 id="shTitle">Add tournament</h2>
     <div class="row2">
       <div class="fld"><label>Date</label><div id="fDateBox"></div><label class="chk"><input type="checkbox" id="fTba"> Date not announced yet</label></div>
-      <div class="fld"><label for="fTime">Time</label><input id="fTime" type="time"></div>
+      <div class="fld" id="fTimeBox"><label for="fTime">Time</label><input id="fTime" type="time"></div>
     </div>
     <div class="row2">
       <div class="fld"><label for="fType">Type</label><input id="fType" list="typeList" placeholder="scrim, final…" maxlength="30"></div>
@@ -398,7 +399,7 @@ const todayStr=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getM
 const TBA='2099-12-31';   // placeholder date for tournaments whose date is not announced yet
 const monthOf=d=>String(d).slice(0,7);
 function monthLabel(k){const [y,m]=k.split('-');return MONTHS[+m-1].slice(0,3).toUpperCase()+' '+y.slice(2);}
-function dayLabel(d){if(d===TBA)return {t:'📅 Date not announced',w:'TBA'};const [y,m,dd]=d.split('-').map(Number);const w=WD[new Date(y,m-1,dd).getDay()];return {t:dd+' '+MONTHS[m-1]+', '+String(y).slice(2),w};}
+function dayLabel(d){if(d===TBA)return {t:'Date not announced',w:''};const [y,m,dd]=d.split('-').map(Number);const w=WD[new Date(y,m-1,dd).getDay()];return {t:dd+' '+MONTHS[m-1]+', '+String(y).slice(2),w};}
 function timeLabel(t){if(!t)return '—';const [h,m]=t.split(':').map(Number);const ap=h>=12?'PM':'AM';const hh=h%12||12;return hh+(m?':'+String(m).padStart(2,'0'):'')+' '+ap;}
 function safeImg(u){return typeof u==='string'&&u.startsWith(SUPABASE_URL+'/storage/')?u:'';}
 
@@ -486,7 +487,7 @@ function openPick(e,f,date){
   else if(f==='type') h=chips(TYPES.concat([['','Clear']]),v)+inp('Custom','text',v,'type name');
   else if(f==='maps') h=chips([1,2,3,4,5,6].map(x=>[x,x]).concat([['','Clear']]),v)+inp('Custom','number',v,'maps');
   else if(f==='result') h=chips([['qualified','Qualified'],['disqualified','Disqualified'],['profit','Profit'],['loss','Loss'],['sold','Sold'],['','Clear']],v);
-  else if(f==='rank'){const c=v.replace('#',''); h=chips(Array.from({length:12},(_,i)=>[i+1,'#'+(i+1)]).concat([['','Clear']]),c)+inp('Custom rank','text',c,'');}
+  else if(f==='rank'){const c=v.replace('#',''); h='<div class="cap" style="margin-top:0">Rank</div><select id="pkRankSel" class="pksel"><option value="">Select rank…</option>'+Array.from({length:12},(_,i)=>`<option value="${i+1}"${String(i+1)===c?' selected':''}>#${i+1}</option>`).join('')+`<option value="__clear">Clear rank</option></select>`+inp('Custom rank','text',/^([1-9]|1[0-2])$/.test(c)?'':c,'');}
   else if(f==='fee'){
     const rs=runOf(e);
     if(rs.length>1){
@@ -517,7 +518,7 @@ $('pkBody').addEventListener('click',e=>{
   if(e.target.closest('#pdTba')){ cal.sel=cal.sel===TBA?todayStr:TBA; calRender(); return; }
   const cm=e.target.closest('[data-cm]'); if(cm){cal.m+=+cm.dataset.cm; if(cal.m<1){cal.m=12;cal.y--;} if(cal.m>12){cal.m=1;cal.y++;} calRender();return;}
   const cq=e.target.closest('[data-ct]'); if(cq){ const k=cq.dataset.ct; ct[k]=k==='h'?+cq.dataset.v:cq.dataset.v; document.querySelectorAll('[data-ct="'+k+'"]').forEach(x=>x.classList.toggle('on',x===cq)); return; }
-  if(e.target.closest('#pkGo')){createEntries(pkSel.size?[...pkSel]:[null]);return;}
+  if(e.target.closest('#pkGo')){createEntries(cal.sel===TBA||!pkSel.size?[null]:[...pkSel]);return;}
   if(e.target.closest('#pkCust')){pkCustom();return;}
   const cv=e.target.closest('[data-cv]'); if(cv){ document.querySelectorAll('#pkChg .pc').forEach(x=>x.classList.toggle('on',x===cv)); $('pkIn').value=''; pkTotal(); return; }
   const c=e.target.closest('.pc'); if(c){ if(pk.f==='newtime')pkToggle(c); else pkApply(c.dataset.v,false); return; }
@@ -525,6 +526,7 @@ $('pkBody').addEventListener('click',e=>{
 });
 function pkChargeVal(){ const o=$('pkIn'), on=document.querySelector('#pkChg .pc.on'); return o&&o.value!==''?Math.max(0,num(o.value)):(on?num(on.dataset.cv):0); }
 function pkTotal(){ const t=$('pkTot'); if(t&&$('pkEntry'))t.textContent='Total '+fmt(num($('pkEntry').value)+pkChargeVal()); }
+$('pkBody').addEventListener('change',e=>{ if(e.target.id==='pkRankSel'&&pk&&pk.f==='rank'){ pkApply(e.target.value==='__clear'?'':e.target.value); } });
 $('pkBody').addEventListener('input',e=>{ if(e.target.id==='pkIn'&&pk&&pk.f==='fee'&&$('pkEntry')){ document.querySelectorAll('#pkChg .pc').forEach(x=>x.classList.remove('on')); } if(e.target.id==='pkEntry'||e.target.id==='pkIn')pkTotal(); });
 async function pkApply(v,fromIn){
   const {e,f}=pk; let val=v; if(fromIn){const i=$('pkIn'); val=i?i.value.trim():'';}
@@ -566,7 +568,7 @@ function getDate(p){
 let bigE=null;
 function openBig(e){
   bigE=e; $('bgImg').src=safeImg(e.banner_url); $('bgName').textContent=e.name||'Tournament';
-  const d=dayLabel(e.entry_date); $('bgSub').textContent=d.t+' · '+d.w+(e.entry_time?' · '+timeLabel(e.entry_time):'');
+  const d=dayLabel(e.entry_date); $('bgSub').textContent=[d.t,d.w,e.entry_time?timeLabel(e.entry_time):''].filter(Boolean).join(' · ');
   $('ovB').classList.add('show');
 }
 $('bgClose').addEventListener('click',()=>$('ovB').classList.remove('show'));
@@ -584,16 +586,19 @@ function newTimeHtml(date){
   pkSel=new Set(); const [y,m]=(date===TBA?todayStr:date).split('-').map(Number); cal={y,m,sel:date}; ct={h:null,m:'00',a:'PM'};
   const q=(k,v,on)=>`<button type="button" class="pq${on?' on':''}" data-ct="${k}" data-v="${v}">${v}</button>`;
   return `<div class="cap" style="margin-top:0">Date</div><div id="pdCal"></div><button type="button" class="pq" id="pdTba" style="width:100%;margin-top:10px"></button>`+
-  `<div class="cap">Select time(s) — tap more than one</div><div class="pcs" id="pkChips">`+TIMES.map(([v,l])=>`<button type="button" class="pc" data-v="${v}">${l}</button>`).join('')+`</div>`+
-  `<div class="cap">Custom time</div><div class="pcs" style="flex-wrap:nowrap;align-items:center"><input type="time" id="pkTime" style="flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:10px;color:var(--text);font-size:15px;font-weight:800;padding:9px 10px"><button type="button" class="pq" id="pkCust" style="white-space:nowrap">＋ Add time</button></div>`+
+  `<div id="pkTimeWrap"><div class="cap">Select time(s) — tap more than one</div><div class="pcs" id="pkChips">`+TIMES.map(([v,l])=>`<button type="button" class="pc" data-v="${v}">${l}</button>`).join('')+`</div>`+
+  `<div class="cap">Custom time</div><div class="pcs" style="flex-wrap:nowrap;align-items:center"><input type="time" id="pkTime" style="flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:10px;color:var(--text);font-size:15px;font-weight:800;padding:9px 10px"><button type="button" class="pq" id="pkCust" style="white-space:nowrap">＋ Add time</button></div></div>`+
   `<button type="button" class="pok" id="pkGo" style="width:100%;margin-top:16px;padding:14px">Add row (no time)</button>`;
 }
 function pasteDateHtml(date){
   pkSel=new Set(); const [y,m]=(date===TBA?todayStr:date).split('-').map(Number); cal={y,m,sel:date};
-  return `<div class="cap" style="margin-top:0">Date</div><div id="pdCal"></div><button type="button" class="pq" id="pdTba" style="width:100%;margin-top:10px"></button><div class="cap">New time (optional) <small style="opacity:.7">— leave empty to keep the copied time</small></div><div class="pcu"><input id="pkPasteTime" type="time"></div><div class="cap" style="font-size:12px;opacity:.75">Scrim / CR rows keep their type. Round / semi / final types are left blank.</div><button type="button" class="pok" id="pkPasteGo" style="width:100%;margin-top:16px;padding:14px">📋 Paste here</button>`;
+  return `<div class="cap" style="margin-top:0">Date</div><div id="pdCal"></div><button type="button" class="pq" id="pdTba" style="width:100%;margin-top:10px"></button><div id="pkPasteWrap"><div class="cap">New time (optional) <small style="opacity:.7">— leave empty to keep the copied time</small></div><div class="pcu"><input id="pkPasteTime" type="time"></div></div><div class="cap" style="font-size:12px;opacity:.75">Scrim / CR rows keep their type. Round / semi / final types are left blank.</div><button type="button" class="pok" id="pkPasteGo" style="width:100%;margin-top:16px;padding:14px">📋 Paste here</button>`;
 }
 function calRender(){
-  { const tb=$('pdTba'); if(tb){ const on=cal.sel===TBA; tb.classList.toggle('on',on); tb.textContent=on?'✓ Date not announced yet':'📅 Date not announced yet'; } }
+  { const tb=$('pdTba'); if(tb){ const on=cal.sel===TBA; tb.classList.toggle('on',on); tb.textContent=on?'✓ Date not announced yet':'Date not announced yet';
+    if(pk&&pk.f==='newtime'){ const w=$('pkTimeWrap'); if(w)w.style.display=on?'none':''; const g=$('pkGo'); if(g&&on)g.textContent='Add row'; else if(g)pkCount(); }
+    if(pk&&pk.f==='pastedate'){ const w=$('pkPasteWrap'); if(w)w.style.display=on?'none':''; } }
+  }
   const {y,m}=cal, first=new Date(y,m-1,1).getDay(), dim=new Date(y,m,0).getDate(); let g='';
   for(let i=0;i<first;i++)g+='<span></span>';
   for(let d=1;d<=dim;d++){ const iso=y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0'); g+=`<button type="button" class="cd${iso===cal.sel?' on':''}${iso===todayStr?' td':''}" data-cd="${iso}">${d}</button>`; }
@@ -753,7 +758,7 @@ async function pasteRows(date,newTime){
   const day=cur().filter(x=>x.entry_date===date).sort(cmpTime), hasPos=day.some(x=>x.pos!=null), maxPos=day.reduce((m,x)=>Math.max(m,x.pos!=null?+x.pos:0),0), gmap={};
   const rows=clipRows.map((c,i)=>{
     const keepFee=/^(scrim|cr)$/i.test(String(c.type||'').trim());
-    const o={user_id:uid,team_id:tid,entry_date:date,entry_time:newTime||c.entry_time||null,type:keepFee?(c.type||null):null,maps:c.maps==null?null:c.maps,name:c.name||'',banner_url:c.banner_url||null,fee:keepFee?num(c.fee):0,fee_paid:true,result:'',prize:0,prize_received:true};
+    const o={user_id:uid,team_id:tid,entry_date:date,entry_time:date===TBA?null:(newTime||c.entry_time||null),type:keepFee?(c.type||null):null,maps:c.maps==null?null:c.maps,name:c.name||'',banner_url:c.banner_url||null,fee:keepFee?num(c.fee):0,fee_paid:true,result:'',prize:0,prize_received:true};
     if(keepFee&&c.fee_group){ gmap[c.fee_group]=gmap[c.fee_group]||(crypto.randomUUID?crypto.randomUUID():null); if(gmap[c.fee_group]){o.fee_group=gmap[c.fee_group]; o.fee_charge=num(c.fee_charge);} }
     if(hasPos)o.pos=maxPos+10*(i+1);
     return o;
@@ -1068,7 +1073,7 @@ function openSheet(e,date){
   if(!tid){openT('new');return;}
   editing=e||null;
   $('shTitle').textContent=e?'Edit tournament':'Add tournament';
-  { const dv=e?e.entry_date:(date||todayStr), isT=dv===TBA; $('fDateBox').innerHTML=dateSel('fd',isT?todayStr:dv); $('fTba').checked=isT; $('fDateBox').style.display=isT?'none':''; }
+  { const dv=e?e.entry_date:(date||todayStr), isT=dv===TBA; $('fDateBox').innerHTML=dateSel('fd',isT?todayStr:dv); $('fTba').checked=isT; $('fDateBox').style.display=isT?'none':''; $('fTimeBox').style.visibility=isT?'hidden':''; }
   $('fTime').value=e?(e.entry_time||''):'';
   $('fType').value=e?(e.type||''):''; $('fMaps').value=e&&e.maps!=null?e.maps:'';
   $('fName').value=e?e.name:''; $('fFee').value=e&&num(e.fee)?e.fee:''; $('fPrize').value=e&&num(e.prize)?e.prize:'';
@@ -1104,7 +1109,7 @@ function compress(file){
 function pathOf(url){const i=url.indexOf('/'+BUCKET+'/');return i<0?'':url.slice(i+BUCKET.length+2);}
 async function dropBanner(url){ if(url){ await new Promise(r=>setTimeout(r,600)); if(entries.some(x=>x.banner_url===url))return; } try{ const p=url&&pathOf(url); if(p) await sb.storage.from(BUCKET).remove([p]); }catch(e){} }
 
-$('fTba').addEventListener('change',e=>{ $('fDateBox').style.display=e.target.checked?'none':''; });
+$('fTba').addEventListener('change',e=>{ $('fDateBox').style.display=e.target.checked?'none':''; $('fTimeBox').style.visibility=e.target.checked?'hidden':''; });
 $('shSave').addEventListener('click',async()=>{
   const date=$('fTba').checked?TBA:getDate('fd'), name=$('fName').value.trim();
   document.querySelectorAll('.fld .bad').forEach(x=>x.classList.remove('bad'));
@@ -1121,7 +1126,7 @@ $('shSave').addEventListener('click',async()=>{
     }
     const row={
       team_id:editing?editing.team_id:tid,
-      entry_date:date, entry_time:$('fTime').value||null, type:$('fType').value.trim()||null,
+      entry_date:date, entry_time:$('fTba').checked?null:($('fTime').value||null), type:$('fType').value.trim()||null,
       maps:$('fMaps').value===''?null:Math.max(0,parseInt($('fMaps').value,10)||0),
       name, banner_url:url||null,
       fee:Math.max(0,num($('fFee').value)), fee_paid:$('fPaid').checked,
@@ -1360,6 +1365,20 @@ $('ovU').addEventListener('click',async e=>{
   }
 });
 
+// ---------- keep the list fresh when the app is re-opened / brought back ----------
+let _rfBusy=false, _rfAt=0;
+async function softRefresh(force){
+  if(!sb||!uid||LINKONLY||_rfBusy)return;
+  if(!force&&Date.now()-_rfAt<3000)return;
+  if(document.querySelector('.ov.show')||selMode||rowSel||(typeof dg!=='undefined'&&dg))return;   // never disturb an edit in progress
+  _rfBusy=true;
+  try{ const r=await sb.from('user_schedule_entries').select('*').order('entry_date',{ascending:true}).limit(3000); if(!r.error&&r.data){ entries=r.data; render(); } }catch(e){}
+  _rfAt=Date.now(); _rfBusy=false;
+}
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden)softRefresh(); });
+window.addEventListener('pageshow',e=>{ if(e.persisted)softRefresh(true); });
+window.addEventListener('focus',()=>softRefresh());
+window.addEventListener('online',()=>softRefresh(true));
 // ---------- start ----------
 function gate(html){ $('gate').style.display='block'; $('main').style.display='none'; $('fab').style.display='none'; $('gate').innerHTML=html; }
 (async function init(){
