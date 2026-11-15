@@ -154,6 +154,8 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 .rkgrid.tall{max-height:136px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:2px}
 td.rk-active{outline:2px solid var(--green);outline-offset:-2px}
 .rksel{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 4px;color:var(--text);font-size:15px;font-weight:800;outline:none}
+.mrow{display:flex;align-items:flex-start;gap:8px;padding-right:14px}.mrow .months{flex:1;min-width:0}
+.msb{width:40px;height:40px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--text);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}.msb svg{width:18px;height:18px}
 .srch{display:none;gap:8px;padding:2px 16px 10px}.srch.show{display:flex}
 .srch input{flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;color:var(--text);padding:10px 12px;font-size:14px;outline:none}
 .srch button{width:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--text)}
@@ -274,6 +276,8 @@ select.dd{appearance:none;-webkit-appearance:none;height:46px;min-width:108px;pa
 #rcBar button{border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:11px;padding:10px 13px;font-weight:850;font-size:13px}
 #rcBar #rcDate{background:var(--green);border-color:var(--green);color:#052e1c}
 body.hasclip #fab{display:none!important}
+body.vlock{overflow:hidden}
+body.vlock #days{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 html.lock,body.lock{overflow:hidden!important;overscroll-behavior:none}.ov{overscroll-behavior:contain}
 /* bottom action bars: info on top, equal buttons below */
 #cpBar,#rwBar,#rcBar{flex-wrap:wrap;padding:10px 12px;gap:8px}
@@ -313,7 +317,7 @@ body.ro #rwDel{display:none}
 
   <div id="main" style="display:none">
     <div class="teams" id="teams"></div>
-    <div class="thead"><div class="tupd" id="tUpd"></div><div class="ttl"><b id="tName"></b><button type="button" id="tEdit" aria-label="Edit team"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button><button type="button" id="tShare" aria-label="Share"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4"/></svg></button><button type="button" id="tSearch" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button><button type="button" id="tExport" aria-label="Export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg></button></div></div>
+    <div class="thead"><div class="tupd" id="tUpd"></div><div class="ttl"><b id="tName"></b><button type="button" id="tEdit" aria-label="Edit team"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button><button type="button" id="tShare" aria-label="Share"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4"/></svg></button><button type="button" id="tExport" aria-label="Export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg></button></div></div>
     <div class="sum">
       <div class="scard"><div class="l">TOTAL COST</div><div class="v" id="sCost">0</div><div class="h">all entry fees</div></div>
       <div class="scard"><div class="l">PRIZEPOOL</div><div class="v" id="sPrize">0</div><div class="h">prize won</div></div>
@@ -321,7 +325,7 @@ body.ro #rwDel{display:none}
       <div class="scard" id="sBalCard" style="position:relative;cursor:pointer"><span class="bplus">＋ −</span><div class="l">BALANCE</div><div class="v" id="sBal">0</div><div class="h">&nbsp;</div></div>
     </div>
     <div class="srch" id="srchBar"><input id="srchIn" type="search" placeholder="Search name, type, status, rank…" autocomplete="off"><button type="button" id="srchX" aria-label="Close search">✕</button></div>
-    <div class="months" id="months"></div>
+    <div class="mrow"><div class="months" id="months"></div><button type="button" id="tSearch" class="msb" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button></div>
     <div id="days"></div>
   </div>
 </div>
@@ -591,6 +595,7 @@ $('pkBody').addEventListener('click',e=>{
   if(e.target.closest('#pkYes')){doDel(e.target.closest('#pkYes'));return;}
   if(e.target.closest('#pkMore')){const en=pk.e;closePick();openSheet(en);return;}
   const cd=e.target.closest('[data-cd]'); if(cd){cal.sel=cd.dataset.cd;calRender();return;}
+  if(e.target.id==='exFrom'||e.target.id==='exTo'){ return; }
   { const ex=e.target.closest('[data-ex]'); if(ex){ const [k,v]=ex.dataset.ex.split(':'); exo[k]=(v==='true'?true:v==='false'?false:v); exSync(); return; } }
   if(e.target.closest('#pkExpGo')){ doExport(false); return; }
   if(e.target.closest('#pkExpShare')){ doExport(true); return; }
@@ -606,7 +611,7 @@ $('pkBody').addEventListener('click',e=>{
 });
 function pkChargeVal(){ const o=$('pkIn'), on=document.querySelector('#pkChg .pc.on'); return o&&o.value!==''?Math.max(0,num(o.value)):(on?num(on.dataset.cv):0); }
 function pkTotal(){ const t=$('pkTot'); if(t&&$('pkEntry'))t.textContent='Total '+fmt(num($('pkEntry').value)+pkChargeVal()); }
-$('pkBody').addEventListener('change',e=>{ if(e.target.id==='pkRankSel'&&pk&&pk.f==='rank'){ pkApply(e.target.value==='__clear'?'':e.target.value); } });
+$('pkBody').addEventListener('change',e=>{ if(e.target.id==='exFrom')exo.from=e.target.value||exo.from; if(e.target.id==='exTo')exo.to=e.target.value||exo.to; if(e.target.id==='pkRankSel'&&pk&&pk.f==='rank'){ pkApply(e.target.value==='__clear'?'':e.target.value); } });
 $('pkBody').addEventListener('input',e=>{ if(e.target.id==='pkIn'&&pk&&pk.f==='fee'&&$('pkEntry')){ document.querySelectorAll('#pkChg .pc').forEach(x=>x.classList.remove('on')); } if(e.target.id==='pkEntry'||e.target.id==='pkIn')pkTotal(); });
 async function pkApply(v,fromIn){
   const {e,f}=pk; let val=v; if(fromIn){const i=$('pkIn'); val=i?i.value.trim():'';}
@@ -1480,28 +1485,46 @@ $('ovU').addEventListener('click',async e=>{
 });
 
 $('undoBtn').addEventListener('click',doUndo);
+// ---------- keep the top part fixed; only the schedule area scrolls ----------
+function fitDays(){
+  const d=$('days'), mn=$('main'); if(!d||!mn||mn.style.display==='none')return;
+  document.body.classList.remove('vlock'); d.style.height='';
+  window.scrollTo(0,0);
+  const h=window.innerHeight-d.getBoundingClientRect().top-96;
+  if(h>=260){ d.style.height=h+'px'; document.body.classList.add('vlock'); }
+}
+new MutationObserver(()=>fitDays()).observe($('days'),{childList:true});
+window.addEventListener('resize',fitDays); window.addEventListener('orientationchange',()=>setTimeout(fitDays,200));
 // ---------- search ----------
 let srchQ='', srchT=null;
 function srchMatch(e){ return [e.name,e.type,e.result,e.rank,e.comment,e.maps,e.entry_date,e.entry_time?timeLabel(e.entry_time):''].join(' ').toLowerCase().includes(srchQ); }
-function srchClose(){ $('srchBar').classList.remove('show'); $('srchIn').value=''; if(srchQ){ srchQ=''; render(); } }
-$('tSearch').addEventListener('click',()=>{ const b=$('srchBar'); if(b.classList.contains('show')){ srchClose(); return; } b.classList.add('show'); $('srchIn').focus(); });
+function srchClose(){ $('srchBar').classList.remove('show'); setTimeout(fitDays,0); $('srchIn').value=''; if(srchQ){ srchQ=''; render(); } }
+$('tSearch').addEventListener('click',()=>{ const b=$('srchBar'); if(b.classList.contains('show')){ srchClose(); return; } b.classList.add('show'); fitDays(); $('srchIn').focus(); });
 $('srchX').addEventListener('click',srchClose);
 $('srchIn').addEventListener('input',e=>{ clearTimeout(srchT); srchT=setTimeout(()=>{ srchQ=e.target.value.trim().toLowerCase(); render(); },150); });
 
 // ---------- export: image / PDF ----------
-const exo={fmt:'img',scope:'month',full:false};
+const exo={fmt:'img',scope:'month',full:false,from:'',to:''};
 const EX={W:1080,TITLE:150,DAY:58,HD:50,ROW:64,FOOT:64,PH:1527};
-function exSync(){ document.querySelectorAll('#pkBody [data-ex]').forEach(b=>{ const [k,v]=b.dataset.ex.split(':'); b.classList.toggle('on',String(exo[k])===v); }); }
+function exSync(){ document.querySelectorAll('#pkBody [data-ex]').forEach(b=>{ const [k,v]=b.dataset.ex.split(':'); b.classList.toggle('on',String(exo[k])===v); }); const r=$('exRange'); if(r)r.style.display=exo.scope==='range'?'':'none'; }
+function exDefaults(){
+  if(exo.from&&exo.to)return;
+  if(ym&&ym!=='all'){ const [y,m]=ym.split('-').map(Number); exo.from=ym+'-01'; exo.to=ym+'-'+String(new Date(y,m,0).getDate()).padStart(2,'0'); }
+  else { exo.from=todayStr; exo.to=todayStr; }
+}
 function exportHtml(){
+  exDefaults();
   const mt=ym&&ym!=='all'?MONTHS[+ym.slice(5)-1]+' '+ym.slice(0,4):'All months';
   return `<div class="cap" style="margin-top:0">Format</div><div class="pcs"><button type="button" class="pq" data-ex="fmt:img">Image</button><button type="button" class="pq" data-ex="fmt:pdf">PDF</button></div>
-  <div class="cap">Range</div><div class="pcs"><button type="button" class="pq" data-ex="scope:month">${esc(mt)}</button><button type="button" class="pq" data-ex="scope:all">All months</button></div>
+  <div class="cap">Range</div><div class="pcs"><button type="button" class="pq" data-ex="scope:month">${esc(mt)}</button><button type="button" class="pq" data-ex="scope:all">All months</button><button type="button" class="pq" data-ex="scope:range">Custom range</button></div>
+  <div id="exRange" style="display:none"><div class="pcu" style="margin-top:10px"><input id="exFrom" type="date" value="${exo.from}"><input id="exTo" type="date" value="${exo.to}"></div></div>
   <div class="cap">Columns</div><div class="pcs"><button type="button" class="pq" data-ex="full:false">Schedule only</button><button type="button" class="pq" data-ex="full:true">+ Fee, status, rank, prize</button></div>
-  <div class="acts" style="margin-top:16px">${navigator.share?'<button type="button" id="pkExpShare">Share</button>':''}<button type="button" class="pok" id="pkExpGo">Download</button></div>`;
+  <div class="acts" style="margin-top:16px">${navigator.share?'<button type="button" id="pkExpShare">Share</button>':''}<button type="button" class="pok" id="pkExpGo" style="background:var(--green);border-color:var(--green);color:#052e1c;font-weight:900">Download</button></div>`;
 }
 function exDays(){
-  const all=exo.scope==='all'||!ym||ym==='all';
-  const list=cur().filter(e=>all||e.entry_date===TBA||monthOf(e.entry_date)===ym).sort((a,b)=>a.entry_date.localeCompare(b.entry_date)||cmpTime(a,b));
+  const all=exo.scope==='all'||(exo.scope==='month'&&(!ym||ym==='all')), rg=exo.scope==='range';
+  const lo=exo.from<=exo.to?exo.from:exo.to, hi=exo.from<=exo.to?exo.to:exo.from;
+  const list=cur().filter(e=>rg?(e.entry_date!==TBA&&e.entry_date>=lo&&e.entry_date<=hi):(all||e.entry_date===TBA||monthOf(e.entry_date)===ym)).sort((a,b)=>a.entry_date.localeCompare(b.entry_date)||cmpTime(a,b));
   const by={}; list.forEach(e=>(by[e.entry_date]=by[e.entry_date]||[]).push(e));
   return Object.keys(by).sort().map(d=>({d,rows:by[d]}));
 }
@@ -1580,7 +1603,9 @@ async function doExport(share){
   const days=exDays(); if(!days.length){ toast('Nothing to export'); return; }
   const T=teams.find(t=>t.id===tid)||{name:''}, full=exo.full;
   const title=((T.name||'Schedule')+' SCHEDULE').toUpperCase();
-  const all=exo.scope==='all'||!ym||ym==='all', sub=all?'ALL MONTHS':(MONTHS[+ym.slice(5)-1]+' '+ym.slice(0,4)).toUpperCase();
+  const fd=d=>{ const [y,m,dd]=d.split('-').map(Number); return dd+' '+MONTHS[m-1].slice(0,3).toUpperCase()+' '+y; };
+  const all=exo.scope==='all'||(exo.scope==='month'&&(!ym||ym==='all')), lo=exo.from<=exo.to?exo.from:exo.to, hi=exo.from<=exo.to?exo.to:exo.from;
+  const sub=exo.scope==='range'?(lo===hi?fd(lo):fd(lo)+'  –  '+fd(hi)):all?'ALL MONTHS':(MONTHS[+ym.slice(5)-1]+' '+ym.slice(0,4)).toUpperCase();
   const base=((T.name||'schedule').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'')||'schedule').toLowerCase()+'-schedule';
   toast('Preparing…');
   let blob,name;
