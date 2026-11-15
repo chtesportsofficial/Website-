@@ -127,10 +127,17 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 .pc.on{background:#ff9800;border-color:#ff9800;color:#1a1200}
 .cap{font-size:11.5px;font-weight:800;color:var(--dim);margin:14px 0 6px}
 .pcu{display:flex;gap:8px;align-items:flex-start}
-.rkmenu{position:fixed;z-index:9999;overflow-y:auto;background:var(--card,#141a2e);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.55);padding:4px;-webkit-overflow-scrolling:touch}
-.rkmenu button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--text);font-size:15px;font-weight:800;padding:10px 12px;border-radius:8px}
-.rkmenu button.on{background:var(--green);color:#052e1c}
-.rkmenu button.clr{color:#ff6b6b}
+.rkmenu{position:fixed;z-index:9999;box-sizing:border-box;background:#161c33;border:1px solid #2c3556;border-radius:14px;box-shadow:0 12px 34px rgba(0,0,0,.6);padding:10px}
+.rkmenu .rkarrow{position:absolute;left:var(--ax,50%);width:14px;height:14px;background:#161c33;transform:translateX(-50%) rotate(45deg)}
+.rkmenu.dn .rkarrow{top:-8px;border-left:1px solid #2c3556;border-top:1px solid #2c3556}
+.rkmenu.up .rkarrow{bottom:-8px;border-right:1px solid #2c3556;border-bottom:1px solid #2c3556}
+.rkgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.rkgrid button{height:40px;border-radius:10px;background:var(--bg);border:1px solid var(--line);color:var(--text);font-size:15px;font-weight:800}
+.rkgrid button.on{background:var(--green);border-color:var(--green);color:#052e1c}
+.rkfoot{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.rkfoot button{height:38px;border-radius:10px;background:transparent;border:1px solid var(--line);color:var(--text);font-size:14px;font-weight:700}
+.rkfoot button.clr{color:#ff6b6b;border-color:#5a2a35}
+td.rk-active{outline:2px solid var(--green);outline-offset:-2px}
 .rksel{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 4px;color:var(--text);font-size:15px;font-weight:800;outline:none}
 .pksel{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:12px;color:var(--text);font-size:15px;font-weight:800;outline:none}
 .pcu input,.pcu textarea{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:11px 12px;color:var(--text);font-size:14px;outline:none}
@@ -480,23 +487,24 @@ const TIMES=[['15:00','3 PM'],['16:00','4 PM'],['17:00','5 PM'],['18:00','6 PM']
 const TYPES=['scrim','semi','top 6 semi','final','Round 1','Round 2','Round 3','24 slot','CR'].map(x=>[x,x]);
 const RC={qualified:'g',disqualified:'r',profit:'g',loss:'r',sold:'g'};
 const PT={pastedate:'Paste to date',del:'Delete this tournament?',entry_time:'Time',type:'Type',maps:'Map',result:'Status',rank:'Rank',fee:'Entry fee ৳',prize:'Prize ৳',comment:'Comment',name:'Tournament name / Organizer',newtime:'Add tournament · pick time'};
-// rank: a small dropdown that opens right under the tapped cell
-let rkMenu=null;
-function closeRk(){ if(rkMenu){ rkMenu.remove(); rkMenu=null; } document.removeEventListener('pointerdown',rkOut,true); window.removeEventListener('scroll',rkScroll,true); }
+// rank: compact popover attached to the tapped cell (arrow points at it, cell is outlined)
+let rkMenu=null, rkTd=null;
+function closeRk(){ if(rkMenu){ rkMenu.remove(); rkMenu=null; } if(rkTd){ rkTd.classList.remove('rk-active'); rkTd=null; } document.removeEventListener('pointerdown',rkOut,true); window.removeEventListener('scroll',rkScroll,true); }
 function rkOut(ev){ if(rkMenu&&!rkMenu.contains(ev.target))closeRk(); }
 function rkScroll(ev){ if(rkMenu&&!rkMenu.contains(ev.target))closeRk(); }
 function inlineRank(td,en){
   closeRk();
   const c=String(en.rank||'').replace('#','').trim();
   const m=document.createElement('div'); m.className='rkmenu';
-  m.innerHTML=Array.from({length:12},(_,i)=>`<button type="button" data-v="${i+1}"${String(i+1)===c?' class="on"':''}>#${i+1}</button>`).join('')+'<button type="button" data-v="__custom">Custom…</button><button type="button" data-v="__clear" class="clr">Clear</button>';
-  document.body.appendChild(m); rkMenu=m;
-  const r=td.getBoundingClientRect(), mh=Math.min(m.scrollHeight,200), w=Math.max(r.width,120);
-  m.style.width=w+'px'; m.style.maxHeight='200px';
-  m.style.left=Math.max(4,Math.min(r.left,window.innerWidth-w-4))+'px';
-  const below=window.innerHeight-r.bottom, top=below>=mh+8?r.bottom+2:Math.max(4,r.top-mh-2);
-  m.style.top=top+'px';
-  const cur=m.querySelector('.on'); if(cur)m.scrollTop=Math.max(0,cur.offsetTop-60);
+  m.innerHTML='<div class="rkarrow"></div><div class="rkgrid">'+Array.from({length:12},(_,i)=>`<button type="button" data-v="${i+1}"${String(i+1)===c?' class="on"':''}>#${i+1}</button>`).join('')+'</div><div class="rkfoot"><button type="button" data-v="__custom">Custom</button><button type="button" data-v="__clear" class="clr">Clear</button></div>';
+  document.body.appendChild(m); rkMenu=m; rkTd=td; td.classList.add('rk-active');
+  const r=td.getBoundingClientRect(), W=224, mh=m.offsetHeight, vw=window.innerWidth, vh=window.innerHeight;
+  const left=Math.max(8,Math.min(r.left+r.width/2-W/2,vw-W-8));
+  const down=(vh-r.bottom)>=mh+14||(r.top<mh+14);
+  m.style.width=W+'px'; m.style.left=left+'px';
+  m.style.top=(down?Math.min(r.bottom+9,vh-mh-8):Math.max(8,r.top-mh-9))+'px';
+  m.classList.add(down?'dn':'up');
+  m.style.setProperty('--ax',Math.max(18,Math.min(r.left+r.width/2-left,W-18))+'px');
   setTimeout(()=>{ document.addEventListener('pointerdown',rkOut,true); window.addEventListener('scroll',rkScroll,true); },0);
   m.addEventListener('click',async ev=>{
     const b=ev.target.closest('button'); if(!b)return; const v=b.dataset.v; closeRk();
