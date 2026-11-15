@@ -324,7 +324,7 @@ body.ro #rwDel{display:none}
       <div class="scard"><div class="l">PROFIT</div><div class="v" id="sProfit">0</div><div class="h">prize − cost</div></div>
       <div class="scard" id="sBalCard" style="position:relative;cursor:pointer"><span class="bplus">＋ −</span><div class="l">BALANCE</div><div class="v" id="sBal">0</div><div class="h">&nbsp;</div></div>
     </div>
-    <div class="srch" id="srchBar"><input id="srchIn" type="search" placeholder="Search name, type, status, rank…" autocomplete="off"><button type="button" id="srchX" aria-label="Close search">✕</button></div>
+    <div class="srch" id="srchBar"><input id="srchIn" type="text" enterkeyhint="search" placeholder="Search name, type, status, rank…" autocomplete="off"><button type="button" id="srchX" aria-label="Close search">✕</button></div>
     <div class="mrow"><div class="months" id="months"></div><button type="button" id="tSearch" class="msb" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button></div>
     <div id="days"></div>
   </div>
@@ -1488,10 +1488,16 @@ $('undoBtn').addEventListener('click',doUndo);
 // ---------- keep the top part fixed; only the schedule area scrolls ----------
 function fitDays(){
   const d=$('days'), mn=$('main'); if(!d||!mn||mn.style.display==='none')return;
-  document.body.classList.remove('vlock'); d.style.height='';
+  const kb=document.activeElement&&document.activeElement.id==='srchIn';
+  document.body.classList.remove('vlock'); d.style.height=''; d.style.paddingBottom='0px';
   window.scrollTo(0,0);
-  const h=window.innerHeight-d.getBoundingClientRect().top-96;
-  if(h>=260){ d.style.height=h+'px'; document.body.classList.add('vlock'); }
+  const h=window.innerHeight-d.getBoundingClientRect().top-(kb?8:96);
+  if(h>=(kb?120:260)){
+    d.style.height=h+'px'; document.body.classList.add('vlock');
+    // let the last date's bar scroll all the way up to the top of the area
+    const hd=d.querySelectorAll('.dhin'), trs=d.querySelectorAll('tr');
+    if(hd.length&&trs.length){ const bh=trs[trs.length-1].getBoundingClientRect().bottom-hd[hd.length-1].getBoundingClientRect().top; d.style.paddingBottom=Math.max(24,d.clientHeight-bh)+'px'; }
+  }
 }
 new MutationObserver(()=>fitDays()).observe($('days'),{childList:true});
 window.addEventListener('resize',fitDays); window.addEventListener('orientationchange',()=>setTimeout(fitDays,200));
@@ -1501,6 +1507,9 @@ function srchMatch(e){ return [e.name,e.type,e.result,e.rank,e.comment,e.maps,e.
 function srchClose(){ $('srchBar').classList.remove('show'); setTimeout(fitDays,0); $('srchIn').value=''; if(srchQ){ srchQ=''; render(); } }
 $('tSearch').addEventListener('click',()=>{ const b=$('srchBar'); if(b.classList.contains('show')){ srchClose(); return; } b.classList.add('show'); fitDays(); $('srchIn').focus(); });
 $('srchX').addEventListener('click',srchClose);
+$('srchIn').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); clearTimeout(srchT); srchQ=e.target.value.trim().toLowerCase(); render(); e.target.blur(); } });   // keyboard Search key closes the keyboard
+$('srchIn').addEventListener('focus',()=>setTimeout(fitDays,350));
+$('srchIn').addEventListener('blur',()=>setTimeout(fitDays,350));
 $('srchIn').addEventListener('input',e=>{ clearTimeout(srchT); srchT=setTimeout(()=>{ srchQ=e.target.value.trim().toLowerCase(); render(); },150); });
 
 // ---------- export: image / PDF ----------
