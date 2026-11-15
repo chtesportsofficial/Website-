@@ -154,6 +154,9 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 .rkgrid.tall{max-height:136px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:2px}
 td.rk-active{outline:2px solid var(--green);outline-offset:-2px}
 .rksel{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 4px;color:var(--text);font-size:15px;font-weight:800;outline:none}
+.srch{display:none;gap:8px;padding:2px 16px 10px}.srch.show{display:flex}
+.srch input{flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;color:var(--text);padding:10px 12px;font-size:14px;outline:none}
+.srch button{width:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--text)}
 .pksel{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:12px;color:var(--text);font-size:15px;font-weight:800;outline:none}
 .pcu input,.pcu textarea{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:11px 12px;color:var(--text);font-size:14px;outline:none}
 .pok{border:none;border-radius:11px;padding:12px 20px;background:var(--green);color:#052e1c;font-weight:900;font-size:14px}
@@ -310,13 +313,14 @@ body.ro #rwDel{display:none}
 
   <div id="main" style="display:none">
     <div class="teams" id="teams"></div>
-    <div class="thead"><div class="tupd" id="tUpd"></div><div class="ttl"><b id="tName"></b><button type="button" id="tEdit" aria-label="Edit team"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button><button type="button" id="tShare" aria-label="Share"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4"/></svg></button></div></div>
+    <div class="thead"><div class="tupd" id="tUpd"></div><div class="ttl"><b id="tName"></b><button type="button" id="tEdit" aria-label="Edit team"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button><button type="button" id="tShare" aria-label="Share"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4"/></svg></button><button type="button" id="tSearch" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button><button type="button" id="tExport" aria-label="Export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg></button></div></div>
     <div class="sum">
       <div class="scard"><div class="l">TOTAL COST</div><div class="v" id="sCost">0</div><div class="h">all entry fees</div></div>
       <div class="scard"><div class="l">PRIZEPOOL</div><div class="v" id="sPrize">0</div><div class="h">prize won</div></div>
       <div class="scard"><div class="l">PROFIT</div><div class="v" id="sProfit">0</div><div class="h">prize − cost</div></div>
       <div class="scard" id="sBalCard" style="position:relative;cursor:pointer"><span class="bplus">＋ −</span><div class="l">BALANCE</div><div class="v" id="sBal">0</div><div class="h">&nbsp;</div></div>
     </div>
+    <div class="srch" id="srchBar"><input id="srchIn" type="search" placeholder="Search name, type, status, rank…" autocomplete="off"><button type="button" id="srchX" aria-label="Close search">✕</button></div>
     <div class="months" id="months"></div>
     <div id="days"></div>
   </div>
@@ -450,12 +454,13 @@ function render(){
   applyRole(); if(!rowSel)rowExtra.clear();
   const keys=monthKeys(); if(!ym||(ym!=='all'&&!keys.includes(ym))) ym=todayStr.slice(0,7);
   $('months').innerHTML=`<button type="button" class="mchip ${ym==='all'?'on':''}" data-m="all">ALL</button>`+keys.map(k=>`<button type="button" class="mchip ${k===ym?'on':''}" data-m="${k}">${monthLabel(k)}</button>`).join('');
-  const list=cur().filter(e=>ym==='all'||e.entry_date===TBA||monthOf(e.entry_date)===ym).sort((a,b)=>a.entry_date.localeCompare(b.entry_date)||cmpTime(a,b));
+  const list=(srchQ?cur().filter(srchMatch):cur().filter(e=>ym==='all'||e.entry_date===TBA||monthOf(e.entry_date)===ym)).sort((a,b)=>a.entry_date.localeCompare(b.entry_date)||cmpTime(a,b));
   const cost=cur().reduce((s,e)=>s+num(e.fee)+num(e.fee_charge),0), paid=cur().reduce((s,e)=>s+(e.fee_paid?num(e.fee)+num(e.fee_charge):0),0);
   const prize=cur().reduce((s,e)=>s+num(e.prize),0), rec=cur().reduce((s,e)=>s+(e.prize_received?num(e.prize):0),0);
   const setV=(id,v,signed)=>{const el=$(id);el.textContent=fmt(v);el.className='v'+(signed?(v<0?' neg':v>0?' pos':''):'');};
   setV('sCost',cost); setV('sPrize',prize); setV('sProfit',prize-cost,true); setV('sBal',rec-paid+curF().reduce((x,f)=>x+num(f.amount),0),true);
 
+  if(!list.length&&srchQ){ $('days').innerHTML='<div class="empty">No match for “'+esc(srchQ)+'”.</div>'; return; }
   if(!list.length){ $('days').innerHTML='<div class="empty">'+(ym==='all'?'No tournaments yet.':'No tournaments in '+esc(MONTHS[+ym.slice(5)-1])+' yet.')+'<br>Tap <b>＋</b> to add your schedule.</div>'; return; }
   const byDay={}; list.forEach(e=>(byDay[e.entry_date]=byDay[e.entry_date]||[]).push(e));
   const H='<tr class="hd"><td>TIME</td><td>TYPE</td><td>MAP</td><td class="hn">TOURNAMENT NAME / ORGANIZER</td><td>FEE</td><td>STATUS</td><td>RANK</td><td>PRIZE 🏆</td><td>P/L</td><td>BANNER</td><td>COMMENT</td><td>DEL</td></tr>';
@@ -504,7 +509,7 @@ let pk=null;
 const TIMES=[['15:00','3 PM'],['16:00','4 PM'],['17:00','5 PM'],['18:00','6 PM'],['19:00','7 PM'],['20:00','8 PM'],['21:00','9 PM'],['22:00','10 PM'],['23:00','11 PM'],['00:00','12 AM'],['01:00','1 AM']];
 const TYPES=['scrim','semi','top 6 semi','final','Round 1','Round 2','Round 3','24 slot','CR'].map(x=>[x,x]);
 const RC={qualified:'g',disqualified:'r',profit:'g',loss:'r',sold:'g'};
-const PT={pastedate:'Paste to date',del:'Delete this tournament?',entry_time:'Time',type:'Type',maps:'Map',result:'Status',rank:'Rank',fee:'Entry fee ৳',prize:'Prize ৳',comment:'Comment',name:'Tournament name / Organizer',newtime:'Add tournament · pick time'};
+const PT={export:'Export schedule',pastedate:'Paste to date',del:'Delete this tournament?',entry_time:'Time',type:'Type',maps:'Map',result:'Status',rank:'Rank',fee:'Entry fee ৳',prize:'Prize ৳',comment:'Comment',name:'Tournament name / Organizer',newtime:'Add tournament · pick time'};
 // rank: compact popover attached to the tapped cell (arrow points at it, cell is outlined)
 let rkMenu=null, rkTd=null;
 function closeRk(){ if(rkMenu){ rkMenu.remove(); rkMenu=null; } if(rkTd){ rkTd.classList.remove('rk-active'); rkTd=null; } document.removeEventListener('pointerdown',rkOut,true); window.removeEventListener('scroll',rkScroll,true); }
@@ -554,6 +559,7 @@ function openPick(e,f,date){
   const v=e?(e[f]==null?'':String(e[f])):''; let h='';
   if(f==='newtime') h=newTimeHtml(date);
   else if(f==='pastedate') h=pasteDateHtml(date);
+  else if(f==='export') h=exportHtml();
   else if(f==='entry_time') h=chips(TIMES.concat([['','Clear']]),v.slice(0,5))+inp('Custom time','time',v.slice(0,5));
   else if(f==='type') h=chips(TYPES.concat([['','Clear']]),v)+inp('Custom','text',v,'type name');
   else if(f==='maps') h=chips([1,2,3,4,5,6].map(x=>[x,x]).concat([['','Clear']]),v)+inp('Custom','number',v,'maps');
@@ -570,7 +576,7 @@ function openPick(e,f,date){
   else if(f==='comment') h=`<div class="cap">Note</div><div class="pcu"><textarea id="pkIn" rows="3" maxlength="300">${esc(v)}</textarea><button type="button" class="pok" id="pkOk">OK</button></div>`;
   else if(f==='name') h=inp('Name / Organizer (add prize pool like "(10k)")','text',v,'CHT WARZONE S2 (10k)')+'<button type="button" class="pdel" id="pkDel">Delete this row</button>';
   else if(f==='del') h=`<div class="cap" style="margin-top:0;font-size:14px;color:var(--text)">${esc(e.name||'This row')}</div><div class="acts"><button type="button" id="pkNo">Cancel</button><button type="button" id="pkYes" style="background:#e0243c;border-color:#e0243c;color:#fff">Delete</button></div>`;
-  $('pkBody').innerHTML=h; $('ovP').classList.add('show'); if(f==='newtime'||f==='pastedate')calRender();
+  $('pkBody').innerHTML=h; $('ovP').classList.add('show'); if(f==='newtime'||f==='pastedate')calRender(); if(f==='export')exSync();
   if(['name','comment','type','fee','prize'].includes(f)) setTimeout(()=>{const i=$('pkEntry')||$('pkIn');if(i)i.focus();},80);
 }
 function closePick(){ $('ovP').classList.remove('show'); }
@@ -585,6 +591,9 @@ $('pkBody').addEventListener('click',e=>{
   if(e.target.closest('#pkYes')){doDel(e.target.closest('#pkYes'));return;}
   if(e.target.closest('#pkMore')){const en=pk.e;closePick();openSheet(en);return;}
   const cd=e.target.closest('[data-cd]'); if(cd){cal.sel=cd.dataset.cd;calRender();return;}
+  { const ex=e.target.closest('[data-ex]'); if(ex){ const [k,v]=ex.dataset.ex.split(':'); exo[k]=(v==='true'?true:v==='false'?false:v); exSync(); return; } }
+  if(e.target.closest('#pkExpGo')){ doExport(false); return; }
+  if(e.target.closest('#pkExpShare')){ doExport(true); return; }
   if(e.target.closest('#pkPasteGo')){ const d=cal.sel||todayStr, t=($('pkPasteTime')||{}).value||''; closePick(); pasteRows(d,t); return; }
   if(e.target.closest('#pdTba')){ cal.sel=cal.sel===TBA?todayStr:TBA; calRender(); return; }
   const cm=e.target.closest('[data-cm]'); if(cm){cal.m+=+cm.dataset.cm; if(cal.m<1){cal.m=12;cal.y--;} if(cal.m>12){cal.m=1;cal.y++;} calRender();return;}
@@ -723,14 +732,15 @@ function runOfP(e){
 }
 // ---------- undo (last actions, grouped) ----------
 const UE='user_schedule_entries';
-let undoStack=[], undoing=false, undoGrp=null, undoTimer=null;
-function undoRec(op){ if(undoing)return; if(!undoGrp){ undoGrp=[]; undoStack.push(undoGrp); if(undoStack.length>25)undoStack.shift(); } undoGrp.push(op); clearTimeout(undoTimer); undoTimer=setTimeout(()=>{undoGrp=null;},700); undoBtnSync(); }
+let undoStack=[], undoing=false, undoGrp=null, undoTimer=null, undoHide=null;
+function undoArm(){ clearTimeout(undoHide); if(undoStack.length)undoHide=setTimeout(()=>{ undoStack=[]; undoGrp=null; undoBtnSync(); },60000); }   // the Undo button disappears 60 s after the last action
+function undoRec(op){ if(undoing)return; if(!undoGrp){ undoGrp=[]; undoStack.push(undoGrp); if(undoStack.length>25)undoStack.shift(); } undoGrp.push(op); clearTimeout(undoTimer); undoTimer=setTimeout(()=>{undoGrp=null;},700); undoBtnSync(); undoArm(); }
 function undoBtnSync(){ const b=document.getElementById('undoBtn'); if(b)b.style.display=(undoStack.length&&!RO)?'':'none'; }
 async function insRows(rows){ const r=await sb.from(UE).insert(rows).select(); if(r.error)throw r.error; (r.data||[]).length&&undoRec({t:'i',ids:r.data.map(x=>x.id)}); return r; }
 async function insOne(row){ const r=await sb.from(UE).insert(row).select().single(); if(r.error)throw r.error; if(r.data)undoRec({t:'i',ids:[r.data.id]}); return r; }
 async function delRows(rows){ const ids=rows.map(x=>x.id), snap=rows.map(x=>({...x})); const r=await sb.from(UE).delete().in('id',ids); if(r.error)throw r.error; undoRec({t:'d',rows:snap}); return r; }
 async function doUndo(){
-  const g=undoStack.pop(); undoGrp=null; undoBtnSync(); if(!g)return;
+  const g=undoStack.pop(); undoGrp=null; undoBtnSync(); undoArm(); if(!g)return;
   undoing=true;
   try{
     for(const op of g.slice().reverse()){
@@ -1470,11 +1480,133 @@ $('ovU').addEventListener('click',async e=>{
 });
 
 $('undoBtn').addEventListener('click',doUndo);
+// ---------- search ----------
+let srchQ='', srchT=null;
+function srchMatch(e){ return [e.name,e.type,e.result,e.rank,e.comment,e.maps,e.entry_date,e.entry_time?timeLabel(e.entry_time):''].join(' ').toLowerCase().includes(srchQ); }
+function srchClose(){ $('srchBar').classList.remove('show'); $('srchIn').value=''; if(srchQ){ srchQ=''; render(); } }
+$('tSearch').addEventListener('click',()=>{ const b=$('srchBar'); if(b.classList.contains('show')){ srchClose(); return; } b.classList.add('show'); $('srchIn').focus(); });
+$('srchX').addEventListener('click',srchClose);
+$('srchIn').addEventListener('input',e=>{ clearTimeout(srchT); srchT=setTimeout(()=>{ srchQ=e.target.value.trim().toLowerCase(); render(); },150); });
+
+// ---------- export: image / PDF ----------
+const exo={fmt:'img',scope:'month',full:false};
+const EX={W:1080,TITLE:150,DAY:58,HD:50,ROW:64,FOOT:64,PH:1527};
+function exSync(){ document.querySelectorAll('#pkBody [data-ex]').forEach(b=>{ const [k,v]=b.dataset.ex.split(':'); b.classList.toggle('on',String(exo[k])===v); }); }
+function exportHtml(){
+  const mt=ym&&ym!=='all'?MONTHS[+ym.slice(5)-1]+' '+ym.slice(0,4):'All months';
+  return `<div class="cap" style="margin-top:0">Format</div><div class="pcs"><button type="button" class="pq" data-ex="fmt:img">Image</button><button type="button" class="pq" data-ex="fmt:pdf">PDF</button></div>
+  <div class="cap">Range</div><div class="pcs"><button type="button" class="pq" data-ex="scope:month">${esc(mt)}</button><button type="button" class="pq" data-ex="scope:all">All months</button></div>
+  <div class="cap">Columns</div><div class="pcs"><button type="button" class="pq" data-ex="full:false">Schedule only</button><button type="button" class="pq" data-ex="full:true">+ Fee, status, rank, prize</button></div>
+  <div class="acts" style="margin-top:16px">${navigator.share?'<button type="button" id="pkExpShare">Share</button>':''}<button type="button" class="pok" id="pkExpGo">Download</button></div>`;
+}
+function exDays(){
+  const all=exo.scope==='all'||!ym||ym==='all';
+  const list=cur().filter(e=>all||e.entry_date===TBA||monthOf(e.entry_date)===ym).sort((a,b)=>a.entry_date.localeCompare(b.entry_date)||cmpTime(a,b));
+  const by={}; list.forEach(e=>(by[e.entry_date]=by[e.entry_date]||[]).push(e));
+  return Object.keys(by).sort().map(d=>({d,rows:by[d]}));
+}
+function exCols(full){ return full?[['TIME',120],['TYPE',150],['MAP',74],['TOURNAMENT',310],['FEE',100],['STATUS',170],['RANK',80],['PRIZE',76]]:[['TIME',170],['TYPE',200],['MAP',110],['TOURNAMENT / ORGANIZER',600]]; }
+function exCell(e,k){
+  if(k==='TIME')return e.entry_time?timeLabel(e.entry_time):'';
+  if(k==='TYPE')return e.type||'';
+  if(k==='MAP')return e.maps==null?'':String(e.maps);
+  if(k[0]==='T'&&k[1]==='O')return e.name||'';
+  if(k==='FEE'){ const f=num(e.fee)+num(e.fee_charge); return f>0?fmt(f):''; }
+  if(k==='STATUS')return e.result||'';
+  if(k==='RANK'){ const r=String(e.rank||'').trim(); return /^#?\d+$/.test(r)?'#'+r.replace('#',''):r; }
+  if(k==='PRIZE')return num(e.prize)>0?fmt(num(e.prize)):'';
+  return '';
+}
+function exBuild(days,pageH){
+  const pages=[]; let pg;
+  const np=()=>{ pg={ops:[],y:0}; pages.push(pg); };
+  const room=h=>pageH?(pg.y+h<=pageH-EX.FOOT):true;
+  np(); pg.ops.push({t:'title',y:0}); pg.y=EX.TITLE;
+  days.forEach(({d,rows})=>{
+    const dl=dayLabel(d);
+    const head=cont=>{ pg.ops.push({t:'day',y:pg.y,dl,cont}); pg.y+=EX.DAY; pg.ops.push({t:'hd',y:pg.y}); pg.y+=EX.HD; };
+    if(!room(EX.DAY+EX.HD+EX.ROW))np();
+    head(false);
+    rows.forEach(e=>{ if(!room(EX.ROW)){ np(); head(true); } pg.ops.push({t:'row',y:pg.y,e}); pg.y+=EX.ROW; });
+    pg.y+=14;
+  });
+  return pages;
+}
+function exDraw(pg,idx,total,pageH,full,title,sub){
+  const c=document.createElement('canvas'); c.width=EX.W; c.height=pageH||(pg.y+EX.FOOT);
+  const x=c.getContext('2d'), cols=exCols(full), F='system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
+  x.fillStyle='#0b0f1a'; x.fillRect(0,0,c.width,c.height);
+  const txt=(str,px,py,maxW,size,wt,col,al)=>{ str=String(str); let sz=size; x.font=wt+' '+sz+'px '+F; while(x.measureText(str).width>maxW&&sz>16){ sz--; x.font=wt+' '+sz+'px '+F; } if(x.measureText(str).width>maxW){ while(str.length>1&&x.measureText(str+'…').width>maxW)str=str.slice(0,-1); str+='…'; } x.fillStyle=col; x.textAlign=al||'center'; x.textBaseline='middle'; x.fillText(str,px,py); };
+  pg.ops.forEach(o=>{
+    if(o.t==='title'){ x.fillStyle='#ff9800'; x.fillRect(0,0,EX.W,EX.TITLE); txt(title,EX.W/2,60,EX.W-60,46,'900','#1a1200'); txt(sub,EX.W/2,108,EX.W-60,28,'800','#4a2e00'); }
+    else if(o.t==='day'){ x.fillStyle='#7c3aed'; x.fillRect(0,o.y,EX.W,EX.DAY); txt(o.dl.t+(o.dl.w?'   '+o.dl.w:'')+(o.cont?'   (cont.)':''),24,o.y+EX.DAY/2,EX.W-48,28,'800','#fff','left'); }
+    else if(o.t==='hd'){ x.fillStyle='#00e5e5'; x.fillRect(0,o.y,EX.W,EX.HD); let cx=0; cols.forEach(([n,w])=>{ txt(n,cx+w/2,o.y+EX.HD/2,w-12,21,'800','#00201f'); cx+=w; }); }
+    else if(o.t==='row'){
+      x.fillStyle='#0c1020'; x.fillRect(0,o.y,EX.W,EX.ROW); let cx=0;
+      cols.forEach(([n,w])=>{
+        const v=exCell(o.e,n), mid=cx+w/2, my=o.y+EX.ROW/2;
+        if(n==='STATUS'&&v){ x.fillStyle=(RC[v]==='r')?'#dc2626':'#16a34a'; x.fillRect(cx,o.y,w,EX.ROW); txt(v,mid,my,w-12,26,'800','#fff'); }
+        else if(n==='PRIZE'||n==='FEE')txt(v,mid,my,w-12,26,'700',n==='PRIZE'?'#4ade80':'#e6e9f5');
+        else txt(v,mid,my,w-18,n[0]==='T'&&n[1]==='O'?28:26,n[0]==='T'&&n[1]==='O'?'800':'600','#f4f6ff');
+        x.fillStyle='#232b45'; x.fillRect(cx+w-1,o.y,1,EX.ROW); cx+=w;
+      });
+      x.fillStyle='#232b45'; x.fillRect(0,o.y+EX.ROW-1,EX.W,1);
+    }
+  });
+  txt('©CHT ESP ORG. All Rights Reserved'+(total>1?'   ·   '+(idx+1)+'/'+total:''),EX.W/2,c.height-30,EX.W-40,20,'600','#6b7599');
+  return c;
+}
+function exBytes(c){ const b=atob(c.toDataURL('image/jpeg',0.92).split(',')[1]); const u=new Uint8Array(b.length); for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i); return u; }
+function exPdf(jpgs,wPx,hPx){
+  const enc=new TextEncoder(), parts=[], offs=[]; let len=0;
+  const push=d=>{ const u=typeof d==='string'?enc.encode(d):d; parts.push(u); len+=u.length; };
+  const PW=595.28, PH=841.89, n=jpgs.length;
+  const obj=(id,fn)=>{ offs[id]=len; push(id+' 0 obj\n'); fn(); push('\nendobj\n'); };
+  push('%PDF-1.4\n');
+  obj(1,()=>push('<< /Type /Catalog /Pages 2 0 R >>'));
+  obj(2,()=>push('<< /Type /Pages /Count '+n+' /Kids ['+jpgs.map((_,i)=>(3+3*i)+' 0 R').join(' ')+'] >>'));
+  jpgs.forEach((j,i)=>{
+    const pgI=3+3*i, ct=4+3*i, im=5+3*i, cs='q '+PW+' 0 0 '+PH+' 0 0 cm /Im0 Do Q';
+    obj(pgI,()=>push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+PW+' '+PH+'] /Resources << /XObject << /Im0 '+im+' 0 R >> >> /Contents '+ct+' 0 R >>'));
+    obj(ct,()=>push('<< /Length '+cs.length+' >>\nstream\n'+cs+'\nendstream'));
+    obj(im,()=>{ push('<< /Type /XObject /Subtype /Image /Width '+wPx+' /Height '+hPx+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+j.length+' >>\nstream\n'); push(j); push('\nendstream'); });
+  });
+  const total=3+3*n, xr=len;
+  push('xref\n0 '+total+'\n0000000000 65535 f \n'); for(let id=1;id<total;id++)push(String(offs[id]).padStart(10,'0')+' 00000 n \n');
+  push('trailer\n<< /Size '+total+' /Root 1 0 R >>\nstartxref\n'+xr+'\n%%EOF');
+  return new Blob(parts,{type:'application/pdf'});
+}
+async function doExport(share){
+  const days=exDays(); if(!days.length){ toast('Nothing to export'); return; }
+  const T=teams.find(t=>t.id===tid)||{name:''}, full=exo.full;
+  const title=((T.name||'Schedule')+' SCHEDULE').toUpperCase();
+  const all=exo.scope==='all'||!ym||ym==='all', sub=all?'ALL MONTHS':(MONTHS[+ym.slice(5)-1]+' '+ym.slice(0,4)).toUpperCase();
+  const base=((T.name||'schedule').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'')||'schedule').toLowerCase()+'-schedule';
+  toast('Preparing…');
+  let blob,name;
+  try{
+    if(exo.fmt==='img'){
+      const pages=exBuild(days,0), c=exDraw(pages[0],0,1,0,full,title,sub);
+      blob=await new Promise(r=>c.toBlob(r,'image/png')); name=base+'.png';
+    }else{
+      const pages=exBuild(days,EX.PH);
+      blob=exPdf(pages.map((pg,i)=>exBytes(exDraw(pg,i,pages.length,EX.PH,full,title,sub))),EX.W,EX.PH); name=base+'.pdf';
+    }
+  }catch(er){ toast('Export failed: '+(er&&er.message||er)); return; }
+  if(!blob){ toast('Export failed'); return; }
+  if(share&&navigator.canShare){
+    const f=new File([blob],name,{type:blob.type});
+    if(navigator.canShare({files:[f]})){ try{ await navigator.share({files:[f],title:name}); closePick(); return; }catch(er){ if(er&&er.name==='AbortError')return; } }
+  }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  toast('Saved ✓'); closePick();
+}
+$('tExport').addEventListener('click',()=>openPick(null,'export'));
 // ---------- keep the list fresh when the app is re-opened / brought back ----------
 let _rfBusy=false, _rfAt=0;
 async function softRefresh(force){
   if(!sb||!uid||LINKONLY||_rfBusy)return;
-  if(!force&&Date.now()-_rfAt<3000)return;
+  if(!force&&Date.now()-_rfAt<120000)return;
   if(document.querySelector('.ov.show')||selMode||rowSel||(typeof dg!=='undefined'&&dg))return;   // never disturb an edit in progress
   _rfBusy=true;
   try{ const r=await sb.from('user_schedule_entries').select('*').order('entry_date',{ascending:true}).limit(3000); if(!r.error&&r.data){ entries=r.data; render(); } }catch(e){}
