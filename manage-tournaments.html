@@ -127,6 +127,10 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 .pc.on{background:#ff9800;border-color:#ff9800;color:#1a1200}
 .cap{font-size:11.5px;font-weight:800;color:var(--dim);margin:14px 0 6px}
 .pcu{display:flex;gap:8px;align-items:flex-start}
+.rkmenu{position:fixed;z-index:9999;overflow-y:auto;background:var(--card,#141a2e);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.55);padding:4px;-webkit-overflow-scrolling:touch}
+.rkmenu button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--text);font-size:15px;font-weight:800;padding:10px 12px;border-radius:8px}
+.rkmenu button.on{background:var(--green);color:#052e1c}
+.rkmenu button.clr{color:#ff6b6b}
 .rksel{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 4px;color:var(--text);font-size:15px;font-weight:800;outline:none}
 .pksel{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:12px;color:var(--text);font-size:15px;font-weight:800;outline:none}
 .pcu input,.pcu textarea{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:11px 12px;color:var(--text);font-size:14px;outline:none}
@@ -476,25 +480,32 @@ const TIMES=[['15:00','3 PM'],['16:00','4 PM'],['17:00','5 PM'],['18:00','6 PM']
 const TYPES=['scrim','semi','top 6 semi','final','Round 1','Round 2','Round 3','24 slot','CR'].map(x=>[x,x]);
 const RC={qualified:'g',disqualified:'r',profit:'g',loss:'r',sold:'g'};
 const PT={pastedate:'Paste to date',del:'Delete this tournament?',entry_time:'Time',type:'Type',maps:'Map',result:'Status',rank:'Rank',fee:'Entry fee ৳',prize:'Prize ৳',comment:'Comment',name:'Tournament name / Organizer',newtime:'Add tournament · pick time'};
-// rank: the dropdown opens right inside the tapped cell
+// rank: a small dropdown that opens right under the tapped cell
+let rkMenu=null;
+function closeRk(){ if(rkMenu){ rkMenu.remove(); rkMenu=null; } document.removeEventListener('pointerdown',rkOut,true); window.removeEventListener('scroll',rkScroll,true); }
+function rkOut(ev){ if(rkMenu&&!rkMenu.contains(ev.target))closeRk(); }
+function rkScroll(ev){ if(rkMenu&&!rkMenu.contains(ev.target))closeRk(); }
 function inlineRank(td,en){
-  if(td.querySelector('select'))return;
+  closeRk();
   const c=String(en.rank||'').replace('#','').trim();
-  const sel=document.createElement('select'); sel.className='rksel';
-  sel.innerHTML='<option value="">Rank…</option>'+Array.from({length:12},(_,i)=>`<option value="${i+1}"${String(i+1)===c?' selected':''}>#${i+1}</option>`).join('')+'<option value="__custom">Custom…</option><option value="__clear">Clear</option>';
-  td.textContent=''; td.appendChild(sel);
-  const off=ev=>{ if(ev.target!==sel){ document.removeEventListener('click',off,true); render(); } };
-  setTimeout(()=>document.addEventListener('click',off,true),0);
-  sel.addEventListener('change',async()=>{
-    document.removeEventListener('click',off,true);
-    const v=sel.value;
-    if(v==='__custom'){ render(); openPick(en,'rank'); return; }
+  const m=document.createElement('div'); m.className='rkmenu';
+  m.innerHTML=Array.from({length:12},(_,i)=>`<button type="button" data-v="${i+1}"${String(i+1)===c?' class="on"':''}>#${i+1}</button>`).join('')+'<button type="button" data-v="__custom">Custom…</button><button type="button" data-v="__clear" class="clr">Clear</button>';
+  document.body.appendChild(m); rkMenu=m;
+  const r=td.getBoundingClientRect(), mh=Math.min(m.scrollHeight,200), w=Math.max(r.width,120);
+  m.style.width=w+'px'; m.style.maxHeight='200px';
+  m.style.left=Math.max(4,Math.min(r.left,window.innerWidth-w-4))+'px';
+  const below=window.innerHeight-r.bottom, top=below>=mh+8?r.bottom+2:Math.max(4,r.top-mh-2);
+  m.style.top=top+'px';
+  const cur=m.querySelector('.on'); if(cur)m.scrollTop=Math.max(0,cur.offsetTop-60);
+  setTimeout(()=>{ document.addEventListener('pointerdown',rkOut,true); window.addEventListener('scroll',rkScroll,true); },0);
+  m.addEventListener('click',async ev=>{
+    const b=ev.target.closest('button'); if(!b)return; const v=b.dataset.v; closeRk();
+    if(v==='__custom'){ openPick(en,'rank'); return; }
     try{
-      const r=await upd(en.id,{rank:(v===''||v==='__clear')?null:v});
-      entries=entries.map(x=>x.id===r.data.id?r.data:x); render(); toast('Saved ✓');
-    }catch(er){ toast('Failed: '+(er&&er.message||er)); render(); }
+      const r2=await upd(en.id,{rank:v==='__clear'?null:v});
+      entries=entries.map(x=>x.id===r2.data.id?r2.data:x); render(); toast('Saved ✓');
+    }catch(er){ toast('Failed: '+(er&&er.message||er)); }
   });
-  sel.focus(); try{ sel.showPicker&&sel.showPicker(); }catch(e){}
 }
 function openPick(e,f,date){
   if(!tid){openT('new');return;}
