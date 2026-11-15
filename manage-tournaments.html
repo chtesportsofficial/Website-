@@ -146,6 +146,11 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 .rkmenu.mp .rkgrid{gap:4px}
 .rkmenu.mp .rkgrid button{height:32px;font-size:15px;padding:0}
 .rkmenu.mp .rkmini{height:28px;font-size:12px}
+.rkmenu.mp .rkgrid button.st-g{background:rgba(34,197,94,.22);border-color:#22c55e;color:#4ade80}
+.rkmenu.mp .rkgrid button.st-r{background:rgba(239,68,68,.22);border-color:#ef4444;color:#ff7a7a}
+.rkmenu.mp .rkgrid button.on.st-g{background:#22c55e;color:#052e1c}
+.rkmenu.mp .rkgrid button.on.st-r{background:#ef4444;color:#fff}
+.rkmenu.all .rkgrid.tall{max-height:none;overflow:visible}
 .rkgrid.tall{max-height:136px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:2px}
 td.rk-active{outline:2px solid var(--green);outline-offset:-2px}
 .rksel{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 4px;color:var(--text);font-size:15px;font-weight:800;outline:none}
@@ -486,7 +491,7 @@ $('days').addEventListener('click',e=>{
   if(selMode){ if(f!=='del'&&f!=='entry_time')toggleSel(td); return; }
   if(f==='banner'){ if(safeImg(en.banner_url))openBig(en); else pickBanner(en); return; }
   if(f==='entry_time'){ toggleRow(en); return; }
-  if(f==='rank'||f==='maps'||f==='type'){ inlinePop(td,en,f); return; }
+  if(f==='rank'||f==='maps'||f==='type'||f==='result'){ inlinePop(td,en,f); return; }
   openPick(en,f);
 });
 $('fab').addEventListener('click',()=>openPick(null,'newtime',(ym==='all'||monthOf(todayStr)===ym)?todayStr:ym+'-01'));
@@ -507,11 +512,12 @@ function inlinePop(td,en,f){
   const CFG={
     rank:{opts:Array.from({length:12},(_,i)=>[String(i+1),'#'+(i+1)]),cols:4,W:224,cur:String(en.rank||'').replace('#','').trim()},
     maps:{opts:[1,2,3,4,5,6,7,8,9,10].map(x=>[String(x),String(x)]),cols:1,W:104,tall:true,cur:en.maps==null?'':String(en.maps)},
-    type:{opts:TYPES.map(([v,l])=>[v,l]),cols:2,W:250,cur:String(en.type||'')}
+    type:{opts:TYPES.map(([v,l])=>[v,l]),cols:2,W:250,cur:String(en.type||'')},
+    result:{opts:[['qualified','Qualified'],['disqualified','Disqualified'],['profit','Profit'],['loss','Loss'],['sold','Sold']],cols:1,W:158,tall:true,noCustom:true,color:true,cur:String(en.result||'')}
   }, cf=CFG[f], c=cf.cur;
-  const m=document.createElement('div'); m.className='rkmenu'+(cf.tall?' mp':'');
-  const gridH='<div class="rkgrid'+(cf.tall?' tall':'')+'" style="grid-template-columns:repeat('+cf.cols+',1fr)">'+cf.opts.map(([v,l])=>`<button type="button" data-v="${esc(v)}"${v===c?' class="on"':''}>${esc(l)}</button>`).join('')+'</div>';
-  m.innerHTML=cf.tall?'<div class="rkarrow"></div><button type="button" class="rkmini clr" data-v="__clear">Clear</button>'+gridH+'<button type="button" class="rkmini" data-v="__custom">Custom</button>':'<div class="rkarrow"></div>'+gridH+'<div class="rkfoot"><button type="button" data-v="__custom">Custom</button><button type="button" data-v="__clear" class="clr">Clear</button></div>';'<div class="rkarrow"></div><div class="rkgrid'+(cf.tall?' tall':'')+'" style="grid-template-columns:repeat('+cf.cols+',1fr)">'+cf.opts.map(([v,l])=>`<button type="button" data-v="${esc(v)}"${v===c?' class="on"':''}>${esc(l)}</button>`).join('')+'</div><div class="rkfoot"><button type="button" data-v="__custom">Custom</button><button type="button" data-v="__clear" class="clr">Clear</button></div>';
+  const m=document.createElement('div'); m.className='rkmenu'+(cf.tall?' mp':'')+(cf.noCustom?' all':'');
+  const gridH='<div class="rkgrid'+(cf.tall?' tall':'')+'" style="grid-template-columns:repeat('+cf.cols+',1fr)">'+cf.opts.map(([v,l])=>`<button type="button" data-v="${esc(v)}" class="${v===c?'on ':''}${cf.color?'st-'+(RC[v]||''):''}">${esc(l)}</button>`).join('')+'</div>';
+  m.innerHTML=cf.tall?'<div class="rkarrow"></div><button type="button" class="rkmini clr" data-v="__clear">Clear</button>'+gridH+(cf.noCustom?'':'<button type="button" class="rkmini" data-v="__custom">Custom</button>'):'<div class="rkarrow"></div>'+gridH+'<div class="rkfoot"><button type="button" data-v="__custom">Custom</button><button type="button" data-v="__clear" class="clr">Clear</button></div>';'<div class="rkarrow"></div><div class="rkgrid'+(cf.tall?' tall':'')+'" style="grid-template-columns:repeat('+cf.cols+',1fr)">'+cf.opts.map(([v,l])=>`<button type="button" data-v="${esc(v)}"${v===c?' class="on"':''}>${esc(l)}</button>`).join('')+'</div><div class="rkfoot"><button type="button" data-v="__custom">Custom</button><button type="button" data-v="__clear" class="clr">Clear</button></div>';
   document.body.appendChild(m); rkMenu=m; rkTd=td; td.classList.add('rk-active');
   const gd=m.querySelector('.rkgrid.tall'), on=gd&&gd.querySelector('.on'); if(on)gd.scrollTop=Math.max(0,on.offsetTop-gd.offsetTop-60);
   const r=td.getBoundingClientRect(), W=cf.W, mh=m.offsetHeight, vw=window.innerWidth, vh=window.innerHeight;
@@ -528,6 +534,7 @@ function inlinePop(td,en,f){
     let patch;
     if(f==='rank')patch={rank:v==='__clear'?null:v};
     else if(f==='maps')patch={maps:v==='__clear'?null:parseInt(v,10)};
+    else if(f==='result')patch={result:v==='__clear'?'':v};
     else { patch={type:v==='__clear'?null:v}; if(/^scrim$/i.test(v)&&(en.maps==null||en.maps===''))patch.maps=3; }
     try{
       const r2=await upd(en.id,patch);
