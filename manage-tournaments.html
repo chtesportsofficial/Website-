@@ -142,9 +142,11 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 .rkmini{display:block;width:100%;height:32px;border-radius:9px;background:transparent;border:1px solid var(--line);color:var(--text);font-size:13px;font-weight:700}
 .rkmini.clr{color:#ff6b6b;border-color:#5a2a35;margin-bottom:6px}
 .rkmini:last-child{margin-top:6px}
-.rkmenu.mp .rkgrid{gap:5px}
-.rkmenu.mp .rkgrid button{height:38px;font-size:16px;padding:0}
-.rkgrid.tall{max-height:176px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:2px}
+.rkmenu.mp{padding:6px}
+.rkmenu.mp .rkgrid{gap:4px}
+.rkmenu.mp .rkgrid button{height:32px;font-size:15px;padding:0}
+.rkmenu.mp .rkmini{height:28px;font-size:12px}
+.rkgrid.tall{max-height:136px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:2px}
 td.rk-active{outline:2px solid var(--green);outline-offset:-2px}
 .rksel{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 4px;color:var(--text);font-size:15px;font-weight:800;outline:none}
 .pksel{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:12px;color:var(--text);font-size:15px;font-weight:800;outline:none}
@@ -504,11 +506,11 @@ function inlinePop(td,en,f){
   closeRk();
   const CFG={
     rank:{opts:Array.from({length:12},(_,i)=>[String(i+1),'#'+(i+1)]),cols:4,W:224,cur:String(en.rank||'').replace('#','').trim()},
-    maps:{opts:[1,2,3,4,5,6,7,8,9,10].map(x=>[String(x),String(x)]),cols:5,W:236,tall:true,cur:en.maps==null?'':String(en.maps)},
+    maps:{opts:[1,2,3,4,5,6,7,8,9,10].map(x=>[String(x),String(x)]),cols:1,W:104,tall:true,cur:en.maps==null?'':String(en.maps)},
     type:{opts:TYPES.map(([v,l])=>[v,l]),cols:2,W:250,cur:String(en.type||'')}
   }, cf=CFG[f], c=cf.cur;
   const m=document.createElement('div'); m.className='rkmenu'+(cf.tall?' mp':'');
-  const gridH='<div class="rkgrid" style="grid-template-columns:repeat('+cf.cols+',1fr)">'+cf.opts.map(([v,l])=>`<button type="button" data-v="${esc(v)}"${v===c?' class="on"':''}>${esc(l)}</button>`).join('')+'</div>';
+  const gridH='<div class="rkgrid'+(cf.tall?' tall':'')+'" style="grid-template-columns:repeat('+cf.cols+',1fr)">'+cf.opts.map(([v,l])=>`<button type="button" data-v="${esc(v)}"${v===c?' class="on"':''}>${esc(l)}</button>`).join('')+'</div>';
   m.innerHTML=cf.tall?'<div class="rkarrow"></div><button type="button" class="rkmini clr" data-v="__clear">Clear</button>'+gridH+'<button type="button" class="rkmini" data-v="__custom">Custom</button>':'<div class="rkarrow"></div>'+gridH+'<div class="rkfoot"><button type="button" data-v="__custom">Custom</button><button type="button" data-v="__clear" class="clr">Clear</button></div>';'<div class="rkarrow"></div><div class="rkgrid'+(cf.tall?' tall':'')+'" style="grid-template-columns:repeat('+cf.cols+',1fr)">'+cf.opts.map(([v,l])=>`<button type="button" data-v="${esc(v)}"${v===c?' class="on"':''}>${esc(l)}</button>`).join('')+'</div><div class="rkfoot"><button type="button" data-v="__custom">Custom</button><button type="button" data-v="__clear" class="clr">Clear</button></div>';
   document.body.appendChild(m); rkMenu=m; rkTd=td; td.classList.add('rk-active');
   const gd=m.querySelector('.rkgrid.tall'), on=gd&&gd.querySelector('.on'); if(on)gd.scrollTop=Math.max(0,on.offsetTop-gd.offsetTop-60);
