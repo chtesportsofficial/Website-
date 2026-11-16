@@ -127,6 +127,7 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 .pc.on{background:#ff9800;border-color:#ff9800;color:#1a1200}
 .cap{font-size:11.5px;font-weight:800;color:var(--dim);margin:14px 0 6px}
 .pcu{display:flex;gap:8px;align-items:flex-start}
+#ptr{position:fixed;left:50%;transform:translateX(-50%);z-index:60;background:var(--surface);border:1px solid var(--line);color:var(--text);font-size:13px;font-weight:800;padding:7px 14px;border-radius:999px;display:none;box-shadow:0 6px 18px rgba(0,0,0,.45)}
 .rkmenu{position:fixed;z-index:9999;box-sizing:border-box;background:#161c33;border:1px solid #2c3556;border-radius:14px;box-shadow:0 12px 34px rgba(0,0,0,.6);padding:10px}
 .rkmenu .rkarrow{position:absolute;left:var(--ax,50%);width:14px;height:14px;background:#161c33;transform:translateX(-50%) rotate(45deg)}
 .rkmenu.dn .rkarrow{top:-8px;border-left:1px solid #2c3556;border-top:1px solid #2c3556}
@@ -1436,7 +1437,7 @@ $('shList').addEventListener('click',async e=>{
       if(v===d.dataset.val)return;
       if(v==='owner'){
         const row=shareRows.find(x=>x.user_id===d.dataset.rs), nm=(row&&row.full_name)||'this person';
-        if(!confirm('Make '+nm+' the owner of this schedule?\n\nYou will become an Editor.'))return;
+        if(!(await askConfirm('They will own this schedule and you will become an Editor.','Make '+nm+' the owner?','Make owner')))return;
         const r=await sb.rpc('sched_transfer_owner',{p_team:String(tid),p_new:String(d.dataset.rs)});
         if(r.error){ toast(/function|schema cache|does not exist/i.test(String(r.error.message))?'Run transfer_owner.sql in Supabase first.':'Failed: '+r.error.message); return; }
         const t=teams.find(x=>x.id===tid); if(t)t.user_id=d.dataset.rs; myRoles[tid]='edit';
@@ -1640,14 +1641,15 @@ async function doExport(share){
   const sub=exo.scope==='range'?(lo===hi?fd(lo):fd(lo)+'  –  '+fd(hi)):all?'ALL MONTHS':(MONTHS[+ym.slice(5)-1]+' '+ym.slice(0,4)).toUpperCase();
   const base=((T.name||'schedule').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'')||'schedule').toLowerCase()+'-schedule';
   toast('Preparing…');
+  const nowD=new Date(), stamp=nowD.getFullYear()+String(nowD.getMonth()+1).padStart(2,'0')+String(nowD.getDate()).padStart(2,'0')+'-'+String(nowD.getHours()).padStart(2,'0')+String(nowD.getMinutes()).padStart(2,'0')+String(nowD.getSeconds()).padStart(2,'0');
   let blob,name;
   try{
     if(exo.fmt==='img'){
       const pages=exBuild(days,0), c=exDraw(pages[0],0,1,0,full,title,sub);
-      blob=await new Promise(r=>c.toBlob(r,'image/png')); name=base+'.png';
+      blob=await new Promise(r=>c.toBlob(r,'image/png')); name=base+'-'+stamp+'.png';
     }else{
       const pages=exBuild(days,EX.PH);
-      blob=exPdf(pages.map((pg,i)=>exBytes(exDraw(pg,i,pages.length,EX.PH,full,title,sub))),EX.W,EX.PH); name=base+'.pdf';
+      blob=exPdf(pages.map((pg,i)=>exBytes(exDraw(pg,i,pages.length,EX.PH,full,title,sub))),EX.W,EX.PH); name=base+'-'+stamp+'.pdf';
     }
   }catch(er){ toast('Export failed: '+(er&&er.message||er)); return; }
   if(!blob){ toast('Export failed'); return; }
@@ -1665,10 +1667,29 @@ async function softRefresh(force){
   if(!sb||!uid||LINKONLY||_rfBusy)return;
   if(!force&&Date.now()-_rfAt<120000)return;
   if(document.querySelector('.ov.show')||selMode||rowSel||(typeof dg!=='undefined'&&dg))return;   // never disturb an edit in progress
-  _rfBusy=true;
-  try{ const r=await sb.from('user_schedule_entries').select('*').order('entry_date',{ascending:true}).limit(3000); if(!r.error&&r.data){ entries=r.data; render(); } }catch(e){}
-  _rfAt=Date.now(); _rfBusy=false;
+  _rfBusy=true; let ok=false;
+  try{ const r=await sb.from('user_schedule_entries').select('*').order('entry_date',{ascending:true}).limit(3000); if(!r.error&&r.data){ entries=r.data; render(); ok=true; } }catch(e){}
+  _rfAt=Date.now(); _rfBusy=false; return ok;
 }
+// pull down on the schedule (at the very top) to refresh
+(function(){
+  const d=$('days'), ptr=document.createElement('div'); ptr.id='ptr'; document.body.appendChild(ptr);
+  let y0=null, pulled=0, busy=false;
+  const place=()=>{ ptr.style.top=(d.getBoundingClientRect().top+8)+'px'; };
+  d.addEventListener('touchstart',e=>{ y0=(d.scrollTop<=0&&e.touches.length===1&&!busy)?e.touches[0].clientY:null; pulled=0; },{passive:true});
+  d.addEventListener('touchmove',e=>{
+    if(y0==null)return; const dy=e.touches[0].clientY-y0;
+    if(dy<=0||d.scrollTop>0){ ptr.style.display='none'; pulled=0; return; }
+    pulled=dy; place(); ptr.style.display='block'; ptr.textContent=dy>90?'Release to refresh':'Pull to refresh';
+  },{passive:true});
+  d.addEventListener('touchend',async()=>{
+    if(y0==null)return; const go=pulled>90; y0=null; pulled=0;
+    if(!go){ ptr.style.display='none'; return; }
+    busy=true; place(); ptr.textContent='Refreshing…'; ptr.style.display='block';
+    const ok=await softRefresh(true);
+    ptr.style.display='none'; busy=false; toast(ok?'Updated ✓':'Could not refresh');
+  });
+})();
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden)softRefresh(); });
 window.addEventListener('pageshow',e=>{ if(e.persisted)softRefresh(true); });
 window.addEventListener('focus',()=>softRefresh());
