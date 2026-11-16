@@ -92,6 +92,10 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 /* bottom sheet */
 .ov{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);display:none}
 .ov.show{display:block}
+#ovCf{background:rgba(0,0,0,.88)!important;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+#ovCf .sheet{border:1px solid rgba(255,255,255,.18);box-shadow:0 0 0 1px rgba(255,255,255,.06),0 12px 50px rgba(0,0,0,.9),0 0 36px rgba(255,255,255,.07)}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cols2 .pq{text-align:center;line-height:1.25;padding:12px 8px;white-space:normal}
 .sheet{position:absolute;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;max-height:92vh;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-bottom:none;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
 .sheet h2{font-size:17px;font-weight:850;margin-bottom:12px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -254,6 +258,7 @@ td.rk-active{outline:2px solid var(--green);outline-offset:-2px}
 body.ro #fab,body.ro #bgChange,body.ro #bgRemove,body.ro .ban-add,body.ro .bplus{display:none!important}
 .sh tr.dn td{opacity:.5}.sh tr.dn td:first-child{opacity:1;color:#12c458}
 .bplus{top:auto!important;bottom:7px;width:auto!important;padding:0 8px;border-radius:999px!important;font-size:13px!important;letter-spacing:2px}
+.ovc{background:rgba(0,0,0,.92)!important}
 .ovc{display:none;align-items:center;justify-content:center;padding:16px}.ovc.show{display:flex}
 .ovc .sheet{position:relative;border-radius:20px;border:1px solid var(--line);max-width:440px;width:100%;margin:0;padding:18px 16px}
 .shtabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:2px 0 12px}
@@ -411,7 +416,7 @@ body.ro #rwDel{display:none}
 .cuse{flex:1;padding:11px;border-radius:11px;font-weight:850;background:var(--green);border:1px solid var(--green);color:#052e1c}
 .sum .scard .bplus{top:5px!important;bottom:auto!important;right:5px!important;font-size:11px!important;padding:0 6px!important;height:16px;line-height:16px}
 .sum .scard .v{padding-top:1px}</style>
-<div class="ov ovc" id="ovCf" style="z-index:20000"><div class="sheet" style="max-width:340px;text-align:center"><div style="font-size:34px;margin-bottom:4px">🗑️</div><h2 id="cfTitle" style="margin-bottom:6px">Are you sure?</h2><div id="cfMsg" style="color:var(--dim);font-size:13.5px;line-height:1.5;overflow-wrap:anywhere"></div><div class="acts" style="margin-top:16px"><button type="button" id="cfNo">Cancel</button><button type="button" id="cfYes" style="background:#e0243c;border-color:#e0243c;color:#fff">Delete</button></div></div></div>
+<div class="ov ovc" id="ovCf" style="z-index:20000"><div class="sheet" style="max-width:340px;text-align:center"><div id="cfIcon" style="font-size:34px;margin-bottom:4px">🗑️</div><h2 id="cfTitle" style="margin-bottom:6px">Are you sure?</h2><div id="cfMsg" style="color:var(--dim);font-size:13.5px;line-height:1.5;overflow-wrap:anywhere"></div><div class="acts" style="margin-top:16px"><button type="button" id="cfNo">Cancel</button><button type="button" id="cfYes" style="background:#e0243c;border-color:#e0243c;color:#fff">Delete</button></div></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1352,8 +1357,10 @@ $('fnList').addEventListener('click',async e=>{
 
 // nice in-page confirm box (replaces the browser's own "…says" box)
 let _cf=null;
-function askConfirm(msg,title,yes){
+function askConfirm(msg,title,yes,opt){
   return new Promise(res=>{
+    opt=opt||{};
+    $('cfIcon').textContent=opt.icon||'🗑️'; const yb=$('cfYes'); yb.style.background=opt.color||'#e0243c'; yb.style.borderColor=opt.color||'#e0243c'; yb.style.color=opt.dark?'#052e1c':'#fff';
     $('cfTitle').textContent=title||'Are you sure?'; $('cfMsg').textContent=msg; $('cfYes').textContent=yes||'Delete';
     $('ovCf').classList.add('show'); _cf=res;
   });
@@ -1437,7 +1444,7 @@ $('shList').addEventListener('click',async e=>{
       if(v===d.dataset.val)return;
       if(v==='owner'){
         const row=shareRows.find(x=>x.user_id===d.dataset.rs), nm=(row&&row.full_name)||'this person';
-        if(!(await askConfirm('They will own this schedule and you will become an Editor.','Make '+nm+' the owner?','Make owner')))return;
+        if(!(await askConfirm('They will own this schedule and you will become an Editor.','Make '+nm+' the owner?','Make owner',{icon:'👑',color:'var(--green)',dark:true})))return;
         const r=await sb.rpc('sched_transfer_owner',{p_team:String(tid),p_new:String(d.dataset.rs)});
         if(r.error){ toast(/function|schema cache|does not exist/i.test(String(r.error.message))?'Run transfer_owner.sql in Supabase first.':'Failed: '+r.error.message); return; }
         const t=teams.find(x=>x.id===tid); if(t)t.user_id=d.dataset.rs; myRoles[tid]='edit';
@@ -1526,8 +1533,8 @@ function exportHtml(){
   const mt=ym&&ym!=='all'?MONTHS[+ym.slice(5)-1]+' '+ym.slice(0,4):'All months';
   return `<div class="cap" style="margin-top:0">Format</div><div class="pcs"><button type="button" class="pq" data-ex="fmt:img">Image</button><button type="button" class="pq" data-ex="fmt:pdf">PDF</button></div>
   <div class="cap">Range</div><div class="pcs"><button type="button" class="pq" data-ex="scope:month">${esc(mt)}</button><button type="button" class="pq" data-ex="scope:all">All months</button><button type="button" class="pq" data-ex="scope:range">Custom range</button></div>
-  <div id="exRange" style="display:none"><div class="pcu" style="margin-top:10px"><input id="exFrom" type="date" value="${exo.from}"><input id="exTo" type="date" value="${exo.to}"></div></div>
-  <div class="cap">Columns</div><div class="pcs"><button type="button" class="pq" data-ex="full:false">Schedule only</button><button type="button" class="pq" data-ex="full:true">+ Fee, status, rank, prize</button></div>
+  <div id="exRange" style="display:none"><div class="cap">From · Date / Month / Year</div>${dateSel('exf',exo.from)}<div class="cap">To · Date / Month / Year</div>${dateSel('ext',exo.to)}</div>
+  <div class="cap">Columns</div><div class="cols2"><button type="button" class="pq" data-ex="full:false">Schedule only</button><button type="button" class="pq" data-ex="full:true">Schedule + fee, status, rank, prize</button></div>
   <div class="acts" style="margin-top:16px">${navigator.share?'<button type="button" id="pkExpShare">Share</button>':''}<button type="button" class="pok" id="pkExpGo" style="background:var(--green);border-color:var(--green);color:#052e1c;font-weight:900">Download</button></div>`;
 }
 function exDays(){
@@ -1633,6 +1640,7 @@ function exPdf(jpgs,wPx,hPx){
   return new Blob(parts,{type:'application/pdf'});
 }
 async function doExport(share){
+  if(exo.scope==='range'&&$('exfD')){ exo.from=getDate('exf'); exo.to=getDate('ext'); }
   const days=exDays(); if(!days.length){ toast('Nothing to export'); return; }
   const T=teams.find(t=>t.id===tid)||{name:''}, full=exo.full;
   const title=((T.name||'Schedule')+' SCHEDULE').toUpperCase();
