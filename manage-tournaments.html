@@ -92,10 +92,13 @@ table.sh{border-collapse:collapse;min-width:900px;width:100%;font-size:12.5px}
 /* bottom sheet */
 .ov{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);display:none}
 .ov.show{display:block}
-#ovCf{background:rgba(0,0,0,.88)!important;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+#ovCf{background:rgba(0,0,0,.72)!important}
 #ovCf .sheet{border:1px solid rgba(255,255,255,.18);box-shadow:0 0 0 1px rgba(255,255,255,.06),0 12px 50px rgba(0,0,0,.9),0 0 36px rgba(255,255,255,.07)}
-.cols2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.cols2 .pq{text-align:center;line-height:1.25;padding:12px 8px;white-space:normal}
+.cols2{display:flex;gap:8px;flex-wrap:nowrap}
+.cols2 .pq{text-align:center;white-space:nowrap;padding:9px 6px;font-size:11.5px;flex:0 0 auto}
+.cols2 .pq:last-child{flex:1 1 auto;min-width:0;overflow:hidden;font-size:11px;letter-spacing:-.2px}
+.dsn{display:flex;gap:4px}.dsn select{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:11px 2px;color:var(--text);font-size:13px;text-align:center}.dsn select:nth-child(1),.dsn select:nth-child(2){flex:.8}.dsn select:nth-child(3){flex:1.2}
+.exr2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .sheet{position:absolute;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;max-height:92vh;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-bottom:none;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
 .sheet h2{font-size:17px;font-weight:850;margin-bottom:12px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -651,6 +654,13 @@ function dateSel(p,v){
   const o=(a,sel)=>a.map(([val,l])=>`<option value="${val}"${val===sel?' selected':''}>${l}</option>`).join('');
   const yrs=[]; for(let i=cy-1;i<=cy+2;i++)yrs.push([i,String(i)]); if(y<cy-1||y>cy+2)yrs.push([y,String(y)]);
   return `<div class="dsel"><select id="${p}D">${o(Array.from({length:31},(_,i)=>[i+1,String(i+1)]),d)}</select><select id="${p}M">${o(MONTHS.map((n,i)=>[i+1,n]),m)}</select><select id="${p}Y">${o(yrs,y)}</select></div>`;
+}
+function dateSelN(p,v){
+  const [y,m,d]=v.split('-').map(Number), cy=new Date().getFullYear();
+  const o=(a,sel)=>a.map(([val,l])=>`<option value="${val}"${val===sel?' selected':''}>${l}</option>`).join('');
+  const yrs=[]; for(let i=cy-1;i<=cy+2;i++)yrs.push([i,String(i)]); if(y<cy-1||y>cy+2)yrs.push([y,String(y)]);
+  const two=n=>String(n).padStart(2,'0');
+  return `<div class="dsn"><select id="${p}D">${o(Array.from({length:31},(_,i)=>[i+1,two(i+1)]),d)}</select><select id="${p}M">${o(Array.from({length:12},(_,i)=>[i+1,two(i+1)]),m)}</select><select id="${p}Y">${o(yrs,y)}</select></div>`;
 }
 function getDate(p){
   const y=+$(p+'Y').value, m=+$(p+'M').value, d=Math.min(+$(p+'D').value,new Date(y,m,0).getDate());
@@ -1533,8 +1543,8 @@ function exportHtml(){
   const mt=ym&&ym!=='all'?MONTHS[+ym.slice(5)-1]+' '+ym.slice(0,4):'All months';
   return `<div class="cap" style="margin-top:0">Format</div><div class="pcs"><button type="button" class="pq" data-ex="fmt:img">Image</button><button type="button" class="pq" data-ex="fmt:pdf">PDF</button></div>
   <div class="cap">Range</div><div class="pcs"><button type="button" class="pq" data-ex="scope:month">${esc(mt)}</button><button type="button" class="pq" data-ex="scope:all">All months</button><button type="button" class="pq" data-ex="scope:range">Custom range</button></div>
-  <div id="exRange" style="display:none"><div class="cap">From · Date / Month / Year</div>${dateSel('exf',exo.from)}<div class="cap">To · Date / Month / Year</div>${dateSel('ext',exo.to)}</div>
-  <div class="cap">Columns</div><div class="cols2"><button type="button" class="pq" data-ex="full:false">Schedule only</button><button type="button" class="pq" data-ex="full:true">Schedule + fee, status, rank, prize</button></div>
+  <div id="exRange" style="display:none"><div class="exr2"><div><div class="cap">From (DD/MM/YYYY)</div>${dateSelN('exf',exo.from)}</div><div><div class="cap">To (DD/MM/YYYY)</div>${dateSelN('ext',exo.to)}</div></div></div>
+  <div class="cap">Columns</div><div class="cols2"><button type="button" class="pq" data-ex="full:false">Schedule only</button><button type="button" class="pq" data-ex="full:true">Schedule + Fee, status, rank, prize</button></div>
   <div class="acts" style="margin-top:16px">${navigator.share?'<button type="button" id="pkExpShare">Share</button>':''}<button type="button" class="pok" id="pkExpGo" style="background:var(--green);border-color:var(--green);color:#052e1c;font-weight:900">Download</button></div>`;
 }
 function exDays(){
