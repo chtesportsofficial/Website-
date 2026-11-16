@@ -1387,7 +1387,7 @@ const shareLink=()=>location.origin+location.pathname+'?t='+tid;
 function renderShares(){
   const t=teams.find(x=>x.id===tid); if(!t)return;
   $('shLink').value=shareLink(); $('shLinkOff').style.display=t.link_view?'none':''; $('shLinkOn').style.display=t.link_view?'':'none';
-  $('shList').innerHTML=shareRows.length?shareRows.map(r=>`<div class="shr"><div><b>${esc(r.full_name||'User')}</b><span>UID #${esc(r.user_number||'?')}</span></div><button type="button" class="ddb" data-rs="${r.user_id}" data-val="${r.role}">${r.role==='edit'?'Editor':'Viewer'}</button><button type="button" class="own" data-own="${r.user_id}">Make owner</button><button type="button" data-sd="${r.user_id}" aria-label="Remove">✕</button></div>`).join(''):'<div style="color:var(--dim);font-size:13px;padding:6px 0">No one added yet.</div>';
+  $('shList').innerHTML=shareRows.length?shareRows.map(r=>`<div class="shr"><div><b>${esc(r.full_name||'User')}</b><span>UID #${esc(r.user_number||'?')}</span></div><button type="button" class="ddb" data-rs="${r.user_id}" data-val="${r.role}">${r.role==='edit'?'Editor':'Viewer'}</button><button type="button" data-sd="${r.user_id}" aria-label="Remove">✕</button></div>`).join(''):'<div style="color:var(--dim);font-size:13px;padding:6px 0">No one added yet.</div>';
 }
 async function loadShares(){ const r=await sb.rpc('sched_share_list',{p_team:tid}); if(r.error){toast(setupMsg(r.error));shareRows=[];}else shareRows=r.data||[]; renderShares(); }
 $('tShare').addEventListener('click',()=>{ if(!tid)return; $('shUid').value=''; $('ovS').classList.add('show'); renderShares(); loadShares(); });
@@ -1432,22 +1432,21 @@ $('shList').addEventListener('click',async e=>{
   const d=e.target.closest('[data-rs]');
   if(d){
     if(d.classList.contains('open')){closeDD();return;}
-    openDD(d,ROLES,d.dataset.val,async v=>{
+    openDD(d,ROLES.concat([['owner','Make owner']]),d.dataset.val,async v=>{
       if(v===d.dataset.val)return;
+      if(v==='owner'){
+        const row=shareRows.find(x=>x.user_id===d.dataset.rs), nm=(row&&row.full_name)||'this person';
+        if(!confirm('Make '+nm+' the owner of this schedule?\n\nYou will become an Editor.'))return;
+        const r=await sb.rpc('sched_transfer_owner',{p_team:String(tid),p_new:String(d.dataset.rs)});
+        if(r.error){ toast(/function|schema cache|does not exist/i.test(String(r.error.message))?'Run transfer_owner.sql in Supabase first.':'Failed: '+r.error.message); return; }
+        const t=teams.find(x=>x.id===tid); if(t)t.user_id=d.dataset.rs; myRoles[tid]='edit';
+        $('ovS').classList.remove('show'); applyRole(); render(); toast('Ownership transferred ✓');
+        return;
+      }
       const r=await sb.from('user_schedule_shares').update({role:v}).eq('team_id',tid).eq('user_id',d.dataset.rs);
       if(r.error){toast(setupMsg(r.error));return;}
       const row=shareRows.find(x=>x.user_id===d.dataset.rs); if(row)row.role=v; d.dataset.val=v; d.textContent=v==='edit'?'Editor':'Viewer'; toast('Saved ✓');
     });
-    return;
-  }
-  const ow=e.target.closest('[data-own]');
-  if(ow){
-    if(!ow.classList.contains('sure')){ ow.classList.add('sure'); ow.textContent='Sure?'; setTimeout(()=>{ if(ow.isConnected&&ow.classList.contains('sure')){ ow.classList.remove('sure'); ow.textContent='Make owner'; } },4000); return; }
-    ow.disabled=true; ow.textContent='…';
-    const r=await sb.rpc('sched_transfer_owner',{p_team:String(tid),p_new:String(ow.dataset.own)});
-    if(r.error){ ow.disabled=false; ow.classList.remove('sure'); ow.textContent='Make owner'; toast(/function|schema cache|does not exist/i.test(String(r.error.message))?'Run transfer_owner.sql in Supabase first.':'Failed: '+r.error.message); return; }
-    const t=teams.find(x=>x.id===tid); if(t)t.user_id=ow.dataset.own; myRoles[tid]='edit';
-    $('ovS').classList.remove('show'); applyRole(); render(); toast('Ownership transferred ✓');
     return;
   }
   const b=e.target.closest('[data-sd]'); if(!b)return;
@@ -1495,8 +1494,8 @@ function fitDays(){
   if(h>=(kb?120:260)){
     d.style.height=h+'px'; document.body.classList.add('vlock');
     // let the last date's bar scroll all the way up to the top of the area
-    const hd=d.querySelectorAll('.dhin'), trs=d.querySelectorAll('tr');
-    if(hd.length&&trs.length){ const bh=trs[trs.length-1].getBoundingClientRect().bottom-hd[hd.length-1].getBoundingClientRect().top; d.style.paddingBottom=Math.max(24,d.clientHeight-bh)+'px'; }
+    const dhs=d.querySelectorAll('tr.dh'), last=d.lastElementChild;
+    if(dhs.length&&last){ const bh=last.getBoundingClientRect().bottom-dhs[dhs.length-1].getBoundingClientRect().top; d.style.paddingBottom=Math.max(0,d.clientHeight-bh-2)+'px'; }
   }
 }
 new MutationObserver(()=>fitDays()).observe($('days'),{childList:true});
@@ -1537,7 +1536,7 @@ function exDays(){
   const by={}; list.forEach(e=>(by[e.entry_date]=by[e.entry_date]||[]).push(e));
   return Object.keys(by).sort().map(d=>({d,rows:by[d]}));
 }
-function exCols(full){ return full?[['TIME',120],['TYPE',150],['MAP',74],['TOURNAMENT',310],['FEE',100],['STATUS',170],['RANK',80],['PRIZE',76]]:[['TIME',170],['TYPE',200],['MAP',110],['TOURNAMENT / ORGANIZER',600]]; }
+function exCols(full){ return full?[['TIME',96],['TYPE',120],['MAP',58],['TOURNAMENT',324],['FEE',92],['STATUS',140],['RANK',64],['PRIZE',86],['P/L',100]]:[['TIME',170],['TYPE',200],['MAP',110],['TOURNAMENT / ORGANIZER',600]]; }
 function exCell(e,k){
   if(k==='TIME')return e.entry_time?timeLabel(e.entry_time):'';
   if(k==='TYPE')return e.type||'';
@@ -1549,17 +1548,32 @@ function exCell(e,k){
   if(k==='PRIZE')return num(e.prize)>0?fmt(num(e.prize)):'';
   return '';
 }
+function exMeta(arr){
+  const n=arr.length, M=arr.map(()=>({})), units=[];
+  const runs=k=>{ const out=[]; for(let i=0;i<n;){ let j=i+1; const g=arr[i][k]; if(g)while(j<n&&arr[j][k]===g)j++; out.push([i,j]); i=j; } return out; };
+  runs('fee_group').forEach(([i,j])=>{ const run=arr.slice(i,j), es=run.reduce((t,x)=>t+num(x.fee),0), ch=run.reduce((t,x)=>t+num(x.fee_charge),0); const parts=j-i>1?(run.map(x=>num(x.fee)).filter(Boolean).map(fmt).join('+')+(ch?'+'+fmt(ch):'')):''; M[i].fee={span:j-i,sum:es+ch,parts}; for(let k=i+1;k<j;k++)M[k].fee={skip:true}; });
+  runs('prize_group').forEach(([i,j])=>{ const sum=arr.slice(i,j).reduce((t,x)=>t+num(x.prize),0); M[i].prz={span:j-i,sum}; for(let k=i+1;k<j;k++)M[k].prz={skip:true}; });
+  const ends=k=>{ const r=[]; for(let i=0;i<n;){ let j=i+1; const g=arr[i][k]; if(g)while(j<n&&arr[j][k]===g)j++; for(let q=i;q<j;q++)r[q]=j; i=j; } return r; };
+  const F=ends('fee_group'), P=ends('prize_group');
+  for(let i=0;i<n;){
+    let end=i+1; for(let q=i;q<end;q++)end=Math.max(end,F[q],P[q]);
+    if(end>i+1){ const run=arr.slice(i,end), ps=run.reduce((t,x)=>t+num(x.prize),0), fs=run.reduce((t,x)=>t+num(x.fee)+num(x.fee_charge),0); M[i].pl={span:run.length,pl:ps-fs,has:!!(ps||fs)}; for(let q=i+1;q<end;q++)M[q].pl={skip:true}; }
+    else { const e=arr[i]; M[i].pl={span:1,pl:num(e.prize)-num(e.fee),has:!!(num(e.prize)||num(e.fee))}; }
+    units.push([i,end]); i=end;
+  }
+  return {M,units};
+}
 function exBuild(days,pageH){
   const pages=[]; let pg;
   const np=()=>{ pg={ops:[],y:0}; pages.push(pg); };
   const room=h=>pageH?(pg.y+h<=pageH-EX.FOOT):true;
   np(); pg.ops.push({t:'title',y:0}); pg.y=EX.TITLE;
   days.forEach(({d,rows})=>{
-    const dl=dayLabel(d);
+    const dl=dayLabel(d), {M,units}=exMeta(rows);
     const head=cont=>{ pg.ops.push({t:'day',y:pg.y,dl,cont}); pg.y+=EX.DAY; pg.ops.push({t:'hd',y:pg.y}); pg.y+=EX.HD; };
-    if(!room(EX.DAY+EX.HD+EX.ROW))np();
+    const first=units[0]; if(!room(EX.DAY+EX.HD+(first[1]-first[0])*EX.ROW))np();
     head(false);
-    rows.forEach(e=>{ if(!room(EX.ROW)){ np(); head(true); } pg.ops.push({t:'row',y:pg.y,e}); pg.y+=EX.ROW; });
+    units.forEach(([a,b])=>{ if(!room((b-a)*EX.ROW)){ np(); head(true); } for(let k=a;k<b;k++){ pg.ops.push({t:'row',y:pg.y,e:rows[k],m:M[k]}); pg.y+=EX.ROW; } });
     pg.y+=14;
   });
   return pages;
@@ -1574,15 +1588,24 @@ function exDraw(pg,idx,total,pageH,full,title,sub){
     else if(o.t==='day'){ x.fillStyle='#7c3aed'; x.fillRect(0,o.y,EX.W,EX.DAY); txt(o.dl.t+(o.dl.w?'   '+o.dl.w:'')+(o.cont?'   (cont.)':''),24,o.y+EX.DAY/2,EX.W-48,28,'800','#fff','left'); }
     else if(o.t==='hd'){ x.fillStyle='#00e5e5'; x.fillRect(0,o.y,EX.W,EX.HD); let cx=0; cols.forEach(([n,w])=>{ txt(n,cx+w/2,o.y+EX.HD/2,w-12,21,'800','#00201f'); cx+=w; }); }
     else if(o.t==='row'){
-      x.fillStyle='#0c1020'; x.fillRect(0,o.y,EX.W,EX.ROW); let cx=0;
+      let cx=0;
       cols.forEach(([n,w])=>{
-        const v=exCell(o.e,n), mid=cx+w/2, my=o.y+EX.ROW/2;
-        if(n==='STATUS'&&v){ x.fillStyle=(RC[v]==='r')?'#dc2626':'#16a34a'; x.fillRect(cx,o.y,w,EX.ROW); txt(v,mid,my,w-12,26,'800','#fff'); }
-        else if(n==='PRIZE'||n==='FEE')txt(v,mid,my,w-12,26,'700',n==='PRIZE'?'#4ade80':'#e6e9f5');
-        else txt(v,mid,my,w-18,n[0]==='T'&&n[1]==='O'?28:26,n[0]==='T'&&n[1]==='O'?'800':'600','#f4f6ff');
-        x.fillStyle='#232b45'; x.fillRect(cx+w-1,o.y,1,EX.ROW); cx+=w;
+        const e=o.e, m=o.m||{}; let info=null;
+        if(n==='FEE')info=m.fee; else if(n==='PRIZE')info=m.prz; else if(n==='P/L')info=m.pl;
+        if(info&&info.skip){ cx+=w; return; }
+        const span=(info&&info.span)||1, h=EX.ROW*span, my=o.y+h/2, mid=cx+w/2;
+        let bg='#0c1020', main='', col='#f4f6ff', size=26, wt='600', sub='';
+        if(n==='FEE'){ const f=info?info.sum:num(e.fee); main=f>0?fmt(f):''; sub=info&&info.parts||''; wt='700'; col='#e6e9f5'; }
+        else if(n==='PRIZE'){ const p=info?info.sum:num(e.prize); main=p>0?fmt(p):''; col='#4ade80'; wt='700'; }
+        else if(n==='P/L'){ if(info&&info.has){ main=(info.pl>0?'+':'')+fmt(info.pl); col=info.pl>0?'#4ade80':info.pl<0?'#ff6b6b':'#e6e9f5'; wt='800'; } }
+        else if(n==='STATUS'){ main=e.result||''; if(main){ bg=(RC[main]==='r')?'#dc2626':'#16a34a'; col='#fff'; wt='800'; } }
+        else { main=exCell(e,n); if(n[0]==='T'&&n[1]==='O'){ wt='800'; size=28; } }
+        x.fillStyle=bg; x.fillRect(cx,o.y,w,h);
+        if(sub){ txt(main,mid,my-11,w-12,size,wt,col); txt(sub,mid,my+19,w-10,17,'600','#9aa6c8'); }
+        else txt(main,mid,my,w-(n==='TIME'||n==='TYPE'||n[0]==='T'?18:12),size,wt,col);
+        x.fillStyle='#232b45'; x.fillRect(cx+w-1,o.y,1,h); x.fillRect(cx,o.y+h-1,w,1);
+        cx+=w;
       });
-      x.fillStyle='#232b45'; x.fillRect(0,o.y+EX.ROW-1,EX.W,1);
     }
   });
   txt('©CHT ESP ORG. All Rights Reserved'+(total>1?'   ·   '+(idx+1)+'/'+total:''),EX.W/2,c.height-30,EX.W-40,20,'600','#6b7599');
