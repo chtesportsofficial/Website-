@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHT ESP ORG — Paid Tracker</title>
+<link rel="stylesheet" href="theme.css">
+<script src="global.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:var(--g-bg,#0a0d13); --surface:var(--g-surface,#131826); --surface-2:var(--g-surface-2,#171d2d);
+  --line:var(--g-border,#232b3d); --text:var(--g-text,#eef1f7); --dim:var(--g-muted,#8b93a9);
+  --green:#22e08a; --red:#ff5a6e; --gold:#e9c96a;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--text);font-family:Arial,"Noto Sans Bengali",sans-serif}
+button{font-family:inherit;cursor:pointer;color:inherit}
+.app{width:100%;max-width:560px;margin:0 auto;min-height:100vh;padding-bottom:120px}
+.topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg)}
+.icon-btn{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--surface);border:1px solid var(--line);color:var(--text);flex-shrink:0;text-decoration:none}
+.icon-btn svg{width:20px;height:20px}
+.topbar h1{font-size:19px;font-weight:750}
+.empty{padding:90px 24px;text-align:center;color:var(--dim);font-size:14px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="app" id="app" style="display:none">
+  <div class="topbar">
+    <a class="icon-btn" href="index.html" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></a>
+    <h1>PAID TRACKER</h1>
+  </div>
+
+  <!-- Design goes here -->
+  <div class="empty">Paid Tracker — design coming soon.</div>
+</div>
+<div class="empty" id="gate">Checking access…</div>
+<script>
+(async function(){
+  var gate=document.getElementById('gate'), app=document.getElementById('app');
+  function deny(){ gate.innerHTML='Access denied.<br><a href="index.html" style="color:#22e08a;font-weight:800;text-decoration:none">Go back</a>'; }
+  try{
+    var c=window.supabaseClient||window.supabase.createClient('https://myfficbwcbgbxbdqjexv.supabase.co','sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5');
+    var r=await c.auth.getSession(); var s=r&&r.data&&r.data.session;
+    if(!s){ deny(); return; }
+    var pr=await c.from('profiles').select('is_owner').eq('id',s.user.id).maybeSingle();
+    if(pr.data&&pr.data.is_owner){ gate.style.display='none'; app.style.display=''; } else deny();
+  }catch(e){ deny(); }
+})();
+</script>
+</body>
+</html>

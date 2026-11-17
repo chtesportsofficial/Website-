@@ -451,6 +451,7 @@ box-shadow:0 5px 18px rgba(34,224,138,.28);
 .icon-download{background:rgba(34,224,138,.14);color:var(--green)}
 .icon-whatsapp{background:rgba(34,224,138,.14);color:var(--green)}
 .icon-manage{background:rgba(255,208,61,.16);color:#e0a91c}
+.icon-paid{background:rgba(34,224,138,.16);color:#22e08a}
 /* Hide "Download App" when the site is already running inside the installed app.
    Targets the link itself (not the wrap div) so Leaderboard, which sits in
    the same wrap, stays visible in standalone mode. */
@@ -1473,6 +1474,12 @@ html.intro-lock,html.intro-lock body{overflow:hidden !important}
       <span class="item-label">Manage All Tour</span>
       <svg class="item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
     </a>
+
+    <a class="drawer-item" id="paidTrackerLink" href="paid-tracker.html" style="display:none">
+      <span class="item-icon icon-paid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2"/><circle cx="12" cy="12.5" r="2.5"/><path d="M6 10v.01M18 15v.01"/></svg></span>
+      <span class="item-label">PAID TRACKER</span>
+      <svg class="item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </a>
   </nav>
 
   <div class="drawer-download-wrap" id="downloadAppWrap">
@@ -1848,6 +1855,27 @@ if ('serviceWorker' in navigator) {
       setTimeout(show, 4000);
     }
   } catch (e) {}
+})();
+</script>
+<script>
+/* PAID TRACKER menu item — visible to the site owner only (profiles.is_owner).
+   Hidden by default; shown only after the owner check passes. */
+(function(){
+  var link=document.getElementById('paidTrackerLink'); if(!link)return;
+  var URL_='https://myfficbwcbgbxbdqjexv.supabase.co', KEY_='sb_publishable__j8qkCkEOMtdymJnYpfceA_sscwkH_5';
+  function show(v){ link.style.display=v?'':'none'; }
+  async function check(){
+    if(localStorage.getItem('chteo_logged_in')!=='true'){ show(false); return; }
+    try{
+      var c=window.supabaseClient||window.supabase.createClient(URL_,KEY_);
+      var r=await c.auth.getSession(); var s=r&&r.data&&r.data.session;
+      if(!s){ show(false); return; }
+      var pr=await c.from('profiles').select('is_owner').eq('id',s.user.id).maybeSingle();
+      show(!!(pr.data&&pr.data.is_owner));
+    }catch(e){ show(false); }
+  }
+  function start(){ if(!(window.supabaseClient||(window.supabase&&window.supabase.createClient))){ setTimeout(start,250); return; } check(); }
+  start();
 })();
 </script>
 <script src="push.js" defer></script>
