@@ -57,8 +57,8 @@ body.lock{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .chip{min-width:62px;padding:8px 6px;border-radius:9px;border:0;font-size:12px;font-weight:800;background:var(--bg);color:var(--dim)}
 .chip.PAID{background:#14c46a;color:#032312}.chip.DUE{background:var(--yel);color:#2b2300}.chip.LOSS{background:#ff4d4d;color:#fff}.chip.DIS{background:#8b1d1d;color:#fff}
 .mv{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--bg);font-size:14px}
-.ov{position:fixed;inset:0;overscroll-behavior:contain;touch-action:none;background:rgba(0,0,0,.7);z-index:100;display:none;align-items:flex-end;justify-content:center}.ov.show{display:flex}
-.sheet{touch-action:pan-y;overscroll-behavior:contain;width:100%;max-width:560px;background:var(--sf);border-radius:22px 22px 0 0;padding:20px 16px 26px;max-height:92vh;overflow:auto}
+.ov{position:fixed;inset:0;overscroll-behavior:contain;touch-action:none;background:rgba(0,0,0,.78);z-index:2147483000;display:none;align-items:flex-end;justify-content:center}.ov.show{display:flex}
+.sheet{padding-bottom:calc(30px + env(safe-area-inset-bottom,0px))!important;touch-action:pan-y;overscroll-behavior:contain;width:100%;max-width:560px;background:var(--sf);border-radius:22px 22px 0 0;padding:20px 16px 26px;max-height:92vh;overflow:auto}
 .sheet h2{font-size:18px;margin-bottom:14px}
 .lb{font-size:12px;color:var(--dim);font-weight:700;margin:12px 0 6px}
 .in{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:13px;font-size:15px;outline:0}
@@ -67,6 +67,11 @@ body.lock{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .ty{padding:12px 4px;border-radius:12px;background:var(--bg);border:1px solid var(--line);font-weight:800;font-size:14px;text-align:center}
 .ty.on{border-color:var(--green);color:var(--green);background:rgba(34,224,138,.08)}
 .rp{margin-top:10px;font-size:12px;color:var(--dim);line-height:1.6;background:var(--bg);border-radius:12px;padding:10px 12px}
+.bn{width:100%;aspect-ratio:16/7;object-fit:cover;border-radius:14px;display:block;margin-bottom:10px;border:1px solid var(--line)}
+.bnp .bn{margin-bottom:8px}
+.upl{display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border-radius:12px;border:1px dashed var(--line);background:var(--bg);font-size:14px;font-weight:700;color:var(--dim);cursor:pointer}
+.upl input{display:none}
+.cap{font-style:normal;opacity:.7}
 .btns{display:flex;gap:10px;margin-top:18px}
 .bt{flex:1;padding:14px;border-radius:13px;border:1px solid var(--line);background:var(--sf2);font-weight:800;font-size:15px}
 .bt.p{background:var(--green);color:#04170d;border:0}.bt.d{color:var(--red)}
@@ -95,10 +100,10 @@ body.lock{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 
 /* ---------- tournament types / roadmaps ---------- */
 const TYPES={
- '24':{slots:24,road:['Groups A·B','Grand Final'],info:'Group A + B (১২+১২) → Grand Final'},
- '36':{slots:36,road:['Groups A·B·C','Semi','Final'],info:'Group A, B, C → Semi → Final'},
- '48':{slots:48,road:['Groups A–D','Round 2','Round 3','Pro','Semi','Final'],info:'Group A–D → Round 2 → Round 3 → Pro → Semi → Final'},
- 'pro':{slots:12,road:['Pro Final'],info:'শুধু Pro Final (১২ slot)'}
+ '24':{slots:24,road:['Groups A·B','Grand Final'],cap:[24,12],info:'Group A + B (২৪ টিম) → Final (১২ টিম)'},
+ '36':{slots:36,road:['Groups A·B·C','Semi','Final'],cap:[36,12,12],info:'Group A·B·C (৩৬ টিম) → Semi (১২ টিম) → Final (১২ টিম)'},
+ '48':{slots:48,road:['Groups A–D','Semi','Final'],cap:[48,24,12],info:'Group A–D (৪৮ টিম) → Semi (২৪ টিম) → Final (১২ টিম)'},
+ 'pro':{slots:12,road:['Pro Final'],cap:[12],info:'শুধু Pro Final (১২ slot) — পরে ঠিক হবে'}
 };
 const ST=['','PAID','DUE','LOSS','DIS'];
 const KEY='chteo_paid_tracker_v1';
@@ -126,7 +131,7 @@ function home(){
  let h=`<div class="box"><div class="sum"><div class="sc"><small>Collected</small><b class="g">${tk(tc)}</b></div><div class="sc"><small>Total Due</small><b class="y">${tk(td)}</b></div><div class="sc"><small>Profit</small><b class="${tp<0?'r':'g'}">${tk(tp)}</b></div></div></div>`;
  if(!D.ts.length)h+='<div class="empty">কোনো টুর্নামেন্ট নেই।<br>নিচের <b>+ New Tournament</b> চাপুন।</div>';
  D.ts.forEach((t,i)=>{const k=calc(t),n=t.teams.length||1;
-  h+=`<div class="card" data-open="${i}"><div class="ch"><h3>${esc(t.name)}</h3><span class="badge">${t.type==='pro'?'PRO':t.type+' slot'}</span></div>
+  h+=`<div class="card" data-open="${i}">${t.banner?`<img class="bn" src="${t.banner}">`:''}<div class="ch"><h3>${esc(t.name)}</h3><span class="badge">${t.type==='pro'?'PRO':t.type+' slot'}</span></div>
   <div class="subb"><div class="bar"><i style="width:${k.c.PAID/n*100}%;background:#14c46a"></i><i style="width:${k.c.DUE/n*100}%;background:var(--yel)"></i><i style="width:${(k.c.LOSS+k.c.DIS)/n*100}%;background:#ff4d4d"></i></div>
   <div class="mini"><div class="sc"><small>Paid</small><b class="g">${k.c.PAID}</b></div><div class="sc"><small>Due</small><b class="y">${k.c.DUE}</b></div><div class="sc"><small>Loss</small><b class="r">${k.c.LOSS+k.c.DIS}</b></div><div class="sc"><small>Profit</small><b class="${k.cur<0?'r':'g'}">${tk(k.cur)}</b></div></div></div></div>`});
  $('main').innerHTML=h+'<button class="fab" data-new>+ New Tournament</button>';
@@ -136,14 +141,14 @@ function home(){
 function detail(i){
  cur=i;const t=D.ts[i],T=TYPES[t.type],k=calc(t);
  $('top').innerHTML=`<button class="back-btn" type="button" data-home>${BACK}</button><h1>${esc(t.name)}</h1><button class="ib" data-edit>⚙︎</button>`;
- let h=`<div class="box"><div class="stats">
+ let h=`<div class="box">${t.banner?`<img class="bn" src="${t.banner}">`:''}<div class="stats">
  <div class="sc"><small>Total Tk (${t.teams.length}×${t.fee})</small><b>${tk(k.total)}</b></div>
  <div class="sc"><small>Collected (${k.c.PAID} paid)</small><b class="g">${tk(k.coll)}</b></div>
  <div class="sc"><small>Due (${k.c.DUE} team)</small><b class="y">${tk(k.due)}</b></div>
  <div class="sc"><small>Loss (${k.c.LOSS+k.c.DIS} team)</small><b class="r">${tk(k.loss)}</b></div>
  <div class="sc"><small>Prize + Costs</small><b>${tk(k.cost)}</b></div>
  <div class="sc"><small>Current / Est. Profit</small><b class="${k.cur<0?'r':'g'}">${tk(k.cur)}</b><small style="margin-top:2px">Est. ${tk(k.est)}</small></div></div></div>
- <div class="box"><div class="road">${T.road.map((r,j)=>`<button class="st ${j===stage?'on':''}" data-stage="${j}">${r}<em>${t.teams.filter(x=>x.g>=j).length}</em></button>`).join('')}</div>
+ <div class="box"><div class="road">${T.road.map((r,j)=>`<button class="st ${j===stage?'on':''}" data-stage="${j}">${r}<em>${t.teams.filter(x=>x.g>=j).length}/${T.cap[j]}</em></button>`).join('')}</div>
  <div class="tools"><button class="tb ${dueOnly?'on':''}" data-due>${dueOnly?'✓ ':''}Due only</button><button class="tb" data-copy>📋 Copy due list</button></div>`;
  const last=T.road.length-1;
  const list=t.teams.map((x,idx)=>({x,idx})).filter(o=>o.x.g>=stage&&(!dueOnly||o.x.s==='DUE'));
@@ -163,12 +168,13 @@ function detail(i){
 }
 
 /* ---------- sheets ---------- */
-let lockY=0;
+let lockY=0,tmpB='';
 function openSheet(h){$('sheet').innerHTML=h;$('ov').classList.add('show');lockY=window.scrollY;document.body.style.top=-lockY+'px';document.body.classList.add('lock')}
 function closeSheet(){$('ov').classList.remove('show');document.body.classList.remove('lock');document.body.style.top='';window.scrollTo(0,lockY)}
 function form(t){
- const e=!!t;newType=e?t.type:newType;
+ const e=!!t;newType=e?t.type:newType;tmpB=e?(t.banner||''):'';
  return `<h2>${e?'Edit Tournament':'New Tournament'}</h2>
+ <div class="lb">Banner (optional)</div><div class="bnp" id="bnp">${tmpB?`<img class="bn" src="${tmpB}">`:''}</div><label class="upl"><input type="file" accept="image/*" id="fB"><span id="bnl">${tmpB?'🖼 Change banner':'🖼 Add banner'}</span></label>${tmpB?'<button class="bt d" style="margin-top:8px;width:100%;flex:none;padding:10px" data-rmb>Remove banner</button>':''}
  <div class="lb">Name</div><input class="in" id="fN" value="${e?esc(t.name):''}" placeholder="e.g. CHT EXTREME CLASH - S4">
  ${e?'':`<div class="lb">Type</div><div class="types">${Object.keys(TYPES).map(k=>`<button class="ty ${k===newType?'on':''}" data-ty="${k}">${k==='pro'?'PRO':k}</button>`).join('')}</div><div class="rp" id="rp"></div>`}
  <div class="two"><div><div class="lb">Entry fee</div><input class="in" id="fF" type="number" inputmode="numeric" value="${e?t.fee:''}"></div><div><div class="lb">Prizepool</div><input class="in" id="fP" type="number" inputmode="numeric" value="${e?t.prize:''}"></div></div>
@@ -189,8 +195,9 @@ document.addEventListener('click',e=>{
  if(b=q('[data-ty]')){newType=b.dataset.ty;document.querySelectorAll('.ty').forEach(x=>x.classList.toggle('on',x.dataset.ty===newType));return rpShow()}
  if(q('[data-save]')){
   const name=$('fN').value.trim()||'Untitled',v=id=>+$(id).value||0;
-  if(cur===null){const T=TYPES[newType];D.ts.unshift({id:Date.now(),name,type:newType,fee:v('fF'),prize:v('fP'),gfx:v('fG'),live:v('fL'),teams:Array.from({length:T.slots},()=>({n:'',s:'',g:0,pz:''}))});save();closeSheet();stage=0;return detail(0)}
-  Object.assign(D.ts[cur],{name,fee:v('fF'),prize:v('fP'),gfx:v('fG'),live:v('fL')});save();closeSheet();return detail(cur)}
+  if(cur===null){const T=TYPES[newType];D.ts.unshift({id:Date.now(),name,type:newType,fee:v('fF'),prize:v('fP'),gfx:v('fG'),live:v('fL'),banner:tmpB,teams:Array.from({length:T.slots},()=>({n:'',s:'',g:0,pz:''}))});save();closeSheet();stage=0;return detail(0)}
+  Object.assign(D.ts[cur],{banner:tmpB,name,fee:v('fF'),prize:v('fP'),gfx:v('fG'),live:v('fL')});save();closeSheet();return detail(cur)}
+ if(q('[data-rmb]')){tmpB='';$('bnp').innerHTML='';$('bnl').textContent='🖼 Add banner';e.target.remove();return}
  if(q('[data-del]')){if(confirm('এই টুর্নামেন্ট ডিলিট করবেন?')){D.ts.splice(cur,1);save();closeSheet();home()}return}
  if(b=q('[data-stage]')){stage=+b.dataset.stage;return detail(cur)}
  if(q('[data-due]')){dueOnly=!dueOnly;return detail(cur)}
@@ -199,11 +206,13 @@ document.addEventListener('click',e=>{
   const txt=`${t.name} — DUE LIST\n`+(d.map((x,i)=>`${i+1}. ${x.n}`).join('\n')||'No due 🎉')+`\nTotal: ${d.length} team × ${t.fee} = ${tk(d.length*t.fee)}`;
   (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>{b=q('[data-copy]');b.textContent='✓ Copied';setTimeout(()=>detail(cur),1200)}).catch(()=>prompt('Copy:',txt));return}
  if(b=q('[data-cyc]')){const x=D.ts[cur].teams[+b.dataset.cyc];x.s=ST[(ST.indexOf(x.s)+1)%ST.length];save();return detail(cur)}
- if(b=q('[data-up]')){const x=D.ts[cur].teams[+b.dataset.up];x.g=Math.max(x.g,stage+1);save();return detail(cur)}
+ if(b=q('[data-up]')){const t=D.ts[cur],x=t.teams[+b.dataset.up],nx=stage+1,cp=TYPES[t.type].cap[nx];if(cp&&t.teams.filter(y=>y.g>=nx).length>=cp){alert(TYPES[t.type].road[nx]+' এ '+cp+' টিম পূর্ণ।');return}x.g=Math.max(x.g,nx);save();return detail(cur)}
  if(b=q('[data-dn]')){D.ts[cur].teams[+b.dataset.dn].g=stage-1;save();return detail(cur)}
 });
 document.addEventListener('change',e=>{
  const el=e.target;
+ if(el.id==='fB'&&el.files[0]){const f=el.files[0],im=new Image(),u=URL.createObjectURL(f);
+  im.onload=()=>{const w=Math.min(900,im.width),h=im.height*w/im.width,c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(im,0,0,w,h);tmpB=c.toDataURL('image/jpeg',.72);URL.revokeObjectURL(u);$('bnp').innerHTML=`<img class="bn" src="${tmpB}">`;$('bnl').textContent='🖼 Change banner'};im.src=u;return}
  if(el.dataset.nm!==undefined){D.ts[cur].teams[+el.dataset.nm].n=el.value.trim();save()}
  if(el.dataset.pz!==undefined){D.ts[cur].teams[+el.dataset.pz].pz=el.value;save()}
 });
