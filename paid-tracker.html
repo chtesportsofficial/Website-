@@ -33,6 +33,18 @@ body.lock{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .mini{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
 .mini .sc{padding:8px 8px}.mini .sc b{font-size:15px}
 .card:active{filter:brightness(1.12)}
+.card.hc{display:flex;gap:12px;align-items:stretch}
+.card.hc .bn{width:42%;flex:none;margin:0;height:auto;align-self:flex-start}
+.card.hc .rt{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.card.hc .rt .ch h3{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card.hc .mini{grid-template-columns:1fr 1fr;margin-top:0}
+.card.hc .subb{padding:10px;display:flex;flex-direction:column;gap:10px}
+.card.hc .bar{margin:0}
+.row.DIS{background:rgba(255,77,77,.2);border-color:#ff4d4d}
+.row.DIS .nm{color:#ff9aa6}
+select.chip{appearance:none;-webkit-appearance:none;text-align:center;text-align-last:center;padding:8px 4px;min-width:72px;background-image:none;outline:0}
+select.chip option{background:#131826;color:#eef1f7;font-weight:700}
+.mv.adv{background:var(--green);border-color:var(--green);color:#04170d;font-weight:900}
 .ch{display:flex;align-items:center;gap:10px}.ch h3{font-size:16px;flex:1}
 .badge{font-size:11px;font-weight:800;padding:4px 9px;border-radius:99px;background:rgba(59,130,246,.15);color:#7fb0ff}
 .bar{height:8px;border-radius:9px;background:var(--bg);overflow:hidden;display:flex;margin:0}
@@ -57,8 +69,8 @@ body.lock{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .chip{min-width:62px;padding:8px 6px;border-radius:9px;border:0;font-size:12px;font-weight:800;background:var(--bg);color:var(--dim)}
 .chip.PAID{background:#14c46a;color:#032312}.chip.DUE{background:var(--yel);color:#2b2300}.chip.LOSS{background:#ff4d4d;color:#fff}.chip.DIS{background:#8b1d1d;color:#fff}
 .mv{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--bg);font-size:14px}
-.ov{position:fixed;inset:0;overscroll-behavior:contain;touch-action:none;background:rgba(0,0,0,.78);z-index:2147483000;display:none;align-items:flex-end;justify-content:center}.ov.show{display:flex}
-.sheet{padding-bottom:calc(30px + env(safe-area-inset-bottom,0px))!important;touch-action:pan-y;overscroll-behavior:contain;width:100%;max-width:560px;background:var(--sf);border-radius:22px 22px 0 0;padding:20px 16px 26px;max-height:92vh;overflow:auto}
+.ov{position:fixed;inset:0;overscroll-behavior:contain;background:rgba(0,0,0,.78);z-index:2147483000;display:none;align-items:flex-end;justify-content:center}.ov.show{display:flex}
+.sheet{padding-bottom:calc(30px + env(safe-area-inset-bottom,0px))!important;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;width:100%;max-width:560px;background:var(--sf);border-radius:22px 22px 0 0;padding:20px 16px 26px;max-height:92vh;overflow:auto}
 .sheet h2{font-size:18px;margin-bottom:14px}
 .lb{font-size:12px;color:var(--dim);font-weight:700;margin:12px 0 6px}
 .in{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:13px;font-size:15px;outline:0}
@@ -67,7 +79,7 @@ body.lock{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .ty{padding:12px 4px;border-radius:12px;background:var(--bg);border:1px solid var(--line);font-weight:800;font-size:14px;text-align:center}
 .ty.on{border-color:var(--green);color:var(--green);background:rgba(34,224,138,.08)}
 .rp{margin-top:10px;font-size:12px;color:var(--dim);line-height:1.6;background:var(--bg);border-radius:12px;padding:10px 12px}
-.bn{width:100%;aspect-ratio:16/7;object-fit:cover;border-radius:14px;display:block;margin-bottom:10px;border:1px solid var(--line)}
+.bn{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:14px;display:block;margin-bottom:10px;border:1px solid var(--line)}
 .bnp .bn{margin-bottom:8px}
 .upl{display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border-radius:12px;border:1px dashed var(--line);background:var(--bg);font-size:14px;font-weight:700;color:var(--dim);cursor:pointer}
 .upl input{display:none}
@@ -131,9 +143,9 @@ function home(){
  let h=`<div class="box"><div class="sum"><div class="sc"><small>Collected</small><b class="g">${tk(tc)}</b></div><div class="sc"><small>Total Due</small><b class="y">${tk(td)}</b></div><div class="sc"><small>Profit</small><b class="${tp<0?'r':'g'}">${tk(tp)}</b></div></div></div>`;
  if(!D.ts.length)h+='<div class="empty">কোনো টুর্নামেন্ট নেই।<br>নিচের <b>+ New Tournament</b> চাপুন।</div>';
  D.ts.forEach((t,i)=>{const k=calc(t),n=t.teams.length||1;
-  h+=`<div class="card" data-open="${i}">${t.banner?`<img class="bn" src="${t.banner}">`:''}<div class="ch"><h3>${esc(t.name)}</h3><span class="badge">${t.type==='pro'?'PRO':t.type+' slot'}</span></div>
+  h+=`<div class="card${t.banner?' hc':''}" data-open="${i}">${t.banner?`<img class="bn" src="${t.banner}">`:''}<div class="rt"><div class="ch"><h3>${esc(t.name)}</h3><span class="badge">${t.type==='pro'?'PRO':t.type+' slot'}</span></div>
   <div class="subb"><div class="bar"><i style="width:${k.c.PAID/n*100}%;background:#14c46a"></i><i style="width:${k.c.DUE/n*100}%;background:var(--yel)"></i><i style="width:${(k.c.LOSS+k.c.DIS)/n*100}%;background:#ff4d4d"></i></div>
-  <div class="mini"><div class="sc"><small>Paid</small><b class="g">${k.c.PAID}</b></div><div class="sc"><small>Due</small><b class="y">${k.c.DUE}</b></div><div class="sc"><small>Loss</small><b class="r">${k.c.LOSS+k.c.DIS}</b></div><div class="sc"><small>Profit</small><b class="${k.cur<0?'r':'g'}">${tk(k.cur)}</b></div></div></div></div>`});
+  <div class="mini"><div class="sc"><small>Paid</small><b class="g">${k.c.PAID}</b></div><div class="sc"><small>Due</small><b class="y">${k.c.DUE}</b></div><div class="sc"><small>Loss</small><b class="r">${k.c.LOSS+k.c.DIS}</b></div><div class="sc"><small>Profit</small><b class="${k.cur<0?'r':'g'}">${tk(k.cur)}</b></div></div></div></div></div>`});
  $('main').innerHTML=h+'<button class="fab" data-new>+ New Tournament</button>';
 }
 
@@ -158,19 +170,23 @@ function detail(i){
   if(stage===0&&T.road.length&&t.type!=='pro'){const g=Math.floor(o.idx/12);if(g!==lastG){lastG=g;h+=`<div class="gh"><span>GROUP ${String.fromCharCode(65+g)}</span></div>`}}
   else if(stage===0&&lastG<0){lastG=0}
   const x=o.x;
-  h+=`<div class="row"><span class="n">${stage===0?o.idx+1:n+1}</span><input class="nm" data-nm="${o.idx}" value="${esc(x.n)}" placeholder="Team name">
+  const adv=x.g>stage;
+  h+=`<div class="row ${x.s==='DIS'?'DIS':''}"><span class="n">${stage===0?o.idx+1:n+1}</span><input class="nm" data-nm="${o.idx}" value="${esc(x.n)}" placeholder="Team name" enterkeyhint="next">
   ${stage===last&&last>0?`<input class="pz" type="number" inputmode="numeric" data-pz="${o.idx}" value="${x.pz||''}" placeholder="Prize">`:''}
-  <button class="chip ${x.s}" data-cyc="${o.idx}">${x.s||'—'}</button>
+  <select class="chip ${x.s}" data-st="${o.idx}">${ST.map(v=>`<option value="${v}"${v===x.s?' selected':''}>${v||'—'}</option>`).join('')}</select>
   ${stage>0?`<button class="mv" data-dn="${o.idx}" title="Remove from this stage">↓</button>`:''}
-  ${stage<last?`<button class="mv" data-up="${o.idx}" title="Advance">↑</button>`:''}</div>`;
+  ${stage<last?`<button class="mv${adv?' adv':''}" data-up="${o.idx}" title="${adv?'Advanced — tap to undo':'Advance'}">↑</button>`:''}</div>`;
  });
  $('main').innerHTML=h+'</div>';
 }
 
 /* ---------- sheets ---------- */
 let lockY=0,tmpB='';
-function openSheet(h){$('sheet').innerHTML=h;$('ov').classList.add('show');lockY=window.scrollY;document.body.style.top=-lockY+'px';document.body.classList.add('lock')}
-function closeSheet(){$('ov').classList.remove('show');document.body.classList.remove('lock');document.body.style.top='';window.scrollTo(0,lockY)}
+function fitVV(){const v=window.visualViewport,o=$('ov'),sh=$('sheet');if(!v||!o.classList.contains('show'))return;o.style.top=v.offsetTop+'px';o.style.bottom='auto';o.style.height=v.height+'px';sh.style.maxHeight=(v.height-16)+'px'}
+if(window.visualViewport){visualViewport.addEventListener('resize',fitVV);visualViewport.addEventListener('scroll',fitVV)}
+document.addEventListener('focusin',e=>{if(e.target.closest&&e.target.closest('#sheet')&&/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)&&e.target.type!=='file'){setTimeout(()=>{fitVV();e.target.scrollIntoView({block:'center',behavior:'smooth'})},320)}});
+function openSheet(h){$('sheet').innerHTML=h;$('ov').classList.add('show');lockY=window.scrollY;document.body.style.top=-lockY+'px';document.body.classList.add('lock');fitVV()}
+function closeSheet(){$('ov').classList.remove('show');$('ov').style.top=$('ov').style.bottom=$('ov').style.height='';$('sheet').style.maxHeight='';document.body.classList.remove('lock');document.body.style.top='';window.scrollTo(0,lockY)}
 function form(t){
  const e=!!t;newType=e?t.type:newType;tmpB=e?(t.banner||''):'';
  return `<h2>${e?'Edit Tournament':'New Tournament'}</h2>
@@ -205,16 +221,24 @@ document.addEventListener('click',e=>{
   const t=D.ts[cur],d=t.teams.filter(x=>x.s==='DUE'&&x.n);
   const txt=`${t.name} — DUE LIST\n`+(d.map((x,i)=>`${i+1}. ${x.n}`).join('\n')||'No due 🎉')+`\nTotal: ${d.length} team × ${t.fee} = ${tk(d.length*t.fee)}`;
   (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>{b=q('[data-copy]');b.textContent='✓ Copied';setTimeout(()=>detail(cur),1200)}).catch(()=>prompt('Copy:',txt));return}
- if(b=q('[data-cyc]')){const x=D.ts[cur].teams[+b.dataset.cyc];x.s=ST[(ST.indexOf(x.s)+1)%ST.length];save();return detail(cur)}
- if(b=q('[data-up]')){const t=D.ts[cur],x=t.teams[+b.dataset.up],nx=stage+1,cp=TYPES[t.type].cap[nx];if(cp&&t.teams.filter(y=>y.g>=nx).length>=cp){alert(TYPES[t.type].road[nx]+' এ '+cp+' টিম পূর্ণ।');return}x.g=Math.max(x.g,nx);save();return detail(cur)}
+  if(b=q('[data-up]')){const t=D.ts[cur],x=t.teams[+b.dataset.up],nx=stage+1,cp=TYPES[t.type].cap[nx];if(x.g>stage){x.g=stage;save();return detail(cur)}if(cp&&t.teams.filter(y=>y.g>=nx).length>=cp){alert(TYPES[t.type].road[nx]+' এ '+cp+' টিম পূর্ণ।');return}x.g=Math.max(x.g,nx);save();return detail(cur)}
  if(b=q('[data-dn]')){D.ts[cur].teams[+b.dataset.dn].g=stage-1;save();return detail(cur)}
 });
 document.addEventListener('change',e=>{
  const el=e.target;
  if(el.id==='fB'&&el.files[0]){const f=el.files[0],im=new Image(),u=URL.createObjectURL(f);
   im.onload=()=>{const w=Math.min(900,im.width),h=im.height*w/im.width,c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(im,0,0,w,h);tmpB=c.toDataURL('image/jpeg',.72);URL.revokeObjectURL(u);$('bnp').innerHTML=`<img class="bn" src="${tmpB}">`;$('bnl').textContent='🖼 Change banner'};im.src=u;return}
+ if(el.dataset.st!==undefined){D.ts[cur].teams[+el.dataset.st].s=el.value;save();return detail(cur)}
  if(el.dataset.nm!==undefined){D.ts[cur].teams[+el.dataset.nm].n=el.value.trim();save()}
  if(el.dataset.pz!==undefined){D.ts[cur].teams[+el.dataset.pz].pz=el.value;save()}
+});
+document.addEventListener('keydown',e=>{
+ const el=e.target;
+ if(e.key==='Enter'&&el.classList&&el.classList.contains('nm')){
+  e.preventDefault();const all=[...document.querySelectorAll('input.nm')],i=all.indexOf(el);
+  el.dispatchEvent(new Event('change',{bubbles:true}));
+  const nx=all[i+1];if(nx){nx.focus();nx.select&&nx.select()}else el.blur();
+ }
 });
 </script>
 </body>
