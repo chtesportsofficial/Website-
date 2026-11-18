@@ -3,51 +3,62 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a0d13">
 <title>CHT ESP ORG — Paid Tracker</title>
 <link rel="stylesheet" href="theme.css">
 <script src="global.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{--bg:var(--g-bg,#0a0d13);--sf:var(--g-surface,#131826);--sf2:var(--g-surface-2,#171d2d);--line:var(--g-border,#232b3d);--tx:var(--g-text,#eef1f7);--dim:var(--g-muted,#8b93a9);--green:#22e08a;--red:#ff5a6e;--yel:#ffd93d;--blue:#3b82f6;--gold:#e9c96a}
+:root{--bg:var(--g-bg,#0a0d13);--sf:var(--g-surface,#131826);--sf2:var(--g-surface-2,#171d2d);--line:var(--g-border,#232b3d);--tx:var(--g-text,#eef1f7);--dim:var(--g-muted,#8b93a9);--green:#22e08a;--red:#ff5a6e;--yel:#ffd93d;--blue:#3b82f6;--gold:#e9c96a;--card:var(--sf);--border:var(--line);--text:var(--tx)}
+html{background:var(--bg)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{background:var(--bg);color:var(--tx);font-family:Arial,"Noto Sans Bengali",sans-serif}
 button,input,select{font-family:inherit;color:inherit}button{cursor:pointer}
-.app{max-width:560px;margin:0 auto;min-height:100vh;padding-bottom:110px}
-.top{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg)}
+.app{max-width:560px;margin:0 auto;min-height:100vh;padding-bottom:190px}
+body.lock{position:fixed;left:0;right:0;width:100%;overflow:hidden}
+.top{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg);border:0;box-shadow:none}
+.back-btn{width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.back-btn svg{width:20px;height:20px}
+.header h1,.topbar h1{font-size:19px;font-weight:750}
 .ib{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--sf);border:1px solid var(--line);flex-shrink:0;text-decoration:none;color:var(--tx)}
 .ib svg{width:20px;height:20px}.top h1{font-size:19px;font-weight:750;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .empty,.gate{padding:80px 24px;text-align:center;color:var(--dim);font-size:14px;line-height:1.7}
-.sum{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 16px 12px}
-.sc{background:var(--sf);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.box{margin:0 16px 14px;background:var(--sf);border:1px solid var(--line);border-radius:20px;padding:10px;box-shadow:0 6px 22px rgba(0,0,0,.35)}
+.sum{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.sc{background:var(--sf2);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
 .sc small{display:block;color:var(--dim);font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}.sc b{font-size:18px}
 .g{color:var(--green)}.r{color:var(--red)}.y{color:var(--yel)}
-.card{margin:0 16px 12px;background:var(--sf);border:1px solid var(--line);border-radius:18px;padding:14px;cursor:pointer}
-.card:active{background:var(--sf2)}
+.card{margin:0 16px 14px;background:var(--sf);border:1px solid var(--line);border-radius:20px;padding:12px;cursor:pointer;box-shadow:0 6px 22px rgba(0,0,0,.35)}
+.card .ch{padding:2px 4px 10px}
+.mini{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.mini .sc{padding:8px 8px}.mini .sc b{font-size:15px}
+.card:active{filter:brightness(1.12)}
 .ch{display:flex;align-items:center;gap:10px}.ch h3{font-size:16px;flex:1}
 .badge{font-size:11px;font-weight:800;padding:4px 9px;border-radius:99px;background:rgba(59,130,246,.15);color:#7fb0ff}
-.bar{height:7px;border-radius:9px;background:var(--sf2);margin:12px 0 9px;overflow:hidden;display:flex}
+.bar{height:8px;border-radius:9px;background:var(--bg);overflow:hidden;display:flex;margin:0}
+.subb{background:var(--sf2);border:1px solid var(--line);border-radius:14px;padding:12px}
 .bar i{display:block;height:100%}
 .meta{display:flex;gap:14px;font-size:12px;color:var(--dim);flex-wrap:wrap}.meta b{color:var(--tx)}
-.fab{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--green);color:#04170d;border:0;font-weight:800;font-size:15px;padding:15px 28px;border-radius:99px;box-shadow:0 8px 30px rgba(34,224,138,.35);z-index:50}
-.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px 12px}
+.fab{position:fixed;bottom:calc(96px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--green);color:#04170d;border:0;font-weight:800;font-size:15px;padding:15px 28px;border-radius:99px;box-shadow:0 8px 30px rgba(34,224,138,.35);z-index:50}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .stats .sc b{font-size:19px}
-.road{display:flex;gap:6px;overflow-x:auto;padding:2px 16px 12px;scrollbar-width:none}
+.road{display:flex;gap:6px;overflow-x:auto;padding:0 0 10px;scrollbar-width:none}
 .road::-webkit-scrollbar{display:none}
-.st{flex-shrink:0;padding:9px 14px;border-radius:12px;background:var(--sf);border:1px solid var(--line);font-size:13px;font-weight:700;color:var(--dim)}
+.st{flex-shrink:0;padding:9px 14px;border-radius:12px;background:var(--sf2);border:1px solid var(--line);font-size:13px;font-weight:700;color:var(--dim)}
 .st.on{background:var(--blue);border-color:var(--blue);color:#fff}.st em{font-style:normal;opacity:.7;font-weight:600;margin-left:5px}
-.tools{display:flex;gap:8px;padding:0 16px 10px}
-.tb{flex:1;padding:10px;border-radius:12px;background:var(--sf);border:1px solid var(--line);font-size:13px;font-weight:700}
+.tools{display:flex;gap:8px;padding:0 0 8px}
+.tb{flex:1;padding:10px;border-radius:12px;background:var(--sf2);border:1px solid var(--line);font-size:13px;font-weight:700}
 .tb.on{border-color:var(--yel);color:var(--yel)}
-.gh{margin:12px 16px 6px;font-size:12px;font-weight:800;letter-spacing:.6px;color:var(--cyan,#21e6c1);display:flex;justify-content:space-between}
-.row{display:flex;align-items:center;gap:8px;margin:0 16px 6px;background:var(--sf);border:1px solid var(--line);border-radius:12px;padding:6px 6px 6px 10px}
+.gh{margin:12px 2px 6px;font-size:12px;font-weight:800;letter-spacing:.6px;color:var(--cyan,#21e6c1);display:flex;justify-content:space-between}
+.row{display:flex;align-items:center;gap:8px;margin:0 0 6px;background:var(--sf2);border:1px solid var(--line);border-radius:12px;padding:6px 6px 6px 10px}
 .row .n{width:22px;font-size:12px;color:var(--dim);font-weight:700}
 .row input.nm{flex:1;min-width:0;background:transparent;border:0;outline:0;font-size:14px;font-weight:600}
-.row input.pz{width:62px;background:var(--sf2);border:1px solid var(--line);border-radius:8px;padding:7px;font-size:13px;text-align:center}
-.chip{min-width:62px;padding:8px 6px;border-radius:9px;border:0;font-size:12px;font-weight:800;background:var(--sf2);color:var(--dim)}
+.row input.pz{width:62px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px;font-size:13px;text-align:center}
+.chip{min-width:62px;padding:8px 6px;border-radius:9px;border:0;font-size:12px;font-weight:800;background:var(--bg);color:var(--dim)}
 .chip.PAID{background:#14c46a;color:#032312}.chip.DUE{background:var(--yel);color:#2b2300}.chip.LOSS{background:#ff4d4d;color:#fff}.chip.DIS{background:#8b1d1d;color:#fff}
-.mv{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--sf2);font-size:14px}
-.ov{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:none;align-items:flex-end;justify-content:center}.ov.show{display:flex}
-.sheet{width:100%;max-width:560px;background:var(--sf);border-radius:22px 22px 0 0;padding:20px 16px 26px;max-height:92vh;overflow:auto}
+.mv{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--bg);font-size:14px}
+.ov{position:fixed;inset:0;overscroll-behavior:contain;touch-action:none;background:rgba(0,0,0,.7);z-index:100;display:none;align-items:flex-end;justify-content:center}.ov.show{display:flex}
+.sheet{touch-action:pan-y;overscroll-behavior:contain;width:100%;max-width:560px;background:var(--sf);border-radius:22px 22px 0 0;padding:20px 16px 26px;max-height:92vh;overflow:auto}
 .sheet h2{font-size:18px;margin-bottom:14px}
 .lb{font-size:12px;color:var(--dim);font-weight:700;margin:12px 0 6px}
 .in{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:13px;font-size:15px;outline:0}
@@ -64,7 +75,7 @@ button,input,select{font-family:inherit;color:inherit}button{cursor:pointer}
 <body>
 <div class="gate" id="gate">Checking access…</div>
 <div class="app" id="app" style="display:none">
-  <div class="top" id="top"></div>
+  <div class="top topbar header" id="top"></div>
   <div id="main"></div>
 </div>
 <div class="ov" id="ov"><div class="sheet" id="sheet"></div></div>
@@ -92,6 +103,7 @@ const TYPES={
 const ST=['','PAID','DUE','LOSS','DIS'];
 const KEY='chteo_paid_tracker_v1';
 let D={ts:[]},cur=null,stage=0,dueOnly=false,newType='48';
+const BACK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>';
 const $=id=>document.getElementById(id);
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -109,29 +121,29 @@ function calc(t){
 /* ---------- home ---------- */
 function home(){
  cur=null;
- $('top').innerHTML='<a class="ib" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></a><h1>PAID TRACKER</h1>';
+ $('top').innerHTML='<button class="back-btn" type="button" onclick="history.back()">'+BACK+'</button><h1>PAID TRACKER</h1>';
  let tc=0,td=0,tp=0;D.ts.forEach(t=>{const k=calc(t);tc+=k.coll;td+=k.due;tp+=k.cur});
- let h=`<div class="sum"><div class="sc"><small>Collected</small><b class="g">${tk(tc)}</b></div><div class="sc"><small>Total Due</small><b class="y">${tk(td)}</b></div><div class="sc"><small>Profit</small><b class="${tp<0?'r':'g'}">${tk(tp)}</b></div></div>`;
+ let h=`<div class="box"><div class="sum"><div class="sc"><small>Collected</small><b class="g">${tk(tc)}</b></div><div class="sc"><small>Total Due</small><b class="y">${tk(td)}</b></div><div class="sc"><small>Profit</small><b class="${tp<0?'r':'g'}">${tk(tp)}</b></div></div></div>`;
  if(!D.ts.length)h+='<div class="empty">কোনো টুর্নামেন্ট নেই।<br>নিচের <b>+ New Tournament</b> চাপুন।</div>';
  D.ts.forEach((t,i)=>{const k=calc(t),n=t.teams.length||1;
   h+=`<div class="card" data-open="${i}"><div class="ch"><h3>${esc(t.name)}</h3><span class="badge">${t.type==='pro'?'PRO':t.type+' slot'}</span></div>
-  <div class="bar"><i style="width:${k.c.PAID/n*100}%;background:#14c46a"></i><i style="width:${k.c.DUE/n*100}%;background:var(--yel)"></i><i style="width:${(k.c.LOSS+k.c.DIS)/n*100}%;background:#ff4d4d"></i></div>
-  <div class="meta"><span>Paid <b class="g">${k.c.PAID}</b></span><span>Due <b class="y">${k.c.DUE}</b></span><span>Loss <b class="r">${k.c.LOSS+k.c.DIS}</b></span><span style="margin-left:auto">Profit <b class="${k.cur<0?'r':'g'}">${tk(k.cur)}</b></span></div></div>`});
+  <div class="subb"><div class="bar"><i style="width:${k.c.PAID/n*100}%;background:#14c46a"></i><i style="width:${k.c.DUE/n*100}%;background:var(--yel)"></i><i style="width:${(k.c.LOSS+k.c.DIS)/n*100}%;background:#ff4d4d"></i></div>
+  <div class="mini"><div class="sc"><small>Paid</small><b class="g">${k.c.PAID}</b></div><div class="sc"><small>Due</small><b class="y">${k.c.DUE}</b></div><div class="sc"><small>Loss</small><b class="r">${k.c.LOSS+k.c.DIS}</b></div><div class="sc"><small>Profit</small><b class="${k.cur<0?'r':'g'}">${tk(k.cur)}</b></div></div></div></div>`});
  $('main').innerHTML=h+'<button class="fab" data-new>+ New Tournament</button>';
 }
 
 /* ---------- detail ---------- */
 function detail(i){
  cur=i;const t=D.ts[i],T=TYPES[t.type],k=calc(t);
- $('top').innerHTML=`<button class="ib" data-home><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button><h1>${esc(t.name)}</h1><button class="ib" data-edit>⚙︎</button>`;
- let h=`<div class="stats">
+ $('top').innerHTML=`<button class="back-btn" type="button" data-home>${BACK}</button><h1>${esc(t.name)}</h1><button class="ib" data-edit>⚙︎</button>`;
+ let h=`<div class="box"><div class="stats">
  <div class="sc"><small>Total Tk (${t.teams.length}×${t.fee})</small><b>${tk(k.total)}</b></div>
  <div class="sc"><small>Collected (${k.c.PAID} paid)</small><b class="g">${tk(k.coll)}</b></div>
  <div class="sc"><small>Due (${k.c.DUE} team)</small><b class="y">${tk(k.due)}</b></div>
  <div class="sc"><small>Loss (${k.c.LOSS+k.c.DIS} team)</small><b class="r">${tk(k.loss)}</b></div>
  <div class="sc"><small>Prize + Costs</small><b>${tk(k.cost)}</b></div>
- <div class="sc"><small>Current / Est. Profit</small><b class="${k.cur<0?'r':'g'}">${tk(k.cur)}</b><small style="margin-top:2px">Est. ${tk(k.est)}</small></div></div>
- <div class="road">${T.road.map((r,j)=>`<button class="st ${j===stage?'on':''}" data-stage="${j}">${r}<em>${t.teams.filter(x=>x.g>=j).length}</em></button>`).join('')}</div>
+ <div class="sc"><small>Current / Est. Profit</small><b class="${k.cur<0?'r':'g'}">${tk(k.cur)}</b><small style="margin-top:2px">Est. ${tk(k.est)}</small></div></div></div>
+ <div class="box"><div class="road">${T.road.map((r,j)=>`<button class="st ${j===stage?'on':''}" data-stage="${j}">${r}<em>${t.teams.filter(x=>x.g>=j).length}</em></button>`).join('')}</div>
  <div class="tools"><button class="tb ${dueOnly?'on':''}" data-due>${dueOnly?'✓ ':''}Due only</button><button class="tb" data-copy>📋 Copy due list</button></div>`;
  const last=T.road.length-1;
  const list=t.teams.map((x,idx)=>({x,idx})).filter(o=>o.x.g>=stage&&(!dueOnly||o.x.s==='DUE'));
@@ -147,12 +159,13 @@ function detail(i){
   ${stage>0?`<button class="mv" data-dn="${o.idx}" title="Remove from this stage">↓</button>`:''}
   ${stage<last?`<button class="mv" data-up="${o.idx}" title="Advance">↑</button>`:''}</div>`;
  });
- $('main').innerHTML=h;
+ $('main').innerHTML=h+'</div>';
 }
 
 /* ---------- sheets ---------- */
-function openSheet(h){$('sheet').innerHTML=h;$('ov').classList.add('show')}
-function closeSheet(){$('ov').classList.remove('show')}
+let lockY=0;
+function openSheet(h){$('sheet').innerHTML=h;$('ov').classList.add('show');lockY=window.scrollY;document.body.style.top=-lockY+'px';document.body.classList.add('lock')}
+function closeSheet(){$('ov').classList.remove('show');document.body.classList.remove('lock');document.body.style.top='';window.scrollTo(0,lockY)}
 function form(t){
  const e=!!t;newType=e?t.type:newType;
  return `<h2>${e?'Edit Tournament':'New Tournament'}</h2>
