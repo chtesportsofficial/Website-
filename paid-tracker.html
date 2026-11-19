@@ -213,28 +213,33 @@ const fk=(R,stg,g)=>(R[stg].id||stg)+'|'+g;
 function stageAll(t,stg){const grouped=stg===gs(t)&&t.type!=='pro';let all=t.teams.map((x,idx)=>({x,idx})).filter(o=>inStage(o.x,stg));
  if(grouped){const byG={};all.forEach(o=>{(byG[gx(o)]=byG[gx(o)]||[]).push(o)});all=Object.keys(byG).sort((a,b)=>a-b).flatMap(g=>orderList(t,stg,byG[g]))}else all=orderList(t,stg,all);return {all,grouped}}
 const CHK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
-const isFin=(t,R,stg,g)=>!!(t.fin&&t.fin[fk(R,stg,g)]);
+const isFin=(t,R,stg,g)=>finOk(t,R,stg,g);
 const tickH=(t,R,g)=>`<button type="button" class="tick${isFin(t,R,stage,g)?' done':''}" data-fin="${g}" aria-label="Match শেষ">${CHK}</button>`;
 const tickT=(t,R)=>`<button type="button" class="tb tkb${isFin(t,R,stage,0)?' done':''}" data-fin="0"><span class="tick">${CHK}</span>Match শেষ</button>`;
 function pickRule(rl,rank){let rest=null;for(const r of rl){if(r.k==='rest'){rest=r;continue}if(r.k==='top'?rank<=r.n:(rank>=r.a&&rank<=(r.b||r.a)))return r}return rest}
 function addAt(t){const R=getRoad(t),g0=gs(t);let def=R.length-1;for(let i=R.length-1;i>=g0;i--){if(!/semi|final/i.test(R[i].n)){def=i;break}}return def+1}
-function finish(g){
- const t=D.ts[cur],R=getRoad(t),last=isFinal(R,stage),rl=R[stage].rl||[];
- if(!last&&stage===R.length-1){alert('এটা শেষ রাউন্ড — আগে Final রাউন্ড যোগ করুন।');return}
- const {all,grouped}=stageAll(t,stage),mem=all.filter(o=>!grouped||gx(o)===g),key=fk(R,stage,g);t.fin=t.fin||{};
- const tgs=last?[]:[...new Set(rl.map(r=>R.findIndex(z=>z.id&&z.id===r.to)).filter(j=>j>stage))];
- if(last?!rl.some(r=>+r.pz>0):!tgs.length){alert(last?'আগে এই রাউন্ডে ডাবল ট্যাপ করে Prize rules দিন।':'আগে এই রাউন্ডে ডাবল ট্যাপ করে Qualify rules দিন।');return renSheet('stage',stage)}
- if(t.fin[key]){return askC('Match শেষ undo করবেন? কোয়ালিফাই করা টিমগুলো আবার শুধু এই রাউন্ডে থাকবে।',()=>{
-  if(last)mem.forEach(o=>{o.x.pz=''});else mem.forEach(o=>{const x=o.x;x.m=mOf(x).filter(v=>!tgs.includes(v));if(!x.m.length)x.m=[stage]});
-  (Array.isArray(t.fin[key])?t.fin[key]:[]).forEach(i=>{const x=t.teams[i];if(x&&x.s==='DIS')x.s='DUE'});
-  delete t.fin[key];save();closeSheet();detail(cur)},'Yes, undo','p')}
- const full=[],dis=[];
+function finMem(t,stg,g){const {all,grouped}=stageAll(t,stg);return all.filter(o=>!grouped||gx(o)===g)}
+const finTg=(R,stg)=>[...new Set((R[stg].rl||[]).map(r=>R.findIndex(z=>z.id&&z.id===r.to)).filter(j=>j>stg))];
+function finOk(t,R,stg,g){if(!(t.fin&&t.fin[fk(R,stg,g)]))return false;if(isFinal(R,stg))return true;
+ return finMem(t,stg,g).every((o,n)=>{const j=ruleFor(R,stg,n+1);return j<=stg||inStage(o.x,j)})}
+function finUndo(t,R,stg,g){const key=fk(R,stg,g),tgs=finTg(R,stg),mem=finMem(t,stg,g);
+ if(isFinal(R,stg))mem.forEach(o=>{o.x.pz=''});else mem.forEach(o=>{const x=o.x;x.m=mOf(x).filter(v=>!tgs.includes(v));if(!x.m.length)x.m=[stg]});
+ (Array.isArray(t.fin[key])?t.fin[key]:[]).forEach(i=>{const x=t.teams[i];if(x&&x.s==='DIS')x.s='DUE'});delete t.fin[key]}
+function finApply(t,R,stg,g){const key=fk(R,stg,g),rl=R[stg].rl||[],last=isFinal(R,stg),mem=finMem(t,stg,g),full=[],dis=[];t.fin=t.fin||{};
+ (Array.isArray(t.fin[key])?t.fin[key]:[]).forEach(i=>{const x=t.teams[i];if(x&&x.s==='DIS')x.s='DUE'});
  mem.forEach((o,n)=>{const rank=n+1,x=o.x;
   if(last){const r=pickRule(rl,rank);if(r&&+r.pz>0)x.pz=String(r.pz);return}
-  const j=ruleFor(R,stage,rank);
-  if(j>stage){if(inStage(x,j))return;const cp=R[j].cap;if(cp&&t.teams.filter(y=>inStage(y,j)).length>=cp){full.push(R[j].n);return}x.m=[...mOf(x),j].sort((a,b)=>a-b)}
+  const j=ruleFor(R,stg,rank);
+  if(j>stg){if(inStage(x,j))return;const cp=R[j].cap;if(cp&&t.teams.filter(y=>inStage(y,j)).length>=cp){full.push(R[j].n);return}x.m=[...mOf(x),j].sort((a,b)=>a-b)}
   else if(x.s==='DUE'){x.s='DIS';dis.push(o.idx)}});
- t.fin[key]=dis;save();detail(cur);if(full.length)alert([...new Set(full)].join(', ')+' পূর্ণ — কিছু টিম যায়নি।')}
+ t.fin[key]=dis;return full}
+function finish(g){
+ const t=D.ts[cur],R=getRoad(t),last=isFinal(R,stage);
+ if(!last&&stage===R.length-1){alert('এটা শেষ রাউন্ড — আগে Final রাউন্ড যোগ করুন।');return}
+ if(last?!(R[stage].rl||[]).some(r=>+r.pz>0):!finTg(R,stage).length){alert(last?'আগে এই রাউন্ডে ডাবল ট্যাপ করে Prize rules দিন।':'আগে এই রাউন্ডে ডাবল ট্যাপ করে Qualify rules দিন।');return renSheet('stage',stage)}
+ t.fin=t.fin||{};
+ if(finOk(t,R,stage,g))return askC('Match শেষ undo করবেন? কোয়ালিফাই করা টিমগুলো আবার শুধু এই রাউন্ডে থাকবে।',()=>{finUndo(t,R,stage,g);save();closeSheet();detail(cur)},'Yes, undo','p');
+ const full=finApply(t,R,stage,g);save();detail(cur);if(full.length)alert([...new Set(full)].join(', ')+' পূর্ণ — কিছু টিম যায়নি।')}
 function ruleFor(R,stg,rank){const r=pickRule(R[stg].rl||[],rank);if(!r)return -1;const j=R.findIndex(z=>z.id&&z.id===r.to);return j>stg?j:-1}
 function addProStage(t){const np=t.teams.filter(x=>x.p).length,R=matRoad(t);R.unshift({n:'PRO',cap:np,pro:1,id:uid()});t.road=R;shiftM(t,0,1);t.teams.forEach(x=>{if(x.p)x.m=[0]});shiftOrd(t,1,0)}
 function dropProStage(t){const R=matRoad(t);if(!(R[0]&&R[0].pro))return;R.shift();t.road=R;t.teams.forEach(x=>{x.m=mOf(x).filter(v=>v>0).map(v=>v-1);if(!x.m.length)x.m=[0]});shiftOrd(t,-1,0)}
@@ -311,14 +316,14 @@ function detail(i){
  const list=all.filter(o=>!dueOnly||o.x.s==='DUE'||o.x.s==='DIS');
  if(!list.length)h+='<div class="empty" style="padding:40px 24px">এখানে কোনো টিম নেই</div>';
  const rlz=R[stage].rl||[],tgs=[...new Set(rlz.map(r=>R.findIndex(z=>z.id&&z.id===r.to)).filter(j=>j>stage))],tot={};all.forEach(o=>{const g=grouped?gx(o):0;tot[g]=(tot[g]||0)+1});
- let lastG=-1;
+ const fm={};let lastG=-1;
  list.forEach((o)=>{
   const g=grouped?gx(o):0;
   if(grouped&&g!==lastG){lastG=g;const gm=all.filter(z=>gx(z)===g),cl=col.has(g),cnt=st=>gm.filter(z=>st==='DUE'?(z.x.s==='DUE'||z.x.s==='DIS'):z.x.s===st).length,pd=cnt('PAID'),du=cnt('DUE'),ls=cnt('LOSS');
    const parts=[pd?`<span class="g">${pd} paid</span>`:'',du?`<span class="y">${du} due</span>`:'',ls?`<span class="r">${ls} loss</span>`:''].filter(Boolean).join(' · ');
    h+=`<div class="gh${cl?' cl':''}${g<0?' pro':''}" data-gt="${g}" title="Double tap to rename"><span class="gt"><span>${esc(gname(t,g))}</span>${tickH(t,R,g)}${parts?`<small>${parts}</small>`:''}</span><span class="cv">▾</span></div>`}
   if(grouped&&col.has(g))return;
-  const x=o.x, adv=tgs.length?tgs.some(j=>inStage(x,j)):mOf(x).some(v=>v>stage), rj=tgs.length?ruleFor(R,stage,posOf.get(o.idx),tot[g]):-1, lj=tgs.length?(adv?tgs.find(j=>inStage(x,j)):rj):-1, rq=(stage<last&&isFin(t,R,stage,g))?(ruleFor(R,stage,posOf.get(o.idx))>stage?' qd':' dq'):'';
+  const x=o.x, adv=tgs.length?tgs.some(j=>inStage(x,j)):mOf(x).some(v=>v>stage), rj=tgs.length?ruleFor(R,stage,posOf.get(o.idx),tot[g]):-1, lj=tgs.length?(adv?tgs.find(j=>inStage(x,j)):rj):-1, rq=(stage<last&&(fm[g]===undefined?(fm[g]=isFin(t,R,stage,g)):fm[g]))?(ruleFor(R,stage,posOf.get(o.idx))>stage?' qd':' dq'):'';
   h+=`<div class="row ${x.s==='DIS'?'DIS':''}${rq}" data-idx="${o.idx}" data-g="${g}"><span class="n" data-hd title="Hold &amp; drag to reorder">${posOf.get(o.idx)}${dueOnly?'':'<i>⋮⋮</i>'}</span><input class="nm" data-nm="${o.idx}" value="${esc(x.n)}" placeholder="Team name" enterkeyhint="next">
   ${(stage===last&&last>0&&/final/i.test(R[stage].n))?`<input class="pz" type="number" inputmode="numeric" data-pz="${o.idx}" value="${x.pz||''}" placeholder="Prize">`:''}
   <button type="button" class="chip ${x.s}" data-stb="${o.idx}">${x.s||'—'} ▾</button>
@@ -490,7 +495,7 @@ function renSave(){
  const t=D.ts[cur],nm=$('rnN').value.trim();
  if(ren.kind==='stage'){const R=mat(t);
   if(ren.i<R.length-1||isFinal(R,ren.i)){const last=isFinal(R,ren.i),rl=[];for(const x of rtmp){const ok=x.k==='rest'||(x.k==='rng'?x.a>0:x.n>0),tgt=last?x.pz>0:(!!x.to&&R.some(z=>z.id===x.to));if(!ok&&!tgt)continue;if(!ok||!tgt){alert(last?'Rule এ র‍্যাঙ্ক ও prize — দুটোই দিন।':'Rule এ র‍্যাঙ্ক ও কোন রাউন্ডে যাবে — দুটোই দিন।');return}
-   const o=last?{pz:x.pz}:{to:x.to};rl.push(x.k==='rest'?{k:'rest',...o}:x.k==='rng'?{k:'rng',a:x.a,b:Math.max(x.b||x.a,x.a),...o}:{k:'top',n:x.n,...o})}R[ren.i].rl=rl.length?rl:undefined}
+   const o=last?{pz:x.pz}:{to:x.to};rl.push(x.k==='rest'?{k:'rest',...o}:x.k==='rng'?{k:'rng',a:x.a,b:Math.max(x.b||x.a,x.a),...o}:{k:'top',n:x.n,...o})}const fk0=String(R[ren.i].id||ren.i),fg=Object.keys(t.fin||{}).filter(k=>k.split('|')[0]===fk0).map(k=>+k.split('|')[1]);fg.forEach(g=>finUndo(t,R,ren.i,g));R[ren.i].rl=rl.length?rl:undefined;fg.forEach(g=>finApply(t,R,ren.i,g))}
   if(nm)R[ren.i].n=nm;if(ren.i>gs(t)){const g=Math.floor(+$('rnC').value||0);R[ren.i].cap=g>0?g*12:0}}
  else{t.gn=t.gn||{};if(nm&&nm!==gdef(ren.i))t.gn[ren.i]=nm;else delete t.gn[ren.i]}
  save();closeSheet();detail(cur);
