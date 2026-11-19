@@ -146,6 +146,14 @@ body.dragging{overflow:hidden;touch-action:none;user-select:none;-webkit-user-se
 .rl1{display:flex;gap:8px;align-items:center}.rl1 .seg{flex:1}.rl1 .seg button{padding:8px 4px}.rl1 .x{flex:none;width:38px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--sf2);color:var(--red)}
 .rl2{display:flex;align-items:center;gap:8px;margin-top:8px}.rin{display:flex;align-items:center;gap:6px;flex:none}.rin .in{width:60px;padding:10px 4px;text-align:center}.rin span{color:var(--dim);font-weight:800}.rin em{font-style:normal;font-size:12px;font-weight:800;color:var(--dim);padding:0 4px}
 .arr{color:var(--dim);font-weight:900}
+.rlh{flex:1;font-weight:800;color:var(--dim);font-size:13px}
+.rln{display:flex;align-items:center;gap:10px;padding:8px 10px;margin-top:8px;border:1px solid var(--line);border-radius:12px;background:var(--sf2);opacity:.4}
+.rln>span{font-weight:800;width:44px;color:var(--dim)}
+.rln.on{opacity:1;border-color:var(--green);background:rgba(34,224,138,.08)}.rln.on>span{color:var(--green)}
+.rln:not(.on) .rin{pointer-events:none}
+.rl2 .tp{flex:1}
+.pzn{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-weight:800;color:var(--dim)}.pzn .in{width:70px;text-align:center}
+.pzr{display:flex;align-items:center;gap:10px;margin-bottom:8px}.pzr b{width:38px;color:var(--yel)}
 .tp{flex:1;min-width:0;padding:11px 12px;border-radius:12px;border:1px solid var(--blue);background:rgba(59,130,246,.14);color:#9cc3ff;font-weight:800;font-size:13px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tp.e{border:1px dashed var(--line);color:var(--dim);background:var(--bg)}
 .pzw{flex:1;display:flex;align-items:center;gap:6px;color:var(--yel);font-weight:900}.pzw .in{padding:10px;text-align:left}
@@ -481,11 +489,15 @@ function dbl(k){const n=Date.now(),is=lastTap.k===k&&n-lastTap.t<400;lastTap={k,
 function mat(t){t.road=matRoad(t);return t.road}
 let rtmp=[];
 let rdr=[],drTouched=false;
+function pzRows(arr){return arr.map((r,i)=>`<div class="pzr" data-ri="${i}"><b>#${i+1}</b><div class="pzw">৳<input class="in" type="number" inputmode="numeric" data-rf="pz" placeholder="Prize" value="${r.pz||''}"></div></div>`).join('')}
+function normFinal(arr){if(!arr.length||arr.every(r=>r.k==='rng'&&r.a>0&&r.a===r.b))return;let M=0;arr.forEach(r=>{M=Math.max(M,r.k==='top'?(+r.n||0):(+r.b||+r.a||0))});M=Math.min(M,100);const o=[];for(let k=1;k<=M;k++){const r=pickRule(arr,k);o.push({k:'rng',a:k,b:k,pz:(r&&r.pz)||''})}arr.splice(0,arr.length,...o)}
 function rulesHtml(t,stg,arr=rtmp){const R=getRoad(t),last=isFinal(R,stg);
- return arr.map((r,i)=>{const tg=R.find(z=>z.id&&z.id===r.to);
- return `<div class="rl" data-ri="${i}"><div class="rl1"><div class="seg">${[['top','Top'],['rng','Rank']].map(([k,l])=>`<button type="button" class="${r.k===k?'on':''}" data-rk="${k}">${l}</button>`).join('')}</div><button type="button" class="x" data-rrm>✕</button></div>
- <div class="rl2"><div class="rin">${r.k==='rng'?`<input class="in" type="number" inputmode="numeric" data-rf="a" placeholder="3" value="${r.a||''}"><span>–</span><input class="in" type="number" inputmode="numeric" data-rf="b" placeholder="6" value="${r.b||''}">`:`<input class="in" type="number" inputmode="numeric" data-rf="n" placeholder="2" value="${r.n||''}">`}</div><span class="arr">→</span>
- ${last?`<div class="pzw">৳<input class="in" type="number" inputmode="numeric" data-rf="pz" placeholder="Prize" value="${r.pz||''}"></div>`:`<button type="button" class="tp${tg?'':' e'}" data-rpick>${tg?esc(tg.n):'রাউন্ড বাছুন'} ▾</button>`}</div></div>`}).join('')+'<button type="button" class="bt" style="width:100%;flex:none;padding:12px" data-radd>＋ Add rule</button>'}
+ if(last){normFinal(arr);return `<div class="pzn"><span>Top</span><input class="in" type="number" inputmode="numeric" min="0" max="100" data-pzn value="${arr.length||''}" placeholder="7"><span>টিম prize পাবে</span></div><div data-pzrows>${pzRows(arr)}</div>`}
+ return arr.map((r,i)=>{const tg=R.find(z=>z.id&&z.id===r.to),rg=r.k==='rng';
+ return `<div class="rl" data-ri="${i}"><div class="rl1"><span class="rlh">Qualify rule</span><button type="button" class="x" data-rrm>✕</button></div>
+ <div class="rln${rg?'':' on'}" data-rk="top"><span>Top</span><div class="rin"><input class="in" type="number" inputmode="numeric" data-rf="n" placeholder="6" value="${r.n||''}"${rg?' disabled':''}></div></div>
+ <div class="rln${rg?' on':''}" data-rk="rng"><span>Rank</span><div class="rin"><input class="in" type="number" inputmode="numeric" data-rf="a" placeholder="7" value="${r.a||''}"${rg?'':' disabled'}><span>–</span><input class="in" type="number" inputmode="numeric" data-rf="b" placeholder="12" value="${r.b||''}"${rg?'':' disabled'}></div></div>
+ <div class="rl2"><span class="arr">→</span><button type="button" class="tp${tg?'':' e'}" data-rpick>${tg?esc(tg.n):'রাউন্ড বাছুন'} ▾</button></div></div>`}).join('')+'<button type="button" class="bt" style="width:100%;flex:none;padding:12px" data-radd>＋ Add rule</button>'}
 function openRMenu(btn){const ri=+btn.closest('[data-ri]').dataset.ri,c=btn.closest('[data-rdc]'),d=c?+c.dataset.rdc:-1,R=c?rdr:getRoad(D.ts[cur]),stg=c?d:ren.i,arr=c?rdr[d].rl:rtmp,key=(c?d:'s')+'.'+ri;
  let m=$('stm');if(!m){m=document.createElement('div');m.id='stm';document.body.appendChild(m)}
  if(m.classList.contains('show')&&m.dataset.key===key){closeMenu();return}
@@ -498,7 +510,8 @@ function rulesRender(){$('rules').innerHTML=rulesHtml(D.ts[cur],ren.i,rtmp)}
 function rdHtml(){const t={road:rdr},g0=rdr[0]&&rdr[0].pro?1:0;
  return '<span class="hint" style="margin-top:10px">এখনই সব রাউন্ড ও rule সেট করুন — পরে রাউন্ডে ডাবল ট্যাপ করে বদলানো যাবে।</span>'+rdr.map((r,i)=>`<div class="rdc" data-rdc="${i}"><div class="rdh"><input class="in" data-rdn maxlength="30" value="${esc(r.n)}">${(!r.pro&&!isFinal(rdr,i))?'<button type="button" class="x" data-rdx>✕</button>':''}</div>
  ${i>g0?`<div class="rdg"><span>Groups (12 slot each)</span><input class="in" type="number" inputmode="numeric" data-rdg value="${r.cap?Math.ceil(r.cap/12):''}" placeholder="0"></div>`:''}
- ${(i<rdr.length-1||isFinal(rdr,i))?`<div class="lb">${isFinal(rdr,i)?'Prize rules':'Qualify rules'}</div>${rulesHtml(t,i,r.rl||[])}`:''}</div>`).join('')+'<div class="rdf"><button type="button" class="bt" data-rdadd>＋ Add round</button><button type="button" class="bt" data-rdrs>↺ Reset</button></div>'}
+ ${(i<rdr.length-1||isFinal(rdr,i))?`<div class="lb">${isFinal(rdr,i)?'Prize rules':'Qualify rules'}</div>${rulesHtml(t,i,r.rl||[])}`:''}
+ ${(!r.pro&&!/semi|final/i.test(r.n))?'<button type="button" class="bt" data-rdins style="width:100%;flex:none;padding:12px;margin-top:8px">＋ Add round (এর পরে)</button>':''}</div>`).join('')+'<div class="rdf"><button type="button" class="bt" data-rdadd>＋ Add round</button><button type="button" class="bt" data-rdrs>↺ Reset</button></div>'}
 function rdRender(){const b=$('rdbody');if(!b)return;b.innerHTML=rdr.length?rdHtml():'<div class="hint" style="padding:10px 2px">আগে Slot বাছাই করুন।</div>';const c=$('rdcnt');if(c)c.textContent=rdr.length?' · '+rdr.length+' round':''}
 function rdSync(){if(!$('rdbody'))return;const n=slotCount(),ps=proOn?Math.floor(+($('fPS')&&$('fPS').value)||0):0;
  if(!n){rdr=[];drTouched=false}else if(!drTouched||!rdr.length)rdr=defRoad(proOn,ps,n);else return;rdRender()}
@@ -520,7 +533,7 @@ function renSheet(kind,i){
 function renSave(){
  const t=D.ts[cur],nm=$('rnN').value.trim();
  if(ren.kind==='stage'){const R=mat(t);
-  if(ren.i<R.length-1||isFinal(R,ren.i)){const last=isFinal(R,ren.i),rl=[];for(const x of rtmp){const ok=x.k==='rest'||(x.k==='rng'?x.a>0:x.n>0),tgt=last?x.pz>0:(!!x.to&&R.some(z=>z.id===x.to));if(!ok&&!tgt)continue;if(!ok||!tgt){alert(last?'Rule এ র‍্যাঙ্ক ও prize — দুটোই দিন।':'Rule এ র‍্যাঙ্ক ও কোন রাউন্ডে যাবে — দুটোই দিন।');return}
+  if(ren.i<R.length-1||isFinal(R,ren.i)){const last=isFinal(R,ren.i),rl=[];for(const x of rtmp){if(last){if(x.a>0&&+x.pz>0)rl.push({k:'rng',a:x.a,b:x.a,pz:x.pz});continue}const ok=x.k==='rest'||(x.k==='rng'?x.a>0:x.n>0),tgt=last?x.pz>0:(!!x.to&&R.some(z=>z.id===x.to));if(!ok&&!tgt)continue;if(!ok||!tgt){alert(last?'Rule এ র‍্যাঙ্ক ও prize — দুটোই দিন।':'Rule এ র‍্যাঙ্ক ও কোন রাউন্ডে যাবে — দুটোই দিন।');return}
    const o=last?{pz:x.pz}:{to:x.to};rl.push(x.k==='rest'?{k:'rest',...o}:x.k==='rng'?{k:'rng',a:x.a,b:Math.max(x.b||x.a,x.a),...o}:{k:'top',n:x.n,...o})}const fk0=String(R[ren.i].id||ren.i),fg=Object.keys(t.fin||{}).filter(k=>k.split('|')[0]===fk0).map(k=>+k.split('|')[1]);fg.forEach(g=>finUndo(t,R,ren.i,g));R[ren.i].rl=rl.length?rl:undefined;fg.forEach(g=>finApply(t,R,ren.i,g))}
   if(nm)R[ren.i].n=nm;if(ren.i>gs(t)){const g=Math.floor(+$('rnC').value||0);R[ren.i].cap=g>0?g*12:0}}
  else{t.gn=t.gn||{};if(nm&&nm!==gdef(ren.i))t.gn[ren.i]=nm;else delete t.gn[ren.i]}
@@ -573,9 +586,10 @@ document.addEventListener('click',e=>{
  if(q('[data-edit]')){openSheet(form(D.ts[cur]));ctotUpd();return}
  {const cx=b=>{const c=b.closest('[data-rdc]');if(c){const d=+c.dataset.rdc;return {arr:(rdr[d].rl=rdr[d].rl||[]),R:rdr,stg:d,dft:1}}return {arr:rtmp,R:getRoad(D.ts[cur]),stg:ren.i}},
   rr=c=>{if(c.dft){drTouched=true;rdRender()}else rulesRender()},ri=b=>+b.closest('[data-ri]').dataset.ri;
- if(b=q('[data-rk]')){const c=cx(b);c.arr[ri(b)].k=b.dataset.rk;return rr(c)}
+ if(b=q('[data-rk]')){const c=cx(b),r=c.arr[ri(b)];if((r.k==='rng')===(b.dataset.rk==='rng'))return;r.k=b.dataset.rk;return rr(c)}
  if(b=q('[data-rrm]')){const c=cx(b);c.arr.splice(ri(b),1);return rr(c)}
  if(b=q('[data-radd]')){const c=cx(b),nx=c.R[c.stg+1];c.arr.push({k:'top',n:'',to:nx&&!nx.pro?nx.id:''});return rr(c)}
+ if(b=q('[data-rdins]')){const i=+b.closest('[data-rdc]').dataset.rdc;let mx=0;rdr.forEach(x=>{const m=/^round\s*(\d+)/i.exec(x.n);if(m)mx=Math.max(mx,+m[1])});rdr.splice(i+1,0,{n:'Round '+(mx+1),cap:0,id:uid(),rl:[]});drTouched=true;return rdRender()}
  if(q('[data-rdtog]')){$('rdwrap').classList.toggle('open');return}
  if(q('[data-rdadd]')){const at=addAt({road:rdr});rdr.splice(at,0,{n:'Round '+(rdr.filter(x=>/^round/i.test(x.n)).length+1),cap:0,id:uid(),rl:[]});drTouched=true;return rdRender()}
  if(b=q('[data-rdx]')){rdr.splice(+b.closest('[data-rdc]').dataset.rdc,1);drTouched=true;return rdRender()}
@@ -612,7 +626,8 @@ document.addEventListener('click',e=>{
  if(b=q('[data-dn]')){const x=D.ts[cur].teams[+b.dataset.dn];x.m=mOf(x).filter(v=>v!==stage);if(!x.m.length)x.m=[Math.max(0,stage-1)];save();return detail(cur)}
  if(b=q('#stm [data-sj]')){const i=+$('stm').dataset.i;closeMenu();return toggleSt(i,+b.dataset.sj)}
 });
-document.addEventListener('input',e=>{const d=e.target.dataset;if(d&&d.rf){const c=e.target.closest('[data-rdc]');(c?rdr[+c.dataset.rdc].rl:rtmp)[+e.target.closest('[data-ri]').dataset.ri][d.rf]=Math.floor(+e.target.value||0);if(c)drTouched=true;return}
+document.addEventListener('input',e=>{const d=e.target.dataset;if(d&&d.pzn!==undefined){const c=e.target.closest('[data-rdc]'),arr=c?(rdr[+c.dataset.rdc].rl=rdr[+c.dataset.rdc].rl||[]):rtmp,n=Math.max(0,Math.min(100,Math.floor(+e.target.value||0)));while(arr.length>n)arr.pop();while(arr.length<n)arr.push({k:'rng',a:arr.length+1,b:arr.length+1,pz:''});arr.forEach((r,i)=>{r.a=r.b=i+1});if(c)drTouched=true;e.target.closest('.pzn').nextElementSibling.innerHTML=pzRows(arr);return}
+ if(d&&d.rf){const c=e.target.closest('[data-rdc]');(c?rdr[+c.dataset.rdc].rl:rtmp)[+e.target.closest('[data-ri]').dataset.ri][d.rf]=Math.floor(+e.target.value||0);if(c)drTouched=true;return}
  if(d&&d.rdn!==undefined){rdr[+e.target.closest('[data-rdc]').dataset.rdc].n=e.target.value;drTouched=true;return}
  if(d&&d.rdg!==undefined){rdr[+e.target.closest('[data-rdc]').dataset.rdc].cap=Math.max(0,Math.floor(+e.target.value||0))*12;drTouched=true;return}
  if(e.target.id==='fS'||e.target.id==='fPS')rpShow();if(e.target.classList&&e.target.classList.contains('ca'))ctotUpd()});
