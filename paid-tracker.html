@@ -117,6 +117,26 @@ body.dragging{overflow:hidden;touch-action:none;user-select:none;-webkit-user-se
 .btns{display:flex;gap:10px;margin-top:18px}
 .bt{flex:1;padding:14px;border-radius:13px;border:1px solid var(--line);background:var(--sf2);font-weight:800;font-size:15px}
 .bt.p{background:var(--green);color:#04170d;border:0}.bt.d{color:var(--red)}
+.cth{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:14px;padding:13px 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg);cursor:pointer;user-select:none;-webkit-user-select:none}
+.ctl{font-size:15px;font-weight:800}.ctl em{font-style:normal;font-size:12px;color:var(--dim);font-weight:700}
+.ctr{display:flex;align-items:center;gap:10px}.ctr b{color:var(--yel);font-size:14px}
+.cv2{font-style:normal;font-size:14px;color:var(--dim);transition:transform .15s}
+.cwrap.open .cv2{transform:rotate(180deg)}.cwrap.open .cth{border-color:var(--green)}
+.cbody{display:none;max-height:230px;overflow:auto;margin-top:8px;overscroll-behavior:contain}.cwrap.open .cbody{display:block}
+.rl{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:10px}
+.seg{display:flex;gap:6px}.seg button{flex:1;padding:10px 4px;border-radius:10px;border:1px solid var(--line);background:var(--sf2);font-size:13px;font-weight:800;color:var(--dim)}
+.seg button.on{background:rgba(34,224,138,.12);border-color:var(--green);color:var(--green)}
+.seg button.x{flex:none;width:42px;padding:0;color:var(--red)}
+.rn{display:flex;align-items:center;gap:8px;margin-top:8px}.rn .in{padding:11px;text-align:center}.rn span{color:var(--dim);font-weight:800}
+.tg{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tgc{padding:9px 12px;border-radius:99px;border:1px solid var(--line);background:var(--sf2);font-size:12px;font-weight:800;color:var(--dim)}
+.tgc.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.hint{display:block;font-weight:600;font-size:11px;margin-top:3px;line-height:1.4}
+.mv.up{width:auto;min-width:36px;max-width:62px;padding:0 5px;line-height:1.1}
+.mv.up small{display:block;font-size:9px;font-weight:800;max-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fin{flex:none;padding:7px 12px;border-radius:99px;border:1px solid var(--green);background:rgba(34,224,138,.1);color:var(--green);font-size:12px;font-weight:800;letter-spacing:0;text-transform:none}
+.fin.done{background:var(--green);color:#04170d}
+.tools .fin{flex:1;border-radius:12px;padding:10px;font-size:13px}
 </style>
 </head>
 <body>
@@ -161,11 +181,25 @@ const curSt=x=>Math.max(...mOf(x));
 const minSt=x=>Math.min(...mOf(x));
 function shiftM(t,from,d){t.teams.forEach(x=>{x.m=mOf(x).map(v=>v>=from?v+d:v)})}
 function shiftOrd(t,d,from){if(!t.ord)return;const o={};Object.keys(t.ord).forEach(k=>{k=+k;const n=k>=(from||0)?k+d:k;if(n>=0)o[n]=t.ord[k]});t.ord=o}
-function matRoad(t){return getRoad(t).map(x=>({n:x.n,cap:x.cap||0,pro:x.pro?1:undefined}))}
-function addProStage(t){const np=t.teams.filter(x=>x.p).length,R=matRoad(t);R.unshift({n:'PRO',cap:np,pro:1});t.road=R;shiftM(t,0,1);t.teams.forEach(x=>{if(x.p)x.m=[0]});shiftOrd(t,1,0)}
+const uid=()=>Math.random().toString(36).slice(2,8);
+function matRoad(t){return getRoad(t).map(x=>({n:x.n,cap:x.cap||0,pro:x.pro?1:undefined,id:x.id,rl:x.rl}))}
+const fk=(R,stg,g)=>(R[stg].id||stg)+'|'+g;
+function stageAll(t,stg){const grouped=stg===gs(t)&&t.type!=='pro';let all=t.teams.map((x,idx)=>({x,idx})).filter(o=>inStage(o.x,stg));
+ if(grouped){const byG={};all.forEach(o=>{(byG[gx(o)]=byG[gx(o)]||[]).push(o)});all=Object.keys(byG).sort((a,b)=>a-b).flatMap(g=>orderList(t,stg,byG[g]))}else all=orderList(t,stg,all);return {all,grouped}}
+function finish(g){const t=D.ts[cur],R=getRoad(t),st=R[stage];
+ const tgs=[...new Set((st.rl||[]).map(r=>R.findIndex(z=>z.id&&z.id===r.to)).filter(j=>j>stage))];
+ if(!tgs.length){alert('আগে এই রাউন্ডে ডাবল ট্যাপ করে Qualify rules দিন।');return renSheet('stage',stage)}
+ const {all,grouped}=stageAll(t,stage),mem=all.filter(o=>!grouped||gx(o)===g),key=fk(R,stage,g);t.fin=t.fin||{};
+ if(t.fin[key]){if(!confirm('Match শেষ undo করবেন? কোয়ালিফাইড টিমগুলো আবার শুধু এই রাউন্ডে থাকবে।'))return;
+  mem.forEach(o=>{const x=o.x;x.m=mOf(x).filter(v=>!tgs.includes(v));if(!x.m.length)x.m=[stage]});delete t.fin[key];save();return detail(cur)}
+ const full=[];mem.forEach((o,n)=>{const j=ruleFor(R,stage,n+1,mem.length);if(j<=stage||inStage(o.x,j))return;const cp=R[j].cap;if(cp&&t.teams.filter(y=>inStage(y,j)).length>=cp){full.push(R[j].n);return}o.x.m=[...mOf(o.x),j].sort((a,b)=>a-b)});
+ t.fin[key]=1;save();detail(cur);if(full.length)alert([...new Set(full)].join(', ')+' পূর্ণ — কিছু টিম যায়নি।')}
+function ruleFor(R,stg,rank,cnt){for(const r of (R[stg].rl||[])){const hit=r.k==='top'?rank<=r.n:r.k==='bot'?rank>cnt-r.n:(rank>=r.a&&rank<=(r.b||r.a));if(hit){const j=R.findIndex(z=>z.id&&z.id===r.to);if(j>stg)return j}}return -1}
+function addProStage(t){const np=t.teams.filter(x=>x.p).length,R=matRoad(t);R.unshift({n:'PRO',cap:np,pro:1,id:uid()});t.road=R;shiftM(t,0,1);t.teams.forEach(x=>{if(x.p)x.m=[0]});shiftOrd(t,1,0)}
 function dropProStage(t){const R=matRoad(t);if(!(R[0]&&R[0].pro))return;R.shift();t.road=R;t.teams.forEach(x=>{x.m=mOf(x).filter(v=>v>0).map(v=>v-1);if(!x.m.length)x.m=[0]});shiftOrd(t,-1,0)}
 function insertStage(t,at,r){const R=matRoad(t);R.splice(at,0,r);t.road=R;shiftM(t,at,1);shiftOrd(t,1,at)}
-function defRoad(pro,ps,n){const R=[];if(pro)R.push({n:'PRO',cap:ps,pro:1});R.push({n:'Round 1',cap:n});if(n>24){if(pro)R.push({n:'Top 6 Semi',cap:0},{n:'Bottom 6 Semi',cap:0});else R.push({n:'Semi',cap:0})}R.push({n:'Final',cap:0});return R}
+function defRoad(pro,ps,n){const R=[];if(pro)R.push({n:'PRO',cap:ps,pro:1});R.push({n:'Round 1',cap:n});if(n>24){if(pro)R.push({n:'Top 6 Semi',cap:0},{n:'Bottom 6 Semi',cap:0});else R.push({n:'Semi',cap:0})}R.push({n:'Final',cap:0});R.forEach(x=>x.id=uid());
+ if(pro){const fin=R[R.length-1],bs=R.find(x=>x.n==='Bottom 6 Semi'),h=Math.floor(ps/2),rl=[{k:'top',n:ps-h,to:fin.id}];if(bs&&h)rl.push({k:'bot',n:h,to:bs.id});R[0].rl=rl}return R}
 function advCands(t,s0){const R=getRoad(t),c=[];if(R[s0].pro){for(let j=gs(t)+1;j<R.length;j++)c.push(j);return c}
  let j=s0+1;if(j>=R.length)return c;c.push(j);while(R[j+1]&&/semi/i.test(R[j].n)&&/semi/i.test(R[j+1].n)){j++;c.push(j)}return c}
 const feeOf=(t,x)=>x.p?(+t.pfee||0):(+t.fee||0);
@@ -226,7 +260,7 @@ function detail(i){
  <div class="sc"><small>Prize + Costs</small><b>${tk(k.cost)}</b></div>
  <div class="sc"><small>Current / Est. Profit</small><b class="${k.cur<0?'r':'g'}">${tk(k.cur)}</b><small style="margin-top:2px">Est. ${tk(k.est)}</small></div></div></div>
  <div class="box"><div class="road"><button class="st add" data-addst aria-label="Add round">＋</button>${R.map((r,j)=>`<button class="st ${j===stage?'on':''}" data-stage="${j}">${esc(r.n)}</button>`).join('')}</div>
- <div class="tools"><button class="tb ${dueOnly?'on':''}" data-due>${dueOnly?'✓ ':''}Due only</button></div>`;
+ <div class="tools"><button class="tb ${dueOnly?'on':''}" data-due>${dueOnly?'✓ ':''}Due only</button>${(stage<R.length-1&&!(stage===gs(t)&&t.type!=='pro'))?`<button class="tb fin${t.fin&&t.fin[fk(R,stage,0)]?' done':''}" data-fin="0">${t.fin&&t.fin[fk(R,stage,0)]?'✓ Match শেষ':'Match শেষ'}</button>`:''}</div>`;
  const last=R.length-1, grouped=stage===gs(t)&&t.type!=='pro', isPro=!!R[stage].pro, col=getCol();
  let all=t.teams.map((x,idx)=>({x,idx})).filter(o=>inStage(o.x,stage));
  if(grouped){const byG={};all.forEach(o=>{(byG[gx(o)]=byG[gx(o)]||[]).push(o)});all=Object.keys(byG).sort((a,b)=>a-b).flatMap(g=>orderList(t,stage,byG[g]))}
@@ -234,19 +268,20 @@ function detail(i){
  const posOf=new Map(), gc={};all.forEach((o,n)=>{if(grouped){const g=gx(o);gc[g]=(gc[g]||0)+1;posOf.set(o.idx,gc[g])}else posOf.set(o.idx,n+1)});
  const list=all.filter(o=>!dueOnly||o.x.s==='DUE'||o.x.s==='DIS');
  if(!list.length)h+='<div class="empty" style="padding:40px 24px">এখানে কোনো টিম নেই</div>';
+ const rlz=R[stage].rl||[],tgs=[...new Set(rlz.map(r=>R.findIndex(z=>z.id&&z.id===r.to)).filter(j=>j>stage))],tot={};all.forEach(o=>{const g=grouped?gx(o):0;tot[g]=(tot[g]||0)+1});
  let lastG=-1;
  list.forEach((o)=>{
   const g=grouped?gx(o):0;
   if(grouped&&g!==lastG){lastG=g;const gm=all.filter(z=>gx(z)===g),cl=col.has(g),cnt=st=>gm.filter(z=>st==='DUE'?(z.x.s==='DUE'||z.x.s==='DIS'):z.x.s===st).length,pd=cnt('PAID'),du=cnt('DUE'),ls=cnt('LOSS');
    const parts=[pd?`<span class="g">${pd} paid</span>`:'',du?`<span class="y">${du} due</span>`:'',ls?`<span class="r">${ls} loss</span>`:''].filter(Boolean).join(' · ');
-   h+=`<div class="gh${cl?' cl':''}${g<0?' pro':''}" data-gt="${g}" title="Double tap to rename"><span class="gt"><span>${esc(gname(t,g))}</span>${parts?`<small>${parts}</small>`:''}</span><span class="cv">▾</span></div>`}
+   h+=`<div class="gh${cl?' cl':''}${g<0?' pro':''}" data-gt="${g}" title="Double tap to rename"><span class="gt"><span>${esc(gname(t,g))}</span>${parts?`<small>${parts}</small>`:''}</span>${stage<last?`<button type="button" class="fin${t.fin&&t.fin[fk(R,stage,g)]?' done':''}" data-fin="${g}">${t.fin&&t.fin[fk(R,stage,g)]?'✓ শেষ':'Match শেষ'}</button>`:''}<span class="cv">▾</span></div>`}
   if(grouped&&col.has(g))return;
-  const x=o.x, adv=mOf(x).some(v=>v>stage);
+  const x=o.x, adv=tgs.length?tgs.some(j=>inStage(x,j)):mOf(x).some(v=>v>stage), rj=tgs.length?ruleFor(R,stage,posOf.get(o.idx),tot[g]):-1, lj=tgs.length?(adv?tgs.find(j=>inStage(x,j)):rj):-1;
   h+=`<div class="row ${x.s==='DIS'?'DIS':''}" data-idx="${o.idx}" data-g="${g}"><span class="n" data-hd title="Hold &amp; drag to reorder">${posOf.get(o.idx)}${dueOnly?'':'<i>⋮⋮</i>'}</span><input class="nm" data-nm="${o.idx}" value="${esc(x.n)}" placeholder="Team name" enterkeyhint="next">
   ${(stage===last&&last>0)?`<input class="pz" type="number" inputmode="numeric" data-pz="${o.idx}" value="${x.pz||''}" placeholder="Prize">`:''}
   <button type="button" class="chip ${x.s}" data-stb="${o.idx}">${x.s||'—'} ▾</button>
   ${stage>minSt(x)?`<button class="mv" data-dn="${o.idx}" title="Remove from this stage">↓</button>`:''}
-  ${(stage<last)?`<button class="mv${adv?' adv':''}" data-up="${o.idx}" title="${adv?'Advanced — tap to undo':'Advance'}">↑</button>`:''}</div>`;
+  </div>`;
  });
  $('main').innerHTML=h+'</div>';
 }
@@ -310,12 +345,13 @@ function form(t){
  <div class="lb">Banner${e?' (optional)':' *'}</div><div class="bnp" id="bnp">${tmpB?`<img class="bn" src="${tmpB}">`:''}</div><label class="upl"><input type="file" accept="image/*" id="fB"><span id="bnl">${tmpB?'🖼 Change banner':'🖼 Add banner'}</span></label>${tmpB?'<button class="bt d" style="margin-top:8px;width:100%;flex:none;padding:10px" data-rmb>Remove banner</button>':''}
  <div class="lb">Name</div><input class="in" id="fN" value="${e?esc(t.name):''}">
  ${e?'':`<div class="lb">Slot *</div><div class="types">${[['24','24'],['36','36'],['48','48'],['custom','Custom']].map(([k,l])=>`<button type="button" class="ty ${k===newType?'on':''}" data-ty="${k}">${l}</button>`).join('')}</div><div id="slw" style="display:none"><div class="lb">Slots *</div><input class="in" id="fS" type="number" inputmode="numeric" min="1" max="240" placeholder="e.g. 60"></div>`}
- <div class="two"><div><div class="lb">Entry fee${e?'':' (normal)'}</div><input class="in" id="fF" type="number" inputmode="numeric" value="${e?t.fee:''}"></div><div><div class="lb">Prizepool</div><input class="in" id="fP" type="number" inputmode="numeric" value="${e?t.prize:''}"></div></div>
+ <div class="lb">Entry fee${e?'':' (normal)'}</div><input class="in" id="fF" type="number" inputmode="numeric" value="${e?t.fee:''}">
  <label class="chk"><input type="checkbox" id="fProChk" ${proOn?'checked':''}><span>PRO slots</span></label>
  <div class="two"><div><div class="lb">PRO slots</div><input class="in" id="fPS" type="number" inputmode="numeric" min="1" max="240" value="${e&&np?np:12}" ${proOn?'':'disabled'}></div><div><div class="lb">PRO entry fee</div><input class="in" id="fPF" type="number" inputmode="numeric" value="${e&&np?(t.pfee||''):''}" ${proOn?'':'disabled'}></div></div>
  ${e?'':'<div class="rp" id="rp"></div>'}
- <div class="lb" style="display:flex;justify-content:space-between;align-items:center">Tournament cost <b id="ctot" style="color:var(--yel);font-size:14px">Total ৳0</b></div><div id="costs">${cs.map(c=>costRow(c.n,c.a)).join('')}</div>
- <button type="button" class="cchip add" style="width:100%;padding:12px" data-cadd="">＋ Add cost</button>
+ <div class="lb">Prizepool</div><input class="in" id="fP" type="number" inputmode="numeric" value="${e?t.prize:''}">
+ <div class="cwrap" id="cwrap"><div class="cth" data-ctog><span class="ctl">Tournament cost<em id="ccnt"></em></span><span class="ctr"><b id="ctot">Total ৳0</b><i class="cv2">▾</i></span></div><div id="costs" class="cbody">${cs.map(c=>costRow(c.n,c.a)).join('')}</div></div>
+ <button type="button" class="cchip add" style="width:100%;padding:12px;margin-top:10px" data-cadd="">＋ Add cost</button>
  <div class="btns">${e?'<button class="bt d" data-del>Delete</button>':''}<button class="bt" data-close>Cancel</button><button class="bt p" data-save>${e?'Save':'Create'}</button></div>`;
 }
 function slotCount(){if(newType==='custom')return Math.floor(+($('fS')&&$('fS').value)||0);return newType&&TYPES[newType]?TYPES[newType].slots:0}
@@ -387,17 +423,27 @@ window.addEventListener('scroll',closeMenu,{passive:true});
 /* ---------- roadmap rounds & group names (double tap to rename) ---------- */
 let lastTap={k:'',t:0},ren=null;
 function dbl(k){const n=Date.now(),is=lastTap.k===k&&n-lastTap.t<400;lastTap={k,t:is?0:n};return is}
-function mat(t){t.road=getRoad(t).map(x=>({n:x.n,cap:x.cap||0}));return t.road}
+function mat(t){t.road=matRoad(t);return t.road}
+let rtmp=[];
+function rulesHtml(t,stg){const R=getRoad(t);
+ return rtmp.map((r,i)=>`<div class="rl" data-ri="${i}"><div class="seg">${[['top','Top'],['bot','Bottom'],['rng','Rank']].map(([k,l])=>`<button type="button" class="${r.k===k?'on':''}" data-rk="${k}">${l}</button>`).join('')}<button type="button" class="x" data-rrm>✕</button></div>
+ <div class="rn">${r.k==='rng'?`<input class="in" type="number" inputmode="numeric" data-rf="a" placeholder="From" value="${r.a||''}"><span>–</span><input class="in" type="number" inputmode="numeric" data-rf="b" placeholder="To" value="${r.b||''}">`:`<input class="in" type="number" inputmode="numeric" data-rf="n" placeholder="${r.k==='top'?'Top কতজন':'Bottom কতজন'}" value="${r.n||''}">`}</div>
+ <div class="tg">${R.map((x,j)=>j>stg&&!x.pro?`<button type="button" class="tgc ${x.id===r.to?'on':''}" data-rt="${x.id}">→ ${esc(x.n)}</button>`:'').join('')}</div></div>`).join('')+'<button type="button" class="cchip add" style="width:100%;padding:12px" data-radd>＋ Add rule</button>'}
+function rulesRender(){$('rules').innerHTML=rulesHtml(D.ts[cur],ren.i)}
 function renSheet(kind,i){
  const t=D.ts[cur];ren={kind,i};
  if(kind==='stage'){const r=getRoad(t)[i];
+  const R0=mat(t);R0.forEach(x=>{if(!x.id)x.id=uid()});save();rtmp=(R0[i].rl||[]).map(x=>({...x}));
   openSheet(`<h2>Rename round</h2><div class="lb">Name</div><input class="in" id="rnN" value="${esc(r.n)}" maxlength="30">${i>gs(t)?`<div class="lb">Groups (12 slot each)</div><input class="in" id="rnC" type="number" inputmode="numeric" min="1" value="${r.cap?Math.ceil(r.cap/12):''}" placeholder="e.g. 1">`:''}
+  ${i<R0.length-1?`<div class="lb">Qualify rules<span class="hint">র‍্যাঙ্ক অনুযায়ী কোন রাউন্ডে যাবে — ↑ চাপলেই সেই রাউন্ডে চলে যাবে${i===gs(t)&&t.type!=='pro'?' (প্রতিটা গ্রুপে আলাদা র‍্যাঙ্ক)':''}</span></div><div id="rules">${rulesHtml(t,i)}</div>`:''}
   <div class="btns"><button class="bt" data-close>Cancel</button><button class="bt p" data-rnsave>Save</button></div>${i>gs(t)?'<button class="bt dl" style="width:100%;flex:none;margin-top:12px" data-rndel>🗑 Delete this round</button>':''}`)}
  else openSheet(`<h2>Rename group</h2><div class="lb">Name</div><input class="in" id="rnN" value="${esc(gname(t,i))}" maxlength="24"><div class="btns"><button class="bt" data-close>Cancel</button><button class="bt p" data-rnsave>Save</button></div>`);
 }
 function renSave(){
  const t=D.ts[cur],nm=$('rnN').value.trim();
- if(ren.kind==='stage'){const R=mat(t);if(nm)R[ren.i].n=nm;if(ren.i>gs(t)){const g=Math.floor(+$('rnC').value||0);R[ren.i].cap=g>0?g*12:0}}
+ if(ren.kind==='stage'){const R=mat(t);
+  if(ren.i<R.length-1){const rl=[];for(const x of rtmp){const ok=x.k==='rng'?x.a>0:x.n>0;if(!ok&&!x.to)continue;if(!ok||!R.some(z=>z.id===x.to)){alert('Rule এ সংখ্যা ও কোন রাউন্ডে যাবে — দুটোই দিন।');return}rl.push(x.k==='rng'?{k:'rng',a:x.a,b:Math.max(x.b||x.a,x.a),to:x.to}:{k:x.k,n:x.n,to:x.to})}R[ren.i].rl=rl.length?rl:undefined}
+  if(nm)R[ren.i].n=nm;if(ren.i>gs(t)){const g=Math.floor(+$('rnC').value||0);R[ren.i].cap=g>0?g*12:0}}
  else{t.gn=t.gn||{};if(nm&&nm!==gdef(ren.i))t.gn[ren.i]=nm;else delete t.gn[ren.i]}
  save();closeSheet();detail(cur);
 }
@@ -418,7 +464,7 @@ function addSheet(){
 }
 function addSave(){
  const t=D.ts[cur],nm=$('adN').value.trim();if(!nm){$('adN').focus();return}
- const g=Math.floor(+$('adC').value||0),at=(+$('adAfter').value)+1;insertStage(t,at,{n:nm,cap:g>0?g*12:0});stage=at;save();closeSheet();detail(cur);
+ const g=Math.floor(+$('adC').value||0),at=(+$('adAfter').value)+1;insertStage(t,at,{n:nm,cap:g>0?g*12:0,id:uid()});stage=at;save();closeSheet();detail(cur);
 }
 /* ---------- events ---------- */
 document.addEventListener('click',e=>{
@@ -429,6 +475,7 @@ document.addEventListener('click',e=>{
  if(q('#ov')&&e.target.id==='ov')return closeSheet();
  if(b=q('[data-open]'))return detail(+b.dataset.open);
  if(q('[data-home]'))return goHome();
+ if(b=q('[data-fin]'))return finish(+b.dataset.fin);
  if(b=q('[data-gt]')){const S=getCol(),g=+b.dataset.gt,d=dbl('g'+g);S.has(g)?S.delete(g):S.add(g);setCol(S);detail(cur);if(d)renSheet('group',g);return}
  if(q('[data-addst]'))return addSheet();
  if(q('[data-rnsave]'))return renSave();
@@ -439,9 +486,15 @@ document.addEventListener('click',e=>{
  if(q('[data-dlcopy]')){const bt=q('[data-dlcopy]'),txt=dueText(dueData());(navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>{bt.textContent='✓ Copied'}).catch(()=>prompt('Copy:',txt));return}
  if(q('[data-cfno]'))return closeSheet();
  if(q('[data-cfyes]')){const f=cfFn;cfFn=null;if(f)f();return}
- if(b=q('[data-cadd]')){const nm=b.dataset.cadd;if(nm&&[...document.querySelectorAll('#costs .cn')].some(i=>i.value.trim().toLowerCase()===nm.toLowerCase()))return;$('costs').insertAdjacentHTML('beforeend',costRow(nm,''));const rs=document.querySelectorAll('#costs .cr');rs[rs.length-1].querySelector(nm?'.ca':'.cn').focus();return}
+ if(b=q('[data-cadd]')){const nm=b.dataset.cadd;if(nm&&[...document.querySelectorAll('#costs .cn')].some(i=>i.value.trim().toLowerCase()===nm.toLowerCase()))return;$('cwrap').classList.add('open');$('costs').insertAdjacentHTML('beforeend',costRow(nm,''));ctotUpd();const rs=document.querySelectorAll('#costs .cr');rs[rs.length-1].querySelector(nm?'.ca':'.cn').focus();return}
+ if(q('[data-ctog]')){$('cwrap').classList.toggle('open');return}
  if(b=q('[data-crx]')){b.closest('.cr').remove();ctotUpd();return}
  if(q('[data-edit]')){openSheet(form(D.ts[cur]));ctotUpd();return}
+ {const ri=b=>rtmp[+b.closest('[data-ri]').dataset.ri];
+ if(b=q('[data-rk]')){ri(b).k=b.dataset.rk;return rulesRender()}
+ if(b=q('[data-rt]')){ri(b).to=b.dataset.rt;return rulesRender()}
+ if(b=q('[data-rrm]')){rtmp.splice(+b.closest('[data-ri]').dataset.ri,1);return rulesRender()}
+ if(q('[data-radd]')){const R=getRoad(D.ts[cur]),nx=R[ren.i+1];rtmp.push({k:'top',n:'',to:nx&&!nx.pro?nx.id:''});return rulesRender()}}
  if(q('[data-close]'))return closeSheet();
  if(b=q('[data-ty]')){newType=b.dataset.ty;document.querySelectorAll('.ty[data-ty]').forEach(x=>x.classList.toggle('on',x.dataset.ty===newType));return rpShow()}
  if(q('[data-save]')){
@@ -467,12 +520,15 @@ document.addEventListener('click',e=>{
  if(q('[data-del]')){askC('এই টুর্নামেন্ট ডিলিট করবেন?',()=>{D.ts.splice(cur,1);save();closeSheet();goHome()});return}
  if(b=q('[data-stage]')){const j=+b.dataset.stage;if(dbl('s'+j)){stage=j;detail(cur);return renSheet('stage',j)}stage=j;return detail(cur)}
  if(q('[data-due]')){dueOnly=!dueOnly;return detail(cur)}
-  if(b=q('[data-up]')){const t=D.ts[cur],i=+b.dataset.up,c=advCands(t,stage);if(!c.length)return;if(c.length===1)return toggleSt(i,c[0]);return openAdv(b,i,c)}
+  if(b=q('[data-up]')){const t=D.ts[cur],i=+b.dataset.up,x=t.teams[i],R=getRoad(t),tg=[...new Set((R[stage].rl||[]).map(r=>R.findIndex(z=>z.id&&z.id===r.to)).filter(j=>j>stage))];
+  if(tg.length){const inT=tg.filter(j=>inStage(x,j));if(inT.length){x.m=mOf(x).filter(v=>!inT.includes(v));if(!x.m.length)x.m=[stage];save();return detail(cur)}const rj=+b.dataset.rj;if(rj>stage)return toggleSt(i,rj)}
+  const c=advCands(t,stage);if(!c.length)return;if(c.length===1)return toggleSt(i,c[0]);return openAdv(b,i,c)}
  if(b=q('[data-dn]')){const x=D.ts[cur].teams[+b.dataset.dn];x.m=mOf(x).filter(v=>v!==stage);if(!x.m.length)x.m=[Math.max(0,stage-1)];save();return detail(cur)}
  if(b=q('#stm [data-sj]')){const i=+$('stm').dataset.i;closeMenu();return toggleSt(i,+b.dataset.sj)}
 });
-document.addEventListener('input',e=>{if(e.target.id==='fS'||e.target.id==='fPS')rpShow();if(e.target.classList&&e.target.classList.contains('ca'))ctotUpd()});
-function ctotUpd(){const el=$('ctot');if(!el)return;let z=0;document.querySelectorAll('#costs .ca').forEach(i=>z+=(+i.value||0));el.textContent='Total '+tk(z)}
+document.addEventListener('input',e=>{if(e.target.dataset&&e.target.dataset.rf){rtmp[+e.target.closest('[data-ri]').dataset.ri][e.target.dataset.rf]=Math.floor(+e.target.value||0);return}
+ if(e.target.id==='fS'||e.target.id==='fPS')rpShow();if(e.target.classList&&e.target.classList.contains('ca'))ctotUpd()});
+function ctotUpd(){const el=$('ctot');if(!el)return;let z=0;document.querySelectorAll('#costs .ca').forEach(i=>z+=(+i.value||0));el.textContent='Total '+tk(z);const n=document.querySelectorAll('#costs .cr').length;$('ccnt').textContent=n?' · '+n+' item':''}
 document.addEventListener('change',e=>{
  const el=e.target;
  if(el.id==='fProChk'){proOn=el.checked;['fPS','fPF'].forEach(id=>{const f=$(id);f.disabled=!proOn});if(proOn&&!$('fPS').value)$('fPS').value=12;return rpShow()}
