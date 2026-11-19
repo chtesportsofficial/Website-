@@ -79,6 +79,19 @@ body.dragging{overflow:hidden;touch-action:none;user-select:none;-webkit-user-se
 .gh small .g{color:var(--green)}.gh small .y{color:var(--yel)}.gh small .r{color:var(--red)}
 .gh .cv{font-size:14px;transition:transform .15s;flex:none}.gh.cl .cv{transform:rotate(-90deg)}
 .st.add{border-style:dashed;color:var(--green)}
+.gh.pro{background:linear-gradient(90deg,rgba(233,201,106,.30),rgba(233,201,106,.07));border-left-color:var(--gold)}
+.bt.dl{background:rgba(255,90,110,.12);border:1px solid var(--red);color:var(--red)}
+.cr{display:flex;gap:8px;margin-bottom:8px}.cr .cn{flex:1.6;min-width:0}.cr .ca{flex:1;min-width:0}.cr .mv{width:46px;height:auto;flex:none;color:var(--red)}
+.cchips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 2px}
+.cchip{padding:8px 11px;border-radius:99px;border:1px dashed var(--line);font-size:12px;font-weight:700;color:var(--dim);background:var(--bg)}
+.cchip.add{color:var(--green);border-color:var(--green)}
+.protg{width:100%;margin-top:10px;padding:13px;font-size:14px}
+.cfm{text-align:center;padding:6px 4px 0}.cfm p{font-size:16px;font-weight:700;line-height:1.5;margin:6px 0 4px}
+.dlt{background:var(--sf2);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:12px}
+.dlt h3{display:flex;justify-content:space-between;gap:8px;align-items:baseline;font-size:15px}.dlt h3 span{font-size:12px;color:var(--yel);font-weight:800;white-space:nowrap}
+.dls{margin:10px 0 4px;font-size:11px;font-weight:800;letter-spacing:.6px;color:var(--cyan,#21e6c1);text-transform:uppercase}
+.dlr{display:flex;gap:8px;padding:7px 9px;background:var(--bg);border-radius:9px;margin-bottom:4px;font-size:14px;font-weight:600;align-items:center}
+.dlr b{color:var(--dim);font-size:12px;width:20px}.dlr em{margin-left:auto;font-style:normal;font-size:11px;font-weight:800;color:var(--red)}.dlr i{margin-left:auto;font-style:normal;font-size:12px;color:var(--gold);font-weight:800}
 .row input.nm{flex:1;min-width:0;background:transparent;border:0;outline:0;font-size:14px;font-weight:600}
 .row input.pz{width:62px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px;font-size:13px;text-align:center}
 .chip{min-width:62px;padding:8px 6px;border-radius:9px;border:0;font-size:12px;font-weight:800;background:var(--bg);color:var(--dim)}
@@ -90,7 +103,7 @@ body.dragging{overflow:hidden;touch-action:none;user-select:none;-webkit-user-se
 .lb{font-size:12px;color:var(--dim);font-weight:700;margin:12px 0 6px}
 .in{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:13px;font-size:15px;outline:0}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.types{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.types{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .ty{padding:12px 2px;border-radius:12px;background:var(--bg);border:1px solid var(--line);font-weight:800;font-size:13px;text-align:center;white-space:nowrap}
 .ty.on{border-color:var(--green);color:var(--green);background:rgba(34,224,138,.08)}
 .rp{margin-top:10px;font-size:12px;color:var(--dim);line-height:1.6;background:var(--bg);border-radius:12px;padding:10px 12px}
@@ -136,7 +149,11 @@ const ST=['','PAID','DUE','LOSS','DIS'];
 const KEY='chteo_paid_tracker_v1';
 let D={ts:[]},cur=null,stage=0,dueOnly=false,newType='48';
 function getRoad(t){if(t.road&&t.road.length)return t.road;const T=TYPES[t.type];return T?T.road.map((n,i)=>({n,cap:T.cap[i]})):[{n:'Groups',cap:t.teams.length}]}
-function gname(t,g){return (t.gn&&t.gn[g])||('Group '+String.fromCharCode(65+g))}
+function gdef(g){return g<0?'PRO':'Group '+String.fromCharCode(65+g)}
+function gname(t,g){return (t.gn&&t.gn[g])||gdef(g)}
+const gx=o=>o.x.p?-1:Math.floor(o.idx/12);
+const feeOf=(t,x)=>x.p?(+t.pfee||0):(+t.fee||0);
+function getCosts(t){if(t.costs)return t.costs;const o=[];if(+t.gfx)o.push({n:'GFX',a:+t.gfx});if(+t.live)o.push({n:'Live / other',a:+t.live});return o}
 const BACK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>';
 const $=id=>document.getElementById(id);
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}};
@@ -146,9 +163,11 @@ function init(){try{D=JSON.parse(localStorage.getItem(KEY))||{ts:[]}}catch(e){D=
 
 /* ---------- money ---------- */
 function calc(t){
- const c={PAID:0,DUE:0,LOSS:0,DIS:0};t.teams.forEach(x=>{if(c[x.s]!==undefined)c[x.s]++});
- const total=t.teams.length*t.fee, cost=(+t.prize||0)+(+t.gfx||0)+(+t.live||0);
- c.DUE+=c.DIS;const coll=c.PAID*t.fee, due=c.DUE*t.fee, loss=c.LOSS*t.fee;
+ const c={PAID:0,DUE:0,LOSS:0,DIS:0};let total=0,coll=0,due=0,loss=0;
+ t.teams.forEach(x=>{const f=feeOf(t,x);total+=f;if(c[x.s]!==undefined)c[x.s]++;
+  if(x.s==='PAID')coll+=f;else if(x.s==='DUE'||x.s==='DIS')due+=f;else if(x.s==='LOSS')loss+=f});
+ c.DUE+=c.DIS;
+ const cost=(+t.prize||0)+getCosts(t).reduce((z,q)=>z+(+q.a||0),0);
  return {c,total,cost,coll,due,loss,cur:coll-cost,est:total-loss-cost};
 }
 
@@ -158,9 +177,10 @@ function home(){
  $('top').innerHTML='<button class="back-btn" type="button" onclick="history.back()">'+BACK+'</button><h1>PAID TRACKER</h1>';
  let tc=0,td=0,tp=0;D.ts.forEach(t=>{const k=calc(t);tc+=k.coll;td+=k.due;tp+=k.cur});
  let h=`<div class="box"><div class="sum"><div class="sc"><small>Collected</small><b class="g">${tk(tc)}</b></div><div class="sc"><small>Total Due</small><b class="y">${tk(td)}</b></div><div class="sc"><small>Profit</small><b class="${tp<0?'r':'g'}">${tk(tp)}</b></div></div></div>`;
+ {const dc=D.ts.reduce((z,t)=>z+calc(t).c.DUE,0);if(dc)h+=`<div style="margin:0 16px 14px"><button class="tb" style="width:100%" data-duelist>📋 Due list · ${dc} team</button></div>`}
  if(!D.ts.length)h+='<div class="empty">কোনো টুর্নামেন্ট নেই।<br>নিচের <b>+ New Tournament</b> চাপুন।</div>';
  D.ts.forEach((t,i)=>{const k=calc(t),n=t.teams.length||1;
-  h+=`<div class="card${t.banner?' hc':''}" data-open="${i}">${t.banner?`<img class="bn" src="${t.banner}">`:''}<div class="rt"><div class="ch"><h3>${esc(t.name)}</h3><span class="badge">${t.type==='pro'?'PRO · ':''}${t.teams.length} slot</span></div>
+  h+=`<div class="card${t.banner?' hc':''}" data-open="${i}">${t.banner?`<img class="bn" src="${t.banner}">`:''}<div class="rt"><div class="ch"><h3>${esc(t.name)}</h3><span class="badge">${(()=>{const np=t.teams.filter(x=>x.p).length,nn=t.teams.length-np;return (t.type==='pro'?'PRO · ':'')+nn+' slot'+(np?' + '+np+' PRO':'')})()}</span></div>
   <div class="subb"><div class="bar"><i style="width:${k.c.PAID/n*100}%;background:#14c46a"></i><i style="width:${k.c.DUE/n*100}%;background:var(--yel)"></i><i style="width:${k.c.LOSS/n*100}%;background:#ff4d4d"></i></div>
   <div class="mini"><div class="sc"><small>Paid</small><b class="g">${k.c.PAID}</b></div><div class="sc"><small>Due</small><b class="y">${k.c.DUE}</b></div><div class="sc"><small>Loss</small><b class="r">${k.c.LOSS}</b></div><div class="sc"><small>Profit</small><b class="${k.cur<0?'r':'g'}">${tk(k.cur)}</b></div></div></div></div></div>`});
  $('main').innerHTML=h+'<button class="fab" data-new>+ New Tournament</button>';
@@ -180,27 +200,27 @@ function detail(i){
  cur=i;const t=D.ts[i],R=getRoad(t),k=calc(t);if(stage>=R.length)stage=0;
  $('top').innerHTML=`<button class="back-btn" type="button" data-home>${BACK}</button><h1>${esc(t.name)}</h1><button class="ib" data-edit>⚙︎</button>`;
  let h=`<div class="box">${t.banner?`<img class="bn" src="${t.banner}">`:''}<div class="stats">
- <div class="sc"><small>Total Tk (${t.teams.length}×${t.fee})</small><b>${tk(k.total)}</b></div>
+ <div class="sc"><small>Total Tk (${(()=>{const np=t.teams.filter(x=>x.p).length;return (t.teams.length-np)+'×'+t.fee+(np?' + '+np+'×'+t.pfee:'')})()})</small><b>${tk(k.total)}</b></div>
  <div class="sc"><small>Collected (${k.c.PAID} paid)</small><b class="g">${tk(k.coll)}</b></div>
  <div class="sc"><small>Due (${k.c.DUE} team)</small><b class="y">${tk(k.due)}</b></div>
  <div class="sc"><small>Loss (${k.c.LOSS} team)</small><b class="r">${tk(k.loss)}</b></div>
  <div class="sc"><small>Prize + Costs</small><b>${tk(k.cost)}</b></div>
  <div class="sc"><small>Current / Est. Profit</small><b class="${k.cur<0?'r':'g'}">${tk(k.cur)}</b><small style="margin-top:2px">Est. ${tk(k.est)}</small></div></div></div>
  <div class="box"><div class="road"><button class="st add" data-addst aria-label="Add round">＋</button>${R.map((r,j)=>`<button class="st ${j===stage?'on':''}" data-stage="${j}">${esc(r.n)}</button>`).join('')}</div>
- <div class="tools"><button class="tb ${dueOnly?'on':''}" data-due>${dueOnly?'✓ ':''}Due only</button><button class="tb" data-copy>📋 Copy due list</button></div>`;
+ <div class="tools"><button class="tb ${dueOnly?'on':''}" data-due>${dueOnly?'✓ ':''}Due only</button></div>`;
  const last=R.length-1, grouped=stage===0&&t.type!=='pro', col=getCol();
  let all=t.teams.map((x,idx)=>({x,idx})).filter(o=>o.x.g>=stage);
- if(grouped){const byG={};all.forEach(o=>{(byG[Math.floor(o.idx/12)]=byG[Math.floor(o.idx/12)]||[]).push(o)});all=Object.keys(byG).sort((a,b)=>a-b).flatMap(g=>orderList(t,stage,byG[g]))}
+ if(grouped){const byG={};all.forEach(o=>{(byG[gx(o)]=byG[gx(o)]||[]).push(o)});all=Object.keys(byG).sort((a,b)=>a-b).flatMap(g=>orderList(t,stage,byG[g]))}
  else all=orderList(t,stage,all);
- const posOf=new Map(), gc={};all.forEach((o,n)=>{if(grouped){const g=Math.floor(o.idx/12);gc[g]=(gc[g]||0)+1;posOf.set(o.idx,gc[g])}else posOf.set(o.idx,n+1)});
+ const posOf=new Map(), gc={};all.forEach((o,n)=>{if(grouped){const g=gx(o);gc[g]=(gc[g]||0)+1;posOf.set(o.idx,gc[g])}else posOf.set(o.idx,n+1)});
  const list=all.filter(o=>!dueOnly||o.x.s==='DUE'||o.x.s==='DIS');
  if(!list.length)h+='<div class="empty" style="padding:40px 24px">এখানে কোনো টিম নেই</div>';
  let lastG=-1;
  list.forEach((o)=>{
-  const g=grouped?Math.floor(o.idx/12):0;
-  if(grouped&&g!==lastG){lastG=g;const gm=all.filter(z=>Math.floor(z.idx/12)===g),cl=col.has(g),cnt=st=>gm.filter(z=>st==='DUE'?(z.x.s==='DUE'||z.x.s==='DIS'):z.x.s===st).length,pd=cnt('PAID'),du=cnt('DUE'),ls=cnt('LOSS');
+  const g=grouped?gx(o):0;
+  if(grouped&&g!==lastG){lastG=g;const gm=all.filter(z=>gx(z)===g),cl=col.has(g),cnt=st=>gm.filter(z=>st==='DUE'?(z.x.s==='DUE'||z.x.s==='DIS'):z.x.s===st).length,pd=cnt('PAID'),du=cnt('DUE'),ls=cnt('LOSS');
    const parts=[pd?`<span class="g">${pd} paid</span>`:'',du?`<span class="y">${du} due</span>`:'',ls?`<span class="r">${ls} loss</span>`:''].filter(Boolean).join(' · ');
-   h+=`<div class="gh${cl?' cl':''}" data-gt="${g}" title="Double tap to rename"><span class="gt"><span>${esc(gname(t,g))}</span>${parts?`<small>${parts}</small>`:''}</span><span class="cv">▾</span></div>`}
+   h+=`<div class="gh${cl?' cl':''}${g<0?' pro':''}" data-gt="${g}" title="Double tap to rename"><span class="gt"><span>${esc(gname(t,g))}</span>${parts?`<small>${parts}</small>`:''}</span><span class="cv">▾</span></div>`}
   if(grouped&&col.has(g))return;
   const x=o.x, adv=x.g>stage;
   h+=`<div class="row ${x.s==='DIS'?'DIS':''}" data-idx="${o.idx}" data-g="${g}"><span class="n" data-hd title="Hold &amp; drag to reorder">${posOf.get(o.idx)}${dueOnly?'':'<i>⋮⋮</i>'}</span><input class="nm" data-nm="${o.idx}" value="${esc(x.n)}" placeholder="Team name" enterkeyhint="next">
@@ -262,23 +282,59 @@ if(window.visualViewport){visualViewport.addEventListener('resize',fitVV);visual
 document.addEventListener('focusin',e=>{if(e.target.closest&&e.target.closest('#sheet')&&/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)&&e.target.type!=='file'){setTimeout(()=>{fitVV();e.target.scrollIntoView({block:'center',behavior:'smooth'})},320)}});
 function openSheet(h){$('sheet').innerHTML=h;$('ov').classList.add('show');lockY=window.scrollY;document.body.style.top=-lockY+'px';document.body.classList.add('lock');fitVV()}
 function closeSheet(){$('ov').classList.remove('show');$('ov').style.top=$('ov').style.bottom=$('ov').style.height='';$('sheet').style.maxHeight='';document.body.classList.remove('lock');document.body.style.top='';window.scrollTo(0,lockY)}
+let proOn=false;
+function costRow(n,a){return `<div class="cr"><input class="in cn" placeholder="Cost name" value="${esc(n||'')}" maxlength="40"><input class="in ca" type="number" inputmode="numeric" placeholder="৳" value="${a||''}"><button type="button" class="mv" data-crx aria-label="Remove">✕</button></div>`}
 function form(t){
- const e=!!t;newType=e?t.type:newType;tmpB=e?(t.banner||''):'';
+ const e=!!t;if(!e){newType=null;proOn=false}else{proOn=t.teams.some(x=>x.p)}tmpB=e?(t.banner||''):'';
+ const np=e?t.teams.filter(x=>x.p).length:0, cs=e?getCosts(t):[];
  return `<h2>${e?'Edit Tournament':'New Tournament'}</h2>
  <div class="lb">Banner${e?' (optional)':' *'}</div><div class="bnp" id="bnp">${tmpB?`<img class="bn" src="${tmpB}">`:''}</div><label class="upl"><input type="file" accept="image/*" id="fB"><span id="bnl">${tmpB?'🖼 Change banner':'🖼 Add banner'}</span></label>${tmpB?'<button class="bt d" style="margin-top:8px;width:100%;flex:none;padding:10px" data-rmb>Remove banner</button>':''}
  <div class="lb">Name</div><input class="in" id="fN" value="${e?esc(t.name):''}">
- ${e?'':`<div class="lb">Slot</div><div class="types">${[['pro','PRO +'],['24','24'],['36','36'],['48','48'],['custom','Custom']].map(([k,l])=>`<button type="button" class="ty ${k===newType?'on':''}" data-ty="${k}">${l}</button>`).join('')}</div><div id="slw" style="display:none"><div class="lb" id="slb">Slots *</div><input class="in" id="fS" type="number" inputmode="numeric" min="1" max="240"></div><div class="rp" id="rp"></div>`}
- <div class="two"><div><div class="lb">Entry fee</div><input class="in" id="fF" type="number" inputmode="numeric" value="${e?t.fee:''}"></div><div><div class="lb">Prizepool</div><input class="in" id="fP" type="number" inputmode="numeric" value="${e?t.prize:''}"></div></div>
- <div class="two"><div><div class="lb">GFX cost</div><input class="in" id="fG" type="number" inputmode="numeric" value="${e?t.gfx:''}"></div><div><div class="lb">Live / other cost</div><input class="in" id="fL" type="number" inputmode="numeric" value="${e?t.live:''}"></div></div>
+ ${e?'':`<div class="lb">Slot *</div><div class="types">${[['24','24'],['36','36'],['48','48'],['custom','Custom']].map(([k,l])=>`<button type="button" class="ty ${k===newType?'on':''}" data-ty="${k}">${l}</button>`).join('')}</div><div id="slw" style="display:none"><div class="lb">Slots *</div><input class="in" id="fS" type="number" inputmode="numeric" min="1" max="240" placeholder="e.g. 60"></div>`}
+ <button type="button" class="ty protg ${proOn?'on':''}" data-pro>${proOn?'✓ ':'＋ '}PRO slots</button>
+ <div id="prw" style="display:${proOn?'':'none'}"><div class="two"><div><div class="lb">PRO slots *</div><input class="in" id="fPS" type="number" inputmode="numeric" min="1" max="240" value="${e&&np?np:12}"></div><div><div class="lb">PRO entry fee *</div><input class="in" id="fPF" type="number" inputmode="numeric" value="${e&&np?(t.pfee||''):''}"></div></div></div>
+ ${e?'':'<div class="rp" id="rp"></div>'}
+ <div class="two"><div><div class="lb">Entry fee${e?'':' (normal)'}</div><input class="in" id="fF" type="number" inputmode="numeric" value="${e?t.fee:''}"></div><div><div class="lb">Prizepool</div><input class="in" id="fP" type="number" inputmode="numeric" value="${e?t.prize:''}"></div></div>
+ <div class="lb">Costs</div><div id="costs">${cs.map(c=>costRow(c.n,c.a)).join('')}</div>
+ <div class="cchips">${['Tournament banner','Champion banner','Broadcaster','Cast'].map(n=>`<button type="button" class="cchip" data-cadd="${n}">＋ ${n}</button>`).join('')}<button type="button" class="cchip add" data-cadd="">＋ Other cost</button></div>
  <div class="btns">${e?'<button class="bt d" data-del>Delete</button>':''}<button class="bt" data-close>Cancel</button><button class="bt p" data-save>${e?'Save':'Create'}</button></div>`;
 }
-function slotCount(){if(newType==='pro'||newType==='custom')return Math.floor(+($('fS')&&$('fS').value)||0);return TYPES[newType].slots}
+function slotCount(){if(newType==='custom')return Math.floor(+($('fS')&&$('fS').value)||0);return newType&&TYPES[newType]?TYPES[newType].slots:0}
 function rpShow(){
- const w=$('slw'),f=$('fS'),el=$('rp');if(!el)return;
- const need=newType==='pro'||newType==='custom';w.style.display=need?'':'none';
- if(need){$('slb').textContent=newType==='pro'?'PRO slots * (default 12)':'Slots *';if(newType==='pro'&&!f.value)f.value=12;f.placeholder=newType==='pro'?'12':'e.g. 60'}
- const n=slotCount();
- el.innerHTML=newType==='pro'?`<b>PRO</b> · ${n||'?'} slot · no groups`:`<b>${n||'?'} slot</b> · ${n?Math.ceil(n/12):'?'} group × 12 team`;
+ const w=$('slw'),el=$('rp');if(!el)return;
+ w.style.display=newType==='custom'?'':'none';
+ const n=slotCount(),ps=proOn?Math.floor(+($('fPS')&&$('fPS').value)||0):0;
+ el.innerHTML=(n?`<b>${n} slot</b> · ${Math.ceil(n/12)} group × 12 team`:'<b>Slot বাছাই করুন</b>')+(proOn?` · <b>+ ${ps||'?'} PRO</b>`:'');
+}
+let cfFn=null;
+function askC(msg,yes){cfFn=yes;$('sheet').innerHTML=`<div class="cfm"><h2>⚠️ Confirm</h2><p>${esc(msg)}</p></div><div class="btns"><button class="bt" data-cfno>Cancel</button><button class="bt dl" data-cfyes>Yes, delete</button></div>`}
+/* ---------- due list (home) ---------- */
+function dueData(){
+ return D.ts.map(t=>{const R=getRoad(t),rows=[];
+  t.teams.forEach((x,idx)=>{if(x.s==='DUE'||x.s==='DIS')rows.push({x,idx,f:feeOf(t,x)})});
+  if(!rows.length)return null;
+  const secs={};rows.forEach(o=>{const j=Math.min(o.x.g,R.length-1),g=(j===0&&t.type!=='pro')?gx(o):null,key=j+'|'+(g===null?'':g);(secs[key]=secs[key]||{j,g,list:[]}).list.push(o)});
+  const order=Object.values(secs).sort((a,b)=>a.j-b.j||(a.g||0)-(b.g||0));
+  order.forEach(sc=>{sc.label=R[sc.j].n+(sc.g!==null?' · '+gname(t,sc.g):'')});
+  return {t,secs:order,count:rows.length,sum:rows.reduce((z,o)=>z+o.f,0)};
+ }).filter(Boolean);
+}
+function dueText(data){
+ let out='📋 DUE LIST\n',tot=0,cnt=0;
+ data.forEach(d=>{tot+=d.sum;cnt+=d.count;out+=`\n🏆 ${d.t.name}\n`;
+  d.secs.forEach(sc=>{out+=`▸ ${sc.label}\n`;sc.list.forEach((o,i)=>{out+=`${i+1}. ${o.x.n||'(নাম নেই)'}${o.x.s==='DIS'?' ❌ DIS':''}${o.x.p?' — ৳'+o.f:''}\n`})});
+  out+=`💰 ${d.count} team = ${tk(d.sum)}\n`});
+ return out+`\nTOTAL DUE: ${cnt} team = ${tk(tot)}`;
+}
+function dueSheet(){
+ const data=dueData();
+ let h='<h2>📋 Due list</h2>';
+ if(!data.length)h+='<div class="empty" style="padding:30px 10px">কোনো due নেই 🎉</div>';
+ data.forEach(d=>{h+=`<div class="dlt"><h3>${esc(d.t.name)}<span>${d.count} team · ${tk(d.sum)}</span></h3>`;
+  d.secs.forEach(sc=>{h+=`<div class="dls">${esc(sc.label)}</div>`+sc.list.map((o,i)=>`<div class="dlr"><b>${i+1}</b>${esc(o.x.n||'(নাম নেই)')}${o.x.s==='DIS'?'<em>DIS</em>':''}${o.x.p?`<i>৳${o.f}</i>`:''}</div>`).join('')});
+  h+='</div>'});
+ h+=`<div class="btns"><button class="bt" data-close>Close</button>${data.length?'<button class="bt p" data-dlcopy>📋 Copy</button>':''}</div>`;
+ openSheet(h);
 }
 
 /* ---------- status dropdown (opens right at the cell) ---------- */
@@ -301,17 +357,18 @@ function renSheet(kind,i){
  const t=D.ts[cur];ren={kind,i};
  if(kind==='stage'){const r=getRoad(t)[i];
   openSheet(`<h2>Rename round</h2><div class="lb">Name</div><input class="in" id="rnN" value="${esc(r.n)}" maxlength="30">${i>0?`<div class="lb">Groups (12 slot each)</div><input class="in" id="rnC" type="number" inputmode="numeric" min="1" value="${r.cap?Math.ceil(r.cap/12):''}" placeholder="e.g. 1">`:''}
-  <div class="btns">${i>0?'<button class="bt d" data-rndel>Delete</button>':''}<button class="bt" data-close>Cancel</button><button class="bt p" data-rnsave>Save</button></div>`)}
+  <div class="btns"><button class="bt" data-close>Cancel</button><button class="bt p" data-rnsave>Save</button></div>${i>0?'<button class="bt dl" style="width:100%;flex:none;margin-top:12px" data-rndel>🗑 Delete this round</button>':''}`)}
  else openSheet(`<h2>Rename group</h2><div class="lb">Name</div><input class="in" id="rnN" value="${esc(gname(t,i))}" maxlength="24"><div class="btns"><button class="bt" data-close>Cancel</button><button class="bt p" data-rnsave>Save</button></div>`);
 }
 function renSave(){
  const t=D.ts[cur],nm=$('rnN').value.trim();
  if(ren.kind==='stage'){const R=mat(t);if(nm)R[ren.i].n=nm;if(ren.i>0){const g=Math.floor(+$('rnC').value||0);R[ren.i].cap=g>0?g*12:0}}
- else{t.gn=t.gn||{};if(nm&&nm!==('Group '+String.fromCharCode(65+ren.i)))t.gn[ren.i]=nm;else delete t.gn[ren.i]}
+ else{t.gn=t.gn||{};if(nm&&nm!==gdef(ren.i))t.gn[ren.i]=nm;else delete t.gn[ren.i]}
  save();closeSheet();detail(cur);
 }
-function renDel(){
- const t=D.ts[cur],i=ren.i;if(i<1||!confirm('এই রাউন্ড ডিলিট করবেন? টিমগুলো আগের রাউন্ডে থাকবে।'))return;
+function renDel(){const i=ren.i;if(i<1)return;askC('"'+getRoad(D.ts[cur])[i].n+'" রাউন্ড ডিলিট করবেন? টিমগুলো আগের রাউন্ডে থাকবে।',renDoDel)}
+function renDoDel(){
+ const t=D.ts[cur],i=ren.i;
  const R=mat(t);R.splice(i,1);
  t.teams.forEach(x=>{if(x.g>=i)x.g=x.g===i?i-1:x.g-1});
  if(t.ord){const o={};Object.keys(t.ord).forEach(k=>{k=+k;if(k<i)o[k]=t.ord[k];else if(k>i)o[k-1]=t.ord[k]});t.ord=o}
@@ -341,28 +398,41 @@ document.addEventListener('click',e=>{
  if(q('[data-rndel]'))return renDel();
  if(q('[data-addsave]'))return addSave();
  if(q('[data-new]')){openSheet(form(null));rpShow();return}
+ if(q('[data-duelist]'))return dueSheet();
+ if(q('[data-dlcopy]')){const bt=q('[data-dlcopy]'),txt=dueText(dueData());(navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>{bt.textContent='✓ Copied'}).catch(()=>prompt('Copy:',txt));return}
+ if(q('[data-cfno]'))return closeSheet();
+ if(q('[data-cfyes]')){const f=cfFn;cfFn=null;if(f)f();return}
+ if(q('[data-pro]')){proOn=!proOn;const bt=q('[data-pro]');bt.classList.toggle('on',proOn);bt.textContent=(proOn?'✓ ':'＋ ')+'PRO slots';$('prw').style.display=proOn?'':'none';return rpShow()}
+ if(b=q('[data-cadd]')){const nm=b.dataset.cadd;if(nm&&[...document.querySelectorAll('#costs .cn')].some(i=>i.value.trim().toLowerCase()===nm.toLowerCase()))return;$('costs').insertAdjacentHTML('beforeend',costRow(nm,''));const rs=document.querySelectorAll('#costs .cr');rs[rs.length-1].querySelector(nm?'.ca':'.cn').focus();return}
+ if(b=q('[data-crx]')){b.closest('.cr').remove();return}
  if(q('[data-edit]')){openSheet(form(D.ts[cur]));return}
  if(q('[data-close]'))return closeSheet();
- if(b=q('[data-ty]')){newType=b.dataset.ty;document.querySelectorAll('.ty').forEach(x=>x.classList.toggle('on',x.dataset.ty===newType));return rpShow()}
+ if(b=q('[data-ty]')){if(b.hasAttribute('data-pro'))return;newType=b.dataset.ty;document.querySelectorAll('.ty[data-ty]').forEach(x=>x.classList.toggle('on',x.dataset.ty===newType));return rpShow()}
  if(q('[data-save]')){
   const name=$('fN').value.trim()||'Untitled',v=id=>+$(id).value||0;
+  const costs=[...document.querySelectorAll('#costs .cr')].map(r=>({n:r.querySelector('.cn').value.trim(),a:+r.querySelector('.ca').value||0})).filter(c=>c.a>0||c.n);
+  const ps=Math.floor(+$('fPS').value||0),pf=+$('fPF').value||0;
+  if(proOn){if(!(ps>=1&&ps<=240)){alert('PRO slot সংখ্যা দিতে হবে।');$('fPS').focus();return}if($('fPF').value===''){alert('PRO entry fee দিতে হবে।');$('fPF').focus();return}}
   if(cur===null){
    if(!tmpB){alert('Banner দিতে হবে।');return}
+   if(!newType){alert('Slot বাছাই করুন।');return}
    const n=slotCount();if(!(n>=1&&n<=240)){alert('Slot সংখ্যা দিতে হবে।');const f=$('fS');if(f)f.focus();return}
-   D.ts.unshift({id:Date.now(),name,type:newType,fee:v('fF'),prize:v('fP'),gfx:v('fG'),live:v('fL'),banner:tmpB,road:[{n:newType==='pro'?'Pro Final':'Groups',cap:n}],teams:Array.from({length:n},()=>({n:'',s:'',g:0,pz:''}))});save();closeSheet();stage=0;return detail(0)}
-  Object.assign(D.ts[cur],{banner:tmpB,name,fee:v('fF'),prize:v('fP'),gfx:v('fG'),live:v('fL')});save();closeSheet();return detail(cur)}
+   const teams=Array.from({length:n},()=>({n:'',s:'',g:0,pz:''}));if(proOn)for(let i=0;i<ps;i++)teams.push({n:'',s:'',g:0,pz:'',p:1});
+   D.ts.unshift({id:Date.now(),name,type:newType,fee:v('fF'),pfee:proOn?pf:0,prize:v('fP'),costs,banner:tmpB,road:[{n:'Groups',cap:teams.length}],teams});save();closeSheet();stage=0;return detail(0)}
+  const T=D.ts[cur],cp=T.teams.filter(x=>x.p).length,target=proOn?ps:0;
+  if(target<cp){const rm=T.teams.slice(T.teams.length-(cp-target));if(rm.some(x=>!x.p||x.n||x.s||x.g>0)){alert('শেষের PRO টিমগুলোতে ডেটা আছে, আগে সেগুলো খালি করুন।');return}T.teams.length-=cp-target}
+  else for(let i=0;i<target-cp;i++)T.teams.push({n:'',s:'',g:0,pz:'',p:1});
+  Object.assign(T,{banner:tmpB,name,fee:v('fF'),pfee:proOn?pf:0,prize:v('fP'),costs,gfx:0,live:0});
+  if(T.road&&T.road[0])T.road[0].cap=T.teams.length;
+  save();closeSheet();return detail(cur)}
  if(q('[data-rmb]')){tmpB='';$('bnp').innerHTML='';$('bnl').textContent='🖼 Add banner';e.target.remove();return}
- if(q('[data-del]')){if(confirm('এই টুর্নামেন্ট ডিলিট করবেন?')){D.ts.splice(cur,1);save();closeSheet();goHome()}return}
+ if(q('[data-del]')){askC('এই টুর্নামেন্ট ডিলিট করবেন?',()=>{D.ts.splice(cur,1);save();closeSheet();goHome()});return}
  if(b=q('[data-stage]')){const j=+b.dataset.stage;if(dbl('s'+j)){stage=j;detail(cur);return renSheet('stage',j)}stage=j;return detail(cur)}
  if(q('[data-due]')){dueOnly=!dueOnly;return detail(cur)}
- if(q('[data-copy]')){
-  const t=D.ts[cur],d=t.teams.filter(x=>(x.s==='DUE'||x.s==='DIS')&&x.n);
-  const txt=`${t.name} — DUE LIST\n`+(d.map((x,i)=>`${i+1}. ${x.n}`).join('\n')||'No due 🎉')+`\nTotal: ${d.length} team × ${t.fee} = ${tk(d.length*t.fee)}`;
-  (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>{b=q('[data-copy]');b.textContent='✓ Copied';setTimeout(()=>detail(cur),1200)}).catch(()=>prompt('Copy:',txt));return}
   if(b=q('[data-up]')){const t=D.ts[cur],x=t.teams[+b.dataset.up],nx=stage+1,cp=(getRoad(t)[nx]||{}).cap;if(x.g>stage){x.g=stage;save();return detail(cur)}if(cp&&t.teams.filter(y=>y.g>=nx).length>=cp){alert(getRoad(t)[nx].n+' এ '+cp+' টিম পূর্ণ।');return}x.g=Math.max(x.g,nx);save();return detail(cur)}
  if(b=q('[data-dn]')){D.ts[cur].teams[+b.dataset.dn].g=stage-1;save();return detail(cur)}
 });
-document.addEventListener('input',e=>{if(e.target.id==='fS')rpShow()});
+document.addEventListener('input',e=>{if(e.target.id==='fS'||e.target.id==='fPS')rpShow()});
 document.addEventListener('change',e=>{
  const el=e.target;
  if(el.id==='fB'&&el.files[0]){const f=el.files[0],im=new Image(),u=URL.createObjectURL(f);
