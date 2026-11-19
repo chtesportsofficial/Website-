@@ -90,8 +90,8 @@ body.dragging{overflow:hidden;touch-action:none;user-select:none;-webkit-user-se
 .lb{font-size:12px;color:var(--dim);font-weight:700;margin:12px 0 6px}
 .in{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:13px;font-size:15px;outline:0}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.types{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.ty{padding:12px 4px;border-radius:12px;background:var(--bg);border:1px solid var(--line);font-weight:800;font-size:14px;text-align:center}
+.types{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.ty{padding:12px 2px;border-radius:12px;background:var(--bg);border:1px solid var(--line);font-weight:800;font-size:13px;text-align:center;white-space:nowrap}
 .ty.on{border-color:var(--green);color:var(--green);background:rgba(34,224,138,.08)}
 .rp{margin-top:10px;font-size:12px;color:var(--dim);line-height:1.6;background:var(--bg);border-radius:12px;padding:10px 12px}
 .bn{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:14px;display:block;margin-bottom:10px;border:1px solid var(--line)}
@@ -135,7 +135,7 @@ const TYPES={
 const ST=['','PAID','DUE','LOSS','DIS'];
 const KEY='chteo_paid_tracker_v1';
 let D={ts:[]},cur=null,stage=0,dueOnly=false,newType='48';
-function getRoad(t){return t.road&&t.road.length?t.road:TYPES[t.type].road.map((n,i)=>({n,cap:TYPES[t.type].cap[i]}))}
+function getRoad(t){if(t.road&&t.road.length)return t.road;const T=TYPES[t.type];return T?T.road.map((n,i)=>({n,cap:T.cap[i]})):[{n:'Groups',cap:t.teams.length}]}
 function gname(t,g){return (t.gn&&t.gn[g])||('Group '+String.fromCharCode(65+g))}
 const BACK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>';
 const $=id=>document.getElementById(id);
@@ -148,7 +148,7 @@ function init(){try{D=JSON.parse(localStorage.getItem(KEY))||{ts:[]}}catch(e){D=
 function calc(t){
  const c={PAID:0,DUE:0,LOSS:0,DIS:0};t.teams.forEach(x=>{if(c[x.s]!==undefined)c[x.s]++});
  const total=t.teams.length*t.fee, cost=(+t.prize||0)+(+t.gfx||0)+(+t.live||0);
- const coll=c.PAID*t.fee, due=c.DUE*t.fee, loss=(c.LOSS+c.DIS)*t.fee;
+ c.DUE+=c.DIS;const coll=c.PAID*t.fee, due=c.DUE*t.fee, loss=c.LOSS*t.fee;
  return {c,total,cost,coll,due,loss,cur:coll-cost,est:total-loss-cost};
 }
 
@@ -160,9 +160,9 @@ function home(){
  let h=`<div class="box"><div class="sum"><div class="sc"><small>Collected</small><b class="g">${tk(tc)}</b></div><div class="sc"><small>Total Due</small><b class="y">${tk(td)}</b></div><div class="sc"><small>Profit</small><b class="${tp<0?'r':'g'}">${tk(tp)}</b></div></div></div>`;
  if(!D.ts.length)h+='<div class="empty">কোনো টুর্নামেন্ট নেই।<br>নিচের <b>+ New Tournament</b> চাপুন।</div>';
  D.ts.forEach((t,i)=>{const k=calc(t),n=t.teams.length||1;
-  h+=`<div class="card${t.banner?' hc':''}" data-open="${i}">${t.banner?`<img class="bn" src="${t.banner}">`:''}<div class="rt"><div class="ch"><h3>${esc(t.name)}</h3><span class="badge">${t.type==='pro'?'PRO':t.type+' slot'}</span></div>
-  <div class="subb"><div class="bar"><i style="width:${k.c.PAID/n*100}%;background:#14c46a"></i><i style="width:${k.c.DUE/n*100}%;background:var(--yel)"></i><i style="width:${(k.c.LOSS+k.c.DIS)/n*100}%;background:#ff4d4d"></i></div>
-  <div class="mini"><div class="sc"><small>Paid</small><b class="g">${k.c.PAID}</b></div><div class="sc"><small>Due</small><b class="y">${k.c.DUE}</b></div><div class="sc"><small>Loss</small><b class="r">${k.c.LOSS+k.c.DIS}</b></div><div class="sc"><small>Profit</small><b class="${k.cur<0?'r':'g'}">${tk(k.cur)}</b></div></div></div></div></div>`});
+  h+=`<div class="card${t.banner?' hc':''}" data-open="${i}">${t.banner?`<img class="bn" src="${t.banner}">`:''}<div class="rt"><div class="ch"><h3>${esc(t.name)}</h3><span class="badge">${t.type==='pro'?'PRO · ':''}${t.teams.length} slot</span></div>
+  <div class="subb"><div class="bar"><i style="width:${k.c.PAID/n*100}%;background:#14c46a"></i><i style="width:${k.c.DUE/n*100}%;background:var(--yel)"></i><i style="width:${k.c.LOSS/n*100}%;background:#ff4d4d"></i></div>
+  <div class="mini"><div class="sc"><small>Paid</small><b class="g">${k.c.PAID}</b></div><div class="sc"><small>Due</small><b class="y">${k.c.DUE}</b></div><div class="sc"><small>Loss</small><b class="r">${k.c.LOSS}</b></div><div class="sc"><small>Profit</small><b class="${k.cur<0?'r':'g'}">${tk(k.cur)}</b></div></div></div></div></div>`});
  $('main').innerHTML=h+'<button class="fab" data-new>+ New Tournament</button>';
 }
 
@@ -183,22 +183,22 @@ function detail(i){
  <div class="sc"><small>Total Tk (${t.teams.length}×${t.fee})</small><b>${tk(k.total)}</b></div>
  <div class="sc"><small>Collected (${k.c.PAID} paid)</small><b class="g">${tk(k.coll)}</b></div>
  <div class="sc"><small>Due (${k.c.DUE} team)</small><b class="y">${tk(k.due)}</b></div>
- <div class="sc"><small>Loss (${k.c.LOSS+k.c.DIS} team)</small><b class="r">${tk(k.loss)}</b></div>
+ <div class="sc"><small>Loss (${k.c.LOSS} team)</small><b class="r">${tk(k.loss)}</b></div>
  <div class="sc"><small>Prize + Costs</small><b>${tk(k.cost)}</b></div>
  <div class="sc"><small>Current / Est. Profit</small><b class="${k.cur<0?'r':'g'}">${tk(k.cur)}</b><small style="margin-top:2px">Est. ${tk(k.est)}</small></div></div></div>
- <div class="box"><div class="road">${R.map((r,j)=>`<button class="st ${j===stage?'on':''}" data-stage="${j}">${esc(r.n)}<em>${t.teams.filter(x=>x.g>=j).length}${r.cap?'/'+r.cap:''}</em></button>`).join('')}<button class="st add" data-addst>＋ Round</button></div>
+ <div class="box"><div class="road"><button class="st add" data-addst aria-label="Add round">＋</button>${R.map((r,j)=>`<button class="st ${j===stage?'on':''}" data-stage="${j}">${esc(r.n)}</button>`).join('')}</div>
  <div class="tools"><button class="tb ${dueOnly?'on':''}" data-due>${dueOnly?'✓ ':''}Due only</button><button class="tb" data-copy>📋 Copy due list</button></div>`;
  const last=R.length-1, grouped=stage===0&&t.type!=='pro', col=getCol();
  let all=t.teams.map((x,idx)=>({x,idx})).filter(o=>o.x.g>=stage);
  if(grouped){const byG={};all.forEach(o=>{(byG[Math.floor(o.idx/12)]=byG[Math.floor(o.idx/12)]||[]).push(o)});all=Object.keys(byG).sort((a,b)=>a-b).flatMap(g=>orderList(t,stage,byG[g]))}
  else all=orderList(t,stage,all);
  const posOf=new Map(), gc={};all.forEach((o,n)=>{if(grouped){const g=Math.floor(o.idx/12);gc[g]=(gc[g]||0)+1;posOf.set(o.idx,gc[g])}else posOf.set(o.idx,n+1)});
- const list=all.filter(o=>!dueOnly||o.x.s==='DUE');
+ const list=all.filter(o=>!dueOnly||o.x.s==='DUE'||o.x.s==='DIS');
  if(!list.length)h+='<div class="empty" style="padding:40px 24px">এখানে কোনো টিম নেই</div>';
  let lastG=-1;
  list.forEach((o)=>{
   const g=grouped?Math.floor(o.idx/12):0;
-  if(grouped&&g!==lastG){lastG=g;const gm=all.filter(z=>Math.floor(z.idx/12)===g),cl=col.has(g),cnt=st=>gm.filter(z=>st==='LOSS'?(z.x.s==='LOSS'||z.x.s==='DIS'):z.x.s===st).length,pd=cnt('PAID'),du=cnt('DUE'),ls=cnt('LOSS');
+  if(grouped&&g!==lastG){lastG=g;const gm=all.filter(z=>Math.floor(z.idx/12)===g),cl=col.has(g),cnt=st=>gm.filter(z=>st==='DUE'?(z.x.s==='DUE'||z.x.s==='DIS'):z.x.s===st).length,pd=cnt('PAID'),du=cnt('DUE'),ls=cnt('LOSS');
    const parts=[pd?`<span class="g">${pd} paid</span>`:'',du?`<span class="y">${du} due</span>`:'',ls?`<span class="r">${ls} loss</span>`:''].filter(Boolean).join(' · ');
    h+=`<div class="gh${cl?' cl':''}" data-gt="${g}" title="Double tap to rename"><span class="gt"><span>${esc(gname(t,g))}</span>${parts?`<small>${parts}</small>`:''}</span><span class="cv">▾</span></div>`}
   if(grouped&&col.has(g))return;
@@ -265,14 +265,21 @@ function closeSheet(){$('ov').classList.remove('show');$('ov').style.top=$('ov')
 function form(t){
  const e=!!t;newType=e?t.type:newType;tmpB=e?(t.banner||''):'';
  return `<h2>${e?'Edit Tournament':'New Tournament'}</h2>
- <div class="lb">Banner (optional)</div><div class="bnp" id="bnp">${tmpB?`<img class="bn" src="${tmpB}">`:''}</div><label class="upl"><input type="file" accept="image/*" id="fB"><span id="bnl">${tmpB?'🖼 Change banner':'🖼 Add banner'}</span></label>${tmpB?'<button class="bt d" style="margin-top:8px;width:100%;flex:none;padding:10px" data-rmb>Remove banner</button>':''}
- <div class="lb">Name</div><input class="in" id="fN" value="${e?esc(t.name):''}" placeholder="e.g. CHT EXTREME CLASH - S4">
- ${e?'':`<div class="lb">Slot</div><div class="types">${Object.keys(TYPES).map(k=>`<button class="ty ${k===newType?'on':''}" data-ty="${k}">${k==='pro'?'PRO':k}</button>`).join('')}</div><div class="rp" id="rp"></div>`}
+ <div class="lb">Banner${e?' (optional)':' *'}</div><div class="bnp" id="bnp">${tmpB?`<img class="bn" src="${tmpB}">`:''}</div><label class="upl"><input type="file" accept="image/*" id="fB"><span id="bnl">${tmpB?'🖼 Change banner':'🖼 Add banner'}</span></label>${tmpB?'<button class="bt d" style="margin-top:8px;width:100%;flex:none;padding:10px" data-rmb>Remove banner</button>':''}
+ <div class="lb">Name</div><input class="in" id="fN" value="${e?esc(t.name):''}">
+ ${e?'':`<div class="lb">Slot</div><div class="types">${[['pro','PRO +'],['24','24'],['36','36'],['48','48'],['custom','Custom']].map(([k,l])=>`<button type="button" class="ty ${k===newType?'on':''}" data-ty="${k}">${l}</button>`).join('')}</div><div id="slw" style="display:none"><div class="lb" id="slb">Slots *</div><input class="in" id="fS" type="number" inputmode="numeric" min="1" max="240"></div><div class="rp" id="rp"></div>`}
  <div class="two"><div><div class="lb">Entry fee</div><input class="in" id="fF" type="number" inputmode="numeric" value="${e?t.fee:''}"></div><div><div class="lb">Prizepool</div><input class="in" id="fP" type="number" inputmode="numeric" value="${e?t.prize:''}"></div></div>
  <div class="two"><div><div class="lb">GFX cost</div><input class="in" id="fG" type="number" inputmode="numeric" value="${e?t.gfx:''}"></div><div><div class="lb">Live / other cost</div><input class="in" id="fL" type="number" inputmode="numeric" value="${e?t.live:''}"></div></div>
  <div class="btns">${e?'<button class="bt d" data-del>Delete</button>':''}<button class="bt" data-close>Cancel</button><button class="bt p" data-save>${e?'Save':'Create'}</button></div>`;
 }
-function rpShow(){const el=$('rp');if(el){const n=TYPES[newType].slots;el.innerHTML=newType==='pro'?`<b>${n} slot</b> · no groups`:`<b>${n} slot</b> · ${n/12} groups × 12 team`}}
+function slotCount(){if(newType==='pro'||newType==='custom')return Math.floor(+($('fS')&&$('fS').value)||0);return TYPES[newType].slots}
+function rpShow(){
+ const w=$('slw'),f=$('fS'),el=$('rp');if(!el)return;
+ const need=newType==='pro'||newType==='custom';w.style.display=need?'':'none';
+ if(need){$('slb').textContent=newType==='pro'?'PRO slots * (default 12)':'Slots *';if(newType==='pro'&&!f.value)f.value=12;f.placeholder=newType==='pro'?'12':'e.g. 60'}
+ const n=slotCount();
+ el.innerHTML=newType==='pro'?`<b>PRO</b> · ${n||'?'} slot · no groups`:`<b>${n||'?'} slot</b> · ${n?Math.ceil(n/12):'?'} group × 12 team`;
+}
 
 /* ---------- status dropdown (opens right at the cell) ---------- */
 function closeMenu(){const m=$('stm');if(m)m.classList.remove('show')}
@@ -293,13 +300,13 @@ function mat(t){t.road=getRoad(t).map(x=>({n:x.n,cap:x.cap||0}));return t.road}
 function renSheet(kind,i){
  const t=D.ts[cur];ren={kind,i};
  if(kind==='stage'){const r=getRoad(t)[i];
-  openSheet(`<h2>Rename round</h2><div class="lb">Name</div><input class="in" id="rnN" value="${esc(r.n)}" maxlength="30"><div class="lb">Teams (optional)</div><input class="in" id="rnC" type="number" inputmode="numeric" value="${r.cap||''}" placeholder="e.g. 12">
+  openSheet(`<h2>Rename round</h2><div class="lb">Name</div><input class="in" id="rnN" value="${esc(r.n)}" maxlength="30">${i>0?`<div class="lb">Groups (12 slot each)</div><input class="in" id="rnC" type="number" inputmode="numeric" min="1" value="${r.cap?Math.ceil(r.cap/12):''}" placeholder="e.g. 1">`:''}
   <div class="btns">${i>0?'<button class="bt d" data-rndel>Delete</button>':''}<button class="bt" data-close>Cancel</button><button class="bt p" data-rnsave>Save</button></div>`)}
  else openSheet(`<h2>Rename group</h2><div class="lb">Name</div><input class="in" id="rnN" value="${esc(gname(t,i))}" maxlength="24"><div class="btns"><button class="bt" data-close>Cancel</button><button class="bt p" data-rnsave>Save</button></div>`);
 }
 function renSave(){
  const t=D.ts[cur],nm=$('rnN').value.trim();
- if(ren.kind==='stage'){const R=mat(t);if(nm)R[ren.i].n=nm;R[ren.i].cap=+$('rnC').value||0}
+ if(ren.kind==='stage'){const R=mat(t);if(nm)R[ren.i].n=nm;if(ren.i>0){const g=Math.floor(+$('rnC').value||0);R[ren.i].cap=g>0?g*12:0}}
  else{t.gn=t.gn||{};if(nm&&nm!==('Group '+String.fromCharCode(65+ren.i)))t.gn[ren.i]=nm;else delete t.gn[ren.i]}
  save();closeSheet();detail(cur);
 }
@@ -311,13 +318,13 @@ function renDel(){
  stage=Math.max(0,i-1);save();closeSheet();detail(cur);
 }
 function addSheet(){
- openSheet(`<h2>Add round</h2><div class="lb">Name</div><input class="in" id="adN" maxlength="30" placeholder="Round 2 / Semi / Final…"><div class="lb">Teams (optional)</div><input class="in" id="adC" type="number" inputmode="numeric" placeholder="e.g. 12">
+ openSheet(`<h2>Add round</h2><div class="lb">Name</div><input class="in" id="adN" maxlength="30" placeholder="Round 2 / Semi / Final…"><div class="lb">Groups (12 slot each)</div><input class="in" id="adC" type="number" inputmode="numeric" min="1" value="1">
  <div class="btns"><button class="bt" data-close>Cancel</button><button class="bt p" data-addsave>Add</button></div>`);
  setTimeout(()=>{const e=$('adN');if(e)e.focus()},120);
 }
 function addSave(){
  const t=D.ts[cur],nm=$('adN').value.trim();if(!nm){$('adN').focus();return}
- const R=mat(t);R.push({n:nm,cap:+$('adC').value||0});stage=R.length-1;save();closeSheet();detail(cur);
+ const R=mat(t);const g=Math.floor(+$('adC').value||0);R.push({n:nm,cap:g>0?g*12:0});stage=R.length-1;save();closeSheet();detail(cur);
 }
 /* ---------- events ---------- */
 document.addEventListener('click',e=>{
@@ -339,19 +346,23 @@ document.addEventListener('click',e=>{
  if(b=q('[data-ty]')){newType=b.dataset.ty;document.querySelectorAll('.ty').forEach(x=>x.classList.toggle('on',x.dataset.ty===newType));return rpShow()}
  if(q('[data-save]')){
   const name=$('fN').value.trim()||'Untitled',v=id=>+$(id).value||0;
-  if(cur===null){const T=TYPES[newType];D.ts.unshift({id:Date.now(),name,type:newType,fee:v('fF'),prize:v('fP'),gfx:v('fG'),live:v('fL'),banner:tmpB,road:[{n:newType==='pro'?'Pro Final':'Groups',cap:T.slots}],teams:Array.from({length:T.slots},()=>({n:'',s:'',g:0,pz:''}))});save();closeSheet();stage=0;return detail(0)}
+  if(cur===null){
+   if(!tmpB){alert('Banner দিতে হবে।');return}
+   const n=slotCount();if(!(n>=1&&n<=240)){alert('Slot সংখ্যা দিতে হবে।');const f=$('fS');if(f)f.focus();return}
+   D.ts.unshift({id:Date.now(),name,type:newType,fee:v('fF'),prize:v('fP'),gfx:v('fG'),live:v('fL'),banner:tmpB,road:[{n:newType==='pro'?'Pro Final':'Groups',cap:n}],teams:Array.from({length:n},()=>({n:'',s:'',g:0,pz:''}))});save();closeSheet();stage=0;return detail(0)}
   Object.assign(D.ts[cur],{banner:tmpB,name,fee:v('fF'),prize:v('fP'),gfx:v('fG'),live:v('fL')});save();closeSheet();return detail(cur)}
  if(q('[data-rmb]')){tmpB='';$('bnp').innerHTML='';$('bnl').textContent='🖼 Add banner';e.target.remove();return}
  if(q('[data-del]')){if(confirm('এই টুর্নামেন্ট ডিলিট করবেন?')){D.ts.splice(cur,1);save();closeSheet();goHome()}return}
  if(b=q('[data-stage]')){const j=+b.dataset.stage;if(dbl('s'+j)){stage=j;detail(cur);return renSheet('stage',j)}stage=j;return detail(cur)}
  if(q('[data-due]')){dueOnly=!dueOnly;return detail(cur)}
  if(q('[data-copy]')){
-  const t=D.ts[cur],d=t.teams.filter(x=>x.s==='DUE'&&x.n);
+  const t=D.ts[cur],d=t.teams.filter(x=>(x.s==='DUE'||x.s==='DIS')&&x.n);
   const txt=`${t.name} — DUE LIST\n`+(d.map((x,i)=>`${i+1}. ${x.n}`).join('\n')||'No due 🎉')+`\nTotal: ${d.length} team × ${t.fee} = ${tk(d.length*t.fee)}`;
   (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>{b=q('[data-copy]');b.textContent='✓ Copied';setTimeout(()=>detail(cur),1200)}).catch(()=>prompt('Copy:',txt));return}
   if(b=q('[data-up]')){const t=D.ts[cur],x=t.teams[+b.dataset.up],nx=stage+1,cp=(getRoad(t)[nx]||{}).cap;if(x.g>stage){x.g=stage;save();return detail(cur)}if(cp&&t.teams.filter(y=>y.g>=nx).length>=cp){alert(getRoad(t)[nx].n+' এ '+cp+' টিম পূর্ণ।');return}x.g=Math.max(x.g,nx);save();return detail(cur)}
  if(b=q('[data-dn]')){D.ts[cur].teams[+b.dataset.dn].g=stage-1;save();return detail(cur)}
 });
+document.addEventListener('input',e=>{if(e.target.id==='fS')rpShow()});
 document.addEventListener('change',e=>{
  const el=e.target;
  if(el.id==='fB'&&el.files[0]){const f=el.files[0],im=new Image(),u=URL.createObjectURL(f);
