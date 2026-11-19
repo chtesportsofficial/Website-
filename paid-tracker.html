@@ -73,9 +73,12 @@ body.lock{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .row .n i{display:block;font-style:normal;font-size:13px;letter-spacing:-1px;opacity:.7}
 .row.drag{position:relative;z-index:30;box-shadow:0 10px 28px rgba(0,0,0,.6);border-color:var(--blue);background:#1d2540;opacity:.97}
 body.dragging{overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
-.gh{cursor:pointer;align-items:center;background:var(--sf2);border:1px solid var(--line);border-radius:12px;padding:9px 12px;margin:12px 0 8px}
-.gh small{color:var(--dim);font-weight:700;letter-spacing:0;margin-left:8px;font-size:11px}
-.gh .cv{font-size:14px;transition:transform .15s}.gh.cl .cv{transform:rotate(-90deg)}
+.gh{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;margin:20px -6px 10px;padding:13px 14px;border-radius:8px;background:linear-gradient(90deg,rgba(33,230,193,.28),rgba(33,230,193,.07));border-left:5px solid var(--cyan,#21e6c1);font-size:15px;font-weight:900;letter-spacing:1.2px;color:#fff;text-transform:uppercase;user-select:none;-webkit-user-select:none}
+.gh .gt{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;min-width:0}
+.gh small{font-size:12px;font-weight:800;letter-spacing:.3px;text-transform:none;margin:0;color:var(--dim)}
+.gh small .g{color:var(--green)}.gh small .y{color:var(--yel)}.gh small .r{color:var(--red)}
+.gh .cv{font-size:14px;transition:transform .15s;flex:none}.gh.cl .cv{transform:rotate(-90deg)}
+.st.add{border-style:dashed;color:var(--green)}
 .row input.nm{flex:1;min-width:0;background:transparent;border:0;outline:0;font-size:14px;font-weight:600}
 .row input.pz{width:62px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px;font-size:13px;text-align:center}
 .chip{min-width:62px;padding:8px 6px;border-radius:9px;border:0;font-size:12px;font-weight:800;background:var(--bg);color:var(--dim)}
@@ -132,6 +135,8 @@ const TYPES={
 const ST=['','PAID','DUE','LOSS','DIS'];
 const KEY='chteo_paid_tracker_v1';
 let D={ts:[]},cur=null,stage=0,dueOnly=false,newType='48';
+function getRoad(t){return t.road&&t.road.length?t.road:TYPES[t.type].road.map((n,i)=>({n,cap:TYPES[t.type].cap[i]}))}
+function gname(t,g){return (t.gn&&t.gn[g])||('Group '+String.fromCharCode(65+g))}
 const BACK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>';
 const $=id=>document.getElementById(id);
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}};
@@ -172,7 +177,7 @@ function getCol(){try{return new Set(JSON.parse(localStorage.getItem(colKey())||
 function setCol(S){try{localStorage.setItem(colKey(),JSON.stringify([...S]))}catch(e){}}
 function detail(i){
  if(!(history.state&&history.state.d))history.pushState({d:1},'');
- cur=i;const t=D.ts[i],T=TYPES[t.type],k=calc(t);
+ cur=i;const t=D.ts[i],R=getRoad(t),k=calc(t);if(stage>=R.length)stage=0;
  $('top').innerHTML=`<button class="back-btn" type="button" data-home>${BACK}</button><h1>${esc(t.name)}</h1><button class="ib" data-edit>⚙︎</button>`;
  let h=`<div class="box">${t.banner?`<img class="bn" src="${t.banner}">`:''}<div class="stats">
  <div class="sc"><small>Total Tk (${t.teams.length}×${t.fee})</small><b>${tk(k.total)}</b></div>
@@ -181,20 +186,21 @@ function detail(i){
  <div class="sc"><small>Loss (${k.c.LOSS+k.c.DIS} team)</small><b class="r">${tk(k.loss)}</b></div>
  <div class="sc"><small>Prize + Costs</small><b>${tk(k.cost)}</b></div>
  <div class="sc"><small>Current / Est. Profit</small><b class="${k.cur<0?'r':'g'}">${tk(k.cur)}</b><small style="margin-top:2px">Est. ${tk(k.est)}</small></div></div></div>
- <div class="box"><div class="road">${T.road.map((r,j)=>`<button class="st ${j===stage?'on':''}" data-stage="${j}">${r}<em>${t.teams.filter(x=>x.g>=j).length}/${T.cap[j]}</em></button>`).join('')}</div>
+ <div class="box"><div class="road">${R.map((r,j)=>`<button class="st ${j===stage?'on':''}" data-stage="${j}">${esc(r.n)}<em>${t.teams.filter(x=>x.g>=j).length}${r.cap?'/'+r.cap:''}</em></button>`).join('')}<button class="st add" data-addst>＋ Round</button></div>
  <div class="tools"><button class="tb ${dueOnly?'on':''}" data-due>${dueOnly?'✓ ':''}Due only</button><button class="tb" data-copy>📋 Copy due list</button></div>`;
- const last=T.road.length-1, grouped=stage===0&&t.type!=='pro', col=getCol();
+ const last=R.length-1, grouped=stage===0&&t.type!=='pro', col=getCol();
  let all=t.teams.map((x,idx)=>({x,idx})).filter(o=>o.x.g>=stage);
  if(grouped){const byG={};all.forEach(o=>{(byG[Math.floor(o.idx/12)]=byG[Math.floor(o.idx/12)]||[]).push(o)});all=Object.keys(byG).sort((a,b)=>a-b).flatMap(g=>orderList(t,stage,byG[g]))}
  else all=orderList(t,stage,all);
- const posOf=new Map(all.map((o,n)=>[o.idx,n+1]));
+ const posOf=new Map(), gc={};all.forEach((o,n)=>{if(grouped){const g=Math.floor(o.idx/12);gc[g]=(gc[g]||0)+1;posOf.set(o.idx,gc[g])}else posOf.set(o.idx,n+1)});
  const list=all.filter(o=>!dueOnly||o.x.s==='DUE');
  if(!list.length)h+='<div class="empty" style="padding:40px 24px">এখানে কোনো টিম নেই</div>';
  let lastG=-1;
  list.forEach((o)=>{
   const g=grouped?Math.floor(o.idx/12):0;
-  if(grouped&&g!==lastG){lastG=g;const gm=list.filter(z=>Math.floor(z.idx/12)===g),cl=col.has(g),cnt=st=>gm.filter(z=>z.x.s===st).length;
-   h+=`<div class="gh${cl?' cl':''}" data-gt="${g}"><span>GROUP ${String.fromCharCode(65+g)}<small>${gm.length} team · ${cnt('PAID')} paid · ${cnt('DUE')} due</small></span><span class="cv">▾</span></div>`}
+  if(grouped&&g!==lastG){lastG=g;const gm=all.filter(z=>Math.floor(z.idx/12)===g),cl=col.has(g),cnt=st=>gm.filter(z=>st==='LOSS'?(z.x.s==='LOSS'||z.x.s==='DIS'):z.x.s===st).length,pd=cnt('PAID'),du=cnt('DUE'),ls=cnt('LOSS');
+   const parts=[pd?`<span class="g">${pd} paid</span>`:'',du?`<span class="y">${du} due</span>`:'',ls?`<span class="r">${ls} loss</span>`:''].filter(Boolean).join(' · ');
+   h+=`<div class="gh${cl?' cl':''}" data-gt="${g}" title="Double tap to rename"><span class="gt"><span>${esc(gname(t,g))}</span>${parts?`<small>${parts}</small>`:''}</span><span class="cv">▾</span></div>`}
   if(grouped&&col.has(g))return;
   const x=o.x, adv=x.g>stage;
   h+=`<div class="row ${x.s==='DIS'?'DIS':''}" data-idx="${o.idx}" data-g="${g}"><span class="n" data-hd title="Hold &amp; drag to reorder">${posOf.get(o.idx)}${dueOnly?'':'<i>⋮⋮</i>'}</span><input class="nm" data-nm="${o.idx}" value="${esc(x.n)}" placeholder="Team name" enterkeyhint="next">
@@ -261,12 +267,12 @@ function form(t){
  return `<h2>${e?'Edit Tournament':'New Tournament'}</h2>
  <div class="lb">Banner (optional)</div><div class="bnp" id="bnp">${tmpB?`<img class="bn" src="${tmpB}">`:''}</div><label class="upl"><input type="file" accept="image/*" id="fB"><span id="bnl">${tmpB?'🖼 Change banner':'🖼 Add banner'}</span></label>${tmpB?'<button class="bt d" style="margin-top:8px;width:100%;flex:none;padding:10px" data-rmb>Remove banner</button>':''}
  <div class="lb">Name</div><input class="in" id="fN" value="${e?esc(t.name):''}" placeholder="e.g. CHT EXTREME CLASH - S4">
- ${e?'':`<div class="lb">Type</div><div class="types">${Object.keys(TYPES).map(k=>`<button class="ty ${k===newType?'on':''}" data-ty="${k}">${k==='pro'?'PRO':k}</button>`).join('')}</div><div class="rp" id="rp"></div>`}
+ ${e?'':`<div class="lb">Slot</div><div class="types">${Object.keys(TYPES).map(k=>`<button class="ty ${k===newType?'on':''}" data-ty="${k}">${k==='pro'?'PRO':k}</button>`).join('')}</div><div class="rp" id="rp"></div>`}
  <div class="two"><div><div class="lb">Entry fee</div><input class="in" id="fF" type="number" inputmode="numeric" value="${e?t.fee:''}"></div><div><div class="lb">Prizepool</div><input class="in" id="fP" type="number" inputmode="numeric" value="${e?t.prize:''}"></div></div>
  <div class="two"><div><div class="lb">GFX cost</div><input class="in" id="fG" type="number" inputmode="numeric" value="${e?t.gfx:''}"></div><div><div class="lb">Live / other cost</div><input class="in" id="fL" type="number" inputmode="numeric" value="${e?t.live:''}"></div></div>
  <div class="btns">${e?'<button class="bt d" data-del>Delete</button>':''}<button class="bt" data-close>Cancel</button><button class="bt p" data-save>${e?'Save':'Create'}</button></div>`;
 }
-function rpShow(){const el=$('rp');if(el)el.innerHTML=`<b>${TYPES[newType].slots} slot</b> · Roadmap:<br>${TYPES[newType].info}`}
+function rpShow(){const el=$('rp');if(el){const n=TYPES[newType].slots;el.innerHTML=newType==='pro'?`<b>${n} slot</b> · no groups`:`<b>${n} slot</b> · ${n/12} groups × 12 team`}}
 
 /* ---------- status dropdown (opens right at the cell) ---------- */
 function closeMenu(){const m=$('stm');if(m)m.classList.remove('show')}
@@ -280,6 +286,39 @@ function openMenu(btn){
  m.style.top=top+'px';m.style.left=Math.max(8,Math.min(innerWidth-w-8,r.right-w))+'px';
 }
 window.addEventListener('scroll',closeMenu,{passive:true});
+/* ---------- roadmap rounds & group names (double tap to rename) ---------- */
+let lastTap={k:'',t:0},ren=null;
+function dbl(k){const n=Date.now(),is=lastTap.k===k&&n-lastTap.t<400;lastTap={k,t:is?0:n};return is}
+function mat(t){t.road=getRoad(t).map(x=>({n:x.n,cap:x.cap||0}));return t.road}
+function renSheet(kind,i){
+ const t=D.ts[cur];ren={kind,i};
+ if(kind==='stage'){const r=getRoad(t)[i];
+  openSheet(`<h2>Rename round</h2><div class="lb">Name</div><input class="in" id="rnN" value="${esc(r.n)}" maxlength="30"><div class="lb">Teams (optional)</div><input class="in" id="rnC" type="number" inputmode="numeric" value="${r.cap||''}" placeholder="e.g. 12">
+  <div class="btns">${i>0?'<button class="bt d" data-rndel>Delete</button>':''}<button class="bt" data-close>Cancel</button><button class="bt p" data-rnsave>Save</button></div>`)}
+ else openSheet(`<h2>Rename group</h2><div class="lb">Name</div><input class="in" id="rnN" value="${esc(gname(t,i))}" maxlength="24"><div class="btns"><button class="bt" data-close>Cancel</button><button class="bt p" data-rnsave>Save</button></div>`);
+}
+function renSave(){
+ const t=D.ts[cur],nm=$('rnN').value.trim();
+ if(ren.kind==='stage'){const R=mat(t);if(nm)R[ren.i].n=nm;R[ren.i].cap=+$('rnC').value||0}
+ else{t.gn=t.gn||{};if(nm&&nm!==('Group '+String.fromCharCode(65+ren.i)))t.gn[ren.i]=nm;else delete t.gn[ren.i]}
+ save();closeSheet();detail(cur);
+}
+function renDel(){
+ const t=D.ts[cur],i=ren.i;if(i<1||!confirm('এই রাউন্ড ডিলিট করবেন? টিমগুলো আগের রাউন্ডে থাকবে।'))return;
+ const R=mat(t);R.splice(i,1);
+ t.teams.forEach(x=>{if(x.g>=i)x.g=x.g===i?i-1:x.g-1});
+ if(t.ord){const o={};Object.keys(t.ord).forEach(k=>{k=+k;if(k<i)o[k]=t.ord[k];else if(k>i)o[k-1]=t.ord[k]});t.ord=o}
+ stage=Math.max(0,i-1);save();closeSheet();detail(cur);
+}
+function addSheet(){
+ openSheet(`<h2>Add round</h2><div class="lb">Name</div><input class="in" id="adN" maxlength="30" placeholder="Round 2 / Semi / Final…"><div class="lb">Teams (optional)</div><input class="in" id="adC" type="number" inputmode="numeric" placeholder="e.g. 12">
+ <div class="btns"><button class="bt" data-close>Cancel</button><button class="bt p" data-addsave>Add</button></div>`);
+ setTimeout(()=>{const e=$('adN');if(e)e.focus()},120);
+}
+function addSave(){
+ const t=D.ts[cur],nm=$('adN').value.trim();if(!nm){$('adN').focus();return}
+ const R=mat(t);R.push({n:nm,cap:+$('adC').value||0});stage=R.length-1;save();closeSheet();detail(cur);
+}
 /* ---------- events ---------- */
 document.addEventListener('click',e=>{
  const q=s=>e.target.closest(s);let b;
@@ -289,24 +328,28 @@ document.addEventListener('click',e=>{
  if(q('#ov')&&e.target.id==='ov')return closeSheet();
  if(b=q('[data-open]'))return detail(+b.dataset.open);
  if(q('[data-home]'))return goHome();
- if(b=q('[data-gt]')){const S=getCol(),g=+b.dataset.gt;S.has(g)?S.delete(g):S.add(g);setCol(S);return detail(cur)}
+ if(b=q('[data-gt]')){const S=getCol(),g=+b.dataset.gt,d=dbl('g'+g);S.has(g)?S.delete(g):S.add(g);setCol(S);detail(cur);if(d)renSheet('group',g);return}
+ if(q('[data-addst]'))return addSheet();
+ if(q('[data-rnsave]'))return renSave();
+ if(q('[data-rndel]'))return renDel();
+ if(q('[data-addsave]'))return addSave();
  if(q('[data-new]')){openSheet(form(null));rpShow();return}
  if(q('[data-edit]')){openSheet(form(D.ts[cur]));return}
  if(q('[data-close]'))return closeSheet();
  if(b=q('[data-ty]')){newType=b.dataset.ty;document.querySelectorAll('.ty').forEach(x=>x.classList.toggle('on',x.dataset.ty===newType));return rpShow()}
  if(q('[data-save]')){
   const name=$('fN').value.trim()||'Untitled',v=id=>+$(id).value||0;
-  if(cur===null){const T=TYPES[newType];D.ts.unshift({id:Date.now(),name,type:newType,fee:v('fF'),prize:v('fP'),gfx:v('fG'),live:v('fL'),banner:tmpB,teams:Array.from({length:T.slots},()=>({n:'',s:'',g:0,pz:''}))});save();closeSheet();stage=0;return detail(0)}
+  if(cur===null){const T=TYPES[newType];D.ts.unshift({id:Date.now(),name,type:newType,fee:v('fF'),prize:v('fP'),gfx:v('fG'),live:v('fL'),banner:tmpB,road:[{n:newType==='pro'?'Pro Final':'Groups',cap:T.slots}],teams:Array.from({length:T.slots},()=>({n:'',s:'',g:0,pz:''}))});save();closeSheet();stage=0;return detail(0)}
   Object.assign(D.ts[cur],{banner:tmpB,name,fee:v('fF'),prize:v('fP'),gfx:v('fG'),live:v('fL')});save();closeSheet();return detail(cur)}
  if(q('[data-rmb]')){tmpB='';$('bnp').innerHTML='';$('bnl').textContent='🖼 Add banner';e.target.remove();return}
  if(q('[data-del]')){if(confirm('এই টুর্নামেন্ট ডিলিট করবেন?')){D.ts.splice(cur,1);save();closeSheet();goHome()}return}
- if(b=q('[data-stage]')){stage=+b.dataset.stage;return detail(cur)}
+ if(b=q('[data-stage]')){const j=+b.dataset.stage;if(dbl('s'+j)){stage=j;detail(cur);return renSheet('stage',j)}stage=j;return detail(cur)}
  if(q('[data-due]')){dueOnly=!dueOnly;return detail(cur)}
  if(q('[data-copy]')){
   const t=D.ts[cur],d=t.teams.filter(x=>x.s==='DUE'&&x.n);
   const txt=`${t.name} — DUE LIST\n`+(d.map((x,i)=>`${i+1}. ${x.n}`).join('\n')||'No due 🎉')+`\nTotal: ${d.length} team × ${t.fee} = ${tk(d.length*t.fee)}`;
   (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>{b=q('[data-copy]');b.textContent='✓ Copied';setTimeout(()=>detail(cur),1200)}).catch(()=>prompt('Copy:',txt));return}
-  if(b=q('[data-up]')){const t=D.ts[cur],x=t.teams[+b.dataset.up],nx=stage+1,cp=TYPES[t.type].cap[nx];if(x.g>stage){x.g=stage;save();return detail(cur)}if(cp&&t.teams.filter(y=>y.g>=nx).length>=cp){alert(TYPES[t.type].road[nx]+' এ '+cp+' টিম পূর্ণ।');return}x.g=Math.max(x.g,nx);save();return detail(cur)}
+  if(b=q('[data-up]')){const t=D.ts[cur],x=t.teams[+b.dataset.up],nx=stage+1,cp=(getRoad(t)[nx]||{}).cap;if(x.g>stage){x.g=stage;save();return detail(cur)}if(cp&&t.teams.filter(y=>y.g>=nx).length>=cp){alert(getRoad(t)[nx].n+' এ '+cp+' টিম পূর্ণ।');return}x.g=Math.max(x.g,nx);save();return detail(cur)}
  if(b=q('[data-dn]')){D.ts[cur].teams[+b.dataset.dn].g=stage-1;save();return detail(cur)}
 });
 document.addEventListener('change',e=>{
