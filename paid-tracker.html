@@ -69,7 +69,13 @@ body.lock{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .tb.on{border-color:var(--yel);color:var(--yel)}
 .gh{margin:12px 2px 6px;font-size:12px;font-weight:800;letter-spacing:.6px;color:var(--cyan,#21e6c1);display:flex;justify-content:space-between}
 .row{display:flex;align-items:center;gap:8px;margin:0 0 6px;background:var(--sf2);border:1px solid var(--line);border-radius:12px;padding:6px 6px 6px 10px}
-.row .n{width:22px;font-size:12px;color:var(--dim);font-weight:700}
+.row .n{width:30px;flex:none;font-size:12px;color:var(--dim);font-weight:700;text-align:center;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;padding:8px 0;line-height:1.1}
+.row .n i{display:block;font-style:normal;font-size:13px;letter-spacing:-1px;opacity:.7}
+.row.drag{position:relative;z-index:30;box-shadow:0 10px 28px rgba(0,0,0,.6);border-color:var(--blue);background:#1d2540;opacity:.97}
+body.dragging{overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+.gh{cursor:pointer;align-items:center;background:var(--sf2);border:1px solid var(--line);border-radius:12px;padding:9px 12px;margin:12px 0 8px}
+.gh small{color:var(--dim);font-weight:700;letter-spacing:0;margin-left:8px;font-size:11px}
+.gh .cv{font-size:14px;transition:transform .15s}.gh.cl .cv{transform:rotate(-90deg)}
 .row input.nm{flex:1;min-width:0;background:transparent;border:0;outline:0;font-size:14px;font-weight:600}
 .row input.pz{width:62px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px;font-size:13px;text-align:center}
 .chip{min-width:62px;padding:8px 6px;border-radius:9px;border:0;font-size:12px;font-weight:800;background:var(--bg);color:var(--dim)}
@@ -156,7 +162,16 @@ function home(){
 }
 
 /* ---------- detail ---------- */
+function orderList(t,stage,list){
+ const ord=t.ord&&t.ord[stage];if(!ord)return list;
+ const pos=new Map(ord.map((v,i)=>[v,i]));
+ return list.map((o,n)=>({o,k:pos.has(o.idx)?pos.get(o.idx):ord.length+n})).sort((a,b)=>a.k-b.k).map(z=>z.o);
+}
+const colKey=()=>'chteo_pt_col_'+(D.ts[cur]?D.ts[cur].id:'');
+function getCol(){try{return new Set(JSON.parse(localStorage.getItem(colKey())||'[]'))}catch(e){return new Set()}}
+function setCol(S){try{localStorage.setItem(colKey(),JSON.stringify([...S]))}catch(e){}}
 function detail(i){
+ if(!(history.state&&history.state.d))history.pushState({d:1},'');
  cur=i;const t=D.ts[i],T=TYPES[t.type],k=calc(t);
  $('top').innerHTML=`<button class="back-btn" type="button" data-home>${BACK}</button><h1>${esc(t.name)}</h1><button class="ib" data-edit>⚙︎</button>`;
  let h=`<div class="box">${t.banner?`<img class="bn" src="${t.banner}">`:''}<div class="stats">
@@ -168,16 +183,21 @@ function detail(i){
  <div class="sc"><small>Current / Est. Profit</small><b class="${k.cur<0?'r':'g'}">${tk(k.cur)}</b><small style="margin-top:2px">Est. ${tk(k.est)}</small></div></div></div>
  <div class="box"><div class="road">${T.road.map((r,j)=>`<button class="st ${j===stage?'on':''}" data-stage="${j}">${r}<em>${t.teams.filter(x=>x.g>=j).length}/${T.cap[j]}</em></button>`).join('')}</div>
  <div class="tools"><button class="tb ${dueOnly?'on':''}" data-due>${dueOnly?'✓ ':''}Due only</button><button class="tb" data-copy>📋 Copy due list</button></div>`;
- const last=T.road.length-1;
- const list=t.teams.map((x,idx)=>({x,idx})).filter(o=>o.x.g>=stage&&(!dueOnly||o.x.s==='DUE'));
+ const last=T.road.length-1, grouped=stage===0&&t.type!=='pro', col=getCol();
+ let all=t.teams.map((x,idx)=>({x,idx})).filter(o=>o.x.g>=stage);
+ if(grouped){const byG={};all.forEach(o=>{(byG[Math.floor(o.idx/12)]=byG[Math.floor(o.idx/12)]||[]).push(o)});all=Object.keys(byG).sort((a,b)=>a-b).flatMap(g=>orderList(t,stage,byG[g]))}
+ else all=orderList(t,stage,all);
+ const posOf=new Map(all.map((o,n)=>[o.idx,n+1]));
+ const list=all.filter(o=>!dueOnly||o.x.s==='DUE');
  if(!list.length)h+='<div class="empty" style="padding:40px 24px">এখানে কোনো টিম নেই</div>';
  let lastG=-1;
- list.forEach((o,n)=>{
-  if(stage===0&&T.road.length&&t.type!=='pro'){const g=Math.floor(o.idx/12);if(g!==lastG){lastG=g;h+=`<div class="gh"><span>GROUP ${String.fromCharCode(65+g)}</span></div>`}}
-  else if(stage===0&&lastG<0){lastG=0}
-  const x=o.x;
-  const adv=x.g>stage;
-  h+=`<div class="row ${x.s==='DIS'?'DIS':''}"><span class="n">${stage===0?o.idx+1:n+1}</span><input class="nm" data-nm="${o.idx}" value="${esc(x.n)}" placeholder="Team name" enterkeyhint="next">
+ list.forEach((o)=>{
+  const g=grouped?Math.floor(o.idx/12):0;
+  if(grouped&&g!==lastG){lastG=g;const gm=list.filter(z=>Math.floor(z.idx/12)===g),cl=col.has(g),cnt=st=>gm.filter(z=>z.x.s===st).length;
+   h+=`<div class="gh${cl?' cl':''}" data-gt="${g}"><span>GROUP ${String.fromCharCode(65+g)}<small>${gm.length} team · ${cnt('PAID')} paid · ${cnt('DUE')} due</small></span><span class="cv">▾</span></div>`}
+  if(grouped&&col.has(g))return;
+  const x=o.x, adv=x.g>stage;
+  h+=`<div class="row ${x.s==='DIS'?'DIS':''}" data-idx="${o.idx}" data-g="${g}"><span class="n" data-hd title="Hold &amp; drag to reorder">${posOf.get(o.idx)}${dueOnly?'':'<i>⋮⋮</i>'}</span><input class="nm" data-nm="${o.idx}" value="${esc(x.n)}" placeholder="Team name" enterkeyhint="next">
   ${stage===last&&last>0?`<input class="pz" type="number" inputmode="numeric" data-pz="${o.idx}" value="${x.pz||''}" placeholder="Prize">`:''}
   <button type="button" class="chip ${x.s}" data-stb="${o.idx}">${x.s||'—'} ▾</button>
   ${stage>0?`<button class="mv" data-dn="${o.idx}" title="Remove from this stage">↓</button>`:''}
@@ -185,7 +205,50 @@ function detail(i){
  });
  $('main').innerHTML=h+'</div>';
 }
-
+/* ---------- drag to reorder (hold the number handle) ---------- */
+let dr=null;
+document.addEventListener('pointerdown',e=>{
+ const hd=e.target.closest&&e.target.closest('[data-hd]');if(!hd||dueOnly)return;
+ const row=hd.closest('.row');if(!row)return;
+ e.preventDefault();closeMenu();
+ const r=row.getBoundingClientRect();
+ dr={row,grab:e.clientY-r.top,y:e.clientY,g:row.dataset.g,id:e.pointerId};
+ row.classList.add('drag');document.body.classList.add('dragging');
+ try{hd.setPointerCapture(e.pointerId)}catch(_){}
+ dragTick();
+});
+function dragTick(){
+ if(!dr)return;
+ const {row}=dr;
+ row.style.transform='';
+ let rr=row.getBoundingClientRect();
+ // swap with neighbours when the pointer crosses their middle
+ for(let guard=0;guard<30;guard++){
+  const cy=dr.y-dr.grab+rr.height/2;
+  const prev=row.previousElementSibling,next=row.nextElementSibling;
+  if(prev&&prev.classList.contains('row')&&prev.dataset.g===dr.g&&cy<prev.getBoundingClientRect().top+prev.getBoundingClientRect().height/2){row.parentNode.insertBefore(row,prev)}
+  else if(next&&next.classList.contains('row')&&next.dataset.g===dr.g&&cy>next.getBoundingClientRect().top+next.getBoundingClientRect().height/2){row.parentNode.insertBefore(next,row)}
+  else break;
+ }
+ rr=row.getBoundingClientRect();
+ row.style.transform=`translateY(${dr.y-dr.grab-rr.top}px)`;
+ // auto-scroll near the edges
+ const edge=90;let sc=0;if(dr.y<edge+70)sc=-12;else if(dr.y>innerHeight-edge-60)sc=12;
+ if(sc){window.scrollBy(0,sc)}
+ dr.raf=requestAnimationFrame(dragTick);
+}
+document.addEventListener('pointermove',e=>{if(dr){dr.y=e.clientY;e.preventDefault()}},{passive:false});
+function dragEnd(){
+ if(!dr)return;cancelAnimationFrame(dr.raf);
+ const row=dr.row;row.classList.remove('drag');row.style.transform='';document.body.classList.remove('dragging');dr=null;
+ const t=D.ts[cur];if(!t)return;
+ const ids=[...document.querySelectorAll('.row[data-idx]')].map(x=>+x.dataset.idx);
+ t.ord=t.ord||{};t.ord[stage]=ids;save();detail(cur);
+}
+document.addEventListener('pointerup',dragEnd);document.addEventListener('pointercancel',dragEnd);
+/* ---------- back button: detail -> tracker list (not out of the page) ---------- */
+function goHome(){if(history.state&&history.state.d)history.back();else home()}
+window.addEventListener('popstate',()=>{if(cur!==null){if($('ov').classList.contains('show'))closeSheet();closeMenu();home()}});
 /* ---------- sheets ---------- */
 let lockY=0,tmpB='';
 function fitVV(){const v=window.visualViewport,o=$('ov'),sh=$('sheet');if(!v||!o.classList.contains('show'))return;o.style.top=v.offsetTop+'px';o.style.bottom='auto';o.style.height=v.height+'px';sh.style.maxHeight=(v.height-16)+'px'}
@@ -225,7 +288,8 @@ document.addEventListener('click',e=>{
  if(!q('#stm'))closeMenu();
  if(q('#ov')&&e.target.id==='ov')return closeSheet();
  if(b=q('[data-open]'))return detail(+b.dataset.open);
- if(q('[data-home]'))return home();
+ if(q('[data-home]'))return goHome();
+ if(b=q('[data-gt]')){const S=getCol(),g=+b.dataset.gt;S.has(g)?S.delete(g):S.add(g);setCol(S);return detail(cur)}
  if(q('[data-new]')){openSheet(form(null));rpShow();return}
  if(q('[data-edit]')){openSheet(form(D.ts[cur]));return}
  if(q('[data-close]'))return closeSheet();
@@ -235,7 +299,7 @@ document.addEventListener('click',e=>{
   if(cur===null){const T=TYPES[newType];D.ts.unshift({id:Date.now(),name,type:newType,fee:v('fF'),prize:v('fP'),gfx:v('fG'),live:v('fL'),banner:tmpB,teams:Array.from({length:T.slots},()=>({n:'',s:'',g:0,pz:''}))});save();closeSheet();stage=0;return detail(0)}
   Object.assign(D.ts[cur],{banner:tmpB,name,fee:v('fF'),prize:v('fP'),gfx:v('fG'),live:v('fL')});save();closeSheet();return detail(cur)}
  if(q('[data-rmb]')){tmpB='';$('bnp').innerHTML='';$('bnl').textContent='🖼 Add banner';e.target.remove();return}
- if(q('[data-del]')){if(confirm('এই টুর্নামেন্ট ডিলিট করবেন?')){D.ts.splice(cur,1);save();closeSheet();home()}return}
+ if(q('[data-del]')){if(confirm('এই টুর্নামেন্ট ডিলিট করবেন?')){D.ts.splice(cur,1);save();closeSheet();goHome()}return}
  if(b=q('[data-stage]')){stage=+b.dataset.stage;return detail(cur)}
  if(q('[data-due]')){dueOnly=!dueOnly;return detail(cur)}
  if(q('[data-copy]')){
