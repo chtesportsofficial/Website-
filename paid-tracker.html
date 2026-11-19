@@ -249,8 +249,8 @@ function ruleFor(R,stg,rank){const r=pickRule(R[stg].rl||[],rank);if(!r)return -
 function addProStage(t){const np=t.teams.filter(x=>x.p).length,R=matRoad(t);R.unshift({n:'PRO',cap:np,pro:1,id:uid()});t.road=R;shiftM(t,0,1);t.teams.forEach(x=>{if(x.p)x.m=[0]});shiftOrd(t,1,0)}
 function dropProStage(t){const R=matRoad(t);if(!(R[0]&&R[0].pro))return;R.shift();t.road=R;t.teams.forEach(x=>{x.m=mOf(x).filter(v=>v>0).map(v=>v-1);if(!x.m.length)x.m=[0]});shiftOrd(t,-1,0)}
 function insertStage(t,at,r){const R=matRoad(t);R.splice(at,0,r);t.road=R;shiftM(t,at,1);shiftOrd(t,1,at)}
-function defRoad(pro,ps,n){const R=[];if(pro)R.push({n:'PRO',cap:ps,pro:1});R.push({n:'Round 1',cap:n});if(n>24){if(pro)R.push({n:'Top 6 Semi',cap:0},{n:'Bottom 6 Semi',cap:0});else R.push({n:'Semi',cap:0})}R.push({n:'Final',cap:0});R.forEach(x=>x.id=uid());
- if(pro){const fin=R[R.length-1],bs=R.find(x=>x.n==='Bottom 6 Semi'),h=Math.floor(ps/2),rl=[{k:'top',n:ps-h,to:fin.id}];if(bs&&h)rl.push({k:'rng',a:ps-h+1,b:ps,to:bs.id});R[0].rl=rl}return R}
+function defRoad(pro,ps,n){const R=[];if(pro)R.push({n:'PRO',cap:ps,pro:1});R.push({n:'Round 1',cap:n});if(n>24)R.push({n:'Semi',cap:0});R.push({n:'Final',cap:0});R.forEach(x=>x.id=uid());
+ if(pro){const fin=R[R.length-1],bs=R.find(x=>x.n==='Semi'),h=Math.floor(ps/2),rl=[{k:'top',n:ps-h,to:fin.id}];if(bs&&h)rl.push({k:'rng',a:ps-h+1,b:ps,to:bs.id});R[0].rl=rl}return R}
 function advCands(t,s0){const R=getRoad(t),c=[];if(R[s0].pro){for(let j=gs(t)+1;j<R.length;j++)c.push(j);return c}
  let j=s0+1;if(j>=R.length)return c;c.push(j);while(R[j+1]&&/semi/i.test(R[j].n)&&/semi/i.test(R[j+1].n)){j++;c.push(j)}return c}
 const feeOf=(t,x)=>x.p?(+t.pfee||0):(+t.fee||0);
